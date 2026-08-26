@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 
 import "../theme" as Nexa
+import "../theme/components" as NexaUI
 import "../modules/workspace" as WorkspaceModule
 import "../modules/battery" as BatteryModule
 import "../modules/network" as NetworkModule
@@ -185,25 +186,44 @@ PanelWindow {
             // PILL 3 — SIDE PANEL BUTTON
             // ----------------------------------------------------
 
-            Nexa.Components.IconButton {
-                id: panelPill
+            Rectangle {
+                id: panelPillContainer
 
-                width: Nexa.Theme.controlHeightSm
-                height: Nexa.Theme.controlHeightSm
+                implicitHeight: Nexa.Theme.controlHeightSm
+                implicitWidth: Nexa.Theme.controlHeightSm
 
-                icon: "󰕰"
-                iconSize: Nexa.Theme.iconSm
+                radius: height / 2
+                color: Nexa.Theme.surfaceContainer
 
-                onClicked: {
-                    Quickshell.execDetached([
-                        "qs",
-                        "-p",
-                        Quickshell.env("HOME") + "/.config/nexa/quickshell",
-                        "ipc",
-                        "call",
-                        "sidePanel",
-                        "toggle"
-                    ])
+                border {
+                    width: Nexa.Theme.borderThin
+                    color: Nexa.Theme.border
+                }
+
+                Behavior on color {
+                    ColorAnimation { duration: Nexa.Theme.animationFast }
+                }
+
+                NexaUI.NexaIconButton {
+                    id: panelPill
+
+                    anchors.fill: parent
+                    radius: height / 2
+
+                    icon: "󰕰"
+                    iconSize: Nexa.Theme.iconSm
+
+                    onClicked: {
+                        Quickshell.execDetached([
+                            "qs",
+                            "-p",
+                            Quickshell.env("HOME") + "/.config/nexa/quickshell",
+                            "ipc",
+                            "call",
+                            "sidePanel",
+                            "toggle"
+                        ])
+                    }
                 }
             }
 
@@ -216,7 +236,7 @@ PanelWindow {
                 id: powerPill
 
                 implicitHeight: Nexa.Theme.controlHeightSm
-                implicitWidth: powerPillRow.implicitWidth + Nexa.Theme.spacingMd
+                implicitWidth: Nexa.Theme.controlHeightSm
 
                 radius: height / 2
                 color: Nexa.Theme.surfaceContainer

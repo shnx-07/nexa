@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 Item {
@@ -246,140 +247,17 @@ Item {
                 // CLEAR ALL
                 // ------------------------------------------------
 
-                Rectangle {
-                    visible:
-                        root.notificationData.notifications.length > 0
-
-                    implicitWidth:
-                        clearRow.implicitWidth
-                        + Nexa.Theme.spacingLg
-
-                    implicitHeight:
-                        Nexa.Theme.controlHeightSm
-
-                    radius:
-                        Nexa.Theme.radiusPill
-
-                    color: clearMouse.containsMouse
-                        ? Qt.rgba(
-                            Nexa.Theme.error.r,
-                            Nexa.Theme.error.g,
-                            Nexa.Theme.error.b,
-                            0.16
-                        )
-                        : Qt.rgba(
-                            Nexa.Theme.error.r,
-                            Nexa.Theme.error.g,
-                            Nexa.Theme.error.b,
-                            0.10
-                        )
-
-                    border {
-                        width:
-                            Nexa.Theme.borderThin
-
-                        color:
-                            Qt.rgba(
-                                Nexa.Theme.error.r,
-                                Nexa.Theme.error.g,
-                                Nexa.Theme.error.b,
-                                0.45
-                            )
-                    }
-
-
-                    scale: clearMouse.pressed
-                        ? Nexa.Theme.pressScale
-                        : Nexa.Theme.normalScale
-
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration:
-                                Nexa.Theme.animationFast
-                        }
-                    }
-
-
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration:
-                                Nexa.Theme.animationFast
-
-                            easing.type:
-                                Nexa.Theme.easingStandard
-                        }
-                    }
-
-
-                    Row {
-                        id: clearRow
-
-                        anchors.centerIn:
-                            parent
-
-                        spacing:
-                            Nexa.Theme.spacingXs
-
-
-                        Text {
-                            text:
-                                "󰆴"
-
-                            color:
-                                Nexa.Theme.error
-
-                            font {
-                                family:
-                                    Nexa.Theme.iconFontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.iconXs
-                            }
-                        }
-
-
-                        Text {
-                            text:
-                                "Clear"
-
-                            color:
-                                Nexa.Theme.error
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeSm
-
-                                weight:
-                                    Nexa.Theme.fontWeightMedium
-                            }
-                        }
-                    }
-
-
-                    MouseArea {
-                        id: clearMouse
-
-                        anchors.fill:
-                            parent
-
-                        hoverEnabled:
-                            true
-
-                        cursorShape:
-                            Qt.PointingHandCursor
-
-
-                        onClicked: {
-                            Quickshell.execDetached([
-                                "sh",
-                                "-c",
-                                "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications clear"
-                            ])
-                        }
+                NexaUI.NexaButton {
+                    visible: root.notificationData.notifications.length > 0
+                    icon: "󰆴"
+                    text: "Clear"
+                    
+                    onClicked: {
+                        Quickshell.execDetached([
+                            "sh",
+                            "-c",
+                            "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications clear"
+                        ])
                     }
                 }
             }
@@ -503,11 +381,10 @@ Item {
                 Nexa.Theme.flickVelocityMax
 
 
-            delegate: Rectangle {
+            delegate: NexaUI.NexaCard {
                 id: card
 
                 required property var modelData
-
 
                 width:
                     notificationList.width
@@ -516,36 +393,9 @@ Item {
                     cardContent.implicitHeight
                     + Nexa.Theme.spacingLg * 2
 
-                radius:
-                    Nexa.Theme.radiusLg
-
-
-                color: cardMouse.containsMouse
-                    ? Nexa.Theme.cardBackgroundElevated
-                    : Nexa.Theme.cardBackground
-
-
-                border {
-                    width:
-                        Nexa.Theme.borderThin
-
-                    color: card.modelData.read
-                        ? Nexa.Theme.divider
-                        : Qt.rgba(
-                            Nexa.Theme.primary.r,
-                            Nexa.Theme.primary.g,
-                            Nexa.Theme.primary.b,
-                            0.45
-                        )
-                }
-
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration:
-                            Nexa.Theme.animationFast
-                    }
-                }
+                padding: 0
+                interactive: false
+                selected: !card.modelData.read
 
 
                 // ------------------------------------------------
@@ -747,100 +597,15 @@ Item {
                         // DISMISS
                         // -----------------------------------------
 
-                        Rectangle {
-                            implicitWidth:
-                                Nexa.Theme.controlHeightXs
-
-                            implicitHeight:
-                                Nexa.Theme.controlHeightXs
-
-                            radius:
-                                Nexa.Theme.radiusPill
-
-                            color: closeMouse.containsMouse
-                                ? Qt.rgba(
-                                    Nexa.Theme.error.r,
-                                    Nexa.Theme.error.g,
-                                    Nexa.Theme.error.b,
-                                    0.12
-                                )
-                                : "transparent"
-
-
-                            scale: closeMouse.pressed
-                                ? Nexa.Theme.pressScale
-                                : Nexa.Theme.normalScale
-
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
-
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-
-                                    easing.type:
-                                        Nexa.Theme.easingStandard
-                                }
-                            }
-
-
-                            Text {
-                                anchors.centerIn:
-                                    parent
-
-                                text:
-                                    "󰅖"
-
-                                color: closeMouse.containsMouse
-                                    ? Nexa.Theme.error
-                                    : Nexa.Theme.mutedText
-
-                                font {
-                                    family:
-                                        Nexa.Theme.iconFontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.iconXs
-                                }
-
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration:
-                                            Nexa.Theme.animationFast
-                                    }
-                                }
-                            }
-
-
-                            MouseArea {
-                                id: closeMouse
-
-                                anchors.fill:
-                                    parent
-
-                                hoverEnabled:
-                                    true
-
-                                cursorShape:
-                                    Qt.PointingHandCursor
-
-
-                                onClicked: {
-                                    Quickshell.execDetached([
-                                        "sh",
-                                        "-c",
-                                        "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications dismiss "
-                                            + card.modelData.id
-                                    ])
-                                }
+                        NexaUI.NexaIconButton {
+                            icon: "󰅖"
+                            onClicked: {
+                                Quickshell.execDetached([
+                                    "sh",
+                                    "-c",
+                                    "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications dismiss "
+                                        + card.modelData.id
+                                ])
                             }
                         }
                     }
@@ -931,104 +696,21 @@ Item {
                                 card.modelData.actions || []
 
 
-                            delegate: Rectangle {
+                            delegate: NexaUI.NexaButton {
                                 id: actionButton
-
                                 required property var modelData
 
-                                implicitWidth:
-                                    actionText.implicitWidth
-                                    + Nexa.Theme.spacingLg
+                                text: actionButton.modelData.label || ""
 
-                                implicitHeight:
-                                    Nexa.Theme.controlHeightSm
-
-                                radius:
-                                    Nexa.Theme.radiusPill
-
-                                color: actionMouse.containsMouse
-                                    ? Nexa.Theme.buttonBackgroundHover
-                                    : Nexa.Theme.buttonBackground
-
-                                border {
-                                    width:
-                                        Nexa.Theme.borderThin
-
-                                    color:
-                                        Nexa.Theme.divider
-                                }
-
-                                scale: actionMouse.pressed
-                                    ? Nexa.Theme.pressScale
-                                    : Nexa.Theme.normalScale
-
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration:
-                                            Nexa.Theme.animationFast
-                                    }
-                                }
-
-
-                                Behavior on scale {
-                                    NumberAnimation {
-                                        duration:
-                                            Nexa.Theme.animationFast
-
-                                        easing.type:
-                                            Nexa.Theme.easingStandard
-                                    }
-                                }
-
-
-                                Text {
-                                    id: actionText
-
-                                    anchors.centerIn:
-                                        parent
-
-                                    text:
-                                        actionButton.modelData.label || ""
-
-                                    color:
-                                        Nexa.Theme.text
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSizeXs
-
-                                        weight:
-                                            Nexa.Theme.fontWeightMedium
-                                    }
-                                }
-
-
-                                MouseArea {
-                                    id: actionMouse
-
-                                    anchors.fill:
-                                        parent
-
-                                    hoverEnabled:
-                                        true
-
-                                    cursorShape:
-                                        Qt.PointingHandCursor
-
-                                    onClicked: {
-                                        Quickshell.execDetached([
-                                            "sh",
-                                            "-c",
-                                            "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications action "
-                                                + card.modelData.id
-                                                + " "
-                                                + "\"" + actionButton.modelData.key + "\""
-                                        ])
-                                    }
+                                onClicked: {
+                                    Quickshell.execDetached([
+                                        "sh",
+                                        "-c",
+                                        "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications action "
+                                            + card.modelData.id
+                                            + " "
+                                            + "\"" + actionButton.modelData.key + "\""
+                                    ])
                                 }
                             } 
                         }
@@ -1042,19 +724,7 @@ Item {
                 }
 
 
-                // Hover tracking only.
-                MouseArea {
-                    id: cardMouse
 
-                    anchors.fill:
-                        parent
-
-                    hoverEnabled:
-                        true
-
-                    acceptedButtons:
-                        Qt.NoButton
-                }
             }
         }
     }

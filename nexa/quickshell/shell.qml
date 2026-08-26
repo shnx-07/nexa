@@ -1,3 +1,4 @@
+//@ pragma IconTheme "breeze-dark"
 import Quickshell
 import Quickshell.Io
 import "wallpaper" as Wallpaper

@@ -122,6 +122,20 @@ PanelWindow {
     readonly property int fullWidth: 720
     readonly property int fullHeight: 400
 
+    // ============================================================
+    // POWER MODE DIMENSIONS
+    //
+    // PowerIsland content:
+    //   5 × 138px cards = 690
+    //   4 × 12px gaps   = 48
+    //   content width   = 738
+    //
+    // 760 gives 11px horizontal padding.
+    // 144 gives 12px vertical padding around 120px cards.
+    // ============================================================
+
+    readonly property int powerWidth: 760
+    readonly property int powerHeight: 144
 
     //search n command 
 
@@ -184,10 +198,12 @@ PanelWindow {
     // ============================================================
 
     readonly property int targetWidth: {
+        if (root.specialMode === "power")
+            return root.powerWidth
+
         if (root.full || root.specialModeActive)
             return root.fullWidth
 
-        // Notifications ALWAYS use existing hover geometry.
         if (root.notificationActive)
             return root.hoverWidth
 
@@ -201,10 +217,12 @@ PanelWindow {
     }
 
     readonly property int targetHeight: {
+        if (root.specialMode === "power")
+            return root.powerHeight
+
         if (root.full || root.specialModeActive)
             return root.fullHeight
 
-        // Notifications ALWAYS use existing hover geometry.
         if (root.notificationActive)
             return root.hoverHeight
 

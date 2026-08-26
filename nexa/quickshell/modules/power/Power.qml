@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 Item {
@@ -19,87 +20,21 @@ Item {
     // POWER BUTTON
     // ============================================================
 
-    Rectangle {
+    NexaUI.NexaIconButton {
         id: button
-
         anchors.fill: parent
-
-        radius: Nexa.Theme.radiusSm
-
-        color:
-            mouse.containsMouse
-            ? Nexa.Theme.hover
-            : "transparent"
-
-        scale:
-            mouse.pressed
-            ? Nexa.Theme.pressScale
-            : Nexa.Theme.normalScale
-
-
-        Behavior on color {
-            ColorAnimation {
-                duration: Nexa.Theme.animationFast
-            }
-        }
-
-
-        Behavior on scale {
-            NumberAnimation {
-                duration: Nexa.Theme.animationFast
-                easing.type: Nexa.Theme.easingStandard
-            }
-        }
-
-
-        // --------------------------------------------------------
-        // POWER ICON
-        // --------------------------------------------------------
-
-        Text {
-            anchors.centerIn: parent
-
-            text: "⏻"
-
-            color: Nexa.Theme.text
-
-            font {
-                family: Nexa.Theme.fontFamily
-                pixelSize: Nexa.Theme.fontSizeMd
-                weight: Nexa.Theme.fontWeightMedium
-            }
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: Nexa.Theme.animationFast
-                }
-            }
-        }
-
-
-        // --------------------------------------------------------
-        // INPUT
-        // --------------------------------------------------------
-
-        MouseArea {
-            id: mouse
-
-            anchors.fill: parent
-
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-
-            onClicked: {
-                Quickshell.execDetached([
-                    "qs",
-                    "-p",
-                    Quickshell.env("HOME") + "/.config/nexa/quickshell",
-                    "ipc",
-                    "call",
-                    "nexaIsland",
-                    "openPower"
-                ])
-            }
+        radius: height / 2
+        icon: "⏻"
+        onClicked: {
+            Quickshell.execDetached([
+                "qs",
+                "-p",
+                Quickshell.env("HOME") + "/.config/nexa/quickshell",
+                "ipc",
+                "call",
+                "nexaIsland",
+                "openPower"
+            ])
         }
     }
 
@@ -111,7 +46,7 @@ Item {
     PopupWindow {
         id: hoverPopup
 
-        visible: mouse.containsMouse
+        visible: button.hovered
 
         implicitWidth: 120
         implicitHeight: 52

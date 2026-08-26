@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 Item {
@@ -468,11 +469,8 @@ Item {
         // DISK
         // ========================================================
 
-        Rectangle {
+        NexaUI.NexaCard {
             id: diskCard
-
-            property bool hovered: false
-            property bool pressed: false
 
             anchors {
                 top: parent.top
@@ -486,45 +484,12 @@ Item {
 
             height:
                 root.topCardHeight
-
-            radius:
-                Nexa.Theme.radiusMd
-
-            color: {
-                if (pressed)
-                    return Nexa.Theme.pressed
-
-                if (hovered)
-                    return Nexa.Theme.cardBackgroundElevated
-
-                return Nexa.Theme.cardBackground
-            }
-
-            border.width:
-                Nexa.Theme.borderThin
-
-            border.color:
-                hovered
-                ? Nexa.Theme.borderStrong
-                : Nexa.Theme.border
-
+                
             clip: true
-
-
-            Behavior on color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationFast
-                }
-            }
-
-
-            Behavior on border.color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationFast
-                }
-            }
+            
+            padding: 0
+            interactive: true
+            onClicked: root.openMonitor()
 
 
             Text {
@@ -756,38 +721,7 @@ Item {
             }
 
 
-            MouseArea {
-                anchors.fill:
-                    parent
 
-                hoverEnabled:
-                    true
-
-                cursorShape:
-                    Qt.PointingHandCursor
-
-
-                onEntered:
-                    diskCard.hovered = true
-
-
-                onExited: {
-                    diskCard.hovered = false
-                    diskCard.pressed = false
-                }
-
-
-                onPressed:
-                    diskCard.pressed = true
-
-
-                onReleased:
-                    diskCard.pressed = false
-
-
-                onClicked:
-                    root.openMonitor()
-            }
         }
 
 
@@ -795,11 +729,8 @@ Item {
         // RAM
         // ========================================================
 
-        Rectangle {
+        NexaUI.NexaCard {
             id: ramCard
-
-            property bool hovered: false
-            property bool pressed: false
 
             anchors {
                 top: parent.top
@@ -813,37 +744,12 @@ Item {
 
             height:
                 root.topCardHeight
-
-            radius:
-                Nexa.Theme.radiusMd
-
-            color: {
-                if (pressed)
-                    return Nexa.Theme.pressed
-
-                if (hovered)
-                    return Nexa.Theme.cardBackgroundElevated
-
-                return Nexa.Theme.cardBackground
-            }
-
-            border.width:
-                Nexa.Theme.borderThin
-
-            border.color:
-                hovered
-                ? Nexa.Theme.borderStrong
-                : Nexa.Theme.border
-
+                
             clip: true
-
-
-            Behavior on color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationFast
-                }
-            }
+            
+            padding: 0
+            interactive: true
+            onClicked: root.openMonitor()
 
 
             Text {
@@ -1041,38 +947,7 @@ Item {
             }
 
 
-            MouseArea {
-                anchors.fill:
-                    parent
 
-                hoverEnabled:
-                    true
-
-                cursorShape:
-                    Qt.PointingHandCursor
-
-
-                onEntered:
-                    ramCard.hovered = true
-
-
-                onExited: {
-                    ramCard.hovered = false
-                    ramCard.pressed = false
-                }
-
-
-                onPressed:
-                    ramCard.pressed = true
-
-
-                onReleased:
-                    ramCard.pressed = false
-
-
-                onClicked:
-                    root.openMonitor()
-            }
         }
 
 
@@ -1080,11 +955,8 @@ Item {
         // CPU
         // ========================================================
 
-        Rectangle {
+        NexaUI.NexaCard {
             id: cpuCard
-
-            property bool hovered: false
-            property bool pressed: false
 
             anchors {
                 left: parent.left
@@ -1094,38 +966,12 @@ Item {
 
             height:
                 root.cpuCardHeight
-
-            radius:
-                Nexa.Theme.radiusMd
-
-            color: {
-                if (pressed)
-                    return Nexa.Theme.pressed
-
-                if (hovered)
-                    return Nexa.Theme.cardBackgroundElevated
-
-                return Nexa.Theme.cardBackground
-            }
-
-            border.width:
-                Nexa.Theme.borderThin
-
-            border.color:
-                hovered
-                ? Nexa.Theme.borderStrong
-                : Nexa.Theme.border
-
-            clip:
-                true
-
-
-            Behavior on color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationFast
-                }
-            }
+                
+            clip: true
+            
+            padding: 0
+            interactive: true
+            onClicked: root.openMonitor()
 
 
             Text {
@@ -1389,38 +1235,7 @@ Item {
             }
 
 
-            MouseArea {
-                anchors.fill:
-                    parent
 
-                hoverEnabled:
-                    true
-
-                cursorShape:
-                    Qt.PointingHandCursor
-
-
-                onEntered:
-                    cpuCard.hovered = true
-
-
-                onExited: {
-                    cpuCard.hovered = false
-                    cpuCard.pressed = false
-                }
-
-
-                onPressed:
-                    cpuCard.pressed = true
-
-
-                onReleased:
-                    cpuCard.pressed = false
-
-
-                onClicked:
-                    root.openMonitor()
-            }
         }
     }
 

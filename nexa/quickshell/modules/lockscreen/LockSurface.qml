@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 Item {
@@ -932,92 +933,15 @@ Item {
                 // UNLOCK / AUTH BUTTON
                 // =================================================
 
-                Rectangle {
+                NexaUI.NexaButton {
                     id: unlockButton
-
-                    anchors.verticalCenter:
-                        parent.verticalCenter
-
-                    width: 36
-                    height: 36
-
-                    radius: 10
-
-
-                    opacity:
-                        root.authenticating
-                        ? 0.55
-                        : 1
-
-
-                    color:
-                        unlockMouse.containsMouse
-                        && !root.authenticating
-                        ? Nexa.Theme.hover
-                        : "transparent"
-
-
-                    scale:
-                        unlockMouse.pressed
-                        && !root.authenticating
-                        ? 0.92
-                        : 1
-
-
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 100
-                        }
-                    }
-
-
-                    Text {
-                        anchors.centerIn:
-                            parent
-
-                        text:
-                            root.authenticating
-                            ? "…"
-                            : root.authenticated
-                                ? "✓"
-                                : "→"
-
-                        color:
-                            root.authFailed
-                            ? Nexa.Theme.error
-                            : Nexa.Theme.text
-
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize: 21
-
-                            weight:
-                                Nexa.Theme.fontWeightMedium
-                        }
-                    }
-
-
-                    MouseArea {
-                        id: unlockMouse
-
-                        anchors.fill:
-                            parent
-
-                        enabled:
-                            !root.authenticating
-
-                        hoverEnabled: true
-
-                        cursorShape:
-                            Qt.PointingHandCursor
-
-
-                        onClicked:
-                            root.submitPassword()
-                    }
+                    anchors.verticalCenter: parent.verticalCenter
+                    implicitWidth: 36
+                    implicitHeight: 36
+                    horizontalPadding: 0
+                    text: root.authenticating ? "…" : (root.authenticated ? "✓" : "→")
+                    interactive: !root.authenticating
+                    onClicked: root.submitPassword()
                 }
             }
         }

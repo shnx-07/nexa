@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Hyprland
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 PopupWindow {
     id: root
@@ -244,7 +245,7 @@ PopupWindow {
                     Repeater {
                         model: root.windowList
 
-                        delegate: Rectangle {
+                        delegate: NexaUI.NexaCard {
                             id: targetWinFrame
 
                             required property var modelData
@@ -256,26 +257,20 @@ PopupWindow {
                             x: Math.max(4, Math.min(miniDesktopCanvas.width - width - 4, (modelData && modelData.at ? modelData.at.x : 0) * scaleX))
                             y: Math.max(4, Math.min(miniDesktopCanvas.height - height - 4, (modelData && modelData.at ? modelData.at.y : 0) * scaleY))
 
-                            width: Math.max(70, Math.min(miniDesktopCanvas.width - 8, (modelData && modelData.size ? modelData.size.width : 400) * scaleX))
-                            height: Math.max(48, Math.min(miniDesktopCanvas.height - 8, (modelData && modelData.size ? modelData.size.height : 300) * scaleY))
+                            implicitWidth: Math.max(70, Math.min(miniDesktopCanvas.width - 8, (modelData && modelData.size ? modelData.size.width : 400) * scaleX))
+                            implicitHeight: Math.max(48, Math.min(miniDesktopCanvas.height - 8, (modelData && modelData.size ? modelData.size.height : 300) * scaleY))
 
                             radius: Nexa.Theme.radiusSm
+                            padding: 0
+                            interactive: true
 
-                            color: winArea.containsMouse
-                                ? Qt.rgba(Nexa.Theme.surfaceContainerHigh.r, Nexa.Theme.surfaceContainerHigh.g, Nexa.Theme.surfaceContainerHigh.b, 0.95)
-                                : Qt.rgba(30/255, 34/255, 42/255, 0.90)
-
-                            border.width: winArea.containsMouse ? 1.5 : 1
-                            border.color: winArea.containsMouse
-                                ? Nexa.Theme.primary
-                                : Qt.rgba(255/255, 255/255, 255/255, 0.20)
-
-                            Behavior on color {
-                                ColorAnimation { duration: Nexa.Theme.animationFast }
-                            }
-
-                            Behavior on border.color {
-                                ColorAnimation { duration: Nexa.Theme.animationFast }
+                            onClicked: {
+                                if (root.workspace) {
+                                    root.workspace.activate()
+                                }
+                                if (targetWinFrame.modelData && typeof targetWinFrame.modelData.focus === "function") {
+                                    targetWinFrame.modelData.focus()
+                                }
                             }
 
                             // Window Control Dots Accent
@@ -326,22 +321,6 @@ PopupWindow {
                                         family: Nexa.Theme.fontFamily
                                         pixelSize: 10
                                         weight: Nexa.Theme.fontWeightMedium
-                                    }
-                                }
-                            }
-
-                            MouseArea {
-                                id: winArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-
-                                onClicked: {
-                                    if (root.workspace) {
-                                        root.workspace.activate()
-                                    }
-                                    if (targetWinFrame.modelData && typeof targetWinFrame.modelData.focus === "function") {
-                                        targetWinFrame.modelData.focus()
                                     }
                                 }
                             }

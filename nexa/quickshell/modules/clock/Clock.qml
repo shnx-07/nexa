@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 Item {
@@ -572,79 +573,13 @@ Item {
                     // PAUSE / RESUME
                     // ============================================
 
-                    Rectangle {
+                    NexaUI.NexaButton {
                         id: hoverToggleButton
-
-                        property bool hovered: false
-                        property bool pressed: false
-
-
                         implicitWidth: 92
                         implicitHeight: 32
-
-
-                        radius:
-                            Nexa.Theme.radiusSm
-
-
-                        color: {
-                            if (pressed)
-                                return Nexa.Theme.buttonBackgroundPressed
-
-                            if (hovered)
-                                return Nexa.Theme.buttonBackgroundHover
-
-                            return Nexa.Theme.buttonBackground
-                        }
-
-
-                        Text {
-                            anchors.centerIn: parent
-
-                            text:
-                                root.stopwatchRunning
-                                ? "󰏤  Pause"
-                                : "󰐊  Resume"
-
-                            color:
-                                Nexa.Theme.text
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeSm
-
-                                weight:
-                                    Nexa.Theme.fontWeightMedium
-                            }
-                        }
-
-
-                        MouseArea {
-                            anchors.fill: parent
-
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-
-                            onEntered:
-                                hoverToggleButton.hovered = true
-
-                            onExited: {
-                                hoverToggleButton.hovered = false
-                                hoverToggleButton.pressed = false
-                            }
-
-                            onPressed:
-                                hoverToggleButton.pressed = true
-
-                            onReleased:
-                                hoverToggleButton.pressed = false
-
-                            onClicked:
-                                root.toggleStopwatch()
-                        }
+                        icon: root.stopwatchRunning ? "󰏤" : "󰐊"
+                        text: root.stopwatchRunning ? "Pause" : "Resume"
+                        onClicked: root.toggleStopwatch()
                     }
 
 
@@ -652,76 +587,13 @@ Item {
                     // RESTART
                     // ============================================
 
-                    Rectangle {
+                    NexaUI.NexaButton {
                         id: hoverRestartButton
-
-                        property bool hovered: false
-                        property bool pressed: false
-
-
                         implicitWidth: 96
                         implicitHeight: 32
-
-                        radius:
-                            Nexa.Theme.radiusSm
-
-
-                        color: {
-                            if (pressed)
-                                return Nexa.Theme.buttonBackgroundPressed
-
-                            if (hovered)
-                                return Nexa.Theme.buttonBackgroundHover
-
-                            return Nexa.Theme.buttonBackground
-                        }
-
-
-                        Text {
-                            anchors.centerIn: parent
-
-                            text:
-                                "󰑐  Restart"
-
-                            color:
-                                Nexa.Theme.text
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeSm
-
-                                weight:
-                                    Nexa.Theme.fontWeightMedium
-                            }
-                        }
-
-
-                        MouseArea {
-                            anchors.fill: parent
-
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-
-                            onEntered:
-                                hoverRestartButton.hovered = true
-
-                            onExited: {
-                                hoverRestartButton.hovered = false
-                                hoverRestartButton.pressed = false
-                            }
-
-                            onPressed:
-                                hoverRestartButton.pressed = true
-
-                            onReleased:
-                                hoverRestartButton.pressed = false
-
-                            onClicked:
-                                root.restartStopwatch()
-                        }
+                        icon: "󰑐"
+                        text: "Restart"
+                        onClicked: root.restartStopwatch()
                     }
                 }
             }
@@ -773,90 +645,14 @@ Item {
                 ]
 
 
-                delegate: Rectangle {
+                delegate: NexaUI.NexaButton {
                     id: pageButton
-
                     required property var modelData
-
-                    property bool hovered: false
-                    property bool pressed: false
-
-
-                    readonly property bool selected:
-                        root.page
-                        === modelData.page
-
-
                     implicitWidth: 118
                     implicitHeight: 32
-
-
-                    radius:
-                        Nexa.Theme.radiusSm
-
-
-                    color: {
-                        if (selected)
-                            return Nexa.Theme.selected
-
-                        if (pressed)
-                            return Nexa.Theme.pressed
-
-                        if (hovered)
-                            return Nexa.Theme.hover
-
-                        return "transparent"
-                    }
-
-
-                    Text {
-                        anchors.centerIn: parent
-
-                        text:
-                            pageButton.modelData.label
-
-                        color:
-                            pageButton.selected
-                            ? Nexa.Theme.selectedText
-                            : Nexa.Theme.mutedText
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSizeSm
-
-                            weight:
-                                Nexa.Theme.fontWeightDemiBold
-                        }
-                    }
-
-
-                    MouseArea {
-                        anchors.fill: parent
-
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-
-                        onEntered:
-                            pageButton.hovered = true
-
-                        onExited: {
-                            pageButton.hovered = false
-                            pageButton.pressed = false
-                        }
-
-                        onPressed:
-                            pageButton.pressed = true
-
-                        onReleased:
-                            pageButton.pressed = false
-
-                        onClicked:
-                            root.page =
-                                pageButton.modelData.page
-                    }
+                    text: modelData.label
+                    selected: root.page === modelData.page
+                    onClicked: root.page = modelData.page
                 }
             }
         }
@@ -1043,44 +839,11 @@ Item {
 
 
                             // Previous
-                            Rectangle {
+                            NexaUI.NexaButton {
                                 implicitWidth: 32
                                 implicitHeight: 30
-
-                                radius:
-                                    Nexa.Theme.radiusSm
-
-                                color:
-                                    Nexa.Theme.buttonBackground
-
-
-                                Text {
-                                    anchors.centerIn: parent
-
-                                    text: "󰅁"
-
-                                    color:
-                                        Nexa.Theme.text
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.iconFontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.iconSm
-                                    }
-                                }
-
-
-                                MouseArea {
-                                    anchors.fill: parent
-
-                                    cursorShape:
-                                        Qt.PointingHandCursor
-
-                                    onClicked:
-                                        root.previousMonth()
-                                }
+                                icon: "󰅁"
+                                onClicked: root.previousMonth()
                             }
 
 
@@ -1114,89 +877,20 @@ Item {
 
 
                             // Current
-                            Rectangle {
+                            NexaUI.NexaButton {
                                 implicitWidth: 80
                                 implicitHeight: 30
-
-                                radius:
-                                    Nexa.Theme.radiusSm
-
-                                color:
-                                    Nexa.Theme.buttonBackground
-
-
-                                Text {
-                                    anchors.centerIn: parent
-
-                                    text: "Current"
-
-                                    color:
-                                        Nexa.Theme.text
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSizeXs
-
-                                        weight:
-                                            Nexa.Theme.fontWeightMedium
-                                    }
-                                }
-
-
-                                MouseArea {
-                                    anchors.fill: parent
-
-                                    cursorShape:
-                                        Qt.PointingHandCursor
-
-                                    onClicked:
-                                        root.goCurrentMonth()
-                                }
+                                text: "Current"
+                                onClicked: root.goCurrentMonth()
                             }
 
 
                             // Next
-                            Rectangle {
+                            NexaUI.NexaButton {
                                 implicitWidth: 32
                                 implicitHeight: 30
-
-                                radius:
-                                    Nexa.Theme.radiusSm
-
-                                color:
-                                    Nexa.Theme.buttonBackground
-
-
-                                Text {
-                                    anchors.centerIn: parent
-
-                                    text: "󰅂"
-
-                                    color:
-                                        Nexa.Theme.text
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.iconFontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.iconSm
-                                    }
-                                }
-
-
-                                MouseArea {
-                                    anchors.fill: parent
-
-                                    cursorShape:
-                                        Qt.PointingHandCursor
-
-                                    onClicked:
-                                        root.nextMonth()
-                                }
+                                icon: "󰅂"
+                                onClicked: root.nextMonth()
                             }
                         }
 
@@ -1410,89 +1104,13 @@ Item {
                         // START / PAUSE / RESUME
                         // ----------------------------------------
 
-                        Rectangle {
+                        NexaUI.NexaButton {
                             id: fullToggleButton
-
-                            property bool hovered: false
-                            property bool pressed: false
-
-
                             implicitWidth: 120
                             implicitHeight: 38
-
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-
-                            color: {
-                                if (pressed)
-                                    return Nexa.Theme.buttonBackgroundPressed
-
-                                if (hovered)
-                                    return Nexa.Theme.buttonBackgroundHover
-
-                                return Nexa.Theme.buttonBackground
-                            }
-
-
-                            Text {
-                                anchors.centerIn: parent
-
-
-                                text:
-                                    root.stopwatchRunning
-                                    ? "󰏤  Pause"
-                                    : root.stopwatchElapsed > 0
-                                        ? "󰐊  Resume"
-                                        : "󰐊  Start"
-
-
-                                color:
-                                    Nexa.Theme.text
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSizeSm
-
-                                    weight:
-                                        Nexa.Theme.fontWeightDemiBold
-                                }
-                            }
-
-
-                            MouseArea {
-                                anchors.fill: parent
-
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-
-
-                                onEntered:
-                                    fullToggleButton.hovered = true
-
-
-                                onExited: {
-                                    fullToggleButton.hovered = false
-                                    fullToggleButton.pressed = false
-                                }
-
-
-                                onPressed:
-                                    fullToggleButton.pressed = true
-
-
-                                onReleased:
-                                    fullToggleButton.pressed = false
-
-
-                                onClicked:
-                                    root.toggleStopwatch()
-                            }
+                            icon: root.stopwatchRunning ? "󰏤" : "󰐊"
+                            text: root.stopwatchRunning ? "Pause" : (root.stopwatchElapsed > 0 ? "Resume" : "Start")
+                            onClicked: root.toggleStopwatch()
                         }
 
 
@@ -1500,93 +1118,15 @@ Item {
                         // RESTART
                         // ----------------------------------------
 
-                        Rectangle {
+                        NexaUI.NexaButton {
                             id: fullRestartButton
-
-                            property bool hovered: false
-                            property bool pressed: false
-
-
                             implicitWidth: 110
                             implicitHeight: 38
-
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-
-                            color: {
-                                if (!root.stopwatchActive)
-                                    return "transparent"
-
-                                if (pressed)
-                                    return Nexa.Theme.buttonBackgroundPressed
-
-                                if (hovered)
-                                    return Nexa.Theme.buttonBackgroundHover
-
-                                return Nexa.Theme.buttonBackground
-                            }
-
-
-                            Text {
-                                anchors.centerIn: parent
-
-                                text: "󰑐  Restart"
-
-                                color:
-                                    root.stopwatchActive
-                                    ? Nexa.Theme.text
-                                    : Nexa.Theme.mutedText
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSizeSm
-
-                                    weight:
-                                        Nexa.Theme.fontWeightMedium
-                                }
-                            }
-
-
-                            MouseArea {
-                                anchors.fill: parent
-
-                                enabled:
-                                    root.stopwatchActive
-
-                                hoverEnabled: true
-
-                                cursorShape:
-                                    enabled
-                                    ? Qt.PointingHandCursor
-                                    : Qt.ArrowCursor
-
-
-                                onEntered:
-                                    fullRestartButton.hovered = true
-
-
-                                onExited: {
-                                    fullRestartButton.hovered = false
-                                    fullRestartButton.pressed = false
-                                }
-
-
-                                onPressed:
-                                    fullRestartButton.pressed = true
-
-
-                                onReleased:
-                                    fullRestartButton.pressed = false
-
-
-                                onClicked:
-                                    root.restartStopwatch()
-                            }
+                            icon: "󰑐"
+                            text: "Restart"
+                            interactive: root.stopwatchActive
+                            visible: root.stopwatchActive
+                            onClicked: root.restartStopwatch()
                         }
 
 
@@ -1594,93 +1134,15 @@ Item {
                         // RESET
                         // ----------------------------------------
 
-                        Rectangle {
+                        NexaUI.NexaButton {
                             id: fullResetButton
-
-                            property bool hovered: false
-                            property bool pressed: false
-
-
                             implicitWidth: 100
                             implicitHeight: 38
-
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-
-                            color: {
-                                if (!root.stopwatchActive)
-                                    return "transparent"
-
-                                if (pressed)
-                                    return Nexa.Theme.pressed
-
-                                if (hovered)
-                                    return Nexa.Theme.hover
-
-                                return "transparent"
-                            }
-
-
-                            Text {
-                                anchors.centerIn: parent
-
-                                text: "󰜉  Reset"
-
-                                color:
-                                    root.stopwatchActive
-                                    ? Nexa.Theme.text
-                                    : Nexa.Theme.mutedText
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSizeSm
-
-                                    weight:
-                                        Nexa.Theme.fontWeightMedium
-                                }
-                            }
-
-
-                            MouseArea {
-                                anchors.fill: parent
-
-                                enabled:
-                                    root.stopwatchActive
-
-                                hoverEnabled: true
-
-                                cursorShape:
-                                    enabled
-                                    ? Qt.PointingHandCursor
-                                    : Qt.ArrowCursor
-
-
-                                onEntered:
-                                    fullResetButton.hovered = true
-
-
-                                onExited: {
-                                    fullResetButton.hovered = false
-                                    fullResetButton.pressed = false
-                                }
-
-
-                                onPressed:
-                                    fullResetButton.pressed = true
-
-
-                                onReleased:
-                                    fullResetButton.pressed = false
-
-
-                                onClicked:
-                                    root.resetStopwatch()
-                            }
+                            icon: "󰜉"
+                            text: "Reset"
+                            interactive: root.stopwatchActive
+                            visible: root.stopwatchActive
+                            onClicked: root.resetStopwatch()
                         }
                     }
                 }

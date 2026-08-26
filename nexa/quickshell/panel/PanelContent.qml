@@ -163,42 +163,23 @@ Item {
 
 
             RowLayout {
+                id: navLayout
                 anchors {
                     fill: parent
-
-                    leftMargin:
-                        Nexa.Theme.spacingMd
-
-                    rightMargin:
-                        Nexa.Theme.spacingMd
-
-                    topMargin:
-                        Nexa.Theme.spacingSm
-
-                    bottomMargin:
-                        Nexa.Theme.spacingSm
+                    leftMargin: Nexa.Theme.spacingMd
+                    rightMargin: Nexa.Theme.spacingMd
+                    topMargin: Nexa.Theme.spacingSm
+                    bottomMargin: Nexa.Theme.spacingSm
                 }
-
-                spacing:
-                    Nexa.Theme.spacingSm
-
-
-                // ====================================================
-                // NOTIFICATIONS
-                // ====================================================
+                spacing: Nexa.Theme.spacingSm
 
                 NavButton {
+                    id: navBtn0
                     Layout.fillWidth: true
-
                     icon: "󰂚"
-
-                    active:
-                        root.currentPage === 0
-
-
+                    active: root.currentPage === 0
                     onClicked: {
                         root.currentPage = 0
-
                         Quickshell.execDetached([
                             "sh",
                             "-c",
@@ -207,55 +188,38 @@ Item {
                     }
                 }
 
-
-                // ====================================================
-                // QUICK SETTINGS
-                // ====================================================
-
                 NavButton {
+                    id: navBtn1
                     Layout.fillWidth: true
-
                     icon: "󰒓"
-
-                    active:
-                        root.currentPage === 1
-
-                    onClicked:
-                        root.currentPage = 1
+                    active: root.currentPage === 1
+                    onClicked: root.currentPage = 1
                 }
 
-
-                // ====================================================
-                // WEATHER
-                // ====================================================
-
                 NavButton {
+                    id: navBtn2
                     Layout.fillWidth: true
-
                     icon: "󰖐"
-
-                    active:
-                        root.currentPage === 2
-
-                    onClicked:
-                        root.currentPage = 2
+                    active: root.currentPage === 2
+                    onClicked: root.currentPage = 2
                 }
 
-
-                // ====================================================
-                // PROFILE
-                // ====================================================
-
                 NavButton {
+                    id: navBtn3
                     Layout.fillWidth: true
-
                     icon: ""
+                    active: root.currentPage === 3
+                    onClicked: root.currentPage = 3
+                }
+            }
 
-                    active:
-                        root.currentPage === 3
-
-                    onClicked:
-                        root.currentPage = 3
+            Nexa.Components.ActiveIndicator {
+                y: navLayout.y + navLayout.height - height / 2
+                x: {
+                    let activeBtn = root.currentPage === 0 ? navBtn0 :
+                                    root.currentPage === 1 ? navBtn1 :
+                                    root.currentPage === 2 ? navBtn2 : navBtn3;
+                    return navLayout.x + activeBtn.x + activeBtn.width / 2 - width / 2;
                 }
             }
         }
@@ -266,7 +230,7 @@ Item {
     // NAV BUTTON
     // ============================================================
 
-    component NavButton: Rectangle {
+    component NavButton: Item {
         id: button
 
         property string icon: ""
@@ -274,91 +238,41 @@ Item {
 
         signal clicked()
 
+        implicitHeight: Nexa.Theme.controlHeightLg
 
-        implicitHeight:
-            Nexa.Theme.controlHeightLg
-
-        radius:
-            Nexa.Theme.radiusMd
-
-
-        color:
-            active
-            ? Nexa.Theme.selectedOverlay
-            : mouseArea.containsMouse
-              ? Nexa.Theme.hover
-              : "transparent"
-
-
-        scale:
-            mouseArea.pressed
-            ? Nexa.Theme.pressScale
-            : Nexa.Theme.normalScale
-
-
-        Behavior on color {
-            ColorAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-            }
-        }
-
+        scale: mouseArea.pressed ? Nexa.Theme.pressScale : Nexa.Theme.normalScale
 
         Behavior on scale {
             NumberAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-
-                easing.type:
-                    Nexa.Theme.easingStandard
+                duration: Nexa.Theme.animationFast
+                easing.type: Nexa.Theme.easingStandard
             }
         }
 
+        Rectangle {
+            anchors.fill: parent
+            radius: Nexa.Theme.radiusMd
+            color: mouseArea.containsMouse && !button.active ? Nexa.Theme.hover : "transparent"
+            Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+        }
 
         Text {
             anchors.centerIn: parent
-
-            text:
-                button.icon
-
-            color:
-                button.active
-                ? Nexa.Theme.primary
-                : mouseArea.containsMouse
-                  ? Nexa.Theme.text
-                  : Nexa.Theme.mutedText
-
-
+            text: button.icon
+            color: button.active ? Nexa.Theme.primary : mouseArea.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
             font {
-                family:
-                    Nexa.Theme.iconFontFamily
-
-                pixelSize:
-                    Nexa.Theme.iconMd
+                family: Nexa.Theme.iconFontFamily
+                pixelSize: Nexa.Theme.iconMd
             }
-
-
-            Behavior on color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationFast
-                }
-            }
+            Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
         }
-
 
         MouseArea {
             id: mouseArea
-
             anchors.fill: parent
-
             hoverEnabled: true
-
-            cursorShape:
-                Qt.PointingHandCursor
-
-            onClicked:
-                button.clicked()
+            cursorShape: Qt.PointingHandCursor
+            onClicked: button.clicked()
         }
     }
 }

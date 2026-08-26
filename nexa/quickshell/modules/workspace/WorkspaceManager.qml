@@ -7,6 +7,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 PanelWindow {
@@ -1303,7 +1304,7 @@ PanelWindow {
 
 
               delegate:
-                  Rectangle {
+                  NexaUI.NexaCard {
                       id: workspaceTile
 
                       required property var modelData
@@ -1335,12 +1336,10 @@ PanelWindow {
                           )
 
 
-                      width:
-                          manager.workspacePreviewWidth
-
-                      height:
-                          manager.workspacePreviewHeight
-
+                      implicitWidth: manager.workspacePreviewWidth
+                      implicitHeight: manager.workspacePreviewHeight
+                      padding: 0
+                      selected: modelData.active
 
                       scale:
                           workspaceDrop.containsDrag
@@ -1354,16 +1353,6 @@ PanelWindow {
                                   Nexa.Theme.motionInteraction
                           }
                       }
-
-
-                      radius:
-                          Nexa.Theme.radiusLg
-
-
-                      color:
-                          modelData.active
-                          ? Nexa.Theme.selectedSurface
-                          : Nexa.Theme.cardBackground
 
 
                       border.width:
@@ -1753,7 +1742,7 @@ PanelWindow {
 
 
                     delegate:
-                        Rectangle {
+                        NexaUI.NexaCard {
                             id: specialTile
 
 
@@ -1769,12 +1758,10 @@ PanelWindow {
                                 )
 
 
-                            width:
-                                manager.workspacePreviewWidth
-
-
-                           height:
-                                manager.workspacePreviewHeight
+                            implicitWidth: manager.workspacePreviewWidth
+                            implicitHeight: manager.workspacePreviewHeight
+                            padding: 0
+                            selected: modelData.active
 
                             scale:
                                 specialDrop.containsDrag
@@ -1788,19 +1775,6 @@ PanelWindow {
                                         Nexa.Theme.motionInteraction
                                 }
                             }
-
-
-                            radius:
-                                Nexa.Theme.radiusMd
-
-
-                            color:
-                                specialDrop.containsDrag
-                                ? Nexa.Theme.primarySurfaceStrong
-                                : modelData.active
-                                  ? Nexa.Theme.secondarySurfaceStrong
-                                  : Nexa.Theme.cardBackgroundElevated
-
 
                             border.width:
                                 specialDrop.containsDrag

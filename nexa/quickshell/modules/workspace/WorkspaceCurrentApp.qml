@@ -4,8 +4,9 @@ import Quickshell
 import Quickshell.Wayland
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
-Rectangle {
+NexaUI.NexaCard {
     id: root
 
     // ------------------------------------------------------------
@@ -52,50 +53,15 @@ Rectangle {
     // SURFACE
     // ------------------------------------------------------------
 
-    color: mouse.pressed
-        ? Nexa.Theme.pressed
-        : mouse.containsMouse
-            ? Nexa.Theme.hoverStrong
-            : Nexa.Theme.surfaceContainerLow
-
-    border.width: Nexa.Theme.borderThin
-
-    border.color: mouse.containsMouse
-        ? Nexa.Theme.border
-        : Nexa.Theme.divider
-
-    // ------------------------------------------------------------
-    // MOTION
-    // ------------------------------------------------------------
-
-    scale: mouse.pressed
-        ? Nexa.Theme.pressScale
-        : mouse.containsMouse
-            ? Nexa.Theme.hoverScale
-            : Nexa.Theme.normalScale
+    interactive: true
+    padding: 0
+    
+    // We remove custom color, border, and scale behaviors
+    // as NexaUI.NexaCard handles them automatically.
 
     Behavior on width {
         NumberAnimation {
             duration: Nexa.Theme.motionSelection
-            easing.type: Nexa.Theme.easingStandard
-        }
-    }
-
-    Behavior on color {
-        ColorAnimation {
-            duration: Nexa.Theme.animationFast
-        }
-    }
-
-    Behavior on border.color {
-        ColorAnimation {
-            duration: Nexa.Theme.animationFast
-        }
-    }
-
-    Behavior on scale {
-        NumberAnimation {
-            duration: Nexa.Theme.animationFast
             easing.type: Nexa.Theme.easingStandard
         }
     }
@@ -136,7 +102,7 @@ Rectangle {
             smooth: true
             mipmap: true
 
-            scale: mouse.containsMouse ? 1.08 : 1.0
+            scale: root.hovered ? 1.08 : 1.0
 
             Behavior on scale {
                 NumberAnimation {
@@ -167,7 +133,7 @@ Rectangle {
 
             text: root.displayText
 
-            color: mouse.containsMouse
+            color: root.hovered
                 ? Nexa.Theme.text
                 : Nexa.Theme.mutedText
 
@@ -206,18 +172,5 @@ Rectangle {
         color: Nexa.Theme.mutedText
 
         opacity: Nexa.Theme.opacitySecondary
-    }
-
-    // ------------------------------------------------------------
-    // INTERACTION
-    // ------------------------------------------------------------
-
-    MouseArea {
-        id: mouse
-
-        anchors.fill: parent
-
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
     }
 }

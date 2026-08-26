@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../theme" as NTheme
+import "../../theme/components" as NexaUI
 
 
 PanelWindow {
@@ -771,65 +772,19 @@ PanelWindow {
                                         && root.selectedCategoryId
                                            === modelData.id
 
-                                    Rectangle {
+                                    NexaUI.NexaIconButton {
+                                        id: categoryBtn
+
                                         anchors.fill: parent
 
-                                        radius:
-                                            NTheme.Theme.radiusSm
+                                        icon: root.categoryIcon(
+                                            modelData.id,
+                                            modelData.name
+                                        )
 
-                                        color:
-                                            categoryDelegate.active
-                                            ? NTheme.Theme.selected
-                                            : categoryMouse.containsMouse
-                                              ? NTheme.Theme.hoverStrong
-                                              : "transparent"
+                                        selected: categoryDelegate.active
 
-                                        Behavior on color {
-                                            ColorAnimation {
-                                                duration:
-                                                    NTheme.Theme.animationFast
-                                            }
-                                        }
-
-                                        Text {
-                                            anchors.centerIn:
-                                                parent
-
-                                            text:
-                                                root.categoryIcon(
-                                                    modelData.id,
-                                                    modelData.name
-                                                )
-
-                                            color:
-                                                categoryDelegate.active
-                                                ? NTheme.Theme.selectedText
-                                                : NTheme.Theme.text
-
-                                            font.family:
-                                                NTheme.Theme.iconFontFamily
-
-                                            font.pixelSize:
-                                                NTheme.Theme.iconMd
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        id: categoryMouse
-
-                                        anchors.fill:
-                                            parent
-
-                                        hoverEnabled:
-                                            true
-
-                                        cursorShape:
-                                            Qt.PointingHandCursor
-
-                                        onClicked:
-                                            root.selectCategory(
-                                                modelData
-                                            )
+                                        onClicked: root.selectCategory(modelData)
                                     }
 
                                     NTheme.HoverInfo {
@@ -843,7 +798,7 @@ PanelWindow {
                                             NTheme.Theme.spacingXs
 
                                         visible:
-                                            categoryMouse.containsMouse
+                                            categoryBtn.hovered
 
                                         z: 1000
 
@@ -946,138 +901,99 @@ PanelWindow {
 
                             height: 72
 
-                            Rectangle {
-                                anchors.fill:
-                                    parent
+                            NexaUI.NexaCard {
+                                anchors.fill: parent
+                                padding: NTheme.Theme.spacingMd
+                                interactive: true
+                                onClicked: root.launchApplication(modelData)
 
-                                radius:
-                                    NTheme.Theme.radiusSm
+                                RowLayout {
+                                    anchors.fill:
+                                        parent
 
-                                color:
-                                    appMouse.pressed
-                                    ? NTheme.Theme.pressed
-                                    : appMouse.containsMouse
-                                      ? NTheme.Theme.hoverStrong
-                                      : "transparent"
+                                    spacing:
+                                        NTheme.Theme.spacingMd
 
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration:
-                                            NTheme.Theme.animationFast
+                                    Image {
+                                        Layout.preferredWidth: 48
+                                        Layout.preferredHeight: 48
+
+                                        source:
+                                            modelData.icon
+                                            ? Quickshell.iconPath(
+                                                  modelData.icon,
+                                                  "application-x-executable"
+                                              )
+                                            : Quickshell.iconPath(
+                                                  "application-x-executable"
+                                              )
+
+                                        sourceSize.width: 48
+                                        sourceSize.height: 48
+
+                                        fillMode:
+                                            Image.PreserveAspectFit
+
+                                        asynchronous: true
+                                        smooth: true
                                     }
-                                }
-                            }
 
-                            RowLayout {
-                                anchors.fill:
-                                    parent
-
-                                anchors.leftMargin:
-                                    NTheme.Theme.spacingMd
-
-                                anchors.rightMargin:
-                                    NTheme.Theme.spacingMd
-
-                                spacing:
-                                    NTheme.Theme.spacingMd
-
-                                Image {
-                                    Layout.preferredWidth: 48
-                                    Layout.preferredHeight: 48
-
-                                    source:
-                                        modelData.icon
-                                        ? Quickshell.iconPath(
-                                              modelData.icon,
-                                              "application-x-executable"
-                                          )
-                                        : Quickshell.iconPath(
-                                              "application-x-executable"
-                                          )
-
-                                    sourceSize.width: 48
-                                    sourceSize.height: 48
-
-                                    fillMode:
-                                        Image.PreserveAspectFit
-
-                                    asynchronous: true
-                                    smooth: true
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-
-                                    spacing: 2
-
-                                    Text {
+                                    ColumnLayout {
                                         Layout.fillWidth: true
 
-                                        text:
-                                            modelData.name
+                                        spacing: 2
 
-                                        color:
-                                            NTheme.Theme.text
+                                        Text {
+                                            Layout.fillWidth: true
 
-                                        font.family:
-                                            NTheme.Theme.fontFamily
+                                            text:
+                                                modelData.name
 
-                                        font.pixelSize:
-                                            NTheme.Theme.fontSizeLg
+                                            color:
+                                                NTheme.Theme.text
 
-                                        font.weight:
-                                            NTheme.Theme.fontWeightDemiBold
+                                            font.family:
+                                                NTheme.Theme.fontFamily
 
-                                        elide:
-                                            Text.ElideRight
+                                            font.pixelSize:
+                                                NTheme.Theme.fontSizeLg
 
-                                        maximumLineCount: 1
-                                    }
+                                            font.weight:
+                                                NTheme.Theme.fontWeightDemiBold
 
-                                    Text {
-                                        Layout.fillWidth: true
+                                            elide:
+                                                Text.ElideRight
 
-                                        text:
-                                            root.appDescription(
-                                                modelData
-                                            )
+                                            maximumLineCount: 1
+                                        }
 
-                                        visible:
-                                            text.length > 0
+                                        Text {
+                                            Layout.fillWidth: true
 
-                                        color:
-                                            NTheme.Theme.mutedText
+                                            text:
+                                                root.appDescription(
+                                                    modelData
+                                                )
 
-                                        font.family:
-                                            NTheme.Theme.fontFamily
+                                            visible:
+                                                text.length > 0
 
-                                        font.pixelSize:
-                                            NTheme.Theme.fontSizeSm
+                                            color:
+                                                NTheme.Theme.mutedText
 
-                                        elide:
-                                            Text.ElideRight
+                                            font.family:
+                                                NTheme.Theme.fontFamily
 
-                                        maximumLineCount: 1
+                                            font.pixelSize:
+                                                NTheme.Theme.fontSizeSm
+
+                                            elide:
+                                                Text.ElideRight
+
+                                            maximumLineCount: 1
+                                        }
                                     }
                                 }
-                            }
-
-                            MouseArea {
-                                id: appMouse
-
-                                anchors.fill:
-                                    parent
-
-                                hoverEnabled:
-                                    true
-
-                                cursorShape:
-                                    Qt.PointingHandCursor
-
-                                onClicked:
-                                    root.launchApplication(
-                                        modelData
-                                    )
                             }
                         }
 

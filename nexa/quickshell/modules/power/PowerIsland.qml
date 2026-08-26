@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 Item {
     id: root
@@ -211,9 +212,8 @@ Item {
     // POWER CARD
     // ============================================================
 
-    component PowerCard: Rectangle {
+    component PowerCard: NexaUI.NexaCard {
         id: card
-
 
         required property string number
         required property string label
@@ -223,20 +223,8 @@ Item {
 
         signal triggered()
 
-
-        // ========================================================
-        // SIZE
-        // ========================================================
-
         width: 138
         height: 120
-
-        radius: 10
-
-
-        // ========================================================
-        // STAGGERED SLIDE-UP ENTRANCE
-        // ========================================================
 
         opacity: popupVisible ? 1.0 : 0.0
         y: popupVisible ? 0 : 14
@@ -261,166 +249,48 @@ Item {
             }
         }
 
-
-        // ========================================================
-        // GLASS BACKGROUND
-        // ========================================================
-
-        color:
-            cardMouse.containsMouse
-            ? Nexa.Theme.hover
-            : "transparent"
-
-
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.border
-
-
-        // ========================================================
-        // SCALE
-        // ========================================================
-
-        scale:
-            cardMouse.pressed
-            ? 0.97
-            : cardMouse.containsMouse
-                ? 1.02
-                : 1.0
-
-
-        // ========================================================
-        // ANIMATIONS
-        // ========================================================
-
-        Behavior on color {
-            ColorAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-            }
+        interactive: true
+        padding: 0
+        onClicked: {
+            console.log("NEXA power button clicked:", card.number)
+            card.triggered()
         }
-
-
-        Behavior on scale {
-            NumberAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-
-                easing.type:
-                    Nexa.Theme.easingStandard
-            }
-        }
-
-
-        // ========================================================
-        // CONTENT
-        // ========================================================
 
         Column {
             anchors.centerIn: parent
-
             spacing: 6
 
-
-            // ----------------------------------------------------
-            // LARGE ICON
-            // ----------------------------------------------------
-
             Text {
-                anchors.horizontalCenter:
-                    parent.horizontalCenter
-
-                text:
-                    card.icon
-
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: card.icon
                 color: Nexa.Theme.text
-
                 font {
-                    family:
-                        Nexa.Theme.fontFamily
-
+                    family: Nexa.Theme.fontFamily
                     pixelSize: 31
-
-                    weight:
-                        Nexa.Theme.fontWeightMedium
+                    weight: Nexa.Theme.fontWeightMedium
                 }
             }
 
-
-            // ----------------------------------------------------
-            // ACTION LABEL
-            // ----------------------------------------------------
-
             Text {
-                anchors.horizontalCenter:
-                    parent.horizontalCenter
-
-                text:
-                    card.label
-
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: card.label
                 color: Nexa.Theme.text
-
                 font {
-                    family:
-                        Nexa.Theme.fontFamily
-
+                    family: Nexa.Theme.fontFamily
                     pixelSize: Nexa.Theme.fontSizeSm
-
-                    weight:
-                        Nexa.Theme.fontWeightMedium
+                    weight: Nexa.Theme.fontWeightMedium
                 }
             }
-
-
-            // ----------------------------------------------------
-            // SMALL SHORTCUT NUMBER
-            // ----------------------------------------------------
 
             Text {
-                anchors.horizontalCenter:
-                    parent.horizontalCenter
-
-                text:
-                    card.number
-
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: card.number
                 color: Nexa.Theme.mutedText
-
                 font {
-                    family:
-                        Nexa.Theme.fontFamily
-
+                    family: Nexa.Theme.fontFamily
                     pixelSize: 9
-
-                    weight:
-                        Nexa.Theme.fontWeightMedium
+                    weight: Nexa.Theme.fontWeightMedium
                 }
-            }
-        }
-
-
-        // ========================================================
-        // BUTTON INPUT
-        // ========================================================
-
-        MouseArea {
-            id: cardMouse
-
-            anchors.fill: parent
-
-            z: 20
-
-            hoverEnabled: true
-
-            cursorShape:
-                Qt.PointingHandCursor
-
-
-            onClicked: {
-                console.log(
-                    "NEXA power button clicked:",
-                    card.number
-                )
-
-                card.triggered()
             }
         }
     }

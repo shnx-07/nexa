@@ -3,6 +3,7 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import "../theme" as ThemeModule
+import "../theme/components" as NexaUI
 
 import "../modules/audio" as AudioModule
 import "../modules/brightness" as BrightnessModule
@@ -179,72 +180,6 @@ Item {
 
 
     // ============================================================
-    // SHARED SLIDER
-    // ============================================================
-
-    component NexaSlider: Slider {
-        id: control
-
-        implicitHeight: 28
-        padding: 0
-
-        background: Item {
-            x: control.leftPadding
-            y: control.topPadding + (control.availableHeight - height) / 2
-            width: control.availableWidth
-            height: 14
-
-            // Track
-            Rectangle {
-                anchors.fill: parent
-                radius: root.theme.radiusPill
-                color: root.theme.surfaceContainerHighest
-                border.width: root.theme.borderThin
-                border.color: root.theme.border
-            }
-
-            // Fill
-            Rectangle {
-                width: Math.max(height, control.visualPosition * parent.width)
-                height: parent.height
-                radius: root.theme.radiusPill
-                color: control.pressed
-                    ? root.theme.primary
-                    : root.theme.primaryContainer
-
-                Behavior on color {
-                    ColorAnimation { duration: root.theme.animationFast }
-                }
-                Behavior on width {
-                    NumberAnimation {
-                        duration: control.pressed ? 0 : root.theme.animationFast
-                        easing.type: root.theme.easingStandard
-                    }
-                }
-            }
-        }
-
-        handle: Rectangle {
-            x: control.leftPadding + control.visualPosition * (control.availableWidth - width)
-            y: control.topPadding + (control.availableHeight - height) / 2
-            width: 22
-            height: 22
-            radius: root.theme.radiusPill
-            color: root.theme.primaryText
-            border.width: 2
-            border.color: root.theme.primary
-
-            layer.enabled: true
-
-            scale: control.pressed ? 0.88 : 1.0
-            Behavior on scale {
-                NumberAnimation { duration: root.theme.animationFast; easing.type: root.theme.easingEmphasized }
-            }
-        }
-    }
-
-
-    // ============================================================
     // CONTENT
     // ============================================================
 
@@ -345,30 +280,20 @@ Item {
                 // WI-FI
                 // ========================================================
 
-                Rectangle {
+                NexaUI.NexaCard {
                     width: (parent.width - theme.spacingSm) / 2
                     height: 80
-                    radius: theme.radiusMd
                     clip: true
 
-                    color: wifiMouse.containsMouse && !wifi.enabled
-                        ? theme.hoverStrong
-                        : wifi.enabled
-                            ? theme.primaryContainer
-                            : theme.cardBackgroundElevated
-
-                    Behavior on color { ColorAnimation { duration: theme.animationFast } }
-
-                    scale: wifiMouse.pressed ? root.theme.pressScale : 1.0
-                    Behavior on scale { NumberAnimation { duration: theme.animationFast; easing.type: theme.easingStandard } }
+                    interactive: true
+                    selected: wifi.enabled
+                    onClicked: wifi.toggle()
 
                     Column {
                         anchors {
                             left: parent.left
                             right: parent.right
                             verticalCenter: parent.verticalCenter
-                            leftMargin: theme.spacingMd
-                            rightMargin: theme.spacingMd
                         }
                         spacing: 3
 
@@ -406,14 +331,6 @@ Item {
                             font.pixelSize: theme.fontSizeXs
                         }
                     }
-
-                    MouseArea {
-                        id: wifiMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: wifi.toggle()
-                    }
                 }
 
 
@@ -421,30 +338,20 @@ Item {
                 // BLUETOOTH
                 // ========================================================
 
-                Rectangle {
+                NexaUI.NexaCard {
                     width: (parent.width - theme.spacingSm) / 2
                     height: 80
-                    radius: theme.radiusMd
                     clip: true
 
-                    color: btMouse.containsMouse && !bluetooth.enabled
-                        ? theme.hoverStrong
-                        : bluetooth.enabled
-                            ? theme.primaryContainer
-                            : theme.cardBackgroundElevated
-
-                    Behavior on color { ColorAnimation { duration: theme.animationFast } }
-
-                    scale: btMouse.pressed ? root.theme.pressScale : 1.0
-                    Behavior on scale { NumberAnimation { duration: theme.animationFast; easing.type: theme.easingStandard } }
+                    interactive: true
+                    selected: bluetooth.enabled
+                    onClicked: bluetooth.toggle()
 
                     Column {
                         anchors {
                             left: parent.left
                             right: parent.right
                             verticalCenter: parent.verticalCenter
-                            leftMargin: theme.spacingMd
-                            rightMargin: theme.spacingMd
                         }
                         spacing: 3
 
@@ -475,14 +382,6 @@ Item {
                             font.pixelSize: theme.fontSizeXs
                         }
                     }
-
-                    MouseArea {
-                        id: btMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: bluetooth.toggle()
-                    }
                 }
 
 
@@ -490,30 +389,20 @@ Item {
                 // AIRPLANE
                 // ========================================================
 
-                Rectangle {
+                NexaUI.NexaCard {
                     width: (parent.width - theme.spacingSm) / 2
                     height: 80
-                    radius: theme.radiusMd
                     clip: true
 
-                    color: airplaneMouse.containsMouse && !airplane.enabled
-                        ? theme.hoverStrong
-                        : airplane.enabled
-                            ? theme.primaryContainer
-                            : theme.cardBackgroundElevated
-
-                    Behavior on color { ColorAnimation { duration: theme.animationFast } }
-
-                    scale: airplaneMouse.pressed ? root.theme.pressScale : 1.0
-                    Behavior on scale { NumberAnimation { duration: theme.animationFast; easing.type: theme.easingStandard } }
+                    interactive: true
+                    selected: airplane.enabled
+                    onClicked: airplane.toggle()
 
                     Column {
                         anchors {
                             left: parent.left
                             right: parent.right
                             verticalCenter: parent.verticalCenter
-                            leftMargin: theme.spacingMd
-                            rightMargin: theme.spacingMd
                         }
                         spacing: 3
 
@@ -543,14 +432,6 @@ Item {
                             font.pixelSize: theme.fontSizeXs
                         }
                     }
-
-                    MouseArea {
-                        id: airplaneMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: airplane.toggle()
-                    }
                 }
 
 
@@ -558,31 +439,21 @@ Item {
                 // VPN
                 // ========================================================
 
-                Rectangle {
+                NexaUI.NexaCard {
                     width: (parent.width - theme.spacingSm) / 2
                     height: 80
-                    radius: theme.radiusMd
                     clip: true
                     opacity: vpn.available ? 1.0 : 0.45
 
-                    color: vpnMouse.containsMouse && !vpn.enabled
-                        ? theme.hoverStrong
-                        : vpn.enabled
-                            ? theme.primaryContainer
-                            : theme.cardBackgroundElevated
-
-                    Behavior on color { ColorAnimation { duration: theme.animationFast } }
-
-                    scale: vpnMouse.pressed ? root.theme.pressScale : 1.0
-                    Behavior on scale { NumberAnimation { duration: theme.animationFast; easing.type: theme.easingStandard } }
+                    interactive: vpn.available
+                    selected: vpn.enabled
+                    onClicked: vpn.toggle()
 
                     Column {
                         anchors {
                             left: parent.left
                             right: parent.right
                             verticalCenter: parent.verticalCenter
-                            leftMargin: theme.spacingMd
-                            rightMargin: theme.spacingMd
                         }
                         spacing: 3
 
@@ -612,15 +483,6 @@ Item {
                             font.family: theme.fontFamily
                             font.pixelSize: theme.fontSizeXs
                         }
-                    }
-
-                    MouseArea {
-                        id: vpnMouse
-                        anchors.fill: parent
-                        enabled: vpn.available
-                        hoverEnabled: true
-                        cursorShape: vpn.available ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        onClicked: vpn.toggle()
                     }
                 }
             }
@@ -716,71 +578,21 @@ Item {
                                 root.theme.spacingMd
 
 
-                            Rectangle {
+                            NexaUI.NexaIconButton {
                                 id: outputMuteButton
 
-                                width:
-                                    root.theme.controlHeightMd
+                                icon: audio.muted
+                                    ? "󰝟"
+                                    : (
+                                        audio.volume < 35
+                                        ? "󰕿"
+                                        : audio.volume < 70
+                                            ? "󰖀"
+                                            : "󰕾"
+                                    )
 
-                                height:
-                                    width
-
-                                radius:
-                                    root.theme.radiusMd
-
-                                color:
-                                    outputMuteMouse.pressed
-                                    ? root.theme.pressed
-                                    : outputMuteMouse.containsMouse
-                                        ? root.theme.hoverStrong
-                                        : audio.muted
-                                            ? root.theme.surfaceContainerHighest
-                                            : root.theme.primaryContainer
-
-
-                                Text {
-                                    anchors.centerIn:
-                                        parent
-
-                                    text:
-                                        audio.muted
-                                        ? "󰝟"
-                                        : (
-                                            audio.volume < 35
-                                            ? "󰕿"
-                                            : audio.volume < 70
-                                                ? "󰖀"
-                                                : "󰕾"
-                                        )
-
-                                    color:
-                                        audio.muted
-                                        ? root.theme.mutedText
-                                        : root.theme.primaryContainerText
-
-                                    font.family:
-                                        root.theme.iconFontFamily
-
-                                    font.pixelSize:
-                                        root.theme.iconMd
-                                }
-
-
-                                MouseArea {
-                                    id: outputMuteMouse
-
-                                    anchors.fill:
-                                        parent
-
-                                    hoverEnabled:
-                                        true
-
-                                    cursorShape:
-                                        Qt.PointingHandCursor
-
-                                    onClicked:
-                                        audio.toggleMute()
-                                }
+                                selected: !audio.muted
+                                onClicked: audio.toggleMute()
                             }
 
 
@@ -937,7 +749,7 @@ Item {
                         }
 
 
-                        NexaSlider {
+                        NexaUI.NexaSlider {
                             width:
                                 parent.width
 
@@ -948,19 +760,8 @@ Item {
                                 audio.volume
 
 
-                            onMoved:
-                                audio.setVolume(
-                                    value
-                                )
-
-
-                            onPressedChanged: {
-                                if (!pressed) {
-                                    audio.setVolumeImmediate(
-                                        value
-                                    )
-                                }
-                            }
+                            onMoved: (val) => audio.setVolume(val)
+                            onReleased: (val) => audio.setVolumeImmediate(val)
                         }
                     }
 
@@ -1223,7 +1024,7 @@ Item {
                                 }
 
 
-                                NexaSlider {
+                                NexaUI.NexaSlider {
                                     width:
                                         parent.width
 
@@ -1236,21 +1037,8 @@ Item {
                                         modelData.volume
 
 
-                                    onMoved:
-                                        audio.setAppVolume(
-                                            modelData.id,
-                                            value
-                                        )
-
-
-                                    onPressedChanged: {
-                                        if (!pressed) {
-                                            audio.setAppVolumeImmediate(
-                                                modelData.id,
-                                                value
-                                            )
-                                        }
-                                    }
+                                    onMoved: (val) => audio.setAppVolume(modelData.id, val)
+                                    onReleased: (val) => audio.setAppVolumeImmediate(modelData.id, val)
                                 }
                             }
                         }
@@ -1440,7 +1228,7 @@ Item {
                         }
 
 
-                        NexaSlider {
+                        NexaUI.NexaSlider {
                             width:
                                 parent.width
 
@@ -1451,19 +1239,8 @@ Item {
                                 audio.inputVolume
 
 
-                            onMoved:
-                                audio.setInputVolume(
-                                    value
-                                )
-
-
-                            onPressedChanged: {
-                                if (!pressed) {
-                                    audio.setInputVolumeImmediate(
-                                        value
-                                    )
-                                }
-                            }
+                            onMoved: (val) => audio.setInputVolume(val)
+                            onReleased: (val) => audio.setInputVolumeImmediate(val)
                         }
                     }
                 }
@@ -1968,7 +1745,7 @@ Item {
                     }
 
 
-                    NexaSlider {
+                    NexaUI.NexaSlider {
                         width:
                             parent.width
 
@@ -1979,19 +1756,8 @@ Item {
                             brightness.brightness
 
 
-                        onMoved:
-                            brightness.setBrightness(
-                                value
-                            )
-
-
-                        onPressedChanged: {
-                            if (!pressed) {
-                                brightness.setBrightnessImmediate(
-                                    value
-                                )
-                            }
-                        }
+                        onMoved: (val) => brightness.setBrightness(val)
+                        onReleased: (val) => brightness.setBrightnessImmediate(val)
                     }
                 }
             }
@@ -2296,7 +2062,7 @@ Item {
                     // TEMPERATURE SLIDER
                     // ====================================================
 
-                    NexaSlider {
+                    NexaUI.NexaSlider {
                         id: temperatureSlider
 
                         width:
@@ -2333,10 +2099,7 @@ Item {
                         * During drag we update through the
                         * throttled backend path.
                         */
-                        onMoved:
-                            nightLight.setTemperature(
-                                value
-                            )
+                        onMoved: (val) => nightLight.setTemperature(val)
                     }
 
 

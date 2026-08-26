@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell.Services.Mpris
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 import Quickshell.Io
 
 Item {
@@ -773,92 +774,11 @@ Item {
                 // PREVIOUS
                 // ------------------------------------------------
 
-                Rectangle {
+                NexaUI.NexaIconButton {
                     id: hoverPrevious
-
-                    property bool hovered: false
-                    property bool pressed: false
-
-
-                    implicitWidth: 34
-                    implicitHeight: 34
-
-                    radius:
-                        Nexa.Theme.radiusSm
-
-
-                    color: {
-                        if (pressed)
-                            return Nexa.Theme.pressed
-
-                        if (hovered)
-                            return Nexa.Theme.hover
-
-                        return "transparent"
-                    }
-
-
-                    opacity:
-                        root.available
-                        && root.player.canGoPrevious
-                        ? 1
-                        : Nexa.Theme.opacityDisabled
-
-
-                    Text {
-                        anchors.centerIn: parent
-
-                        text: "󰒮"
-
-                        color:
-                            Nexa.Theme.text
-
-                        font {
-                            family:
-                                Nexa.Theme.iconFontFamily
-
-                            pixelSize:
-                                Nexa.Theme.iconMd
-                        }
-                    }
-
-
-                    MouseArea {
-                        anchors.fill: parent
-
-                        enabled:
-                            root.available
-                            && root.player.canGoPrevious
-
-                        hoverEnabled: true
-
-                        cursorShape:
-                            enabled
-                            ? Qt.PointingHandCursor
-                            : Qt.ArrowCursor
-
-
-                        onEntered:
-                            hoverPrevious.hovered = true
-
-
-                        onExited: {
-                            hoverPrevious.hovered = false
-                            hoverPrevious.pressed = false
-                        }
-
-
-                        onPressed:
-                            hoverPrevious.pressed = true
-
-
-                        onReleased:
-                            hoverPrevious.pressed = false
-
-
-                        onClicked:
-                            root.previous()
-                    }
+                    icon: "󰒮"
+                    interactive: root.available && root.player.canGoPrevious
+                    onClicked: root.previous()
                 }
 
 
@@ -866,95 +786,12 @@ Item {
                 // PLAY / PAUSE
                 // ------------------------------------------------
 
-                Rectangle {
+                NexaUI.NexaIconButton {
                     id: hoverToggle
-
-                    property bool hovered: false
-                    property bool pressed: false
-
-
-                    implicitWidth: 40
-                    implicitHeight: 40
-
-                    radius:
-                        Nexa.Theme.radiusPill
-
-
-                    color: {
-                        if (pressed)
-                            return Nexa.Theme.primaryContainer
-
-                        if (hovered)
-                            return Nexa.Theme.primaryContainer
-
-                        return Nexa.Theme.selected
-                    }
-
-
-                    opacity:
-                        root.available
-                        && root.player.canTogglePlaying
-                        ? 1
-                        : Nexa.Theme.opacityDisabled
-
-
-                    Text {
-                        anchors.centerIn: parent
-
-                        text:
-                            root.playing
-                            ? "󰏤"
-                            : "󰐊"
-
-                        color:
-                            Nexa.Theme.selectedText
-
-                        font {
-                            family:
-                                Nexa.Theme.iconFontFamily
-
-                            pixelSize:
-                                Nexa.Theme.iconMd
-                        }
-                    }
-
-
-                    MouseArea {
-                        anchors.fill: parent
-
-                        enabled:
-                            root.available
-                            && root.player.canTogglePlaying
-
-                        hoverEnabled: true
-
-                        cursorShape:
-                            enabled
-                            ? Qt.PointingHandCursor
-                            : Qt.ArrowCursor
-
-
-                        onEntered:
-                            hoverToggle.hovered = true
-
-
-                        onExited: {
-                            hoverToggle.hovered = false
-                            hoverToggle.pressed = false
-                        }
-
-
-                        onPressed:
-                            hoverToggle.pressed = true
-
-
-                        onReleased:
-                            hoverToggle.pressed = false
-
-
-                        onClicked:
-                            root.togglePlaying()
-                    }
+                    icon: root.playing ? "󰏤" : "󰐊"
+                    selected: true
+                    interactive: root.available && root.player.canTogglePlaying
+                    onClicked: root.togglePlaying()
                 }
 
 
@@ -962,92 +799,11 @@ Item {
                 // NEXT
                 // ------------------------------------------------
 
-                Rectangle {
+                NexaUI.NexaIconButton {
                     id: hoverNext
-
-                    property bool hovered: false
-                    property bool pressed: false
-
-
-                    implicitWidth: 34
-                    implicitHeight: 34
-
-                    radius:
-                        Nexa.Theme.radiusSm
-
-
-                    color: {
-                        if (pressed)
-                            return Nexa.Theme.pressed
-
-                        if (hovered)
-                            return Nexa.Theme.hover
-
-                        return "transparent"
-                    }
-
-
-                    opacity:
-                        root.available
-                        && root.player.canGoNext
-                        ? 1
-                        : Nexa.Theme.opacityDisabled
-
-
-                    Text {
-                        anchors.centerIn: parent
-
-                        text: "󰒭"
-
-                        color:
-                            Nexa.Theme.text
-
-                        font {
-                            family:
-                                Nexa.Theme.iconFontFamily
-
-                            pixelSize:
-                                Nexa.Theme.iconMd
-                        }
-                    }
-
-
-                    MouseArea {
-                        anchors.fill: parent
-
-                        enabled:
-                            root.available
-                            && root.player.canGoNext
-
-                        hoverEnabled: true
-
-                        cursorShape:
-                            enabled
-                            ? Qt.PointingHandCursor
-                            : Qt.ArrowCursor
-
-
-                        onEntered:
-                            hoverNext.hovered = true
-
-
-                        onExited: {
-                            hoverNext.hovered = false
-                            hoverNext.pressed = false
-                        }
-
-
-                        onPressed:
-                            hoverNext.pressed = true
-
-
-                        onReleased:
-                            hoverNext.pressed = false
-
-
-                        onClicked:
-                            root.next()
-                    }
+                    icon: "󰒭"
+                    interactive: root.available && root.player.canGoNext
+                    onClicked: root.next()
                 }
             }
         }
@@ -1477,92 +1233,11 @@ Item {
                     // PREVIOUS
                     // --------------------------------------------
 
-                    Rectangle {
+                    NexaUI.NexaIconButton {
                         id: fullPrevious
-
-                        property bool hovered: false
-                        property bool pressed: false
-
-
-                        implicitWidth: 44
-                        implicitHeight: 44
-
-                        radius:
-                            Nexa.Theme.radiusPill
-
-
-                        color: {
-                            if (pressed)
-                                return Nexa.Theme.pressed
-
-                            if (hovered)
-                                return Nexa.Theme.hover
-
-                            return "transparent"
-                        }
-
-
-                        opacity:
-                            root.available
-                            && root.player.canGoPrevious
-                            ? 1
-                            : Nexa.Theme.opacityDisabled
-
-
-                        Text {
-                            anchors.centerIn: parent
-
-                            text: "󰒮"
-
-                            color:
-                                Nexa.Theme.text
-
-                            font {
-                                family:
-                                    Nexa.Theme.iconFontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.iconLg
-                            }
-                        }
-
-
-                        MouseArea {
-                            anchors.fill: parent
-
-                            enabled:
-                                root.available
-                                && root.player.canGoPrevious
-
-                            hoverEnabled: true
-
-                            cursorShape:
-                                enabled
-                                ? Qt.PointingHandCursor
-                                : Qt.ArrowCursor
-
-
-                            onEntered:
-                                fullPrevious.hovered = true
-
-
-                            onExited: {
-                                fullPrevious.hovered = false
-                                fullPrevious.pressed = false
-                            }
-
-
-                            onPressed:
-                                fullPrevious.pressed = true
-
-
-                            onReleased:
-                                fullPrevious.pressed = false
-
-
-                            onClicked:
-                                root.previous()
-                        }
+                        icon: "󰒮"
+                        interactive: root.available && root.player.canGoPrevious
+                        onClicked: root.previous()
                     }
 
 
@@ -1570,95 +1245,12 @@ Item {
                     // PLAY / PAUSE
                     // --------------------------------------------
 
-                    Rectangle {
+                    NexaUI.NexaIconButton {
                         id: fullToggle
-
-                        property bool hovered: false
-                        property bool pressed: false
-
-
-                        implicitWidth: 56
-                        implicitHeight: 56
-
-                        radius:
-                            Nexa.Theme.radiusPill
-
-
-                        color: {
-                            if (pressed)
-                                return Nexa.Theme.primaryContainer
-
-                            if (hovered)
-                                return Nexa.Theme.primaryContainer
-
-                            return Nexa.Theme.selected
-                        }
-
-
-                        opacity:
-                            root.available
-                            && root.player.canTogglePlaying
-                            ? 1
-                            : Nexa.Theme.opacityDisabled
-
-
-                        Text {
-                            anchors.centerIn: parent
-
-                            text:
-                                root.playing
-                                ? "󰏤"
-                                : "󰐊"
-
-                            color:
-                                Nexa.Theme.selectedText
-
-                            font {
-                                family:
-                                    Nexa.Theme.iconFontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.iconLg
-                            }
-                        }
-
-
-                        MouseArea {
-                            anchors.fill: parent
-
-                            enabled:
-                                root.available
-                                && root.player.canTogglePlaying
-
-                            hoverEnabled: true
-
-                            cursorShape:
-                                enabled
-                                ? Qt.PointingHandCursor
-                                : Qt.ArrowCursor
-
-
-                            onEntered:
-                                fullToggle.hovered = true
-
-
-                            onExited: {
-                                fullToggle.hovered = false
-                                fullToggle.pressed = false
-                            }
-
-
-                            onPressed:
-                                fullToggle.pressed = true
-
-
-                            onReleased:
-                                fullToggle.pressed = false
-
-
-                            onClicked:
-                                root.togglePlaying()
-                        }
+                        icon: root.playing ? "󰏤" : "󰐊"
+                        selected: true
+                        interactive: root.available && root.player.canTogglePlaying
+                        onClicked: root.togglePlaying()
                     }
 
 
@@ -1666,92 +1258,11 @@ Item {
                     // NEXT
                     // --------------------------------------------
 
-                    Rectangle {
+                    NexaUI.NexaIconButton {
                         id: fullNext
-
-                        property bool hovered: false
-                        property bool pressed: false
-
-
-                        implicitWidth: 44
-                        implicitHeight: 44
-
-                        radius:
-                            Nexa.Theme.radiusPill
-
-
-                        color: {
-                            if (pressed)
-                                return Nexa.Theme.pressed
-
-                            if (hovered)
-                                return Nexa.Theme.hover
-
-                            return "transparent"
-                        }
-
-
-                        opacity:
-                            root.available
-                            && root.player.canGoNext
-                            ? 1
-                            : Nexa.Theme.opacityDisabled
-
-
-                        Text {
-                            anchors.centerIn: parent
-
-                            text: "󰒭"
-
-                            color:
-                                Nexa.Theme.text
-
-                            font {
-                                family:
-                                    Nexa.Theme.iconFontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.iconLg
-                            }
-                        }
-
-
-                        MouseArea {
-                            anchors.fill: parent
-
-                            enabled:
-                                root.available
-                                && root.player.canGoNext
-
-                            hoverEnabled: true
-
-                            cursorShape:
-                                enabled
-                                ? Qt.PointingHandCursor
-                                : Qt.ArrowCursor
-
-
-                            onEntered:
-                                fullNext.hovered = true
-
-
-                            onExited: {
-                                fullNext.hovered = false
-                                fullNext.pressed = false
-                            }
-
-
-                            onPressed:
-                                fullNext.pressed = true
-
-
-                            onReleased:
-                                fullNext.pressed = false
-
-
-                            onClicked:
-                                root.next()
-                        }
+                        icon: "󰒭"
+                        interactive: root.available && root.player.canGoNext
+                        onClicked: root.next()
                     }
                 }
 
