@@ -1,0 +1,11 @@
+-- Custom Modular Hyprland Configuration (Extracted from hyprland_myown.lua)
+
+require("config.autostart")
+require("config.environment")
+require("config.decorations")
+require("config.animations")
+require("config.inputs")
+require("config.binds")
+require("config.monitors")
+require("config.rules")
+require("config.plugins")

@@ -1,0 +1,5 @@
+nexa/rust/target/
+
+*.log
+*.tmp
+.cache/

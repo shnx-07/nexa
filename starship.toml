@@ -1,0 +1,404 @@
+"$schema" = "https://starship.rs/config-schema.json"
+
+# ============================================================
+# STARSHIP CONFIGURATION
+# Arch Linux • Two-line prompt • Nerd Font
+# ============================================================
+
+add_newline = true
+
+format = """
+${custom.rainbow_username}$hostname${custom.path_rainbow}$git_branch$git_status$fill$time
+$character"""
+
+[palettes.ember]
+text   = "#e8e2d6" # Base foreground
+muted  = "#8b8578" # Dim/secondary text
+crust  = "#1c1a17" # Dark accent
+rust   = "#d9764a" # Primary warm accent
+amber  = "#e8b04b" # Warnings and duration
+gold   = "#f0c674" # Package/tooling accents
+moss   = "#8fae5d" # Success and Git branch
+sage   = "#6fae8f" # Secondary success
+teal   = "#5fa3a3" # Hostname and info
+denim  = "#6e8fbf" # Arch/neutral cool accent
+violet = "#a683c9" # Username accent
+rose   = "#d9707d" # Errors and deleted items
+clay   = "#c97a5e" # Secondary warm accent
+neon = "#66f2ff"
+
+# ============================================================
+# FIRST LINE: USER, HOST, PATH AND GIT
+# ============================================================
+
+[username]
+disabled = true
+
+[custom.rainbow_username]
+when = true
+shell = ["bash", "--noprofile", "--norc"]
+format = "$output"
+unsafe_no_escape = true
+
+command = '''
+user="${USER:-$(id -un)}"
+
+printf '\033[1;38;2;139;133;120m╭─\033[0m'
+printf '\033[1;38;2;232;226;214m󰀄 \033[0m'
+
+# neon cyan
+printf '\033[1;38;2;102;242;255m%s@\033[0m' "$user"
+'''
+[hostname]
+disabled = false
+ssh_only = false
+style = "bold neon"
+ssh_symbol = "󰢹 "
+format = "[$ssh_symbol$hostname]($style)[ in ]($style)"
+
+
+
+
+[custom.path_rainbow]
+when = true
+shell = ["bash", "--noprofile", "--norc"]
+format = "$output"
+unsafe_no_escape = true
+command = '''
+path="$PWD"
+parts=()
+
+if [[ "$path" == "$HOME" ]]; then
+  parts=("")
+elif [[ "$path" == "$HOME/"* ]]; then
+  relative_path="${path#$HOME/}"
+  IFS='/' read -r -a remaining_parts <<< "$relative_path"
+  parts=("" "${remaining_parts[@]}")
+elif [[ "$path" == "/" ]]; then
+  parts=("/")
+else
+  relative_path="${path#/}"
+  IFS='/' read -r -a remaining_parts <<< "$relative_path"
+  parts=("/" "${remaining_parts[@]}")
+fi
+
+colors=(
+  "203;166;247"  # Mauve
+  "137;180;250"  # Blue
+  "148;226;213"  # Teal
+  "166;227;161"  # Green
+  "249;226;175"  # Yellow
+  "250;179;135"  # Peach
+  "243;139;168"  # Red
+  "245;194;231"  # Pink
+)
+
+text_color="28;26;23"
+color_count=${#colors[@]}
+part_count=${#parts[@]}
+
+for ((i = 0; i < part_count; i++)); do
+  background="${colors[$((i % color_count))]}"
+
+  # Filled path segment
+  printf '\033[1;38;2;%sm\033[48;2;%sm %s ' \
+    "$text_color" "$background" "${parts[i]}"
+
+  if ((i < part_count - 1)); then
+    next_background="${colors[$(((i + 1) % color_count))]}"
+
+    # Powerline arrow between segments
+    printf '\033[38;2;%sm\033[48;2;%sm' \
+      "$background" "$next_background"
+  else
+    # Final arrow back to terminal background
+    printf '\033[38;2;%sm\033[49m\033[0m ' "$background"
+  fi
+done
+
+printf '\033[0m'
+'''
+
+[git_branch]
+symbol = " "
+style = "bold moss"
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style = "bold yellow"
+format = "([$all_status$ahead_behind]($style) )"
+conflicted = "󰞇 "
+ahead = "󰜷${count} "
+behind = "󰜮${count} "
+diverged = "󰹺 ${ahead_count}${behind_count} "
+untracked = "? "
+stashed = "󰓼 "
+modified = "! "
+staged = "+${count} "
+renamed = "󰑕 "
+deleted = "󰆴 "
+
+# ============================================================
+# SECOND LINE: PROMPT CHARACTER
+# ============================================================
+
+#[character]
+#format = "$symbol"
+#success_symbol = "[╰─](bold muted)[](bold denim) "
+#error_symbol = "[╰─](bold muted)[](bold rose) "
+#vimcmd_symbol = "[╰─](bold muted)[](bold amber) "
+
+
+[character]
+format = "$symbol"
+success_symbol = "[╰─](bold muted)[❯](bold neon) "
+error_symbol = "[╰─](bold muted)[❯](bold rose) "
+vimcmd_symbol = "[╰─](bold muted)[❮](bold amber) "
+
+# ============================================================
+# DIRECTORY
+# The built-in directory is disabled because custom.path_rainbow
+# renders the complete path.
+# ============================================================
+
+[directory]
+disabled = true
+style = "bold denim"
+truncation_length = 4
+truncation_symbol = "…/"
+read_only = " 󰌾"
+format = "[$path]($style)[$read_only]($read_only_style) "
+
+[directory.substitutions]
+"~/Documents" = "󰈙 "
+"~/Downloads" = " "
+"~" = "󰋞 "
+
+# ============================================================
+# OPTIONAL MODULE SETTINGS
+# These remain configured for later use, although the top-level
+# format currently displays only the modules listed above.
+# ============================================================
+
+[git_metrics]
+disabled = false
+added_style = "bold moss"
+deleted_style = "bold rose"
+format = "[+$added]($added_style)/[-$deleted]($deleted_style) "
+
+[sudo]
+disabled = false
+style = "bold rose"
+
+[nix_shell]
+format = "via [$symbol(($name))]($style) "
+symbol = " "
+style = "bold denim"
+
+[cmd_duration]
+disabled = false
+style = "bold amber"
+format = " took [$duration]($style)"
+show_milliseconds = true
+show_notifications = true
+min_time_to_notify = 30000
+
+[battery]
+charging_symbol = ""
+disabled = true
+discharging_symbol = ""
+full_symbol = ""
+
+[[battery.display]]
+disabled = false
+style = "bold rose"
+threshold = 15
+
+[[battery.display]]
+disabled = true
+style = "bold amber"
+threshold = 50
+
+[[battery.display]]
+disabled = true
+style = "bold moss"
+threshold = 90
+
+[status]
+disabled = false
+format = '[\[$symbol$common_meaning$signal_name$maybe_int\]]($style) '
+style = "bold rose"
+map_symbol = true
+pipestatus = true
+symbol = "✖"
+not_executable_symbol = ""
+not_found_symbol = ""
+sigint_symbol = "󰟾"
+signal_symbol = ""
+
+[os]
+disabled = false
+format = " [$symbol]($style)"
+style = "bold denim"
+
+
+[fill]
+symbol = ""
+style = "neon"
+
+
+
+# ============================================================
+# LANGUAGE AND TOOL SYMBOLS
+# ============================================================
+
+[git_commit]
+tag_symbol = "  "
+tag_disabled = false
+only_detached = false
+style = "bold blue"
+
+[golang]
+symbol = " "
+
+[guix_shell]
+symbol = " "
+
+[haskell]
+symbol = " "
+
+[haxe]
+symbol = " "
+
+[hg_branch]
+symbol = " "
+
+[java]
+symbol = " "
+
+[julia]
+symbol = " "
+
+[kotlin]
+symbol = " "
+
+[lua]
+symbol = " "
+
+[memory_usage]
+symbol = "󰍛 "
+
+[meson]
+symbol = "󰔷 "
+
+[nim]
+symbol = "󰆥 "
+
+[nodejs]
+symbol = " "
+
+[ocaml]
+symbol = " "
+
+[os.symbols]
+Alpaquita = " "
+Alpine = " "
+AlmaLinux = " "
+Amazon = " "
+Android = " "
+Arch = " "
+Artix = " "
+CentOS = " "
+Debian = " "
+DragonFly = " "
+Emscripten = " "
+EndeavourOS = " "
+Fedora = " "
+FreeBSD = " "
+Garuda = "󰛓 "
+Gentoo = " "
+HardenedBSD = "󰞌 "
+Illumos = "󰈸 "
+Kali = " "
+Linux = " "
+Mabox = " "
+Macos = " "
+Manjaro = " "
+Mariner = " "
+MidnightBSD = " "
+Mint = " "
+NetBSD = " "
+NixOS = " "
+OpenBSD = "󰈺 "
+openSUSE = " "
+OracleLinux = "󰌷 "
+Pop = " "
+Raspbian = " "
+Redhat = " "
+RedHatEnterprise = " "
+RockyLinux = " "
+Redox = "󰀘 "
+Solus = "󰠳 "
+SUSE = " "
+Ubuntu = " "
+Unknown = " "
+Void = " "
+Windows = "󰍲 "
+
+[package]
+symbol = "󰏗 "
+
+[perl]
+symbol = " "
+
+[php]
+symbol = " "
+
+[pijul_channel]
+symbol = " "
+
+[python]
+symbol = " "
+
+[rlang]
+symbol = "󰟔 "
+
+[ruby]
+symbol = " "
+
+[rust]
+symbol = "󱘗 "
+
+[scala]
+symbol = " "
+
+[swift]
+symbol = " "
+
+[zig]
+symbol = " "
+
+[gradle]
+symbol = " "
+
+# ============================================================
+# DISABLE NOISY MODULES
+# ============================================================
+
+[shlvl]
+disabled = true
+
+[jobs]
+symbol = "󰜎 "
+style = "bold clay"
+number_threshold = 1
+symbol_threshold = 1
+
+[time]
+disabled = false
+time_format = "%H:%M"      # 24-hour (e.g. 22:45)
+# time_format = "%I:%M %p" # 12-hour (e.g. 10:45 PM)
+
+format = "[ $time]($style)"
+style = "bold neon"
+
