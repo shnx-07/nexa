@@ -41,10 +41,10 @@ NexaUI.NexaCard {
     // SIZE & GEOMETRY
     // ------------------------------------------------------------
 
-    height: Nexa.Theme.controlHeightSm
+    implicitHeight: Nexa.Theme.controlHeightSm
 
-    width: hasApp
-        ? Math.min(260, contentRow.implicitWidth + (Nexa.Theme.spacingSm * 2))
+    implicitWidth: hasApp
+        ? Math.min(400, contentRow.implicitWidth + (Nexa.Theme.spacingSm * 2))
         : Nexa.Theme.controlHeightSm
 
     radius: height / 2
@@ -59,7 +59,7 @@ NexaUI.NexaCard {
     // We remove custom color, border, and scale behaviors
     // as NexaUI.NexaCard handles them automatically.
 
-    Behavior on width {
+    Behavior on implicitWidth {
         NumberAnimation {
             duration: Nexa.Theme.motionSelection
             easing.type: Nexa.Theme.easingStandard

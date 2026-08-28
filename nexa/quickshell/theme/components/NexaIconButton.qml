@@ -7,6 +7,7 @@ Rectangle {
     property bool selected: false
     property bool interactive: true
     property int iconSize: Nexa.Theme.iconSm
+    property color iconColor: selected ? Nexa.Theme.primary : Nexa.Theme.mutedText
     signal clicked()
 
     readonly property bool hovered: interactive && mouse.containsMouse
@@ -28,7 +29,7 @@ Rectangle {
     Text {
         anchors.centerIn: parent
         text: root.icon
-        color: root.selected ? Nexa.Theme.primary : Nexa.Theme.mutedText
+        color: root.iconColor
         font.family: Nexa.Theme.iconFontFamily
         font.pixelSize: root.iconSize
     }

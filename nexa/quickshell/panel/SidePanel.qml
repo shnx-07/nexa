@@ -14,7 +14,7 @@ Scope {
     property real panelHeightRatio: 0.78
 
     property int edgeGap: Nexa.Theme.spacingLg
-    property int panelWidth: Nexa.Theme.panelWidthMd
+    property int panelWidth: Nexa.Theme.panelWidthLg
 
 
     // ============================================================

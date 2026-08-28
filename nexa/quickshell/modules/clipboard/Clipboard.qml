@@ -927,6 +927,8 @@ PanelWindow {
                         RowLayout {
                             Layout.fillWidth: true
 
+                            z: 100
+
                             Text {
                                 Layout.fillWidth: true
 
@@ -1470,6 +1472,8 @@ PanelWindow {
 
                         RowLayout {
                             Layout.fillWidth: true
+
+                            z: 100
 
                             spacing:
                                 NTheme.Theme.spacingMd

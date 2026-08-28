@@ -1,4 +1,6 @@
 import QtQuick
+import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 
@@ -15,28 +17,105 @@ Item {
 
 
     // ============================================================
-    // PROFILE HEADER
+    // PAGE HEADER
     // ============================================================
 
     Rectangle {
-        id: profileHeader
+        id: pageHeader
 
         anchors {
             top: parent.top
             left: parent.left
             right: parent.right
 
+            topMargin: Nexa.Theme.spacingLg
+            leftMargin: Nexa.Theme.spacingLg
+            rightMargin: Nexa.Theme.spacingLg
+        }
+
+        height: profileHeaderRow.implicitHeight + Nexa.Theme.spacingMd * 2
+
+        color: Nexa.Theme.panelBackgroundElevated
+        radius: Nexa.Theme.radiusXl
+
+        // Flatten bottom edge
+        Rectangle {
+            anchors {
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+            }
+            height: parent.radius
+            color: parent.color
+        }
+
+        border {
+            width: Nexa.Theme.borderThin
+            color: Nexa.Theme.divider
+        }
+
+        RowLayout {
+            id: profileHeaderRow
+
+            anchors {
+                left: parent.left
+                right: parent.right
+                verticalCenter: parent.verticalCenter
+                leftMargin: Nexa.Theme.spacingLg
+                rightMargin: Nexa.Theme.spacingMd
+            }
+
+            spacing: Nexa.Theme.spacingSm
+
+            Text {
+                text: ""
+                color: Nexa.Theme.primary
+                font {
+                    family: Nexa.Theme.iconFontFamily
+                    pixelSize: Nexa.Theme.iconMd
+                }
+            }
+
+            Text {
+                text: "Profile"
+                color: Nexa.Theme.text
+                font {
+                    family: Nexa.Theme.fontFamily
+                    pixelSize: Nexa.Theme.fontSizeXl
+                    weight: Nexa.Theme.fontWeightDemiBold
+                }
+            }
+
+            Item { Layout.fillWidth: true }
+        }
+    }
+
+
+    // ============================================================
+    // WALLPAPER / PROFILE INFO
+    // ============================================================
+
+    Rectangle {
+        id: profileHeader
+
+        anchors {
+            top: pageHeader.bottom
+            bottom: parent.bottom
+            left: parent.left
+            right: parent.right
+
             topMargin:
                 Nexa.Theme.spacingMd
 
+            bottomMargin:
+                Nexa.Theme.spacingLg
+
             leftMargin:
-                Nexa.Theme.spacingMd
+                Nexa.Theme.spacingLg
 
             rightMargin:
-                Nexa.Theme.spacingMd
+                Nexa.Theme.spacingLg
         }
-
-        height: 160
 
         radius:
             Nexa.Theme.radiusLg
@@ -45,6 +124,15 @@ Item {
             Nexa.Theme.panelBackground
 
         clip: true
+
+        layer.enabled: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: profileHeader.width
+                height: profileHeader.height
+                radius: Nexa.Theme.radiusLg
+            }
+        }
 
 
         // --------------------------------------------------------
@@ -85,6 +173,30 @@ Item {
 
             color:
                 Nexa.Theme.scrimLight
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            z: 100
+            
+            onClicked: {
+                if (typeof wallpaperView !== "undefined") {
+                    wallpaperView.visible = true
+                    wallpaperView.forceActiveFocus()
+                }
+
+                // Close the side panel automatically
+                Quickshell.execDetached([
+                    "qs",
+                    "-p",
+                    Quickshell.env("HOME") + "/.config/nexa/quickshell",
+                    "ipc",
+                    "call",
+                    "sidePanel",
+                    "close"
+                ])
+            }
         }
 
 

@@ -705,6 +705,23 @@ PanelWindow {
                             event.accepted = true
                             root.closeLauncher()
                         }
+
+                        Keys.onDownPressed: event => {
+                            event.accepted = true
+                            appList.incrementCurrentIndex()
+                        }
+
+                        Keys.onUpPressed: event => {
+                            event.accepted = true
+                            appList.decrementCurrentIndex()
+                        }
+
+                        Keys.onReturnPressed: event => {
+                            event.accepted = true
+                            if (appList.currentIndex >= 0 && appList.currentIndex < root.visibleApps.length) {
+                                root.launchApplication(root.visibleApps[appList.currentIndex])
+                            }
+                        }
                     }
 
                     MouseArea {
@@ -725,6 +742,8 @@ PanelWindow {
                     Layout.fillWidth: true
 
                     Layout.preferredHeight: 52
+
+                    z: 100
 
                     Flickable {
                         anchors.fill: parent
@@ -782,6 +801,8 @@ PanelWindow {
                                             modelData.name
                                         )
 
+                                        iconSize: NTheme.Theme.iconLg
+
                                         selected: categoryDelegate.active
 
                                         onClicked: root.selectCategory(modelData)
@@ -791,10 +812,10 @@ PanelWindow {
                                         anchors.horizontalCenter:
                                             parent.horizontalCenter
 
-                                        anchors.bottom:
+                                        anchors.top:
                                             parent.bottom
 
-                                        anchors.bottomMargin:
+                                        anchors.topMargin:
                                             NTheme.Theme.spacingXs
 
                                         visible:
@@ -841,15 +862,15 @@ PanelWindow {
                         anchors.fill: parent
 
                         anchors.topMargin:
-                            NTheme.Theme.spacingXs
+                            NTheme.Theme.spacingMd
 
                         anchors.bottomMargin:
-                            NTheme.Theme.spacingXs
+                            NTheme.Theme.spacingMd
 
                         anchors.leftMargin:
-                            NTheme.Theme.spacingXs
+                            NTheme.Theme.spacingMd
 
-                        anchors.rightMargin: 12
+                        anchors.rightMargin: 0
 
                         model:
                             root.visibleApps
@@ -897,7 +918,7 @@ PanelWindow {
                             required property var modelData
 
                             width:
-                                appList.width
+                                appList.width - 16
 
                             height: 72
 
@@ -905,6 +926,7 @@ PanelWindow {
                                 anchors.fill: parent
                                 padding: NTheme.Theme.spacingMd
                                 interactive: true
+                                selected: appDelegate.ListView.isCurrentItem
                                 onClicked: root.launchApplication(modelData)
 
                                 RowLayout {

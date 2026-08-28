@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import "../../theme" as Nexa
 
 
-RowLayout {
+Row {
     id: root
 
     // ------------------------------------------------------------
@@ -14,7 +14,7 @@ RowLayout {
     // Wi-Fi and Bluetooth own their own state/UI.
     // ------------------------------------------------------------
 
-    spacing: Nexa.Theme.spacing2Xs
+    spacing: 0
 
     Wifi {}
     Bluetooth {}

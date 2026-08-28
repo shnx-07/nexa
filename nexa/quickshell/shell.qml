@@ -26,7 +26,8 @@ ShellRoot {
    
     WorkspaceModule.WorkspaceManager {
         id: workspaceManager
-      }
+    }
+    
 
     TopBar {}
 

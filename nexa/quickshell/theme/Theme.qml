@@ -539,7 +539,7 @@ QtObject {
 
     readonly property int panelWidthSm: 340
     readonly property int panelWidthMd: 420
-    readonly property int panelWidthLg: 500
+    readonly property int panelWidthLg: 460
 
     readonly property int popupWidthSm: 280
     readonly property int popupWidthMd: 360

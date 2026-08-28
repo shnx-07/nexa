@@ -201,6 +201,7 @@ Item {
                 icon: "◒"
                 cardIndex: 4
                 popupVisible: root.visible
+                contentColor: Nexa.Theme.error
 
                 onTriggered:
                     root.runPowerAction("shutdown")
@@ -220,6 +221,7 @@ Item {
         required property string icon
         property int cardIndex: 0
         property bool popupVisible: false
+        property color contentColor: Nexa.Theme.text
 
         signal triggered()
 
@@ -263,7 +265,7 @@ Item {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: card.icon
-                color: Nexa.Theme.text
+                color: card.contentColor
                 font {
                     family: Nexa.Theme.fontFamily
                     pixelSize: 31
@@ -274,7 +276,7 @@ Item {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: card.label
-                color: Nexa.Theme.text
+                color: card.contentColor
                 font {
                     family: Nexa.Theme.fontFamily
                     pixelSize: Nexa.Theme.fontSizeSm

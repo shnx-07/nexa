@@ -491,11 +491,90 @@ Item {
     // PAGE
     // ============================================================
 
-    RowLayout {
-        anchors.fill: parent
+    ColumnLayout {
+        anchors {
+            fill: parent
+            margins: Nexa.Theme.spacingLg
+        }
+        spacing: Nexa.Theme.spacingSm
 
-        spacing:
-            Nexa.Theme.spacingSm
+
+        // ========================================================
+        // HEADER
+        // ========================================================
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight:
+                weatherHeaderRow.implicitHeight
+                + Nexa.Theme.spacingMd * 2
+
+            color: Nexa.Theme.panelBackgroundElevated
+            radius: Nexa.Theme.radiusXl
+
+            // Flatten the bottom edge
+            Rectangle {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                }
+                height: parent.radius
+                color: parent.color
+            }
+
+            border {
+                width: Nexa.Theme.borderThin
+                color: Nexa.Theme.divider
+            }
+
+            RowLayout {
+                id: weatherHeaderRow
+
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                    leftMargin: Nexa.Theme.spacingLg
+                    rightMargin: Nexa.Theme.spacingMd
+                }
+
+                spacing: Nexa.Theme.spacingSm
+
+                Text {
+                    text: "󰖐"
+                    color: Nexa.Theme.primary
+                    font {
+                        family: Nexa.Theme.iconFontFamily
+                        pixelSize: Nexa.Theme.iconMd
+                    }
+                }
+
+                Text {
+                    text: "Weather"
+                    color: Nexa.Theme.text
+                    font {
+                        family: Nexa.Theme.fontFamily
+                        pixelSize: Nexa.Theme.fontSizeXl
+                        weight: Nexa.Theme.fontWeightDemiBold
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+            }
+        }
+
+
+        // ========================================================
+        // CONTENT
+        // ========================================================
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            spacing:
+                Nexa.Theme.spacingSm
 
 
         // ========================================================
@@ -1733,6 +1812,7 @@ Item {
             }
         }
     }
+}
 
 
     // ============================================================

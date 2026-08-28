@@ -127,11 +127,11 @@ Item {
     ColumnLayout {
         anchors {
             fill: parent
-            margins: Nexa.Theme.spacingLg
+            margins: Nexa.Theme.spacingMd
         }
 
         spacing:
-            Nexa.Theme.spacingMd
+            Nexa.Theme.spacingSm
 
 
         // ========================================================
@@ -366,7 +366,7 @@ Item {
                 true
 
             spacing:
-                Nexa.Theme.spacingSm
+                Nexa.Theme.spacing2Xs
 
             model:
                 root.notificationData.notifications
@@ -391,7 +391,7 @@ Item {
 
                 implicitHeight:
                     cardContent.implicitHeight
-                    + Nexa.Theme.spacingLg * 2
+                    + Nexa.Theme.spacingXs * 2
 
                 padding: 0
                 interactive: false
@@ -442,17 +442,17 @@ Item {
                         top: parent.top
 
                         leftMargin:
-                            Nexa.Theme.spacingLg
+                            Nexa.Theme.spacingSm
 
                         rightMargin:
-                            Nexa.Theme.spacingLg
+                            Nexa.Theme.spacingSm
 
                         topMargin:
-                            Nexa.Theme.spacingLg
+                            Nexa.Theme.spacingXs
                     }
 
                     spacing:
-                        Nexa.Theme.spacingSm
+                        Nexa.Theme.spacing2Xs
 
 
                     // =============================================
@@ -472,13 +472,13 @@ Item {
 
                         Rectangle {
                             implicitWidth:
-                                Nexa.Theme.controlHeightMd
+                                Nexa.Theme.controlHeightSm
 
                             implicitHeight:
-                                Nexa.Theme.controlHeightMd
+                                Nexa.Theme.controlHeightSm
 
                             radius:
-                                Nexa.Theme.radiusMd
+                                Nexa.Theme.radiusSm
 
                             color:
                                 Nexa.Theme.surfaceContainerHighest
@@ -635,7 +635,7 @@ Item {
                                 Nexa.Theme.fontFamily
 
                             pixelSize:
-                                Nexa.Theme.fontSizeMd
+                                Nexa.Theme.fontSizeSm
 
                             weight:
                                 Nexa.Theme.fontWeightDemiBold
@@ -667,7 +667,7 @@ Item {
                                 Nexa.Theme.fontFamily
 
                             pixelSize:
-                                Nexa.Theme.fontSizeSm
+                                Nexa.Theme.fontSizeXs
                         }
                     }
 

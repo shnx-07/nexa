@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
@@ -180,69 +181,113 @@ Item {
 
 
     // ============================================================
-    // CONTENT
+    // MAIN LAYOUT
     // ============================================================
 
-    Flickable {
-        anchors.fill:
-            parent
-
-        clip:
-            true
-
-        contentWidth:
-            width
-
-        contentHeight:
-            contentColumn.height
-
-        boundsBehavior:
-            Flickable.StopAtBounds
-
-        maximumFlickVelocity:
-            root.theme.flickVelocityMax
-
-        flickDeceleration:
-            root.theme.flickDeceleration
+    ColumnLayout {
+        anchors {
+            fill: parent
+            margins: root.theme.spacingLg
+        }
+        spacing: root.theme.spacingSm
 
 
-        Column {
-            id: contentColumn
+        // ========================================================
+        // HEADER  (fixed – not scrollable)
+        // ========================================================
 
-            width:
-                parent.width
+        Rectangle {
+            Layout.fillWidth: true
 
-            spacing:
-                root.theme.spacingLg
+            Layout.preferredHeight:
+                qsHeaderContent.implicitHeight
+                + root.theme.spacingLg * 2
+
+            radius: root.theme.radiusLg
+            color: root.theme.panelBackgroundElevated
+
+            border {
+                width: root.theme.borderThin
+                color: root.theme.divider
+            }
 
 
-            // ====================================================
-            // TITLE
-            // ====================================================
+            RowLayout {
+                id: qsHeaderContent
 
-            Text {
-                leftPadding:
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                    leftMargin: root.theme.spacingLg
+                    rightMargin: root.theme.spacingLg
+                }
+
+                spacing: root.theme.spacingMd
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: root.theme.spacing2Xs
+
+                    Text {
+                        text: "Quick Settings"
+                        color: root.theme.text
+                        font {
+                            family: root.theme.fontFamily
+                            pixelSize: root.theme.fontSizeXl
+                            weight: root.theme.fontWeightDemiBold
+                        }
+                    }
+
+                    Text {
+                        text: "Connectivity & controls"
+                        color: root.theme.mutedText
+                        font {
+                            family: root.theme.fontFamily
+                            pixelSize: root.theme.fontSizeSm
+                        }
+                    }
+                }
+            }
+        }
+
+
+        // ========================================================
+        // SCROLLABLE CONTENT
+        // ========================================================
+
+        Flickable {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            clip:
+                true
+
+            contentWidth:
+                width
+
+            contentHeight:
+                contentColumn.height
+
+            boundsBehavior:
+                Flickable.StopAtBounds
+
+            maximumFlickVelocity:
+                root.theme.flickVelocityMax
+
+            flickDeceleration:
+                root.theme.flickDeceleration
+
+
+            Column {
+                id: contentColumn
+
+                width:
+                    parent.width
+
+                spacing:
                     root.theme.spacingLg
 
-                topPadding:
-                    root.theme.spacingMd
-
-                text:
-                    "Quick Settings"
-
-                color:
-                    root.theme.text
-
-                font.family:
-                    root.theme.fontFamily
-
-                font.pixelSize:
-                    root.theme.fontSizeXl
-
-                font.weight:
-                    root.theme.fontWeightDemiBold
-            }
-            
 
 
             // ============================================================
@@ -2773,6 +2818,7 @@ Item {
 
                 height:
                     root.theme.spacing2Xl
+            }
             }
         }
     }

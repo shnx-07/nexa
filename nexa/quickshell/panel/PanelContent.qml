@@ -110,9 +110,6 @@ Item {
 
                     WeatherModule.Weather {
                         anchors.fill: parent
-
-                        anchors.margins:
-                            Nexa.Theme.spacingMd
                     }
                 }
 
@@ -262,7 +259,7 @@ Item {
             color: button.active ? Nexa.Theme.primary : mouseArea.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
             font {
                 family: Nexa.Theme.iconFontFamily
-                pixelSize: Nexa.Theme.iconMd
+                pixelSize: Nexa.Theme.iconLg
             }
             Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
         }

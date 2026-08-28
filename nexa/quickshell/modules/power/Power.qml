@@ -25,6 +25,7 @@ Item {
         anchors.fill: parent
         radius: height / 2
         icon: "⏻"
+        iconColor: Nexa.Theme.error
         onClicked: {
             Quickshell.execDetached([
                 "qs",
