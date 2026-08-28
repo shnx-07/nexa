@@ -3,6 +3,20 @@
  * Do not edit manually.
  */
 
+/* Standard GTK3 Theme Colors (for Nemo, Gedit, and classic GTK3 apps) */
+@define-color theme_bg_color {{colors.background}};
+@define-color theme_fg_color {{colors.on_surface}};
+@define-color theme_base_color {{colors.background}};
+@define-color theme_text_color {{colors.on_surface}};
+@define-color borders {{colors.outline_variant}};
+@define-color wm_bg_color {{colors.surface_container}};
+@define-color wm_title {{colors.on_surface}};
+@define-color wm_border {{colors.outline}};
+@define-color insens_bg_color {{colors.surface_dim}};
+@define-color insens_fg_color {{colors.on_surface_variant}};
+@define-color insens_base_color {{colors.surface_container_lowest}};
+
+/* Libadwaita & Modern GTK Colors */
 @define-color accent_color {{colors.primary}};
 @define-color accent_bg_color {{colors.primary}};
 @define-color accent_fg_color {{colors.on_primary}};

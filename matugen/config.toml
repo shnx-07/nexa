@@ -30,3 +30,11 @@ output_path = "~/.config/qt6ct/colors/nexa.conf"
 [templates.kde]
 input_path = "~/.config/matugen/templates/kde-preset.colors"
 output_path = "~/.local/share/color-schemes/Nexa.colors"
+
+[templates.btop]
+input_path = "~/.config/matugen/templates/btop-preset.theme"
+output_path = "~/.config/btop/themes/nexa.theme"
+
+[templates.htop]
+input_path = "~/.config/matugen/templates/htop-preset.rc"
+output_path = "~/.config/htop/htoprc"
