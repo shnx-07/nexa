@@ -54,6 +54,7 @@ if [[ ! -f "$THEME_CONFIG" ]]; then
 STYLE="wallpaperFull"
 PRESET="extras/CatppuccinMacchiato"
 MODE="dark"
+SCHEME_TYPE="scheme-vibrant"
 STATE
 fi
 
@@ -61,9 +62,12 @@ load_theme_config() {
   STYLE="wallpaperFull"
   PRESET="extras/CatppuccinMacchiato"
   MODE="dark"
+  SCHEME_TYPE="scheme-vibrant"
 
   # shellcheck disable=SC1090
   source "$THEME_CONFIG"
+
+  SCHEME_TYPE="${SCHEME_TYPE:-scheme-vibrant}"
 }
 
 save_theme_config() {
@@ -71,6 +75,7 @@ save_theme_config() {
 STYLE="$STYLE"
 PRESET="$PRESET"
 MODE="$MODE"
+SCHEME_TYPE="${SCHEME_TYPE:-scheme-vibrant}"
 STATE
 }
 
@@ -82,6 +87,33 @@ valid_style() {
   *)
     return 1
     ;;
+  esac
+}
+
+valid_scheme_type() {
+  case "$1" in
+  scheme-vibrant | vibrant | scheme-expressive | expressive | scheme-rainbow | rainbow | scheme-fruit-salad | fruit-salad | scheme-fidelity | fidelity | scheme-content | content | scheme-tonal-spot | tonal-spot | scheme-neutral | neutral | scheme-monochrome | monochrome)
+    return 0
+    ;;
+  *)
+    return 1
+    ;;
+  esac
+}
+
+normalize_scheme_type() {
+  case "$1" in
+  vibrant) printf 'scheme-vibrant\n' ;;
+  expressive) printf 'scheme-expressive\n' ;;
+  rainbow) printf 'scheme-rainbow\n' ;;
+  fruit-salad) printf 'scheme-fruit-salad\n' ;;
+  fidelity) printf 'scheme-fidelity\n' ;;
+  content) printf 'scheme-content\n' ;;
+  tonal-spot) printf 'scheme-tonal-spot\n' ;;
+  neutral) printf 'scheme-neutral\n' ;;
+  monochrome) printf 'scheme-monochrome\n' ;;
+  scheme-*) printf '%s\n' "$1" ;;
+  *) printf 'scheme-vibrant\n' ;;
   esac
 }
 
@@ -675,6 +707,9 @@ generate_matugen_canonical() {
     return 1
   fi
 
+  load_theme_config
+  local current_scheme="${SCHEME_TYPE:-scheme-vibrant}"
+
   case "$source_type" in
 
   image)
@@ -682,7 +717,8 @@ generate_matugen_canonical() {
     if ! matugen \
       -c "$MATUGEN_EXPORT_CONFIG" \
       image "$source" \
-      --source-color-index 0 \
+      -t "$current_scheme" \
+      --prefer saturation \
       -m "$mode" \
       --json hex \
       >"$raw_json" \
@@ -705,6 +741,7 @@ generate_matugen_canonical() {
     if ! matugen \
       -c "$MATUGEN_EXPORT_CONFIG" \
       color hex "$source" \
+      -t "$current_scheme" \
       -m "$mode" \
       --json hex \
       >"$raw_json" \
@@ -948,15 +985,34 @@ mode)
   exit 0
   ;;
 
+type | scheme)
+
+  NEW_TYPE="${2:-}"
+
+  valid_scheme_type "$NEW_TYPE" ||
+    fail "Invalid scheme type: $NEW_TYPE (expected vibrant, expressive, rainbow, fruit-salad, fidelity, tonal-spot)"
+
+  load_theme_config
+
+  SCHEME_TYPE="$(normalize_scheme_type "$NEW_TYPE")"
+
+  save_theme_config
+
+  log "Scheme type set to: $SCHEME_TYPE"
+
+  exit 0
+  ;;
+
 status)
 
   load_theme_config
 
   printf \
-    'NEXA Theme\n----------\nStyle  : %s\nPreset : %s\nMode   : %s\n' \
+    'NEXA Theme\n----------\nStyle  : %s\nPreset : %s\nMode   : %s\nScheme : %s\n' \
     "$STYLE" \
     "$PRESET" \
-    "$MODE"
+    "$MODE" \
+    "${SCHEME_TYPE:-scheme-vibrant}"
 
   load_wallpaper_config
 
@@ -1118,6 +1174,13 @@ Usage:
 
   theme.sh mode dark
   theme.sh mode light
+
+  theme.sh type vibrant
+  theme.sh type expressive
+  theme.sh type rainbow
+  theme.sh type fruit-salad
+  theme.sh type fidelity
+  theme.sh type tonal-spot
 
   theme.sh status
 

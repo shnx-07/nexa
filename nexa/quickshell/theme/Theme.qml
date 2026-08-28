@@ -174,19 +174,19 @@ QtObject {
 
     // Normal pointer hover.
     readonly property color hover:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.08)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.12)
 
     // Stronger hover for buttons and interactive cards.
     readonly property color hoverStrong:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.14)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.18)
 
     // Pressed/clicked state.
     readonly property color pressed:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.20)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.25)
 
     // Keyboard/input focus state.
     readonly property color focus:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.26)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.32)
 
 
     // ------------------------------------------------------------
@@ -198,22 +198,22 @@ QtObject {
     // ------------------------------------------------------------
 
     readonly property color primarySurface:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.12)
-
-    readonly property color primarySurfaceStrong:
         Qt.rgba(primary.r, primary.g, primary.b, 0.18)
 
+    readonly property color primarySurfaceStrong:
+        Qt.rgba(primary.r, primary.g, primary.b, 0.26)
+
     readonly property color secondarySurface:
-        Qt.rgba(secondary.r, secondary.g, secondary.b, 0.11)
+        Qt.rgba(secondary.r, secondary.g, secondary.b, 0.16)
 
     readonly property color secondarySurfaceStrong:
-        Qt.rgba(secondary.r, secondary.g, secondary.b, 0.17)
+        Qt.rgba(secondary.r, secondary.g, secondary.b, 0.24)
 
     readonly property color tertiarySurface:
-        Qt.rgba(tertiary.r, tertiary.g, tertiary.b, 0.11)
+        Qt.rgba(tertiary.r, tertiary.g, tertiary.b, 0.16)
 
     readonly property color tertiarySurfaceStrong:
-        Qt.rgba(tertiary.r, tertiary.g, tertiary.b, 0.17)
+        Qt.rgba(tertiary.r, tertiary.g, tertiary.b, 0.24)
 
 
     // ------------------------------------------------------------
@@ -229,15 +229,15 @@ QtObject {
 
     // Preferred selected background for toggles, tabs and buttons.
     readonly property color selectedSurface:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.20)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.26)
 
     // Strong selected state for emphasized controls.
     readonly property color selectedSurfaceStrong:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.28)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.36)
 
     // Border for active/selected controls.
     readonly property color selectedBorder:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.55)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.65)
 
 
     // ------------------------------------------------------------
@@ -249,10 +249,10 @@ QtObject {
     // ------------------------------------------------------------
 
     readonly property color accentGlow:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.20)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.30)
 
     readonly property color accentGlowStrong:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.32)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.45)
 
 
     // ============================================================
@@ -361,10 +361,10 @@ QtObject {
         cardBackground
 
     readonly property color interactiveCardHover:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.08)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.12)
 
     readonly property color interactiveCardPressed:
-        Qt.rgba(primary.r, primary.g, primary.b, 0.14)
+        Qt.rgba(primary.r, primary.g, primary.b, 0.20)
 
 
     // ============================================================

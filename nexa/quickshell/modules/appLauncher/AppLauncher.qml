@@ -706,6 +706,32 @@ PanelWindow {
                             root.closeLauncher()
                         }
 
+                        Keys.onLeftPressed: event => {
+                            event.accepted = true
+                            if (root.categories.length === 0)
+                                return
+                            const currentIdx = root.categories.findIndex(
+                                c => c.id === root.selectedCategoryId
+                            )
+                            const prevIdx =
+                                currentIdx <= 0
+                                ? root.categories.length - 1
+                                : currentIdx - 1
+                            root.selectCategory(root.categories[prevIdx])
+                        }
+
+                        Keys.onRightPressed: event => {
+                            event.accepted = true
+                            if (root.categories.length === 0)
+                                return
+                            const currentIdx = root.categories.findIndex(
+                                c => c.id === root.selectedCategoryId
+                            )
+                            const nextIdx =
+                                (currentIdx + 1) % root.categories.length
+                            root.selectCategory(root.categories[nextIdx])
+                        }
+
                         Keys.onDownPressed: event => {
                             event.accepted = true
                             appList.incrementCurrentIndex()

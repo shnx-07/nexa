@@ -61,6 +61,7 @@ def main():
         "surface": get_role(data, "surface"),
         "surface_dim": get_role(data, "surface_dim", "surface"),
         "surface_bright": get_role(data, "surface_bright", "surface_container_highest"),
+        "surface_variant": get_role(data, "surface_variant", "surface_container_high"),
         "surface_container_lowest": get_role(data, "surface_container_lowest", "surface_dim", "surface"),
         "surface_container_low": get_role(data, "surface_container_low", "surface"),
         "surface_container": get_role(data, "surface_container"),
@@ -79,26 +80,26 @@ def main():
         "shadow": get_role(data, "shadow"),
         "scrim": get_role(data, "scrim", "shadow"),
 
-        "error": get_role(data, "error"),
-        "on_error": get_role(data, "on_error"),
-        "error_container": get_role(data, "error_container"),
-        "on_error_container": get_role(data, "on_error_container"),
+        # Distinct, accessible semantic additions matching NEXA preset standards
+        "error": "#bb1b28" if mode == "light" else "#f0757f",
+        "on_error": "#ffffff" if mode == "light" else "#37060a",
+        "error_container": "#f7d4d7" if mode == "light" else "#541c21",
+        "on_error_container": "#49080e" if mode == "light" else "#f8aab1",
 
-        # Derived semantic additions for NEXA unified schema
-        "success": get_role(data, "tertiary"),
-        "on_success": get_role(data, "on_tertiary"),
-        "success_container": get_role(data, "tertiary_container"),
-        "on_success_container": get_role(data, "on_tertiary_container"),
+        "success": "#1e8f44" if mode == "light" else "#78e29c",
+        "on_success": "#ffffff" if mode == "light" else "#083617",
+        "success_container": "#d0f1db" if mode == "light" else "#1c4a2b",
+        "on_success_container": "#093e1b" if mode == "light" else "#a6f2bf",
 
-        "warning": get_role(data, "secondary"),
-        "on_warning": get_role(data, "on_secondary"),
-        "warning_container": get_role(data, "secondary_container"),
-        "on_warning_container": get_role(data, "on_secondary_container"),
+        "warning": "#aa690e" if mode == "light" else "#efc36c",
+        "on_warning": "#ffffff" if mode == "light" else "#372706",
+        "warning_container": "#f7e4c9" if mode == "light" else "#4d3c19",
+        "on_warning_container": "#422905" if mode == "light" else "#f7daa1",
 
-        "info": get_role(data, "primary"),
-        "on_info": get_role(data, "on_primary"),
-        "info_container": get_role(data, "primary_container"),
-        "on_info_container": get_role(data, "on_primary_container"),
+        "info": "#1885aa" if mode == "light" else "#79cfec",
+        "on_info": "#ffffff" if mode == "light" else "#062b37",
+        "info_container": "#cdeaf4" if mode == "light" else "#1c3e4a",
+        "on_info_container": "#073240" if mode == "light" else "#a3e0f5",
     }
 
     rgb = {key: hex_to_rgb(value) for key, value in colors.items()}
