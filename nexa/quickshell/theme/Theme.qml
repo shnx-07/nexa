@@ -16,7 +16,10 @@ QtObject {
         ThemeParts.MatugenColors.background
 
     readonly property color backgroundText:
-        ThemeParts.MatugenColors.backgroundText
+        ThemeParts.MatugenColors.on_background
+
+    readonly property color onBackground:
+        ThemeParts.MatugenColors.on_background
 
 
     // ============================================================
@@ -47,6 +50,12 @@ QtObject {
     readonly property color surfaceContainerHighest:
         ThemeParts.MatugenColors.surfaceContainerHighest
 
+    readonly property color onSurface:
+        ThemeParts.MatugenColors.on_surface
+
+    readonly property color onSurfaceVariant:
+        ThemeParts.MatugenColors.on_surface_variant
+
 
     // ============================================================
     // TEXT
@@ -67,13 +76,19 @@ QtObject {
         ThemeParts.MatugenColors.primary
 
     readonly property color primaryText:
-        ThemeParts.MatugenColors.primaryText
+        ThemeParts.MatugenColors.on_primary
+
+    readonly property color onPrimary:
+        ThemeParts.MatugenColors.on_primary
 
     readonly property color primaryContainer:
         ThemeParts.MatugenColors.primaryContainer
 
     readonly property color primaryContainerText:
-        ThemeParts.MatugenColors.primaryContainerText
+        ThemeParts.MatugenColors.on_primary_container
+
+    readonly property color onPrimaryContainer:
+        ThemeParts.MatugenColors.on_primary_container
 
 
     // ============================================================
@@ -84,13 +99,19 @@ QtObject {
         ThemeParts.MatugenColors.secondary
 
     readonly property color secondaryText:
-        ThemeParts.MatugenColors.secondaryText
+        ThemeParts.MatugenColors.on_secondary
+
+    readonly property color onSecondary:
+        ThemeParts.MatugenColors.on_secondary
 
     readonly property color secondaryContainer:
         ThemeParts.MatugenColors.secondaryContainer
 
     readonly property color secondaryContainerText:
-        ThemeParts.MatugenColors.secondaryContainerText
+        ThemeParts.MatugenColors.on_secondary_container
+
+    readonly property color onSecondaryContainer:
+        ThemeParts.MatugenColors.on_secondary_container
 
 
     // ============================================================
@@ -101,13 +122,19 @@ QtObject {
         ThemeParts.MatugenColors.tertiary
 
     readonly property color tertiaryText:
-        ThemeParts.MatugenColors.tertiaryText
+        ThemeParts.MatugenColors.on_tertiary
+
+    readonly property color onTertiary:
+        ThemeParts.MatugenColors.on_tertiary
 
     readonly property color tertiaryContainer:
         ThemeParts.MatugenColors.tertiaryContainer
 
     readonly property color tertiaryContainerText:
-        ThemeParts.MatugenColors.tertiaryContainerText
+        ThemeParts.MatugenColors.on_tertiary_container
+
+    readonly property color onTertiaryContainer:
+        ThemeParts.MatugenColors.on_tertiary_container
 
 
     // ============================================================
@@ -118,7 +145,10 @@ QtObject {
         ThemeParts.MatugenColors.error
 
     readonly property color errorText:
-        ThemeParts.MatugenColors.errorText
+        ThemeParts.MatugenColors.on_error
+
+    readonly property color onError:
+        ThemeParts.MatugenColors.on_error
 
     readonly property color errorContainer:
         ThemeParts.MatugenColors.errorContainer
@@ -144,7 +174,7 @@ QtObject {
         ThemeParts.MatugenColors.outlineVariant
 
     readonly property color shadow:
-        ThemeParts.MatugenColors.shadowColor
+        ThemeParts.MatugenColors.shadow
 
 
     // ============================================================
@@ -401,10 +431,10 @@ QtObject {
     // ============================================================
 
     readonly property string fontFamily:
-        "JetBrainsMono Nerd Font"
+        "SF Pro Display"
 
     readonly property string monoFontFamily:
-        "JetBrainsMono Nerd Font"
+        "Liga SFMono Nerd Font"
 
     readonly property string uiFont:
         fontFamily

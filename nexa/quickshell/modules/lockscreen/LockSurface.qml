@@ -372,6 +372,9 @@ Item {
 
         anchors.fill: parent
 
+        sourceSize.width: 1920
+        sourceSize.height: 1080
+
         source:
             root.wallpaperType === "image"
             ? root.fileUrl(

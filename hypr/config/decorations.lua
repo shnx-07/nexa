@@ -45,7 +45,7 @@ THEME = {
 local visual_settings = {
 	manual_theme = nil,
 	font = {
-		family = "Inter",
+		family = "SF Pro Display",
 		sizes = { main = 11, bar = 10, launcher = 12, notification = 10, terminal = 11 },
 	},
 	gaps_in = 5,
@@ -54,13 +54,22 @@ local visual_settings = {
 	rounding = 10,
 	rounding_power = 2,
 	active_opacity = 1.0,
-	inactive_opacity = 0.85,
+	-- ------------------------------------------------------------
+	-- SHADOW (Window Drop Shadow & Depth)
+	-- ------------------------------------------------------------
 	shadow = {
 		enabled = true,
-		range = 15,
-		render_power = 3,
-		color = "rgba(00000040)",
+		range = 40,
+		render_power = 4,
+		color = "rgba(000000aa)",
+		color_inactive = "rgba(00000065)",
+		offset = "0 8",
+		scale = 1.0,
 	},
+
+	-- ------------------------------------------------------------
+	-- BLUR
+	-- ------------------------------------------------------------
 	blur = {
 		enabled = true,
 		size = 3,

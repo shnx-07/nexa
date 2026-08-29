@@ -106,6 +106,7 @@ PanelWindow {
     }
 
     function closeWallpaper() {
+        root.applying = false
         root.visible = false
     }
 
@@ -556,7 +557,7 @@ PanelWindow {
             !root.applying &&
             wallpaperModel.count > 0
 
-        cacheBuffer: 2200
+        cacheBuffer: 800
 
         highlightRangeMode:
             ListView.StrictlyEnforceRange
@@ -806,6 +807,9 @@ PanelWindow {
                         height:
                             skewContainer.height + 20
 
+                        sourceSize.width: 800
+                        sourceSize.height: 600
+
                         source:
                             cardRoot.isImage
                             ? root.fileUrl(cardRoot.wallPath)
@@ -860,6 +864,9 @@ PanelWindow {
 
                         height:
                             skewContainer.height + 20
+
+                        sourceSize.width: 800
+                        sourceSize.height: 600
 
                         source:
                             cardRoot.isGif
@@ -971,6 +978,9 @@ PanelWindow {
 
                         height:
                             skewContainer.height + 20
+
+                        sourceSize.width: 800
+                        sourceSize.height: 600
 
                         source:
                             cardRoot.isVideo
@@ -1158,19 +1168,9 @@ PanelWindow {
                         Qt.PointingHandCursor
 
                     onClicked: {
-                        if (
-                            view.currentIndex
-                            !== cardRoot.index
-                        ) {
-                            view.currentIndex =
-                                cardRoot.index
-
-                            return
-                        }
-
+                        view.currentIndex = cardRoot.index
                         cardRoot.clickScale = 0.95
                         pressReset.restart()
-
                         root.applyCurrent()
                     }
                 }
@@ -1732,7 +1732,8 @@ PanelWindow {
         if (!visible)
             return
 
-        reload()
+        if (wallpaperModel.count === 0)
+            reload()
 
         Qt.callLater(
             () => view.forceActiveFocus()

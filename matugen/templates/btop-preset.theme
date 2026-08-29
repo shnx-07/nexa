@@ -2,85 +2,93 @@
 # Do not edit manually.
 
 # Main background, empty for terminal default
-theme[main_bg]="{{colors.background}}"
+theme[main_bg]={{colors.background}}
 
 # Main text color
-theme[main_fg]="{{colors.on_surface}}"
+theme[main_fg]={{colors.on_surface}}
 
 # Title color for boxes
-theme[title]="{{colors.primary}}"
+theme[title]={{colors.primary}}
 
 # Highlight color for keyboard shortcuts
-theme[hi_fg]="{{colors.primary}}"
+theme[hi_fg]={{colors.primary}}
 
 # Background color of selected item in processes box
-theme[selected_bg]="{{colors.primary_container}}"
+theme[selected_bg]={{colors.primary_container}}
 
 # Foreground color of selected item in processes box
-theme[selected_fg]="{{colors.on_primary_container}}"
+theme[selected_fg]={{colors.on_primary_container}}
 
 # Color of inactive/disabled text
-theme[inactive_fg]="{{colors.outline}}"
+theme[inactive_fg]={{colors.outline}}
 
 # Color of text appearing on top of graphs, i.e uptime and current network graph scaling
-theme[graph_text]="{{colors.on_surface_variant}}"
+theme[graph_text]={{colors.on_surface_variant}}
 
 # Background color of the percentage meters
-theme[meter_bg]="{{colors.surface_container_highest}}"
+theme[meter_bg]={{colors.surface_container_highest}}
 
 # Misc colors for processes box including mini cpu graphs, details memory graph and details status text
-theme[proc_misc]="{{colors.tertiary}}"
+theme[proc_misc]={{colors.tertiary}}
 
 # CPU, Memory, Network, Proc box outline colors
-theme[cpu_box]="{{colors.primary}}"
-theme[mem_box]="{{colors.secondary}}"
-theme[net_box]="{{colors.info}}"
-theme[proc_box]="{{colors.tertiary}}"
+theme[cpu_box]={{colors.primary}}
+theme[mem_box]={{colors.secondary}}
+theme[net_box]={{colors.info}}
+theme[proc_box]={{colors.tertiary}}
 
 # Box divider line and small boxes line color
-theme[div_line]="{{colors.outline_variant}}"
+theme[div_line]={{colors.outline_variant}}
 
 # Temperature graph color (Green -> Yellow -> Red)
-theme[temp_start]="{{colors.success}}"
-theme[temp_mid]="{{colors.warning}}"
-theme[temp_end]="{{colors.error}}"
+theme[temp_start]={{colors.success}}
+theme[temp_mid]={{colors.warning}}
+theme[temp_end]={{colors.error}}
 
 # CPU graph colors
-theme[cpu_start]="{{colors.primary}}"
-theme[cpu_mid]="{{colors.secondary}}"
-theme[cpu_end]="{{colors.tertiary}}"
+theme[cpu_start]={{colors.primary}}
+theme[cpu_mid]={{colors.secondary}}
+theme[cpu_end]={{colors.tertiary}}
 
 # Mem/Disk free meter
-theme[free_start]="{{colors.success}}"
-theme[free_mid]="{{colors.info}}"
-theme[free_end]="{{colors.primary}}"
+theme[free_start]={{colors.success}}
+theme[free_mid]={{colors.info}}
+theme[free_end]={{colors.primary}}
 
 # Mem/Disk cached meter
-theme[cached_start]="{{colors.info}}"
-theme[cached_mid]="{{colors.primary}}"
-theme[cached_end]="{{colors.secondary}}"
+theme[cached_start]={{colors.info}}
+theme[cached_mid]={{colors.primary}}
+theme[cached_end]={{colors.secondary}}
 
 # Mem/Disk available meter
-theme[available_start]="{{colors.success}}"
-theme[available_mid]="{{colors.warning}}"
-theme[available_end]="{{colors.primary}}"
+theme[available_start]={{colors.success}}
+theme[available_mid]={{colors.warning}}
+theme[available_end]={{colors.primary}}
 
 # Mem/Disk used meter
-theme[used_start]="{{colors.primary}}"
-theme[used_mid]="{{colors.warning}}"
-theme[used_end]="{{colors.error}}"
+theme[used_start]={{colors.primary}}
+theme[used_mid]={{colors.warning}}
+theme[used_end]={{colors.error}}
 
 # Download graph colors
-theme[download_start]="{{colors.info}}"
-theme[download_mid]="{{colors.primary}}"
-theme[download_end]="{{colors.tertiary}}"
+theme[download_start]={{colors.info}}
+theme[download_mid]={{colors.primary}}
+theme[download_end]={{colors.tertiary}}
 
 # Upload graph colors
-theme[upload_start]="{{colors.tertiary}}"
-theme[upload_mid]="{{colors.secondary}}"
-theme[upload_end]="{{colors.primary}}"
+theme[upload_start]={{colors.tertiary}}
+theme[upload_mid]={{colors.secondary}}
+theme[upload_end]={{colors.primary}}
 
 # Process box color gradient for threads, mem and cpu usage
-theme[process_start]="{{colors.success}}"
-theme[process_mid]="{{colors.warning}}"
-theme[process_end]="{{colors.error}}"
+theme[process_start]={{colors.success}}
+theme[process_mid]={{colors.warning}}
+theme[process_end]={{colors.error}}
+
+# Process box status banners
+theme[proc_banner_fg]={{colors.on_primary_container}}
+theme[proc_banner_bg]={{colors.primary_container}}
+theme[proc_follow_bg]={{colors.primary}}
+theme[proc_pause_bg]={{colors.warning}}
+theme[followed_fg]={{colors.on_primary}}
+theme[followed_bg]={{colors.primary}}

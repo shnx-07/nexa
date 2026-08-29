@@ -166,7 +166,7 @@ Item {
                     Nexa.Theme.iconFontFamily
 
                 pixelSize:
-                    Nexa.Theme.iconMd
+                    Nexa.Theme.iconSm
             }
 
 

@@ -125,8 +125,9 @@ Item {
     function openMonitor() {
         Quickshell.execDetached([
             "kitty",
-            "-e",
-            "btop"
+            "--title",
+            "System Monitor",
+            Quickshell.env("HOME") + "/.config/nexa/scripts/open-monitor.sh"
         ])
     }
 

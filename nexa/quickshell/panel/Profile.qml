@@ -144,6 +144,9 @@ Item {
 
             anchors.fill: parent
 
+            sourceSize.width: 600
+            sourceSize.height: 300
+
             source:
                 root.wallpaperPath !== ""
                 ? "file://" + root.wallpaperPath
