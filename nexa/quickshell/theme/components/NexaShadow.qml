@@ -3,31 +3,23 @@ import Qt5Compat.GraphicalEffects
 
 import ".." as Nexa
 
-
 Item {
     id: root
 
     // ============================================================
     // NEXA SHADOW
     //
-    // Reusable shadow layer for floating/elevated UI.
-    //
-    // Intended for:
-    //   - popups
-    //   - floating cards
-    //   - menus
-    //   - larger overlays
-    //
-    // Keep shadows subtle. Surface contrast remains the primary
-    // source of depth in NEXA.
+    // High-performance, GPU-accelerated shadow component for:
+    //   - Dynamic Island
+    //   - Side panels & Launcher overlays
+    //   - Floating cards & Popups
     // ============================================================
 
+    property Item targetItem: parent
 
-    property Item sourceItem: null
-
-    // 0 = small
-    // 1 = medium
-    // 2 = large
+    // 0 = small / subtle (cards)
+    // 1 = medium (popups / menus)
+    // 2 = large (island / main overlays)
     property int elevation: 1
 
     property color shadowColor:
@@ -40,7 +32,7 @@ Item {
             ? Nexa.Theme.shadowOpacityMd
             : Nexa.Theme.shadowOpacityLg
 
-    property int blurRadius:
+    property int glowRadius:
         elevation <= 0
         ? Nexa.Theme.shadowBlurSm
         : elevation === 1
@@ -55,51 +47,33 @@ Item {
             : Nexa.Theme.shadowOffsetLg
 
     property int horizontalOffset: 0
+    property real spread: 0.08
 
-    property bool cached: true
+    property int cornerRadius:
+        targetItem && targetItem.radius !== undefined
+        ? targetItem.radius
+        : Nexa.Theme.radiusMd
 
+    anchors.fill: targetItem ? targetItem : undefined
+    anchors.topMargin: verticalOffset
+    anchors.bottomMargin: -verticalOffset
+    anchors.leftMargin: horizontalOffset
+    anchors.rightMargin: -horizontalOffset
 
-    visible:
-        sourceItem !== null
+    z: -1
+    visible: targetItem !== null
 
-    anchors.fill:
-        sourceItem
-
-
-    DropShadow {
-        anchors.fill:
-            parent
-
-        source:
-            root.sourceItem
-
-        horizontalOffset:
-            root.horizontalOffset
-
-        verticalOffset:
-            root.verticalOffset
-
-        radius:
-            root.blurRadius
-
-        samples:
-            Math.max(
-                17,
-                root.blurRadius * 2 + 1
-            )
-
-        color:
-            Qt.rgba(
-                root.shadowColor.r,
-                root.shadowColor.g,
-                root.shadowColor.b,
-                root.shadowOpacity
-            )
-
-        transparentBorder:
-            true
-
-        cached:
-            root.cached
+    RectangularGlow {
+        anchors.fill: parent
+        glowRadius: root.glowRadius
+        spread: root.spread
+        color: Qt.rgba(
+            root.shadowColor.r,
+            root.shadowColor.g,
+            root.shadowColor.b,
+            root.shadowOpacity
+        )
+        cornerRadius: root.cornerRadius + root.glowRadius
     }
 }
+

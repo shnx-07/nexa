@@ -56,27 +56,8 @@ PanelWindow {
     // DIMENSIONS
     // ============================================================
 
-    readonly property int outerPadding: 20
-    readonly property int categoryButtonWidth: 46
-    readonly property int categorySpacing: 12
-
-    readonly property int categoryNaturalWidth:
-        categories.length > 0
-        ? categories.length * categoryButtonWidth
-          + (categories.length - 1) * categorySpacing
-        : 520
-
-    readonly property int launcherWidth:
-        Math.max(
-            520,
-            Math.min(
-                700,
-                categoryNaturalWidth
-                + outerPadding * 2
-            )
-        )
-
-    readonly property int launcherHeight: 560
+    readonly property int launcherWidth: 760
+    readonly property int launcherHeight: 620
 
     // ============================================================
     // OPEN / CLOSE
@@ -151,44 +132,31 @@ PanelWindow {
     // ============================================================
 
     function categoryIcon(id, name) {
-        const key =
-            (id || name || "")
-            .toLowerCase()
+        const key = (id || name || "").toLowerCase()
 
         switch (key) {
         case "all":
             return "󰀻"
-
         case "development":
             return "󰅨"
-
         case "internet":
             return "󰖩"
-
         case "media":
             return "󰐊"
-
         case "graphics":
             return "󰏘"
-
         case "office":
             return "󰈙"
-
         case "games":
             return "󰊗"
-
         case "system":
             return "󰒓"
-
         case "utilities":
             return "󰒑"
-
         case "education":
             return "󰑴"
-
         case "science":
             return "󰙨"
-
         default:
             return "󰘔"
         }
@@ -202,12 +170,10 @@ PanelWindow {
         if (!app)
             return ""
 
-        if (app.generic_name
-                && app.generic_name.length > 0)
+        if (app.generic_name && app.generic_name.length > 0)
             return app.generic_name
 
-        if (app.comment
-                && app.comment.length > 0)
+        if (app.comment && app.comment.length > 0)
             return app.comment
 
         if (app.category_name)
@@ -217,7 +183,7 @@ PanelWindow {
     }
 
     // ============================================================
-    // CATEGORY
+    // CATEGORY SELECTION
     // ============================================================
 
     function selectCategory(category) {
@@ -225,54 +191,39 @@ PanelWindow {
             return
 
         searchDebounce.stop()
-
         searchInput.text = ""
 
         selectedCategoryId = category.id
         selectedCategoryName = category.name
 
-        visibleApps =
-            category.apps || []
-
-        appList.positionViewAtBeginning()
+        visibleApps = category.apps || []
+        appGrid.currentIndex = 0
+        appGrid.positionViewAtBeginning()
     }
 
     function restoreSelectedCategory() {
-        if (!categories
-                || categories.length === 0) {
+        if (!categories || categories.length === 0) {
             visibleApps = []
             return
         }
 
-        for (let i = 0;
-             i < categories.length;
-             ++i) {
+        for (let i = 0; i < categories.length; ++i) {
+            const category = categories[i]
 
-            const category =
-                categories[i]
-
-            if (category.id
-                    === selectedCategoryId) {
-
-                selectedCategoryName =
-                    category.name
-
-                visibleApps =
-                    category.apps || []
-
-                appList.positionViewAtBeginning()
-
+            if (category.id === selectedCategoryId) {
+                selectedCategoryName = category.name
+                visibleApps = category.apps || []
+                appGrid.currentIndex = 0
+                appGrid.positionViewAtBeginning()
                 return
             }
         }
 
         selectedCategoryId = "all"
         selectedCategoryName = "All"
-
-        visibleApps =
-            categories[0].apps || []
-
-        appList.positionViewAtBeginning()
+        visibleApps = categories[0].apps || []
+        appGrid.currentIndex = 0
+        appGrid.positionViewAtBeginning()
     }
 
     // ============================================================
@@ -280,12 +231,10 @@ PanelWindow {
     // ============================================================
 
     function requestSearch(query) {
-        const trimmed =
-            query.trim()
+        const trimmed = query.trim()
 
         if (trimmed.length === 0) {
             restoreSelectedCategory()
-
             loading = false
             return
         }
@@ -319,7 +268,7 @@ PanelWindow {
     }
 
     // ============================================================
-    // LIST
+    // LIST PROCESS
     // ============================================================
 
     Process {
@@ -328,32 +277,20 @@ PanelWindow {
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
-                    const payload =
-                        JSON.parse(this.text)
+                    const payload = JSON.parse(this.text)
 
-                    root.categories =
-                        payload.categories || []
-
-                    root.selectedCategoryId =
-                        "all"
-
-                    root.selectedCategoryName =
-                        "All"
+                    root.categories = payload.categories || []
+                    root.selectedCategoryId = "all"
+                    root.selectedCategoryName = "All"
 
                     if (root.categories.length > 0) {
-                        root.visibleApps =
-                            root.categories[0].apps
-                            || []
+                        root.visibleApps = root.categories[0].apps || []
                     } else {
                         root.visibleApps = []
                     }
 
                 } catch (error) {
-                    console.error(
-                        "[AppLauncher:list]",
-                        error
-                    )
-
+                    console.error("[AppLauncher:list]", error)
                     root.categories = []
                     root.visibleApps = []
                 }
@@ -364,14 +301,9 @@ PanelWindow {
 
         stderr: StdioCollector {
             onStreamFinished: {
-                const text =
-                    this.text.trim()
-
+                const text = this.text.trim()
                 if (text.length > 0)
-                    console.error(
-                        "[AppLauncher:list]",
-                        text
-                    )
+                    console.error("[AppLauncher:list]", text)
             }
         }
     }
@@ -386,29 +318,18 @@ PanelWindow {
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
-                    const payload =
-                        JSON.parse(this.text)
+                    const payload = JSON.parse(this.text)
 
-                    if (searchInput.text
-                            .trim()
-                            .length === 0) {
-
+                    if (searchInput.text.trim().length === 0) {
                         root.restoreSelectedCategory()
-
                     } else {
-
-                        root.visibleApps =
-                            payload.results || []
-
-                        appList.positionViewAtBeginning()
+                        root.visibleApps = payload.results || []
+                        appGrid.currentIndex = 0
+                        appGrid.positionViewAtBeginning()
                     }
 
                 } catch (error) {
-                    console.error(
-                        "[AppLauncher:search]",
-                        error
-                    )
-
+                    console.error("[AppLauncher:search]", error)
                     root.visibleApps = []
                 }
 
@@ -418,14 +339,9 @@ PanelWindow {
 
         stderr: StdioCollector {
             onStreamFinished: {
-                const text =
-                    this.text.trim()
-
+                const text = this.text.trim()
                 if (text.length > 0)
-                    console.error(
-                        "[AppLauncher:search]",
-                        text
-                    )
+                    console.error("[AppLauncher:search]", text)
             }
         }
     }
@@ -439,14 +355,9 @@ PanelWindow {
 
         stderr: StdioCollector {
             onStreamFinished: {
-                const text =
-                    this.text.trim()
-
+                const text = this.text.trim()
                 if (text.length > 0)
-                    console.error(
-                        "[AppLauncher:launch]",
-                        text
-                    )
+                    console.error("[AppLauncher:launch]", text)
             }
         }
     }
@@ -457,408 +368,317 @@ PanelWindow {
 
     Timer {
         id: searchDebounce
-
         interval: 100
         repeat: false
-
-        onTriggered:
-            root.requestSearch(
-                searchInput.text
-            )
+        onTriggered: root.requestSearch(searchInput.text)
     }
 
     Timer {
         id: closeTimer
-
-        interval:
-            NTheme.Theme.animationFast
-
+        interval: NTheme.Theme.animationFast
         repeat: false
-
         onTriggered: {
             root.windowAlive = false
-
             root.categories = []
             root.visibleApps = []
-
             root.loading = false
-
             searchInput.text = ""
         }
     }
 
     // ============================================================
-    // FADE
+    // BACKDROP & MODAL CONTAINER
     // ============================================================
 
     Item {
         id: fadeLayer
-
         anchors.fill: parent
-
-        opacity:
-            root.launcherOpen
-            ? NTheme.Theme.opacityFull
-            : NTheme.Theme.opacityHidden
+        opacity: root.launcherOpen ? 1.0 : 0.0
 
         Behavior on opacity {
             NumberAnimation {
-                duration:
-                    root.launcherOpen
-                    ? NTheme.Theme.animationNormal
-                    : NTheme.Theme.animationFast
-
-                easing.type:
-                    root.launcherOpen
-                    ? NTheme.Theme.easingEnter
-                    : NTheme.Theme.easingExit
+                duration: root.launcherOpen ? NTheme.Theme.animationNormal : NTheme.Theme.animationFast
+                easing.type: root.launcherOpen ? NTheme.Theme.easingEnter : NTheme.Theme.easingExit
             }
         }
 
-        // ========================================================
-        // CLICK OUTSIDE
-        // ========================================================
-
+        // Click outside backdrop
         MouseArea {
             anchors.fill: parent
-
-            onClicked:
-                root.closeLauncher()
+            onClicked: root.closeLauncher()
         }
 
         // ========================================================
-        // LAUNCHER
+        // MAIN LAUNCHER CARD
         // ========================================================
 
         Rectangle {
-            id: launcher
+            id: launcherCard
+
+            width: Math.min(root.launcherWidth, parent.width - 40)
+            height: Math.min(root.launcherHeight, parent.height - 60)
 
             anchors.centerIn: parent
 
-            width:
-                Math.min(
-                    root.launcherWidth,
-                    parent.width - 50
-                )
+            scale: root.launcherOpen ? 1.0 : 0.96
+            opacity: root.launcherOpen ? 1.0 : 0.0
 
-            height:
-                Math.min(
-                    root.launcherHeight,
-                    parent.height - 70
-                )
+            Behavior on scale {
+                NumberAnimation {
+                    duration: root.launcherOpen ? NTheme.Theme.animationNormal : NTheme.Theme.animationFast
+                    easing.type: root.launcherOpen ? Easing.OutCubic : NTheme.Theme.easingExit
+                }
+            }
 
-            radius:
-                NTheme.Theme.radiusLg
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: root.launcherOpen ? NTheme.Theme.animationNormal : NTheme.Theme.animationFast
+                }
+            }
 
-            color:
-                NTheme.Theme.popupBackground
+            radius: NTheme.Theme.radiusXl
+            color: NTheme.Theme.surfaceContainerLow
+            border.width: 1
+            border.color: NTheme.Theme.border
 
-            border.width:
-                NTheme.Theme.borderThin
-
-            border.color:
-                NTheme.Theme.border
-
-            // prevent outside-click close
+            // Consume clicks inside dialog
             MouseArea {
                 anchors.fill: parent
             }
 
             ColumnLayout {
                 anchors.fill: parent
-
-                anchors.margins:
-                    root.outerPadding
-
-                spacing:
-                    NTheme.Theme.spacingSm
+                anchors.margins: 18
+                spacing: 14
 
                 // =================================================
-                // SEARCH
+                // 1. TOP HEADER: SEARCH BAR
                 // =================================================
 
                 Rectangle {
                     Layout.fillWidth: true
+                    Layout.preferredHeight: 50
 
-                    Layout.preferredHeight: 52
-
-                    radius:
-                        NTheme.Theme.radiusMd
-
-                    color:
-                        NTheme.Theme.inputBackground
-
-                    border.width:
-                        searchInput.activeFocus
-                        ? NTheme.Theme.borderNormal
-                        : NTheme.Theme.borderThin
-
-                    border.color:
-                        searchInput.activeFocus
-                        ? NTheme.Theme.focusBorder
-                        : NTheme.Theme.border
+                    radius: NTheme.Theme.radiusMd
+                    color: NTheme.Theme.surfaceContainer
+                    border.width: searchInput.activeFocus ? NTheme.Theme.borderNormal : NTheme.Theme.borderThin
+                    border.color: searchInput.activeFocus ? NTheme.Theme.primary : NTheme.Theme.border
 
                     Behavior on border.color {
-                        ColorAnimation {
-                            duration:
-                                NTheme.Theme.animationFast
-                        }
+                        ColorAnimation { duration: NTheme.Theme.animationFast }
                     }
 
-                    Text {
-                        id: searchIcon
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 14
+                        spacing: 12
 
-                        anchors.left:
-                            parent.left
-
-                        anchors.leftMargin:
-                            NTheme.Theme.spacingLg
-
-                        anchors.verticalCenter:
-                            parent.verticalCenter
-
-                        text: "󰍉"
-
-                        color:
-                            searchInput.activeFocus
-                            ? NTheme.Theme.primary
-                            : NTheme.Theme.mutedText
-
-                        font.family:
-                            NTheme.Theme.iconFontFamily
-
-                        font.pixelSize:
-                            NTheme.Theme.iconSm
-                    }
-
-                    Text {
-                        anchors.left:
-                            searchIcon.right
-
-                        anchors.leftMargin:
-                            NTheme.Theme.spacingMd
-
-                        anchors.right:
-                            parent.right
-
-                        anchors.rightMargin:
-                            NTheme.Theme.spacingLg
-
-                        anchors.verticalCenter:
-                            parent.verticalCenter
-
-                        visible:
-                            searchInput.text.length === 0
-
-                        text:
-                            "Search applications..."
-
-                        color:
-                            NTheme.Theme.mutedText
-
-                        font.family:
-                            NTheme.Theme.fontFamily
-
-                        font.pixelSize:
-                            NTheme.Theme.fontSizeMd
-                    }
-
-                    TextInput {
-                        id: searchInput
-
-                        anchors.left:
-                            searchIcon.right
-
-                        anchors.leftMargin:
-                            NTheme.Theme.spacingMd
-
-                        anchors.right:
-                            parent.right
-
-                        anchors.rightMargin:
-                            NTheme.Theme.spacingLg
-
-                        anchors.verticalCenter:
-                            parent.verticalCenter
-
-                        color:
-                            NTheme.Theme.text
-
-                        selectionColor:
-                            NTheme.Theme.primary
-
-                        selectedTextColor:
-                            NTheme.Theme.primaryText
-
-                        font.family:
-                            NTheme.Theme.fontFamily
-
-                        font.pixelSize:
-                            NTheme.Theme.fontSizeMd
-
-                        clip: true
-
-                        onTextChanged:
-                            searchDebounce.restart()
-
-                        Keys.onEscapePressed: event => {
-                            event.accepted = true
-                            root.closeLauncher()
+                        Text {
+                            text: "󰍉"
+                            color: searchInput.activeFocus ? NTheme.Theme.primary : NTheme.Theme.mutedText
+                            font.family: NTheme.Theme.iconFontFamily
+                            font.pixelSize: NTheme.Theme.iconMd
                         }
 
-                        Keys.onLeftPressed: event => {
-                            event.accepted = true
-                            if (root.categories.length === 0)
-                                return
-                            const currentIdx = root.categories.findIndex(
-                                c => c.id === root.selectedCategoryId
-                            )
-                            const prevIdx =
-                                currentIdx <= 0
-                                ? root.categories.length - 1
-                                : currentIdx - 1
-                            root.selectCategory(root.categories[prevIdx])
-                        }
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
 
-                        Keys.onRightPressed: event => {
-                            event.accepted = true
-                            if (root.categories.length === 0)
-                                return
-                            const currentIdx = root.categories.findIndex(
-                                c => c.id === root.selectedCategoryId
-                            )
-                            const nextIdx =
-                                (currentIdx + 1) % root.categories.length
-                            root.selectCategory(root.categories[nextIdx])
-                        }
+                            Text {
+                                anchors.fill: parent
+                                verticalAlignment: Text.AlignVCenter
+                                visible: searchInput.text.length === 0
+                                text: root.selectedCategoryId === "all"
+                                    ? "Search applications..."
+                                    : "Search in " + root.selectedCategoryName + "..."
+                                color: NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.fontFamily
+                                font.pixelSize: NTheme.Theme.fontSizeMd
+                            }
 
-                        Keys.onDownPressed: event => {
-                            event.accepted = true
-                            appList.incrementCurrentIndex()
-                        }
+                            TextInput {
+                                id: searchInput
+                                anchors.fill: parent
+                                verticalAlignment: Text.AlignVCenter
+                                color: NTheme.Theme.text
+                                selectionColor: NTheme.Theme.primary
+                                selectedTextColor: NTheme.Theme.onPrimary
+                                font.family: NTheme.Theme.fontFamily
+                                font.pixelSize: NTheme.Theme.fontSizeMd
+                                clip: true
 
-                        Keys.onUpPressed: event => {
-                            event.accepted = true
-                            appList.decrementCurrentIndex()
-                        }
+                                onTextChanged: searchDebounce.restart()
 
-                        Keys.onReturnPressed: event => {
-                            event.accepted = true
-                            if (appList.currentIndex >= 0 && appList.currentIndex < root.visibleApps.length) {
-                                root.launchApplication(root.visibleApps[appList.currentIndex])
+                                Keys.onEscapePressed: event => {
+                                    event.accepted = true
+                                    if (searchInput.text.length > 0) {
+                                        searchInput.text = ""
+                                    } else {
+                                        root.closeLauncher()
+                                    }
+                                }
+
+                                Keys.onLeftPressed: event => {
+                                    if (appGrid.count > 0 && appGrid.currentIndex % 2 === 1) {
+                                        event.accepted = true
+                                        appGrid.currentIndex = Math.max(0, appGrid.currentIndex - 1)
+                                        return
+                                    }
+                                    if (root.categories.length > 0 && searchInput.text.length === 0) {
+                                        event.accepted = true
+                                        const currentIdx = root.categories.findIndex(c => c.id === root.selectedCategoryId)
+                                        const prevIdx = currentIdx <= 0 ? root.categories.length - 1 : currentIdx - 1
+                                        root.selectCategory(root.categories[prevIdx])
+                                    }
+                                }
+
+                                Keys.onRightPressed: event => {
+                                    if (appGrid.count > 0 && appGrid.currentIndex % 2 === 0 && appGrid.currentIndex + 1 < appGrid.count) {
+                                        event.accepted = true
+                                        appGrid.currentIndex = appGrid.currentIndex + 1
+                                        return
+                                    }
+                                    if (root.categories.length > 0 && searchInput.text.length === 0) {
+                                        event.accepted = true
+                                        const currentIdx = root.categories.findIndex(c => c.id === root.selectedCategoryId)
+                                        const nextIdx = (currentIdx + 1) % root.categories.length
+                                        root.selectCategory(root.categories[nextIdx])
+                                    }
+                                }
+
+                                Keys.onDownPressed: event => {
+                                    event.accepted = true
+                                    if (appGrid.count > 0) {
+                                        appGrid.currentIndex = Math.min(appGrid.count - 1, appGrid.currentIndex + 2)
+                                    }
+                                }
+
+                                Keys.onUpPressed: event => {
+                                    event.accepted = true
+                                    if (appGrid.count > 0) {
+                                        appGrid.currentIndex = Math.max(0, appGrid.currentIndex - 2)
+                                    }
+                                }
+
+                                Keys.onReturnPressed: event => {
+                                    event.accepted = true
+                                    if (appGrid.currentIndex >= 0 && appGrid.currentIndex < root.visibleApps.length) {
+                                        root.launchApplication(root.visibleApps[appGrid.currentIndex])
+                                    }
+                                }
                             }
                         }
-                    }
 
-                    MouseArea {
-                        anchors.fill: parent
+                        // Clear button (✕)
+                        Rectangle {
+                            width: 26
+                            height: 26
+                            radius: 13
+                            visible: searchInput.text.length > 0
+                            color: clearMouse.containsMouse ? NTheme.Theme.hover : "transparent"
 
-                        z: -1
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰅖"
+                                color: clearMouse.containsMouse ? NTheme.Theme.text : NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.iconFontFamily
+                                font.pixelSize: NTheme.Theme.iconSm
+                            }
 
-                        onClicked:
-                            searchInput.forceActiveFocus()
+                            MouseArea {
+                                id: clearMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    searchInput.text = ""
+                                    searchInput.forceActiveFocus()
+                                }
+                            }
+                        }
                     }
                 }
 
                 // =================================================
-                // CATEGORY ICONS
+                // 2. CATEGORY PILLS BAR
                 // =================================================
 
                 Item {
                     Layout.fillWidth: true
-
-                    Layout.preferredHeight: 52
-
-                    z: 100
+                    Layout.preferredHeight: 38
 
                     Flickable {
                         anchors.fill: parent
-
-                        contentWidth:
-                            categoryRow.implicitWidth
-
-                        contentHeight:
-                            categoryRow.height
-
-                        interactive:
-                            contentWidth > width
-
-                        boundsBehavior:
-                            Flickable.StopAtBounds
-
-                        clip: false
+                        contentWidth: categoryRow.implicitWidth
+                        contentHeight: parent.height
+                        interactive: contentWidth > width
+                        boundsBehavior: Flickable.StopAtBounds
+                        clip: true
 
                         Row {
                             id: categoryRow
-
-                            anchors.centerIn: parent
-
-                            spacing:
-                                root.categorySpacing
-
-                            height: 46
+                            spacing: 8
+                            height: parent.height
 
                             Repeater {
-                                model:
-                                    root.categories
+                                model: root.categories
 
-                                delegate: Item {
-                                    id: categoryDelegate
-
+                                delegate: Rectangle {
+                                    id: catChip
                                     required property var modelData
-
-                                    width:
-                                        root.categoryButtonWidth
-
-                                    height: 46
 
                                     readonly property bool active:
                                         searchInput.text.length === 0
-                                        && root.selectedCategoryId
-                                           === modelData.id
+                                        && root.selectedCategoryId === modelData.id
 
-                                    NexaUI.NexaIconButton {
-                                        id: categoryBtn
+                                    implicitWidth: chipRow.implicitWidth + 24
+                                    implicitHeight: 36
+                                    radius: height / 2
 
-                                        anchors.fill: parent
+                                    color: active
+                                        ? NTheme.Theme.primary
+                                        : chipMouse.containsMouse
+                                            ? NTheme.Theme.surfaceContainerHigh
+                                            : NTheme.Theme.surfaceContainer
 
-                                        icon: root.categoryIcon(
-                                            modelData.id,
-                                            modelData.name
-                                        )
+                                    border.width: active ? 0 : NTheme.Theme.borderThin
+                                    border.color: active ? "transparent" : NTheme.Theme.border
 
-                                        iconSize: NTheme.Theme.iconLg
+                                    scale: chipMouse.pressed ? 0.96 : (chipMouse.containsMouse ? 1.02 : 1.0)
 
-                                        selected: categoryDelegate.active
+                                    Behavior on color { ColorAnimation { duration: NTheme.Theme.animationFast } }
+                                    Behavior on scale { NumberAnimation { duration: NTheme.Theme.animationFast } }
 
-                                        onClicked: root.selectCategory(modelData)
+                                    Row {
+                                        id: chipRow
+                                        anchors.centerIn: parent
+                                        spacing: 6
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: root.categoryIcon(modelData.id, modelData.name)
+                                            color: catChip.active ? NTheme.Theme.onPrimary : NTheme.Theme.text
+                                            font.family: NTheme.Theme.iconFontFamily
+                                            font.pixelSize: NTheme.Theme.iconSm
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: modelData.name
+                                            color: catChip.active ? NTheme.Theme.onPrimary : NTheme.Theme.text
+                                            font.family: NTheme.Theme.fontFamily
+                                            font.pixelSize: NTheme.Theme.fontSizeSm
+                                            font.weight: catChip.active ? NTheme.Theme.fontWeightSemiBold : NTheme.Theme.fontWeightMedium
+                                        }
                                     }
 
-                                    NTheme.HoverInfo {
-                                        anchors.horizontalCenter:
-                                            parent.horizontalCenter
-
-                                        anchors.top:
-                                            parent.bottom
-
-                                        anchors.topMargin:
-                                            NTheme.Theme.spacingXs
-
-                                        visible:
-                                            categoryBtn.hovered
-
-                                        z: 1000
-
-                                        title:
-                                            modelData.name
-
-                                        info:
-                                            modelData.count
-                                            + (
-                                                modelData.count === 1
-                                                ? " app"
-                                                : " apps"
-                                            )
+                                    MouseArea {
+                                        id: chipMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.selectCategory(modelData)
                                     }
                                 }
                             }
@@ -867,298 +687,293 @@ PanelWindow {
                 }
 
                 // =================================================
-                // APPLICATION LIST
+                // 3. APPLICATION 2-COLUMN GRID VIEW
                 // =================================================
 
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
-                    radius:
-                        NTheme.Theme.radiusMd
-
-                    color:
-                        NTheme.Theme.panelBackground
-
+                    radius: NTheme.Theme.radiusLg
+                    color: NTheme.Theme.surfaceContainer
+                    border.width: NTheme.Theme.borderThin
+                    border.color: NTheme.Theme.border
                     clip: true
 
-                    ListView {
-                        id: appList
-
+                    GridView {
+                        id: appGrid
                         anchors.fill: parent
+                        anchors.topMargin: 10
+                        anchors.bottomMargin: 10
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 18
 
-                        anchors.topMargin:
-                            NTheme.Theme.spacingMd
+                        cellWidth: width / 2
+                        cellHeight: 70
 
-                        anchors.bottomMargin:
-                            NTheme.Theme.spacingMd
-
-                        anchors.leftMargin:
-                            NTheme.Theme.spacingMd
-
-                        anchors.rightMargin: 0
-
-                        model:
-                            root.visibleApps
-
-                        spacing: 2
-
+                        model: root.visibleApps
                         clip: true
 
-                        boundsBehavior:
-                            Flickable.StopAtBounds
-
-                        flickDeceleration:
-                            NTheme.Theme.flickDeceleration
-
-                        maximumFlickVelocity:
-                            NTheme.Theme.flickVelocityMax
-
-                        pixelAligned: true
+                        boundsBehavior: Flickable.StopAtBounds
+                        flickDeceleration: NTheme.Theme.flickDeceleration
+                        maximumFlickVelocity: NTheme.Theme.flickVelocityMax
 
                         ScrollBar.vertical: ScrollBar {
-                            id: appScrollBar
+                            id: gridScrollBar
+                            parent: appGrid.parent
+                            anchors.right: parent.right
+                            anchors.rightMargin: 5
+                            anchors.top: parent.top
+                            anchors.topMargin: 12
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 12
                             policy: ScrollBar.AsNeeded
 
                             contentItem: Rectangle {
                                 implicitWidth: 3
-                                radius: width / 2
+                                radius: 1.5
                                 color: Qt.rgba(
                                     NTheme.Theme.text.r,
                                     NTheme.Theme.text.g,
                                     NTheme.Theme.text.b,
-                                    appScrollBar.hovered ? 0.5 : 0.18
+                                    gridScrollBar.hovered ? 0.6 : 0.25
                                 )
-
-                                Behavior on color {
-                                    ColorAnimation { duration: NTheme.Theme.animationFast }
-                                }
+                                Behavior on color { ColorAnimation { duration: NTheme.Theme.animationFast } }
                             }
-
-                            background: null
+                            background: Rectangle {
+                                implicitWidth: 3
+                                radius: 1.5
+                                color: Qt.rgba(
+                                    NTheme.Theme.text.r,
+                                    NTheme.Theme.text.g,
+                                    NTheme.Theme.text.b,
+                                    0.06
+                                )
+                            }
                         }
 
                         delegate: Item {
-                            id: appDelegate
-
+                            id: appItem
                             required property var modelData
+                            required property int index
 
-                            width:
-                                appList.width - 16
+                            width: appGrid.cellWidth
+                            height: appGrid.cellHeight
 
-                            height: 72
+                            readonly property bool isSelected: appGrid.currentIndex === index
 
-                            NexaUI.NexaCard {
+                            Rectangle {
+                                id: cardBackground
                                 anchors.fill: parent
-                                padding: NTheme.Theme.spacingMd
-                                interactive: true
-                                selected: appDelegate.ListView.isCurrentItem
-                                onClicked: root.launchApplication(modelData)
+                                anchors.margins: 4
+
+                                radius: NTheme.Theme.radiusMd
+
+                                color: appItem.isSelected
+                                    ? NTheme.Theme.primaryContainer
+                                    : appMouse.containsMouse
+                                        ? NTheme.Theme.surfaceContainerHigh
+                                        : NTheme.Theme.surfaceContainerLow
+
+                                border.width: appItem.isSelected ? NTheme.Theme.borderNormal : NTheme.Theme.borderThin
+                                border.color: appItem.isSelected
+                                    ? NTheme.Theme.primary
+                                    : (appMouse.containsMouse ? NTheme.Theme.borderStrong : NTheme.Theme.border)
+
+                                scale: appMouse.pressed ? 0.97 : (appMouse.containsMouse ? 1.01 : 1.0)
+
+                                Behavior on color { ColorAnimation { duration: NTheme.Theme.animationFast } }
+                                Behavior on scale { NumberAnimation { duration: NTheme.Theme.animationFast } }
+                                Behavior on border.color { ColorAnimation { duration: NTheme.Theme.animationFast } }
 
                                 RowLayout {
-                                    anchors.fill:
-                                        parent
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 12
 
-                                    spacing:
-                                        NTheme.Theme.spacingMd
-
+                                    // App Icon
                                     Image {
-                                        Layout.preferredWidth: 48
-                                        Layout.preferredHeight: 48
+                                        Layout.preferredWidth: 42
+                                        Layout.preferredHeight: 42
 
-                                        source:
-                                            modelData.icon
-                                            ? Quickshell.iconPath(
-                                                  modelData.icon,
-                                                  "application-x-executable"
-                                              )
-                                            : Quickshell.iconPath(
-                                                  "application-x-executable"
-                                              )
+                                        source: modelData.icon
+                                            ? Quickshell.iconPath(modelData.icon, "application-x-executable")
+                                            : Quickshell.iconPath("application-x-executable")
 
-                                        sourceSize.width: 48
-                                        sourceSize.height: 48
-
-                                        fillMode:
-                                            Image.PreserveAspectFit
-
+                                        sourceSize.width: 42
+                                        sourceSize.height: 42
+                                        fillMode: Image.PreserveAspectFit
                                         asynchronous: true
                                         smooth: true
                                     }
 
+                                    // App Title & Subtitle
                                     ColumnLayout {
                                         Layout.fillWidth: true
-
                                         spacing: 2
 
                                         Text {
                                             Layout.fillWidth: true
-
-                                            text:
-                                                modelData.name
-
-                                            color:
-                                                NTheme.Theme.text
-
-                                            font.family:
-                                                NTheme.Theme.fontFamily
-
-                                            font.pixelSize:
-                                                NTheme.Theme.fontSizeLg
-
-                                            font.weight:
-                                                NTheme.Theme.fontWeightDemiBold
-
-                                            elide:
-                                                Text.ElideRight
-
+                                            text: modelData.name
+                                            color: appItem.isSelected ? NTheme.Theme.onPrimaryContainer : NTheme.Theme.text
+                                            font.family: NTheme.Theme.fontFamily
+                                            font.pixelSize: NTheme.Theme.fontSizeMd
+                                            font.weight: NTheme.Theme.fontWeightSemiBold
+                                            elide: Text.ElideRight
                                             maximumLineCount: 1
                                         }
 
                                         Text {
                                             Layout.fillWidth: true
-
-                                            text:
-                                                root.appDescription(
-                                                    modelData
-                                                )
-
-                                            visible:
-                                                text.length > 0
-
-                                            color:
-                                                NTheme.Theme.mutedText
-
-                                            font.family:
-                                                NTheme.Theme.fontFamily
-
-                                            font.pixelSize:
-                                                NTheme.Theme.fontSizeSm
-
-                                            elide:
-                                                Text.ElideRight
-
+                                            text: root.appDescription(modelData)
+                                            visible: text.length > 0
+                                            color: appItem.isSelected ? NTheme.Theme.onPrimaryContainer : NTheme.Theme.mutedText
+                                            opacity: appItem.isSelected ? 0.8 : 1.0
+                                            font.family: NTheme.Theme.fontFamily
+                                            font.pixelSize: NTheme.Theme.fontSizeXs
+                                            elide: Text.ElideRight
                                             maximumLineCount: 1
                                         }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: appMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        appGrid.currentIndex = appItem.index
+                                        root.launchApplication(modelData)
                                     }
                                 }
                             }
                         }
 
-                        // =================================================
-                        // EMPTY
-                        // =================================================
+                        // Empty State
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 8
+                            visible: !root.loading && root.visibleApps.length === 0
 
-                        Text {
-                            anchors.centerIn:
-                                parent
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "󰀻"
+                                color: NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.iconFontFamily
+                                font.pixelSize: 36
+                            }
 
-                            visible:
-                                !root.loading
-                                && root.visibleApps.length === 0
-
-                            text:
-                                searchInput.text.length > 0
-                                ? "No applications found"
-                                : "No applications"
-
-                            color:
-                                NTheme.Theme.mutedText
-
-                            font.family:
-                                NTheme.Theme.fontFamily
-
-                            font.pixelSize:
-                                NTheme.Theme.fontSizeSm
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: searchInput.text.length > 0 ? "No applications found" : "No applications"
+                                color: NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.fontFamily
+                                font.pixelSize: NTheme.Theme.fontSizeMd
+                                font.weight: NTheme.Theme.fontWeightMedium
+                            }
                         }
 
-                        // =================================================
-                        // LOADING
-                        // =================================================
+                        // Loading State
+                        Text {
+                            anchors.centerIn: parent
+                            visible: root.loading && root.visibleApps.length === 0
+                            text: "Loading applications..."
+                            color: NTheme.Theme.mutedText
+                            font.family: NTheme.Theme.fontFamily
+                            font.pixelSize: NTheme.Theme.fontSizeMd
+                        }
+                    }
+                }
+
+                // =================================================
+                // 4. BOTTOM STATUS BAR & NAVIGATION HINTS
+                // =================================================
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 24
+
+                    // App count info
+                    Row {
+                        spacing: 6
 
                         Text {
-                            anchors.centerIn:
-                                parent
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: searchInput.text.length > 0 ? "󰍉" : "󰀻"
+                            color: NTheme.Theme.mutedText
+                            font.family: NTheme.Theme.iconFontFamily
+                            font.pixelSize: NTheme.Theme.iconXs
+                        }
 
-                            visible:
-                                root.loading
-                                && root.visibleApps.length === 0
-
-                            text:
-                                "Loading applications..."
-
-                            color:
-                                NTheme.Theme.mutedText
-
-                            font.family:
-                                NTheme.Theme.fontFamily
-
-                            font.pixelSize:
-                                NTheme.Theme.fontSizeSm
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: searchInput.text.length > 0
+                                ? root.visibleApps.length + " result" + (root.visibleApps.length === 1 ? "" : "s")
+                                : root.visibleApps.length + " apps in " + root.selectedCategoryName
+                            color: NTheme.Theme.mutedText
+                            font.family: NTheme.Theme.fontFamily
+                            font.pixelSize: NTheme.Theme.fontSizeXs
+                            font.weight: NTheme.Theme.fontWeightMedium
                         }
                     }
 
-                    // =====================================================
-                    // CUSTOM THIN SCROLLBAR
-                    // =====================================================
+                    Item { Layout.fillWidth: true }
 
-                    Rectangle {
-                        id: scrollTrack
+                    // Keyboard legend
+                    Row {
+                        spacing: 12
 
-                        anchors.right:
-                            parent.right
+                        Row {
+                            spacing: 4
+                            Text {
+                                text: "↑↓←→"
+                                color: NTheme.Theme.primary
+                                font.family: NTheme.Theme.monoFont
+                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                font.weight: NTheme.Theme.fontWeightBold
+                            }
+                            Text {
+                                text: "Navigate"
+                                color: NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.fontFamily
+                                font.pixelSize: NTheme.Theme.fontSizeXs
+                            }
+                        }
 
-                        anchors.rightMargin: 4
+                        Row {
+                            spacing: 4
+                            Text {
+                                text: "↵"
+                                color: NTheme.Theme.primary
+                                font.family: NTheme.Theme.monoFont
+                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                font.weight: NTheme.Theme.fontWeightBold
+                            }
+                            Text {
+                                text: "Launch"
+                                color: NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.fontFamily
+                                font.pixelSize: NTheme.Theme.fontSizeXs
+                            }
+                        }
 
-                        anchors.top:
-                            parent.bottom
-
-                        anchors.topMargin: 8
-
-                        anchors.bottom:
-                            parent.bottom
-
-                        anchors.bottomMargin: 8
-
-                        width: 4
-
-                        radius: 2
-
-                        color:
-                            NTheme.Theme.divider
-
-                        visible:
-                            appList.contentHeight
-                            > appList.height
-
-                        Rectangle {
-                            width:
-                                parent.width
-
-                            radius:
-                                parent.radius
-
-                            color:
-                                NTheme.Theme.borderStrong
-
-                            height:
-                                Math.max(
-                                    30,
-                                    parent.height
-                                    * appList.visibleArea.heightRatio
-                                )
-
-                            y:
-                                (
-                                    parent.height
-                                    - height
-                                )
-                                * appList.visibleArea.yPosition
-                                / Math.max(
-                                    0.0001,
-                                    1
-                                    - appList.visibleArea.heightRatio
-                                )
+                        Row {
+                            spacing: 4
+                            Text {
+                                text: "ESC"
+                                color: NTheme.Theme.primary
+                                font.family: NTheme.Theme.monoFont
+                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                font.weight: NTheme.Theme.fontWeightBold
+                            }
+                            Text {
+                                text: "Close"
+                                color: NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.fontFamily
+                                font.pixelSize: NTheme.Theme.fontSizeXs
+                            }
                         }
                     }
                 }

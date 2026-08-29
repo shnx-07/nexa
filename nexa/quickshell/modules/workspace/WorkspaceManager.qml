@@ -990,6 +990,14 @@ PanelWindow {
             && regularTarget !== sourceWorkspace
         ) {
 
+            if (windowItem) {
+                windowItem.workspaceX = manager.workspaceX(regularTarget)
+                windowItem.workspaceY = manager.workspaceY(regularTarget)
+                windowItem.dragInProgress = false
+                windowItem.x = windowItem.initX
+                windowItem.y = windowItem.initY
+            }
+
             moveToRegular(
                 address,
                 regularTarget
@@ -1009,6 +1017,14 @@ PanelWindow {
             specialTarget !== ""
             && specialTarget !== sourceSpecial
         ) {
+
+            if (windowItem) {
+                windowItem.workspaceX = manager.specialWorkspaceX(specialTarget)
+                windowItem.workspaceY = manager.specialWorkspaceY(specialTarget)
+                windowItem.dragInProgress = false
+                windowItem.x = windowItem.initX
+                windowItem.y = windowItem.initY
+            }
 
             moveToSpecial(
                 address,
@@ -1357,15 +1373,17 @@ PanelWindow {
 
                       border.width:
                           workspaceDrop.containsDrag
-                          ? Nexa.Theme.borderStrongWidth
-                          : 1
+                          ? 2
+                          : modelData.active
+                            ? 2
+                            : 1
 
 
                       border.color:
                           workspaceDrop.containsDrag
                           ? Nexa.Theme.primary
                           : modelData.active
-                            ? Nexa.Theme.selectedBorder
+                            ? Nexa.Theme.primary
                             : Nexa.Theme.border
 
 
@@ -1411,13 +1429,24 @@ PanelWindow {
                               || modelData.windows.length === 0
 
                           text:
-                              "Empty"
+                              workspaceTile.workspaceId
 
                           color:
-                              Nexa.Theme.mutedText
+                              Nexa.Theme.text
 
                           opacity:
-                              0.45
+                              0.08
+
+                          font {
+                              family:
+                                  Nexa.Theme.fontFamily
+
+                              pixelSize:
+                                  48
+
+                              bold:
+                                  true
+                          }
                       }
 
 
