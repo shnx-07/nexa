@@ -120,32 +120,25 @@ PanelWindow {
             + ".jpg"
     }
 
-    function reload(force) {
-        if (!force && wallpaperModel.count > 0 && loaded) {
+    function reload() {
+        if (listProcess.running)
             return
-        }
-
-        wallpaperModel.clear()
-
-        loaded = false
-        statusText = "Loading wallpapers..."
 
         listProcess.command = [
-          nexad,
-          "wallpaper",
-          "list"
-      ]
+            nexad,
+            "wallpaper",
+            "list"
+        ]
 
         listProcess.running = true
     }
 
     function parseWallpaperList(output) {
-        wallpaperModel.clear()
-
         const lines = String(output)
             .split("\n")
             .filter(line => line.trim() !== "")
 
+        const newItems = []
         for (let i = 0; i < lines.length; ++i) {
             const parts = lines[i].split("|")
             if (parts.length < 2)
@@ -155,7 +148,7 @@ PanelWindow {
             const path = parts[1]
             const thumb = parts.length >= 3 && parts[2] ? parts[2] : path
 
-            wallpaperModel.append({
+            newItems.push({
                 wallType: type,
                 wallPath: path,
                 wallThumb: thumb,
@@ -163,9 +156,29 @@ PanelWindow {
             })
         }
 
-        loaded = true
+        // Reconcile: check if items actually changed
+        let hasChanges = false
+        if (newItems.length !== wallpaperModel.count) {
+            hasChanges = true
+        } else {
+            for (let i = 0; i < newItems.length; ++i) {
+                const current = wallpaperModel.get(i)
+                if (!current || current.wallPath !== newItems[i].wallPath) {
+                    hasChanges = true
+                    break
+                }
+            }
+        }
 
-        updateVisibleSelection()
+        if (hasChanges || !loaded) {
+            wallpaperModel.clear()
+            for (let i = 0; i < newItems.length; ++i) {
+                wallpaperModel.append(newItems[i])
+            }
+            updateVisibleSelection()
+        }
+
+        loaded = true
 
         if (wallpaperModel.count === 0)
             statusText = "No wallpapers found"
@@ -1803,8 +1816,7 @@ PanelWindow {
         if (!visible)
             return
 
-        if (wallpaperModel.count === 0)
-            reload()
+        reload()
 
         Qt.callLater(
             () => view.forceActiveFocus()
