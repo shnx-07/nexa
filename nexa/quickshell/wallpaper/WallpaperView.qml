@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import QtMultimedia
 
 import Quickshell
@@ -119,7 +120,11 @@ PanelWindow {
             + ".jpg"
     }
 
-    function reload() {
+    function reload(force) {
+        if (!force && wallpaperModel.count > 0 && loaded) {
+            return
+        }
+
         wallpaperModel.clear()
 
         loaded = false
@@ -142,23 +147,18 @@ PanelWindow {
             .filter(line => line.trim() !== "")
 
         for (let i = 0; i < lines.length; ++i) {
-            const separator = lines[i].indexOf("|")
-
-            if (separator <= 0)
+            const parts = lines[i].split("|")
+            if (parts.length < 2)
                 continue
 
-            const type =
-                lines[i].substring(0, separator)
-
-            const path =
-                lines[i].substring(separator + 1)
-
-            if (!path)
-                continue
+            const type = parts[0]
+            const path = parts[1]
+            const thumb = parts.length >= 3 && parts[2] ? parts[2] : path
 
             wallpaperModel.append({
                 wallType: type,
                 wallPath: path,
+                wallThumb: thumb,
                 wallName: fileName(path)
             })
         }
@@ -327,8 +327,9 @@ PanelWindow {
               + " to background..."
 
           Quickshell.execDetached([
-              "bash",
-              applyScript,
+              nexad,
+              "wallpaper",
+              "apply",
               entry.wallPath
           ])
 
@@ -373,24 +374,12 @@ PanelWindow {
               + entry.wallName
               + " to both..."
 
-          // Normal desktop pipeline.
-          //
-          // This remains responsible for:
-          // wallpaper
-          // Matugen
-          // theme
-          // screen temperature
-
           Quickshell.execDetached([
-              "bash",
-              applyScript,
+              nexad,
+              "wallpaper",
+              "apply",
               entry.wallPath
           ])
-
-
-          // Lock wallpaper only.
-          //
-          // No Matugen/theme generation happens here.
 
           Quickshell.execDetached([
               nexad,
@@ -613,6 +602,7 @@ PanelWindow {
             required property int index
             required property string wallType
             required property string wallPath
+            required property string wallThumb
             required property string wallName
 
             readonly property bool matches:
@@ -751,14 +741,54 @@ PanelWindow {
                     }
                 }
 
+                // -------------------------------------------------
+                // Smooth Ambient Light Aura (Pre-loaded texture)
+                // -------------------------------------------------
+                Item {
+                    id: auraLayer
+                    anchors.fill: parent
+                    anchors.margins: -14
+                    z: -1
+                    opacity: cardRoot.selected ? 0.65 : (cardMouse.containsMouse ? 0.28 : 0.0)
+                    scale: cardRoot.selected ? 1.03 : 0.98
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 420; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on scale {
+                        NumberAnimation { duration: 420; easing.type: Easing.OutCubic }
+                    }
+
+                    Image {
+                        id: auraSourceImg
+                        anchors.fill: parent
+                        source: root.fileUrl(cardRoot.wallThumb && cardRoot.wallThumb.length > 0 ? cardRoot.wallThumb : cardRoot.wallPath)
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        cache: true
+                        sourceSize.width: 48
+                        sourceSize.height: 36
+                        visible: false
+                    }
+
+                    MultiEffect {
+                        anchors.fill: parent
+                        source: auraSourceImg
+                        blurEnabled: true
+                        blur: 1.0
+                        blurMax: 32
+                        saturation: 0.65
+                        brightness: 0.12
+                    }
+                }
+
                 Rectangle {
                     anchors.fill: parent
 
                     color:
                         NTheme.Theme.surface
 
-                    radius:
-                        NTheme.Theme.radiusLg
+                    radius: 0
 
                     border.width:
                         cardRoot.selected ? 2 : 1
@@ -807,12 +837,12 @@ PanelWindow {
                         height:
                             skewContainer.height + 20
 
-                        sourceSize.width: 800
-                        sourceSize.height: 600
+                        sourceSize.width: 640
+                        sourceSize.height: 480
 
                         source:
                             cardRoot.isImage
-                            ? root.fileUrl(cardRoot.wallPath)
+                            ? root.fileUrl(cardRoot.wallThumb && cardRoot.wallThumb.length > 0 ? cardRoot.wallThumb : cardRoot.wallPath)
                             : ""
 
                         fillMode:
@@ -979,15 +1009,15 @@ PanelWindow {
                         height:
                             skewContainer.height + 20
 
-                        sourceSize.width: 800
-                        sourceSize.height: 600
+                        sourceSize.width: 640
+                        sourceSize.height: 480
 
                         source:
                             cardRoot.isVideo
                             ? root.fileUrl(
-                                  root.videoThumbnail(
-                                      cardRoot.wallPath
-                                  )
+                                  cardRoot.wallThumb && cardRoot.wallThumb.length > 0
+                                  ? cardRoot.wallThumb
+                                  : root.videoThumbnail(cardRoot.wallPath)
                               )
                             : ""
 
@@ -1098,58 +1128,99 @@ PanelWindow {
                     }
 
                     // -------------------------------------------------
-                    // Type badge
+                    // Specular glass sheen highlight
                     // -------------------------------------------------
-
                     Rectangle {
-                        visible:
-                            cardRoot.selected &&
-                            !cardRoot.isImage
+                        anchors.fill: parent
+                        radius: 0
+                        gradient: Gradient {
+                            orientation: Gradient.Vertical
+                            GradientStop { position: 0.35; color: "transparent" }
+                            GradientStop { position: 0.7; color: "transparent" }
+                            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, cardRoot.selected ? 0.35 : 0.2) }
+                        }
+                    }
 
+                    // -------------------------------------------------
+                    // Wallpaper Name Chip (Bottom-Left)
+                    // -------------------------------------------------
+                    Rectangle {
+                        visible: cardRoot.selected
+                        anchors {
+                            left: parent.left
+                            bottom: parent.bottom
+                            margins: 18
+                        }
+                        height: 32
+                        width: Math.min(nameRow.implicitWidth + 24, parent.width - 120)
+                        radius: NTheme.Theme.radiusFull
+                        color: Qt.rgba(NTheme.Theme.background.r, NTheme.Theme.background.g, NTheme.Theme.background.b, 0.82)
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.15)
+
+                        RowLayout {
+                            id: nameRow
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 6
+
+                            Text {
+                                text: "󰋩"
+                                color: NTheme.Theme.primary
+                                font.family: NTheme.Theme.iconFont
+                                font.pixelSize: 13
+                            }
+
+                            Text {
+                                text: cardRoot.wallName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")
+                                color: NTheme.Theme.text
+                                font.family: NTheme.Theme.fontFamily
+                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                font.weight: Font.DemiBold
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+                        }
+                    }
+
+                    // -------------------------------------------------
+                    // Type badge (Bottom-Right)
+                    // -------------------------------------------------
+                    Rectangle {
+                        visible: cardRoot.selected
                         anchors {
                             right: parent.right
                             bottom: parent.bottom
                             margins: 18
                         }
 
-                        height: 30
+                        height: 32
+                        width: typeBadgeRow.implicitWidth + 20
+                        radius: NTheme.Theme.radiusFull
+                        color: Qt.rgba(NTheme.Theme.background.r, NTheme.Theme.background.g, NTheme.Theme.background.b, 0.82)
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.15)
 
-                        width:
-                            typeLabel.implicitWidth + 22
+                        RowLayout {
+                            id: typeBadgeRow
+                            anchors.centerIn: parent
+                            spacing: 5
 
-                        radius:
-                            NTheme.Theme.radiusFull
+                            Rectangle {
+                                implicitWidth: 6
+                                implicitHeight: 6
+                                radius: 3
+                                color: cardRoot.isVideo ? "#EF4444" : (cardRoot.isGif ? "#F59E0B" : NTheme.Theme.primary)
+                            }
 
-                        color:
-                            Qt.rgba(
-                                NTheme.Theme.background.r,
-                                NTheme.Theme.background.g,
-                                NTheme.Theme.background.b,
-                                0.78
-                            )
-
-                        Text {
-                            id: typeLabel
-
-                            anchors.centerIn:
-                                parent
-
-                            text:
-                                cardRoot.isGif
-                                ? "GIF"
-                                : "VIDEO"
-
-                            color:
-                                NTheme.Theme.text
-
-                            font.family:
-                                NTheme.Theme.monoFont
-
-                            font.pixelSize:
-                                NTheme.Theme.fontSizeSm
-
-                            font.weight:
-                                Font.DemiBold
+                            Text {
+                                text: cardRoot.isVideo ? "VIDEO" : (cardRoot.isGif ? "GIF" : "IMAGE")
+                                color: NTheme.Theme.text
+                                font.family: NTheme.Theme.monoFont
+                                font.pixelSize: NTheme.Theme.fontSize2Xs
+                                font.weight: Font.Bold
+                            }
                         }
                     }
                 }

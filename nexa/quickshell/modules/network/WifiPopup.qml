@@ -2238,34 +2238,8 @@ PopupWindow {
                         }
 
 
-                        add: Transition {
-                            NumberAnimation {
-                                property: "opacity"
-                                from: 0
-                                to: 1
-                                duration: Nexa.Theme.animationNormal
-                                easing.type: Nexa.Theme.easingEnter
-                            }
-                        }
-
-
-                        /*
-                         * Smooth position changes when scanning changes
-                         * network ordering or a network connects/disconnects.
-                         */
-                        displaced: Transition {
-
-                            NumberAnimation {
-                                properties:
-                                    "x,y"
-
-                                duration:
-                                    Nexa.Theme.animationNormal
-
-                                easing.type:
-                                    Nexa.Theme.easingStandard
-                            }
-                        }
+                        boundsBehavior: Flickable.StopAtBounds
+                        reuseItems: true
 
 
                         delegate: Rectangle {
@@ -2276,7 +2250,7 @@ PopupWindow {
 
 
                             width:
-                                networkList.width
+                                networkList.width - 8
 
                             height: 48
 

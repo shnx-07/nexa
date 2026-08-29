@@ -3,6 +3,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::Command,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 
@@ -30,19 +31,6 @@ fn wallpaper_dir() -> PathBuf {
     PathBuf::from(home)
         .join("Pictures")
         .join("Wallpapers")
-}
-
-
-fn video_thumb_dir() -> PathBuf {
-    let home =
-        env::var("HOME")
-            .unwrap_or_else(|_| String::from("."));
-
-    PathBuf::from(home)
-        .join(".cache")
-        .join("nexa")
-        .join("wallpapers")
-        .join("video")
 }
 
 
@@ -160,12 +148,11 @@ fn scan() -> Vec<Wallpaper> {
         };
 
 
-        // Video cards use cached thumbnails.
-        if kind == "video" {
-            ensure_video_thumbnail(
-                &path
-            );
-        }
+        // Ensure fast cached thumbnails for all wallpapers
+        ensure_thumbnail(
+            &path,
+            kind
+        );
 
 
         let name =
@@ -205,45 +192,58 @@ fn scan() -> Vec<Wallpaper> {
 
 
 // ============================================================
+// ============================================================
 // PRINT WALLPAPER ENTRY
 // ============================================================
 
 fn print_wallpaper(
     wallpaper: &Wallpaper,
 ) {
+    let thumb = ensure_thumbnail(&wallpaper.path, wallpaper.kind);
     println!(
-        "{}|{}",
+        "{}|{}|{}",
         wallpaper.kind,
-        wallpaper.path.display()
+        wallpaper.path.display(),
+        thumb.display()
     );
 }
 
 
 // ============================================================
-// VIDEO THUMBNAILS
+// UNIVERSAL FAST THUMBNAILS
 // ============================================================
 
-fn ensure_video_thumbnail(
+fn thumb_cache_dir() -> PathBuf {
+    let home =
+        env::var("HOME")
+            .unwrap_or_else(|_| String::from("."));
+
+    PathBuf::from(home)
+        .join(".cache")
+        .join("nexa")
+        .join("wallpapers")
+        .join("thumbs")
+}
+
+
+fn ensure_thumbnail(
     path: &Path,
-) {
+    kind: &str,
+) -> PathBuf {
     let Some(name) =
         path.file_name()
     else {
-        return;
+        return path.to_path_buf();
     };
 
 
     let cache_dir =
-        video_thumb_dir();
+        thumb_cache_dir();
 
 
-    if fs::create_dir_all(
+    let _ = fs::create_dir_all(
         &cache_dir
-    )
-    .is_err()
-    {
-        return;
-    }
+    );
 
 
     let thumbnail =
@@ -257,31 +257,58 @@ fn ensure_video_thumbnail(
 
     // Already generated.
     if thumbnail.exists() {
-        return;
+        return thumbnail;
     }
 
 
-    let _ =
-        Command::new("ffmpeg")
-            .args([
-                "-loglevel",
-                "error",
-                "-ss",
-                "1",
-                "-i",
-            ])
-            .arg(path)
-            .args([
-                "-frames:v",
-                "1",
-                "-vf",
-                "scale=960:-2",
-                "-q:v",
-                "3",
-                "-y",
-            ])
-            .arg(&thumbnail)
-            .status();
+    if kind == "video" || kind == "gif" {
+        let _ =
+            Command::new("ffmpeg")
+                .args([
+                    "-loglevel",
+                    "error",
+                    "-ss",
+                    "1",
+                    "-i",
+                ])
+                .arg(path)
+                .args([
+                    "-frames:v",
+                    "1",
+                    "-vf",
+                    "scale=640:-2",
+                    "-q:v",
+                    "3",
+                    "-y",
+                ])
+                .arg(&thumbnail)
+                .status();
+    } else {
+        let _ =
+            Command::new("ffmpeg")
+                .args([
+                    "-loglevel",
+                    "error",
+                    "-i",
+                ])
+                .arg(path)
+                .args([
+                    "-vf",
+                    "scale=640:-2",
+                    "-q:v",
+                    "3",
+                    "-y",
+                ])
+                .arg(&thumbnail)
+                .status();
+    }
+
+
+    if thumbnail.exists() {
+        thumbnail
+    } else {
+        path.to_path_buf()
+    }
 }
 
 
@@ -465,6 +492,133 @@ pub fn set_lock(
         path.display()
     );
 
+
+    Ok(())
+}
+
+
+// ============================================================
+// APPLY DESKTOP WALLPAPER
+// ============================================================
+
+pub fn apply_desktop(
+    path: &str,
+    monitor: Option<&str>,
+) -> Result<(), String> {
+    let mut resolved_path = PathBuf::from(path);
+    if path.starts_with("~/") {
+        if let Ok(home) = env::var("HOME") {
+            resolved_path = PathBuf::from(home).join(&path[2..]);
+        }
+    }
+
+    if let Ok(canonical) = resolved_path.canonicalize() {
+        resolved_path = canonical;
+    }
+
+    if !resolved_path.is_file() {
+        return Err(format!(
+            "Wallpaper does not exist: {}",
+            resolved_path.display()
+        ));
+    }
+
+    let kind = classify(&resolved_path).ok_or_else(|| {
+        format!(
+            "Unsupported wallpaper format: {}",
+            resolved_path.display()
+        )
+    })?;
+
+    let monitor_target = monitor.unwrap_or("*");
+
+    // 1. Stop existing video wallpaper if any
+    let _ = Command::new("pkill").arg("-x").arg("mpvpaper").status();
+
+    // 2. Render on display output
+    if kind == "image" {
+        let transitions = [
+            "wipe", "wave", "grow", "center", "any", "outer", "fade", "left", "right", "top", "bottom"
+        ];
+        let angles = ["0", "45", "90", "135", "180", "225", "270", "315"];
+
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.subsec_nanos() as usize)
+            .unwrap_or(0);
+
+        let selected_trans = transitions[nanos % transitions.len()];
+        let selected_angle = angles[(nanos / 7) % angles.len()];
+
+        let mut cmd = Command::new("awww");
+        cmd.arg("img");
+
+        if monitor_target != "*" && monitor_target != "ALL" {
+            cmd.args(["-o", monitor_target]);
+        }
+
+        cmd.arg(&resolved_path)
+            .args([
+                "--transition-type", selected_trans,
+                "--transition-angle", selected_angle,
+                "--transition-duration", "1.2",
+                "--transition-fps", "144",
+                "--transition-bezier", ".42,0,.58,1",
+            ]);
+
+        let status = cmd.status().map_err(|e| format!("Failed to run awww: {e}"))?;
+        if !status.success() {
+            return Err("awww failed to display wallpaper".to_string());
+        }
+    } else {
+        let target = if monitor_target == "*" { "ALL" } else { monitor_target };
+        let _ = Command::new("mpvpaper")
+            .args(["-o", "no-audio loop-file=inf", target])
+            .arg(&resolved_path)
+            .spawn();
+    }
+
+    // 3. Determine theme source frame (Matugen requires an image)
+    let home = env::var("HOME").unwrap_or_else(|_| String::from("."));
+    let mut theme_source_path = resolved_path.clone();
+
+    if kind == "video" || kind == "gif" {
+        let thumb_path = ensure_thumbnail(&resolved_path, kind);
+        theme_source_path = thumb_path;
+    }
+
+    // 4. Save persistent desktop wallpaper config
+    let config = desktop_config_path();
+    if let Some(parent) = config.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+
+    let contents = format!(
+        "WALLPAPER={}\nWALLPAPER_TYPE={}\nTHEME_SOURCE={}\nMONITOR={}\n",
+        config_escape(&resolved_path.to_string_lossy()),
+        kind,
+        config_escape(&theme_source_path.to_string_lossy()),
+        config_escape(monitor_target)
+    );
+    let _ = fs::write(&config, contents);
+
+    println!("desktop_wallpaper={}|{}", kind, resolved_path.display());
+
+    // 5. Update ScreenTemp and Apply Matugen Theme (Detached asynchronous child processes)
+    let theme_script = PathBuf::from(&home).join(".config/nexa/scripts/theme.sh");
+    if theme_script.exists() {
+        let _ = Command::new("bash")
+            .arg(&theme_script)
+            .arg("apply")
+            .spawn();
+    }
+
+    let nexad_bin = PathBuf::from(&home).join(".config/nexa/rust/target/release/nexad");
+    if nexad_bin.exists() {
+        let _ = Command::new(&nexad_bin)
+            .args(["screenTemp", "wallpaper", &theme_source_path.to_string_lossy()])
+            .spawn();
+    }
 
     Ok(())
 }

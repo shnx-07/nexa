@@ -236,6 +236,22 @@ fn main() {
                 }
 
 
+                "apply" | "set" => {
+                    if args.len() < 4 {
+                        eprintln!("Missing wallpaper path");
+                        return;
+                    }
+
+                    let path = &args[3];
+                    let monitor = args.get(4).map(String::as_str);
+
+                    if let Err(error) =
+                        wallpaper::apply_desktop(path, monitor)
+                    {
+                        eprintln!("{error}");
+                    }
+                }
+
                 "refresh" => {
                     wallpaper::refresh();
                 }

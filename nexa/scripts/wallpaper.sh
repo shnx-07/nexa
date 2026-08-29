@@ -138,16 +138,34 @@ apply_static() {
 
   stop_mpvpaper
 
+  # Multiple dynamic transition animations
+  local transitions=("wipe" "wave" "grow" "center" "any" "outer" "fade" "left" "right" "top" "bottom")
+  local rand_idx=$((RANDOM % ${#transitions[@]}))
+  local selected_trans="${transitions[$rand_idx]}"
+  local rand_angle=$(( (RANDOM % 8) * 45 )) # 0, 45, 90, 135, 180, 225, 270, 315
+
+  log "Applying wallpaper with transition: $selected_trans ($rand_angle deg)"
+
   if [[ "$MONITOR" == "*" || "$MONITOR" == "ALL" ]]; then
 
-    if ! awww img "$WALLPAPER"; then
+    if ! awww img "$WALLPAPER" \
+      --transition-type "$selected_trans" \
+      --transition-angle "$rand_angle" \
+      --transition-duration 1.2 \
+      --transition-fps 144 \
+      --transition-bezier .42,0,.58,1; then
       log "awww failed to apply wallpaper."
       return 1
     fi
 
   else
 
-    if ! awww img -o "$MONITOR" "$WALLPAPER"; then
+    if ! awww img -o "$MONITOR" "$WALLPAPER" \
+      --transition-type "$selected_trans" \
+      --transition-angle "$rand_angle" \
+      --transition-duration 1.2 \
+      --transition-fps 144 \
+      --transition-bezier .42,0,.58,1; then
       log "awww failed to apply wallpaper on $MONITOR."
       return 1
     fi
