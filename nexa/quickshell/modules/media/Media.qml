@@ -1,47 +1,30 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 
 import Quickshell.Services.Mpris
+import Quickshell.Io
 
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
-import Quickshell.Io
+
 
 Item {
-  id: root
+    id: root
 
     // ============================================================
     // RESPONSIBILITY
     //
-    // Reusable NEXA media frontend.
-    //
-    // presentation:
-    //
-    // compact
-    //     artwork + current track
-    //     NO progress bar
-    //
-    // hover
-    //     artwork + title + artist
-    //     ONE passive progress bar
-    //     previous / play-pause / next
-    //
-    // full
-    //     large artwork
-    //     title + artist
-    //     ONE seekable progress bar
-    //     previous / play-pause / next
-    //     waveform area reserved for Rust spectrum data
-    //
-    // No audio analysis happens here.
+    // Modern NEXA Media Player frontend:
+    // - Reliable horizontal sliding marquee ticker for overflowing titles
+    // - Slender, highly-reactive bottom-anchored audio spectrum (CAVA)
+    // - Glass album art, hero controls, shuffle/loop & volume
     // ============================================================
-
 
     property string presentation: "full"
 
-
     // ============================================================
-    // PLAYER
+    // MPRIS PLAYER
     // ============================================================
 
     readonly property var player:
@@ -49,39 +32,28 @@ Item {
         ? Mpris.players.values[0]
         : null
 
-
     readonly property bool available:
         player !== null
 
-
     readonly property bool playing:
         available
-        && player.playbackState
-            === MprisPlaybackState.Playing
-
+        && player.playbackState === MprisPlaybackState.Playing
 
     readonly property bool paused:
         available
-        && player.playbackState
-            === MprisPlaybackState.Paused
+        && player.playbackState === MprisPlaybackState.Paused
 
     // ------------------------------------------------------------
     // 1-MINUTE PAUSE / IDLE TIMEOUT
-    //
-    // If music is paused for 1 minute (60,000ms), expire context
-    // so Dynamic Island resets back to Timer / Idle Clock.
-    // When music is played again, immediately reset & show music.
     // ------------------------------------------------------------
 
     property bool pauseTimeoutExpired: false
 
     Timer {
         id: pauseTimeoutTimer
-
         interval: 60000
         running: root.available && root.hasTrack && root.paused && !root.playing
         repeat: false
-
         onTriggered: {
             root.pauseTimeoutExpired = true
         }
@@ -106,14 +78,9 @@ Item {
         && hasTrack
         && (playing || (paused && !pauseTimeoutExpired))
 
-
     readonly property bool hasTrack:
         available
-        && (
-            player.trackTitle !== ""
-            || player.trackArtist !== ""
-        )
-
+        && (player.trackTitle !== "" || player.trackArtist !== "")
 
     // ============================================================
     // METADATA
@@ -124,110 +91,78 @@ Item {
         ? player.trackTitle
         : "Nothing playing"
 
-
     readonly property string artist:
         available && player.trackArtist !== ""
         ? player.trackArtist
         : "Unknown artist"
 
+    readonly property string album:
+        available && player.trackAlbum !== ""
+        ? player.trackAlbum
+        : ""
 
     readonly property string artwork:
         available
         ? player.trackArtUrl
         : ""
 
+    readonly property string identity:
+        available && player.identity !== ""
+        ? player.identity
+        : "Media Player"
+
+    function playerIcon(idName) {
+        const id = String(idName || "").toLowerCase()
+        if (id.includes("spotify")) return "󰓇"
+        if (id.includes("firefox")) return "󰈹"
+        if (id.includes("chrome") || id.includes("chromium") || id.includes("brave")) return "󰊯"
+        if (id.includes("vlc")) return "󰕼"
+        if (id.includes("mpv")) return "󰐎"
+        return "󰎆"
+    }
 
     // ============================================================
-    // POSITION
+    // POSITION & DURATION
     // ============================================================
 
     readonly property real duration:
-        available
-        && player.lengthSupported
+        available && player.lengthSupported
         ? player.length
         : 0
 
-
     readonly property real position:
-        available
-        && player.positionSupported
+        available && player.positionSupported
         ? player.position
         : 0
 
-
     readonly property real progress:
         duration > 0
-        ? Math.max(
-            0,
-            Math.min(
-                1,
-                position / duration
-            )
-        )
+        ? Math.max(0, Math.min(1, position / duration))
         : 0
-
-
-    // ============================================================
-    // SEEK STATE
-    //
-    // Only used by FULL presentation.
-    // ============================================================
 
     property bool seeking: false
     property real seekPosition: 0
 
-
     readonly property real displayedPosition:
-        seeking
-        ? seekPosition
-        : position
-
+        seeking ? seekPosition : position
 
     readonly property real displayedProgress:
         duration > 0
-        ? Math.max(
-            0,
-            Math.min(
-                1,
-                displayedPosition / duration
-            )
-        )
+        ? Math.max(0, Math.min(1, displayedPosition / duration))
         : 0
 
-
-   
-
-     // ============================================================
+    // ============================================================
     // CAVA SPECTRUM DATA
-    //
-    // CAVA provides 32 normalized visualizer bands.
-    //
-    // QML only renders them.
     // ============================================================
 
     property var spectrumBins: []
 
     readonly property bool spectrumAvailable:
-        spectrumBins
-      && spectrumBins.length > 0
-
-    // ============================================================
-    // CAVA AUDIO VISUALIZER
-    //
-    // Starts ONLY when:
-    //     music is playing
-    //     AND full Music view is visible
-    //
-    // This avoids running CAVA continuously in the background.
-    // ============================================================
+        spectrumBins && spectrumBins.length > 0
 
     Process {
         id: cavaProcess
-
-        running:
-            root.playing
-            && root.presentation === "full"
-
+        running: root.playing && root.presentation === "full"
         command: [
             "cava",
             "-p",
@@ -236,39 +171,19 @@ Item {
 
         stdout: SplitParser {
             splitMarker: "\n"
-
             onRead: data => {
                 const line = data.trim()
-
-                if (line === "")
-                    return
-
-                const parts =
-                    line.split(";")
-
+                if (line === "") return
+                const parts = line.split(";")
                 const values = []
-
                 for (let i = 0; i < parts.length; ++i) {
-                    if (parts[i] === "")
-                        continue
-
-                    const raw =
-                        Number(parts[i])
-
-                    if (isNaN(raw))
-                        continue
-
-                    values.push(
-                        Math.max(
-                            0.0,
-                            Math.min(
-                                1.0,
-                                raw / 1000.0
-                            )
-                        )
-                    )
+                    if (parts[i] === "") continue
+                    const raw = Number(parts[i])
+                    if (isNaN(raw)) continue
+                    // Natural audio dynamics (0.0 to 1.0) with slight mid-range compensation
+                    const val = Math.max(0.0, Math.min(1.0, (raw / 1000.0) * 1.15))
+                    values.push(val)
                 }
-
                 if (values.length > 0)
                     root.spectrumBins = values
             }
@@ -280,527 +195,373 @@ Item {
         }
     }
 
-    // ============================================================
-    // POSITION REFRESH
-    //
-    // MPRIS position does not continuously notify while playing.
-    // Refresh at a modest rate for the UI.
-    // ============================================================
-
+    // Position refresh timer
     Timer {
         interval: 500
         repeat: true
-
-        running:
-            root.available
-            && root.playing
-            && root.player.positionSupported
-            && !root.seeking
-
-        onTriggered:
-            root.player.positionChanged()
+        running: root.available && root.playing && root.player.positionSupported && !root.seeking
+        onTriggered: root.player.positionChanged()
     }
 
-
-    // ============================================================
-    // HELPERS
-    // ============================================================
-
+    // Helpers
     function formatTime(seconds) {
         if (!isFinite(seconds) || seconds < 0)
             return "0:00"
-
-        const total =
-            Math.floor(seconds)
-
-        const minutes =
-            Math.floor(total / 60)
-
-        const secs =
-            total % 60
-
-        return (
-            minutes
-            + ":"
-            + String(secs).padStart(2, "0")
-        )
+        const total = Math.floor(seconds)
+        const minutes = Math.floor(total / 60)
+        const secs = total % 60
+        return minutes + ":" + String(secs).padStart(2, "0")
     }
-
 
     // ============================================================
     // PLAYBACK ACTIONS
     // ============================================================
 
     function previous() {
-        if (
-            available
-            && player.canGoPrevious
-        ) {
-            player.previous()
-        }
+        if (available && player.canGoPrevious) player.previous()
     }
-
 
     function togglePlaying() {
-        if (
-            available
-            && player.canTogglePlaying
-        ) {
-            player.togglePlaying()
-        }
+        if (available && player.canTogglePlaying) player.togglePlaying()
     }
-
 
     function next() {
-        if (
-            available
-            && player.canGoNext
-        ) {
-            player.next()
-        }
+        if (available && player.canGoNext) player.next()
     }
 
+    function toggleShuffle() {
+        if (!available || !player.canShuffle) return
+        player.shuffle = !player.shuffle
+    }
 
-    // ============================================================
-    // SEEK
-    // ============================================================
+    function toggleLoop() {
+        if (!available || !player.canLoop) return
+        if (player.loopStatus === MprisLoopStatus.None) {
+            player.loopStatus = MprisLoopStatus.Playlist
+        } else if (player.loopStatus === MprisLoopStatus.Playlist) {
+            player.loopStatus = MprisLoopStatus.Track
+        } else {
+            player.loopStatus = MprisLoopStatus.None
+        }
+    }
 
     function updateSeekFromX(x, width) {
-        if (
-            !available
-            || !player.canSeek
-            || !player.positionSupported
-            || duration <= 0
-            || width <= 0
-        ) {
+        if (!available || !player.canSeek || !player.positionSupported || duration <= 0 || width <= 0)
             return
-        }
-
-        const ratio =
-            Math.max(
-                0,
-                Math.min(
-                    1,
-                    x / width
-                )
-            )
-
-        seekPosition =
-            ratio * duration
+        const ratio = Math.max(0, Math.min(1, x / width))
+        seekPosition = ratio * duration
     }
 
-
     function commitSeek() {
-        if (
-            !available
-            || !player.canSeek
-            || !player.positionSupported
-        ) {
+        if (!available || !player.canSeek || !player.positionSupported) {
             seeking = false
             return
         }
-
-        player.position =
-            seekPosition
-
+        player.position = seekPosition
         seeking = false
-
-        // Immediately refresh after the seek.
         player.positionChanged()
     }
 
-
     // ============================================================
-    // COMPACT
-    //
-    // IMPORTANT:
-    //
-    // There is deliberately NO progress bar here.
-    //
-    // This prevents the small progress line appearing underneath
-    // the Island / near the top bar when collapsed.
+    // COMPACT PRESENTATION (Dynamic Island Notch)
     // ============================================================
 
     Item {
         anchors.fill: parent
-
-        visible:
-            root.presentation === "compact"
-
+        visible: root.presentation === "compact"
 
         RowLayout {
-            anchors {
-                fill: parent
+            anchors.fill: parent
+            anchors.leftMargin: Nexa.Theme.spacingMd
+            anchors.rightMargin: Nexa.Theme.spacingMd
+            spacing: Nexa.Theme.spacingSm
 
-                leftMargin:
-                    Nexa.Theme.spacingMd
-
-                rightMargin:
-                    Nexa.Theme.spacingMd
-            }
-
-            spacing:
-                Nexa.Theme.spacingSm
-
-
-            // ----------------------------------------------------
-            // SMALL ARTWORK
-            // ----------------------------------------------------
-
+            // Small Artwork Thumbnail
             Rectangle {
                 Layout.preferredWidth: 24
                 Layout.preferredHeight: 24
-
-                radius:
-                    Nexa.Theme.radiusXs
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
-
+                radius: 6
+                color: Nexa.Theme.surfaceContainerHigh
                 clip: true
-
 
                 Image {
                     anchors.fill: parent
-
-                    source:
-                        root.artwork
-
-                    fillMode:
-                        Image.PreserveAspectCrop
-
-                    visible:
-                        root.artwork !== ""
+                    source: root.artwork
+                    fillMode: Image.PreserveAspectCrop
+                    visible: root.artwork !== ""
                 }
-
 
                 Text {
                     anchors.centerIn: parent
-
-                    visible:
-                        root.artwork === ""
-
-                    text: "󰎆"
-
-                    color:
-                        Nexa.Theme.mutedText
-
-                    font {
-                        family:
-                            Nexa.Theme.iconFontFamily
-
-                        pixelSize:
-                            Nexa.Theme.iconSm
-                    }
+                    visible: root.artwork === ""
+                    text: root.playerIcon(root.identity)
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: Nexa.Theme.iconSm
                 }
             }
 
-
-            // ----------------------------------------------------
-            // ONE-LINE TRACK
-            // ----------------------------------------------------
-
-            Text {
+            // Marquee Track & Artist Ticker
+            Item {
+                id: compactMarqueeBox
                 Layout.fillWidth: true
+                implicitHeight: 20
+                clip: true
 
-                text:
-                    root.hasTrack
-                    ? root.title + "  —  " + root.artist
+                readonly property string labelText: root.hasTrack
+                    ? root.title + "  •  " + root.artist
                     : "Nothing playing"
 
-                elide:
-                    Text.ElideRight
-
-                verticalAlignment:
-                    Text.AlignVCenter
-
-                color:
-                    root.hasTrack
-                    ? Nexa.Theme.text
-                    : Nexa.Theme.mutedText
-
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
-
-                    pixelSize:
-                        Nexa.Theme.fontSizeSm
-
-                    weight:
-                        Nexa.Theme.fontWeightMedium
-                }
-            }
-
-
-            // ----------------------------------------------------
-            // PLAYING INDICATOR ONLY
-            //
-            // Not a progress bar.
-            // ----------------------------------------------------
-
-            Text {
-                visible:
-                    root.hasTrack
-
-                text:
-                    root.playing
-                    ? "󰏤"
-                    : "󰐊"
-
-                color:
-                    Nexa.Theme.primary
-
-                font {
-                    family:
-                        Nexa.Theme.iconFontFamily
-
-                    pixelSize:
-                        Nexa.Theme.iconXs
-                }
-            }
-        }
-    }
-
-
-    // ============================================================
-    // HOVER
-    //
-    // Exactly ONE progress bar here.
-    // It is intentionally not seekable.
-    //
-    // Hover is for quick interaction.
-    // ============================================================
-
-    Item {
-        anchors.fill: parent
-
-        visible:
-            root.presentation === "hover"
-
-
-        RowLayout {
-            anchors {
-                fill: parent
-
-                leftMargin:
-                    Nexa.Theme.spacingMd
-
-                rightMargin:
-                    Nexa.Theme.spacingMd
-
-                topMargin:
-                    Nexa.Theme.spacingSm
-
-                bottomMargin:
-                    Nexa.Theme.spacingSm
-            }
-
-            spacing:
-                Nexa.Theme.spacingMd
-
-
-            // ====================================================
-            // ARTWORK
-            // ====================================================
-
-            Rectangle {
-                Layout.preferredWidth: 62
-                Layout.preferredHeight: 62
-
-                radius:
-                    Nexa.Theme.radiusMd
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
-
-                clip: true
-
-
-                Image {
-                    anchors.fill: parent
-
-                    source:
-                        root.artwork
-
-                    fillMode:
-                        Image.PreserveAspectCrop
-
-                    visible:
-                        root.artwork !== ""
-                }
-
+                readonly property real overflowDist: Math.max(0, compactTickerText.implicitWidth - width)
+                readonly property bool needsScroll: overflowDist > 4
 
                 Text {
-                    anchors.centerIn: parent
+                    id: compactTickerText
+                    x: 0
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: compactMarqueeBox.labelText
+                    color: root.hasTrack ? Nexa.Theme.text : Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: Nexa.Theme.fontSizeSm
+                    font.weight: Nexa.Theme.fontWeightMedium
+                }
 
-                    visible:
-                        root.artwork === ""
+                SequentialAnimation {
+                    id: compactTickerAnim
+                    running: compactMarqueeBox.needsScroll
+                    loops: Animation.Infinite
 
-                    text: "󰎆"
-
-                    color:
-                        Nexa.Theme.mutedText
-
-                    font {
-                        family:
-                            Nexa.Theme.iconFontFamily
-
-                        pixelSize:
-                            Nexa.Theme.iconLg
+                    PauseAnimation { duration: 1800 }
+                    NumberAnimation {
+                        target: compactTickerText
+                        property: "x"
+                        from: 0
+                        to: -compactMarqueeBox.overflowDist - 16
+                        duration: Math.max(1400, (compactMarqueeBox.overflowDist + 16) * 35)
+                        easing.type: Easing.InOutQuad
                     }
-                }
-            }
-
-
-            // ====================================================
-            // TRACK INFO + SINGLE PROGRESS BAR
-            // ====================================================
-
-            ColumnLayout {
-                Layout.fillWidth: true
-
-                spacing:
-                    Nexa.Theme.spacing2Xs
-
-
-                Text {
-                    Layout.fillWidth: true
-
-                    text:
-                        root.title
-
-                    elide:
-                        Text.ElideRight
-
-                    color:
-                        Nexa.Theme.text
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSizeMd
-
-                        weight:
-                            Nexa.Theme.fontWeightDemiBold
+                    PauseAnimation { duration: 1500 }
+                    NumberAnimation {
+                        target: compactTickerText
+                        property: "x"
+                        to: 0
+                        duration: Math.max(1000, (compactMarqueeBox.overflowDist + 16) * 25)
+                        easing.type: Easing.InOutQuad
                     }
                 }
 
-
-                Text {
-                    Layout.fillWidth: true
-
-                    text:
-                        root.artist
-
-                    elide:
-                        Text.ElideRight
-
-                    color:
-                        Nexa.Theme.mutedText
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSizeSm
-
-                        weight:
-                            Nexa.Theme.fontWeightMedium
-                    }
+                onWidthChanged: {
+                    compactTickerText.x = 0
+                    if (needsScroll) compactTickerAnim.restart()
+                    else compactTickerAnim.stop()
                 }
 
+                onLabelTextChanged: {
+                    compactTickerText.x = 0
+                    if (needsScroll) compactTickerAnim.restart()
+                    else compactTickerAnim.stop()
+                }
+            }
 
-                // ------------------------------------------------
-                // THE ONLY HOVER PROGRESS BAR
-                // ------------------------------------------------
+            // Animated 3-Bar Equalizer
+            Row {
+                spacing: 2
+                Layout.alignment: Qt.AlignVCenter
+                visible: root.hasTrack
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 4
+                Repeater {
+                    model: 3
+                    delegate: Rectangle {
+                        id: eqBar
+                        required property int index
+                        width: 3
+                        height: root.playing ? 6 : 3
+                        radius: 1.5
+                        color: Nexa.Theme.primary
 
-                    radius:
-                        Nexa.Theme.radiusPill
-
-                    color:
-                        Nexa.Theme.surfaceContainerHighest
-
-
-                    Rectangle {
-                        width:
-                            parent.width
-                            * root.progress
-
-                        height:
-                            parent.height
-
-                        radius:
-                            parent.radius
-
-                        color:
-                            Nexa.Theme.primary
-
-
-                        Behavior on width {
+                        SequentialAnimation on height {
+                            running: root.playing
+                            loops: Animation.Infinite
                             NumberAnimation {
-                                duration:
-                                    Nexa.Theme.animationFast
+                                to: index === 0 ? 12 : (index === 1 ? 16 : 9)
+                                duration: index === 0 ? 320 : (index === 1 ? 420 : 360)
+                                easing.type: Easing.InOutSine
                             }
-                          }
-
-                        Behavior on height {
                             NumberAnimation {
-                                duration: 80
-                                easing.type: Easing.OutCubic
+                                to: index === 0 ? 4 : (index === 1 ? 3 : 5)
+                                duration: index === 0 ? 280 : (index === 1 ? 380 : 310)
+                                easing.type: Easing.InOutSine
                             }
                         }
                     }
                 }
             }
+        }
+    }
 
+    // ============================================================
+    // HOVER PRESENTATION (Dynamic Island Expansion)
+    // ============================================================
 
-            // ====================================================
-            // QUICK CONTROLS
-            // ====================================================
+    Item {
+        anchors.fill: parent
+        visible: root.presentation === "hover"
 
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: Nexa.Theme.spacingMd
+            anchors.rightMargin: Nexa.Theme.spacingMd
+            anchors.topMargin: Nexa.Theme.spacingSm
+            anchors.bottomMargin: Nexa.Theme.spacingSm
+            spacing: Nexa.Theme.spacingMd
+
+            // Artwork Card
+            Rectangle {
+                Layout.preferredWidth: 42
+                Layout.preferredHeight: 42
+                radius: Nexa.Theme.radiusSm
+                color: Nexa.Theme.surfaceContainerHigh
+                clip: true
+
+                Image {
+                    anchors.fill: parent
+                    source: root.artwork
+                    fillMode: Image.PreserveAspectCrop
+                    visible: root.artwork !== ""
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    visible: root.artwork === ""
+                    text: root.playerIcon(root.identity)
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: Nexa.Theme.iconMd
+                }
+            }
+
+            // Info, Sliding Marquee & Progress
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 3
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 6
+
+                    // Title Marquee Box
+                    Item {
+                        id: hoverTitleBox
+                        Layout.fillWidth: true
+                        implicitHeight: hoverTitleText.implicitHeight
+                        clip: true
+
+                        readonly property real overflowDist: Math.max(0, hoverTitleText.implicitWidth - width)
+                        readonly property bool needsScroll: overflowDist > 4
+
+                        Text {
+                            id: hoverTitleText
+                            x: 0
+                            text: root.title
+                            color: Nexa.Theme.text
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            font.weight: Nexa.Theme.fontWeightDemiBold
+                        }
+
+                        SequentialAnimation {
+                            id: hoverTitleAnim
+                            running: hoverTitleBox.needsScroll
+                            loops: Animation.Infinite
+
+                            PauseAnimation { duration: 1800 }
+                            NumberAnimation {
+                                target: hoverTitleText
+                                property: "x"
+                                from: 0
+                                to: -hoverTitleBox.overflowDist - 16
+                                duration: Math.max(1400, (hoverTitleBox.overflowDist + 16) * 35)
+                                easing.type: Easing.InOutQuad
+                            }
+                            PauseAnimation { duration: 1500 }
+                            NumberAnimation {
+                                target: hoverTitleText
+                                property: "x"
+                                to: 0
+                                duration: Math.max(1000, (hoverTitleBox.overflowDist + 16) * 25)
+                                easing.type: Easing.InOutQuad
+                            }
+                        }
+
+                        onWidthChanged: {
+                            hoverTitleText.x = 0
+                            if (needsScroll) hoverTitleAnim.restart()
+                            else hoverTitleAnim.stop()
+                        }
+
+                        Connections {
+                            target: root
+                            function onTitleChanged() {
+                                hoverTitleText.x = 0
+                                if (hoverTitleBox.needsScroll) hoverTitleAnim.restart()
+                                else hoverTitleAnim.stop()
+                            }
+                        }
+                    }
+
+                    Text {
+                        text: root.formatTime(root.position) + " / " + root.formatTime(root.duration)
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.monoFontFamily
+                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                        visible: root.duration > 0
+                    }
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: root.artist
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: Nexa.Theme.fontSizeXs
+                    elide: Text.ElideRight
+                }
+
+                // Mini Progress Bar
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 3
+                    radius: 1.5
+                    color: Nexa.Theme.surfaceContainerHighest
+                    visible: root.duration > 0
+
+                    Rectangle {
+                        height: parent.height
+                        width: parent.width * root.progress
+                        radius: parent.radius
+                        color: Nexa.Theme.primary
+                    }
+                }
+            }
+
+            // Quick Playback Controls
             RowLayout {
-                spacing:
-                    Nexa.Theme.spacingXs
-
-
-                // ------------------------------------------------
-                // PREVIOUS
-                // ------------------------------------------------
+                spacing: Nexa.Theme.spacingXs
 
                 NexaUI.NexaIconButton {
-                    id: hoverPrevious
                     icon: "󰒮"
                     interactive: root.available && root.player.canGoPrevious
                     onClicked: root.previous()
                 }
 
-
-                // ------------------------------------------------
-                // PLAY / PAUSE
-                // ------------------------------------------------
-
                 NexaUI.NexaIconButton {
-                    id: hoverToggle
                     icon: root.playing ? "󰏤" : "󰐊"
                     selected: true
                     interactive: root.available && root.player.canTogglePlaying
                     onClicked: root.togglePlaying()
                 }
 
-
-                // ------------------------------------------------
-                // NEXT
-                // ------------------------------------------------
-
                 NexaUI.NexaIconButton {
-                    id: hoverNext
                     icon: "󰒭"
                     interactive: root.available && root.player.canGoNext
                     onClicked: root.next()
@@ -809,23 +570,15 @@ Item {
         }
     }
 
-
     // ============================================================
     // FULL MUSIC VIEW
-    //
-    // Exactly ONE progress/seek bar exists in this entire view.
     // ============================================================
 
     Item {
         anchors.fill: parent
+        visible: root.presentation === "full"
 
-        visible:
-            root.presentation === "full"
-
-        // ========================================================
-        // AMBIENT ALBUM ARTWORK BACKDROP
-        // ========================================================
-
+        // Ambient Album Artwork Backdrop
         Rectangle {
             anchors.fill: parent
             radius: Nexa.Theme.radiusLg
@@ -839,7 +592,7 @@ Item {
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: true
-                opacity: root.artwork !== "" ? 0.38 : 0.0
+                opacity: root.artwork !== "" ? 0.30 : 0.0
 
                 Behavior on opacity {
                     NumberAnimation {
@@ -855,603 +608,376 @@ Item {
                     Nexa.Theme.surfaceContainerLow.r,
                     Nexa.Theme.surfaceContainerLow.g,
                     Nexa.Theme.surfaceContainerLow.b,
-                    0.85
+                    0.88
                 )
             }
         }
 
         RowLayout {
-            anchors {
-                fill: parent
-                margins: Nexa.Theme.spacingMd
-            }
-
-            spacing:
-                Nexa.Theme.spacingXl
-
+            anchors.fill: parent
+            anchors.margins: Nexa.Theme.spacingMd
+            spacing: Nexa.Theme.spacingXl
 
             // ====================================================
-            // LARGE ARTWORK
+            // LEFT: LARGE ALBUM ARTWORK CARD
             // ====================================================
 
             Rectangle {
-                Layout.preferredWidth: 210
-                Layout.preferredHeight: 210
-
-                Layout.alignment:
-                    Qt.AlignVCenter
-
-                radius:
-                    Nexa.Theme.radiusLg
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
-
+                Layout.preferredWidth: 200
+                Layout.preferredHeight: 200
+                Layout.alignment: Qt.AlignVCenter
+                radius: 16
+                color: Nexa.Theme.surfaceContainerHigh
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.08)
                 clip: true
-
 
                 Image {
                     anchors.fill: parent
-
-                    source:
-                        root.artwork
-
-                    fillMode:
-                        Image.PreserveAspectCrop
-
-                    visible:
-                        root.artwork !== ""
+                    source: root.artwork
+                    fillMode: Image.PreserveAspectCrop
+                    visible: root.artwork !== ""
                 }
-
 
                 Text {
                     anchors.centerIn: parent
-
-                    visible:
-                        root.artwork === ""
-
-                    text: "󰎆"
-
-                    color:
-                        Nexa.Theme.mutedText
-
-                    font {
-                        family:
-                            Nexa.Theme.iconFontFamily
-
-                        pixelSize: 54
-                    }
+                    visible: root.artwork === ""
+                    text: root.playerIcon(root.identity)
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: 56
                 }
             }
 
-
             // ====================================================
-            // MUSIC INFORMATION
+            // RIGHT: TRACK INFO, CONTROLS & SLEEK SPECTRUM
             // ====================================================
 
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                spacing: 8
 
-                spacing:
-                    Nexa.Theme.spacingMd
+                // Top Source Player Badge
+                RowLayout {
+                    Layout.fillWidth: true
 
+                    Rectangle {
+                        implicitWidth: sourceRow.implicitWidth + 16
+                        implicitHeight: 24
+                        radius: 12
+                        color: Nexa.Theme.surfaceContainerHigh
+                        border.width: 1
+                        border.color: Nexa.Theme.border
 
+                        Row {
+                            id: sourceRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.playerIcon(root.identity)
+                                color: Nexa.Theme.primary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: Nexa.Theme.iconSm
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.identity
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
+                                font.weight: Nexa.Theme.fontWeightMedium
+                            }
+                        }
+                    }
+
+                    Item { Layout.fillWidth: true }
+                }
+
+                // Sliding Marquee Track Title Box
                 Item {
-                    Layout.fillHeight: true
-                }
-
-
-                // ------------------------------------------------
-                // TITLE
-                // ------------------------------------------------
-
-                Text {
+                    id: fullTitleBox
                     Layout.fillWidth: true
+                    implicitHeight: fullTitleText.implicitHeight
+                    clip: true
 
-                    text:
-                        root.title
+                    readonly property real overflowDist: Math.max(0, fullTitleText.implicitWidth - width)
+                    readonly property bool needsScroll: overflowDist > 6
 
-                    elide:
-                        Text.ElideRight
+                    Text {
+                        id: fullTitleText
+                        x: 0
+                        text: root.title
+                        color: Nexa.Theme.text
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: 22
+                        font.weight: Nexa.Theme.fontWeightBold
+                    }
 
-                    color:
-                        Nexa.Theme.text
+                    SequentialAnimation {
+                        id: fullTitleAnim
+                        running: fullTitleBox.needsScroll
+                        loops: Animation.Infinite
 
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
+                        PauseAnimation { duration: 2200 }
+                        NumberAnimation {
+                            target: fullTitleText
+                            property: "x"
+                            from: 0
+                            to: -fullTitleBox.overflowDist - 20
+                            duration: Math.max(1600, (fullTitleBox.overflowDist + 20) * 32)
+                            easing.type: Easing.InOutQuad
+                        }
+                        PauseAnimation { duration: 1800 }
+                        NumberAnimation {
+                            target: fullTitleText
+                            property: "x"
+                            to: 0
+                            duration: Math.max(1200, (fullTitleBox.overflowDist + 20) * 22)
+                            easing.type: Easing.InOutQuad
+                        }
+                    }
 
-                        pixelSize:
-                            Nexa.Theme.fontSizeXl
+                    onWidthChanged: {
+                        fullTitleText.x = 0
+                        if (needsScroll) fullTitleAnim.restart()
+                        else fullTitleAnim.stop()
+                    }
 
-                        weight:
-                            Nexa.Theme.fontWeightDemiBold
+                    Connections {
+                        target: root
+                        function onTitleChanged() {
+                            fullTitleText.x = 0
+                            if (fullTitleBox.needsScroll) fullTitleAnim.restart()
+                            else fullTitleAnim.stop()
+                        }
                     }
                 }
 
-
-                // ------------------------------------------------
-                // ARTIST
-                // ------------------------------------------------
-
+                // Artist & Album
                 Text {
                     Layout.fillWidth: true
-
-                    text:
-                        root.artist
-
-                    elide:
-                        Text.ElideRight
-
-                    color:
-                        Nexa.Theme.mutedText
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSizeMd
-
-                        weight:
-                            Nexa.Theme.fontWeightMedium
-                    }
+                    text: root.album !== "" ? root.artist + "  •  " + root.album : root.artist
+                    elide: Text.ElideRight
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: Nexa.Theme.fontSizeMd
+                    font.weight: Nexa.Theme.fontWeightMedium
                 }
 
-
-                // =================================================
-                // THE ONLY FULL PROGRESS BAR
-                //
-                // Click or drag to seek.
-                // =================================================
-
+                // Seekbar & Timestamps
                 ColumnLayout {
                     Layout.fillWidth: true
-
-                    spacing:
-                        Nexa.Theme.spacing2Xs
-
+                    spacing: 2
 
                     Rectangle {
                         id: seekArea
-
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 20
-
-                        color:
-                            "transparent"
-
-
-                        // ----------------------------------------
-                        // TRACK
-                        // ----------------------------------------
+                        Layout.preferredHeight: 18
+                        color: "transparent"
 
                         Rectangle {
                             id: seekTrack
-
-                            anchors {
-                                left: parent.left
-                                right: parent.right
-                                verticalCenter: parent.verticalCenter
-                            }
-
-                            height: 5
-
-                            radius:
-                                Nexa.Theme.radiusPill
-
-                            color:
-                                Nexa.Theme.surfaceContainerHighest
-
-
-                            // ------------------------------------
-                            // PLAYED SECTION
-                            // ------------------------------------
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            height: 4
+                            radius: 2
+                            color: Nexa.Theme.surfaceContainerHighest
 
                             Rectangle {
-                                width:
-                                    parent.width
-                                    * root.displayedProgress
-
-                                height:
-                                    parent.height
-
-                                radius:
-                                    parent.radius
-
-                                color:
-                                    Nexa.Theme.primary
+                                width: parent.width * root.displayedProgress
+                                height: parent.height
+                                radius: parent.radius
+                                color: Nexa.Theme.primary
                             }
 
-
-                            // ------------------------------------
-                            // SEEK THUMB
-                            // ------------------------------------
-
+                            // Scrub thumb
                             Rectangle {
                                 width: 12
                                 height: 12
-
-                                radius:
-                                    Nexa.Theme.radiusPill
-
-                                anchors.verticalCenter:
-                                    parent.verticalCenter
-
-
-                                x:
-                                    Math.max(
-                                        0,
-                                        Math.min(
-                                            parent.width - width,
-
-                                            (
-                                                parent.width
-                                                * root.displayedProgress
-                                            )
-                                            - width / 2
-                                        )
-                                    )
-
-
-                                color:
-                                    Nexa.Theme.primary
-
-
-                                visible:
-                                    seekMouse.containsMouse
-                                    || root.seeking
+                                radius: 6
+                                anchors.verticalCenter: parent.verticalCenter
+                                x: Math.max(0, Math.min(parent.width - width, (parent.width * root.displayedProgress) - width / 2))
+                                color: Nexa.Theme.primary
+                                visible: seekMouse.containsMouse || root.seeking
                             }
                         }
 
-
-                        // ----------------------------------------
-                        // CLICK / DRAG SEEK
-                        // ----------------------------------------
-
                         MouseArea {
                             id: seekMouse
-
                             anchors.fill: parent
-
                             hoverEnabled: true
-
-
-                            enabled:
-                                root.available
-                                && root.player.canSeek
-                                && root.player.positionSupported
-                                && root.duration > 0
-
-
-                            cursorShape:
-                                enabled
-                                ? Qt.PointingHandCursor
-                                : Qt.ArrowCursor
-
+                            enabled: root.available && root.player.canSeek && root.player.positionSupported && root.duration > 0
+                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
 
                             onPressed: mouse => {
                                 root.seeking = true
-
-                                root.updateSeekFromX(
-                                    mouse.x,
-                                    width
-                                )
+                                root.updateSeekFromX(mouse.x, width)
                             }
-
-
                             onPositionChanged: mouse => {
-                                if (!pressed)
-                                    return
-
-                                root.updateSeekFromX(
-                                    mouse.x,
-                                    width
-                                )
+                                if (pressed) root.updateSeekFromX(mouse.x, width)
                             }
-
-
                             onReleased: mouse => {
-                                root.updateSeekFromX(
-                                    mouse.x,
-                                    width
-                                )
-
+                                root.updateSeekFromX(mouse.x, width)
                                 root.commitSeek()
                             }
                         }
                     }
 
-
-                    // --------------------------------------------
-                    // POSITION / DURATION
-                    // --------------------------------------------
-
                     RowLayout {
                         Layout.fillWidth: true
 
-
                         Text {
-                            text:
-                                root.formatTime(
-                                    root.displayedPosition
-                                )
-
-                            color:
-                                Nexa.Theme.mutedText
-
-                            font {
-                                family:
-                                    Nexa.Theme.monoFontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeXs
-                            }
+                            text: root.formatTime(root.displayedPosition)
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.monoFontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeXs
                         }
 
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-
+                        Item { Layout.fillWidth: true }
 
                         Text {
-                            text:
-                                root.formatTime(
-                                    root.duration
-                                )
-
-                            color:
-                                Nexa.Theme.mutedText
-
-                            font {
-                                family:
-                                    Nexa.Theme.monoFontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeXs
-                            }
+                            text: root.formatTime(root.duration)
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.monoFontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeXs
                         }
                     }
                 }
 
-
-                // =================================================
-                // PLAYBACK CONTROLS
-                // =================================================
-
+                // Playback Controls Deck
                 RowLayout {
-                    Layout.alignment:
-                        Qt.AlignHCenter
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: Nexa.Theme.spacingLg
 
-                    spacing:
-                        Nexa.Theme.spacingMd
-
-
-                    // --------------------------------------------
-                    // PREVIOUS
-                    // --------------------------------------------
-
+                    // Shuffle
                     NexaUI.NexaIconButton {
-                        id: fullPrevious
+                        icon: "󰒞"
+                        selected: root.available && root.player.shuffle === true
+                        interactive: root.available && root.player.canShuffle
+                        onClicked: root.toggleShuffle()
+                    }
+
+                    // Previous
+                    NexaUI.NexaIconButton {
                         icon: "󰒮"
                         interactive: root.available && root.player.canGoPrevious
                         onClicked: root.previous()
                     }
 
+                    // HERO Play / Pause Button
+                    Rectangle {
+                        implicitWidth: 46
+                        implicitHeight: 46
+                        radius: 23
+                        color: playMouse.pressed ? Nexa.Theme.primaryDark : Nexa.Theme.primary
+                        scale: playMouse.containsMouse ? 1.05 : 1.0
 
-                    // --------------------------------------------
-                    // PLAY / PAUSE
-                    // --------------------------------------------
+                        Behavior on scale {
+                            NumberAnimation { duration: Nexa.Theme.animationFast }
+                        }
+                        Behavior on color {
+                            ColorAnimation { duration: Nexa.Theme.animationFast }
+                        }
 
-                    NexaUI.NexaIconButton {
-                        id: fullToggle
-                        icon: root.playing ? "󰏤" : "󰐊"
-                        selected: true
-                        interactive: root.available && root.player.canTogglePlaying
-                        onClicked: root.togglePlaying()
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.playing ? "󰏤" : "󰐊"
+                            color: Nexa.Theme.onPrimary
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: 22
+                        }
+
+                        MouseArea {
+                            id: playMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.togglePlaying()
+                        }
                     }
 
-
-                    // --------------------------------------------
-                    // NEXT
-                    // --------------------------------------------
-
+                    // Next
                     NexaUI.NexaIconButton {
-                        id: fullNext
                         icon: "󰒭"
                         interactive: root.available && root.player.canGoNext
                         onClicked: root.next()
                     }
+
+                    // Loop / Repeat
+                    NexaUI.NexaIconButton {
+                        icon: root.available && root.player.loopStatus === MprisLoopStatus.Track ? "󰑘" : "󰑖"
+                        selected: root.available && root.player.loopStatus !== MprisLoopStatus.None
+                        interactive: root.available && root.player.canLoop
+                        onClicked: root.toggleLoop()
+                    }
                 }
 
-
-                // ============================================================
-                // CAVA AUDIO SPECTRUM
-                //
-                // IMPORTANT:
-                //
-                // Bar delegates are PERMANENT.
-                //
-                // CAVA changes only their level/height.
-                // We do NOT rebuild the Repeater every audio frame.
-                //
-                // This removes the flickering caused by using spectrumBins
-                // itself as the Repeater model.
-                // ============================================================
+                // ========================================================
+                // SLEEK, MODERN AUDIO EQUALIZER SPECTRUM
+                // ========================================================
 
                 Rectangle {
                     id: spectrumArea
-
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 58
-
-                    radius:
-                        Nexa.Theme.radiusMd
-
-                    color:
-                        waveMouse.containsMouse
-                        ? Nexa.Theme.hoverStrong
-                        : Nexa.Theme.surfaceContainerLow
-
-                    border.width: Nexa.Theme.borderThin
-                    border.color: waveMouse.containsMouse
-                        ? Nexa.Theme.primary
-                        : "transparent"
-
+                    Layout.preferredHeight: 38
+                    radius: Nexa.Theme.radiusSm
+                    color: "transparent"
                     clip: true
 
-                    Behavior on color {
-                        ColorAnimation { duration: Nexa.Theme.animationFast }
-                    }
-
-                    Behavior on border.color {
-                        ColorAnimation { duration: Nexa.Theme.animationFast }
-                    }
-
-                    MouseArea {
-                        id: waveMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                    }
-
-                     Row {
+                    Row {
                         id: spectrumBars
-
-                        anchors {
-                            left: parent.left
-                            right: parent.right
-                            verticalCenter: parent.verticalCenter
-
-                            leftMargin: Nexa.Theme.spacingSm
-                            rightMargin: Nexa.Theme.spacingSm
-                        }
-
-                        height:
-                            parent.height
-                            - Nexa.Theme.spacingMd
-
-                        spacing: 3
+                        anchors.fill: parent
+                        anchors.leftMargin: 6
+                        anchors.rightMargin: 6
+                        anchors.bottomMargin: 4
+                        spacing: 2
 
                         Repeater {
-                            model: 32
-
+                            model: 64
                             delegate: Item {
                                 id: barSlot
-
                                 required property int index
 
-                                width:
-                                    Math.max(
-                                        3,
-                                        (
-                                            spectrumBars.width
-                                            - spectrumBars.spacing * 31
-                                        ) / 32
-                                    )
-
-                                height:
-                                    spectrumBars.height
+                                width: Math.max(1.5, (spectrumBars.width - spectrumBars.spacing * 63) / 64)
+                                height: spectrumBars.height
 
                                 readonly property real rawTargetLevel: {
-                                    if (
-                                        !root.spectrumBins
-                                        || index >= root.spectrumBins.length
-                                    ) {
-                                        return 0.0
-                                    }
-
-                                    return Math.max(
-                                        0.0,
-                                        Math.min(
-                                            1.0,
-                                            Number(
-                                                root.spectrumBins[index]
-                                            )
-                                        )
-                                    )
+                                    if (!root.spectrumBins || index >= root.spectrumBins.length || !root.playing) return 0.0
+                                    return Number(root.spectrumBins[index]) || 0.0
                                 }
 
-                                readonly property real distToPointer:
-                                    waveMouse.containsMouse
-                                    ? Math.abs((barSlot.x + barSlot.width / 2) - waveMouse.mouseX)
-                                    : 9999
-
-                                readonly property real hoverBoost:
-                                    waveMouse.containsMouse
-                                    ? Math.max(0.0, 1.0 - (distToPointer / 75.0)) * 0.40
-                                    : 0.0
-
-                                property real visualLevel:
-                                    Math.min(1.0, rawTargetLevel + hoverBoost)
+                                property real visualLevel: rawTargetLevel
 
                                 Behavior on visualLevel {
-                                    NumberAnimation {
-                                        duration: 90
-                                        easing.type: Easing.OutCubic
-                                    }
+                                    NumberAnimation { duration: 40; easing.type: Easing.OutQuad }
                                 }
 
                                 Rectangle {
-                                    anchors.centerIn: parent
+                                    anchors.bottom: parent.bottom
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    width: parent.width
+                                    height: Math.max(2, parent.height * barSlot.visualLevel)
+                                    radius: 1
 
-                                    width:
-                                        Math.max(
-                                            3,
-                                            parent.width - 1
+                                    // Luminous Gradient Fill across 64 note bands
+                                    color: {
+                                        const ratio = barSlot.index / 63.0
+                                        return Qt.rgba(
+                                            Nexa.Theme.primary.r + (Nexa.Theme.tertiary.r - Nexa.Theme.primary.r) * ratio,
+                                            Nexa.Theme.primary.g + (Nexa.Theme.tertiary.g - Nexa.Theme.primary.g) * ratio,
+                                            Nexa.Theme.primary.b + (Nexa.Theme.tertiary.b - Nexa.Theme.primary.b) * ratio,
+                                            0.45 + barSlot.visualLevel * 0.55
                                         )
-
-                                    height:
-                                        Math.max(
-                                            4,
-                                            parent.height
-                                            * barSlot.visualLevel
-                                        )
-
-                                    radius:
-                                        Math.min(
-                                            width / 2,
-                                            4
-                                        )
-
-                                    color: Qt.rgba(
-                                        Nexa.Theme.primary.r + (Nexa.Theme.tertiary.r - Nexa.Theme.primary.r) * (barSlot.index / 31.0),
-                                        Nexa.Theme.primary.g + (Nexa.Theme.tertiary.g - Nexa.Theme.primary.g) * (barSlot.index / 31.0),
-                                        Nexa.Theme.primary.b + (Nexa.Theme.tertiary.b - Nexa.Theme.primary.b) * (barSlot.index / 31.0),
-                                        waveMouse.containsMouse ? 1.0 : 0.88
-                                    )
+                                    }
                                 }
                             }
                         }
                     }
-
-
-                    // ========================================================
-                    // NO AUDIO / PAUSED
-                    // ========================================================
-
-                    Rectangle {
-                        anchors.centerIn: parent
-
-                        width:
-                            parent.width
-                            - Nexa.Theme.spacingLg
-
-                        height: 1
-
-                        visible:
-                            !root.spectrumAvailable
-
-                        color:
-                            Nexa.Theme.divider
-                    }
-                }
-
-
-                Item {
-                    Layout.fillHeight: true
                 }
             }
         }

@@ -120,17 +120,26 @@ Item {
         && !recorderContextActive
 
 
+    readonly property bool focusContextActive:
+        clockModule.focusActive
+        && !root.notificationActive
+        && !recorderContextActive
+        && !clockModule.stopwatchActive
+
+
     readonly property bool mediaContextActive:
         mediaModule.contextActive
         && !root.notificationActive
         && !recorderContextActive
         && !clockModule.stopwatchActive
+        && !clockModule.focusActive
 
 
     readonly property bool persistentContext:
         root.notificationActive
         || recorderContextActive
         || stopwatchContextActive
+        || focusContextActive
         || mediaContextActive
 
 
@@ -167,15 +176,23 @@ Item {
     // Decides which full section Island.qml should open.
     //
     // Priority follows what the user is currently seeing:
-    //     Stopwatch -> Clock
+    //     Stopwatch -> Clock (Page 1)
+    //     Focus     -> Clock (Page 2)
     //     Media     -> Music
-    //     Idle      -> Clock
+    //     Idle      -> Clock (Page 0)
     // ============================================================
 
     function preferredFullSection() {
 
-        if (root.stopwatchContextActive)
+        if (root.stopwatchContextActive) {
+            clockModule.page = 1
             return "clock"
+        }
+
+        if (root.focusContextActive) {
+            clockModule.page = 2
+            return "clock"
+        }
 
         if (root.mediaContextActive)
             return "music"
@@ -435,6 +452,9 @@ Item {
                 return false
 
             if (root.stopwatchContextActive)
+                return true
+
+            if (root.focusContextActive)
                 return true
 
             if (root.mediaContextActive)
