@@ -38,13 +38,15 @@ NexaUI.NexaCard {
     }
 
     // ------------------------------------------------------------
-    // SIZE & GEOMETRY
+    // SIZE & GEOMETRY (Fixed Length Pill)
     // ------------------------------------------------------------
+
+    readonly property int fixedPillWidth: 210
 
     implicitHeight: Nexa.Theme.controlHeightSm
 
     implicitWidth: hasApp
-        ? Math.min(400, contentRow.implicitWidth + (Nexa.Theme.spacingSm * 2))
+        ? fixedPillWidth
         : Nexa.Theme.controlHeightSm
 
     radius: height / 2
@@ -55,9 +57,6 @@ NexaUI.NexaCard {
 
     interactive: true
     padding: 0
-    
-    // We remove custom color, border, and scale behaviors
-    // as NexaUI.NexaCard handles them automatically.
 
     Behavior on implicitWidth {
         NumberAnimation {
@@ -67,7 +66,7 @@ NexaUI.NexaCard {
     }
 
     // ------------------------------------------------------------
-    // CONTENT ROW: (( ICON ) | APP NAME + WORK TITLE)
+    // CONTENT ROW: ( ICON | TICKER TEXT )
     // ------------------------------------------------------------
 
     RowLayout {
@@ -124,32 +123,91 @@ NexaUI.NexaCard {
             visible: root.hasApp
         }
 
-        // App Name and Active Window Title
-        Text {
-            id: titleText
+        // Sliding Marquee Ticker Container
+        Item {
+            id: marqueeContainer
 
             Layout.fillWidth: true
+            Layout.fillHeight: true
             Layout.alignment: Qt.AlignVCenter
-
-            text: root.displayText
-
-            color: root.hovered
-                ? Nexa.Theme.text
-                : Nexa.Theme.mutedText
-
-            font {
-                family: Nexa.Theme.fontFamily
-                pixelSize: Nexa.Theme.fontSizeXs
-                weight: Nexa.Theme.fontWeightMedium
-            }
-
-            elide: Text.ElideRight
-
+            clip: true
             visible: root.hasApp
 
-            Behavior on color {
-                ColorAnimation {
-                    duration: Nexa.Theme.animationFast
+            readonly property bool needsScroll:
+                marqueeText.implicitWidth > width
+
+            readonly property real overflowDist:
+                Math.max(0, marqueeText.implicitWidth - width)
+
+            Text {
+                id: marqueeText
+
+                x: 0
+                anchors.verticalCenter: parent.verticalCenter
+
+                text: root.displayText
+
+                color: root.hovered
+                    ? Nexa.Theme.text
+                    : Nexa.Theme.mutedText
+
+                font {
+                    family: Nexa.Theme.fontFamily
+                    pixelSize: Nexa.Theme.fontSizeXs
+                    weight: Nexa.Theme.fontWeightMedium
+                }
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Nexa.Theme.animationFast
+                    }
+                }
+            }
+
+            SequentialAnimation {
+                id: tickerAnimation
+                running: marqueeContainer.needsScroll
+                loops: Animation.Infinite
+
+                PauseAnimation { duration: 1800 }
+
+                NumberAnimation {
+                    target: marqueeText
+                    property: "x"
+                    from: 0
+                    to: -marqueeContainer.overflowDist - 16
+                    duration: Math.max(1400, (marqueeContainer.overflowDist + 16) * 35)
+                    easing.type: Easing.InOutQuad
+                }
+
+                PauseAnimation { duration: 1500 }
+
+                NumberAnimation {
+                    target: marqueeText
+                    property: "x"
+                    to: 0
+                    duration: Math.max(1000, (marqueeContainer.overflowDist + 16) * 25)
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            onWidthChanged: {
+                marqueeText.x = 0
+                if (needsScroll) tickerAnimation.restart()
+                else tickerAnimation.stop()
+            }
+
+            Connections {
+                target: root
+                function onDisplayTextChanged() {
+                    marqueeText.x = 0
+                    if (marqueeContainer.needsScroll) tickerAnimation.restart()
+                    else tickerAnimation.stop()
+                }
+                function onHasAppChanged() {
+                    marqueeText.x = 0
+                    if (marqueeContainer.needsScroll) tickerAnimation.restart()
+                    else tickerAnimation.stop()
                 }
             }
         }

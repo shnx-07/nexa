@@ -48,8 +48,8 @@ PanelWindow {
     // Doing that was causing compositor-side lag.
     //
     // The visible Rectangle inside this window is animated instead.
-    implicitWidth: 760
-    implicitHeight: 430
+    implicitWidth: 800
+    implicitHeight: 660
 
     margins {
         top: 3
@@ -123,6 +123,13 @@ PanelWindow {
     readonly property int fullHeight: 400
 
     // ============================================================
+    // APP LAUNCHER DIMENSIONS
+    // ============================================================
+
+    readonly property int launcherWidth: 760
+    readonly property int launcherHeight: 620
+
+    // ============================================================
     // POWER MODE DIMENSIONS
     //
     // PowerIsland content:
@@ -142,7 +149,7 @@ PanelWindow {
 
 
     property string specialMode: "none"
-    // none | search | command
+    // none | search | command | power | appLauncher
 
     readonly property bool specialModeActive:
         specialMode !== "none"
@@ -174,6 +181,55 @@ PanelWindow {
 
             islandFocus.forceActiveFocus()
         }
+
+        function openAppLauncher(): void {
+            root.specialMode = "appLauncher"
+            root.full = true
+            root.hovered = false
+
+            islandFocus.forceActiveFocus()
+        }
+
+        function toggleAppLauncher(): void {
+            if (root.specialMode === "appLauncher") {
+                root.closeIsland()
+            } else {
+                root.specialMode = "appLauncher"
+                root.full = true
+                root.hovered = false
+
+                islandFocus.forceActiveFocus()
+            }
+        }
+    }
+
+    IpcHandler {
+        target: "appLauncher"
+
+        function open(): void {
+            root.specialMode = "appLauncher"
+            root.full = true
+            root.hovered = false
+
+            islandFocus.forceActiveFocus()
+        }
+
+        function close(): void {
+            if (root.specialMode === "appLauncher")
+                root.closeIsland()
+        }
+
+        function toggle(): void {
+            if (root.specialMode === "appLauncher") {
+                root.closeIsland()
+            } else {
+                root.specialMode = "appLauncher"
+                root.full = true
+                root.hovered = false
+
+                islandFocus.forceActiveFocus()
+            }
+        }
     }
 
 
@@ -198,6 +254,9 @@ PanelWindow {
     // ============================================================
 
     readonly property int targetWidth: {
+        if (root.specialMode === "appLauncher")
+            return root.launcherWidth
+
         if (root.specialMode === "power")
             return root.powerWidth
 
@@ -217,6 +276,9 @@ PanelWindow {
     }
 
     readonly property int targetHeight: {
+        if (root.specialMode === "appLauncher")
+            return root.launcherHeight
+
         if (root.specialMode === "power")
             return root.powerHeight
 

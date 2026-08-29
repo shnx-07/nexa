@@ -12,6 +12,7 @@ import "../modules/command"
 import "../modules/recorder"
 import "../modules/notifications"
 import "../modules/power"
+import "../modules/appLauncher"
 Item {
     id: root
 
@@ -166,6 +167,12 @@ Item {
         if (root.specialMode === "power") {
             Qt.callLater(
                 powerIsland.activate
+            )
+        }
+
+        if (root.specialMode === "appLauncher") {
+            Qt.callLater(
+                appLauncherIsland.activate
             )
         }
     }
@@ -908,6 +915,21 @@ Item {
         visible:
             root.full
             && root.specialMode === "power"
+
+        z: 100
+
+        onRequestClose:
+            root.requestCloseSpecialMode()
+    }
+
+    AppLauncherIsland {
+        id: appLauncherIsland
+
+        anchors.fill: parent
+
+        visible:
+            root.full
+            && root.specialMode === "appLauncher"
 
         z: 100
 

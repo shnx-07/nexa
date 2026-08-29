@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 
 import Quickshell
 import Quickshell.Io
@@ -12,25 +13,27 @@ Item {
     id: root
 
     // ============================================================
-    // SYSTEM INFO
+    // RESPONSIBILITY
     //
-    // Layout:
-    //
-    //   Disk     RAM      | User/System identity
-    //   CPU wide          |
-    //
-    // One compact module.
-    // No separate service/controller/model.
+    // Polished NEXA System Performance & Hardware Diagnostics Hub:
+    // - Smooth Bezier sparklines with gradient fills (CPU & RAM)
+    // - CPU, GPU & NVMe SSD Thermals & Power
+    // - Mini Task Manager (Top 3 CPU & RAM consumers with working kill action & app icons)
+    // - Quick System Utilities (Monitor launcher, working memory trim, uptime specs)
     // ============================================================
 
-
     // ============================================================
-    // DATA
+    // DATA PROPERTIES
     // ============================================================
 
     property real cpuUsage: 0
     property real ramUsage: 0
     property real diskUsage: 0
+
+    property int cpuTemp: 0
+    property int gpuTemp: 0
+    property string gpuPower: "--"
+    property int nvmeTemp: 0
 
     property string ramUsed: "--"
     property string ramTotal: "--"
@@ -44,1545 +47,1010 @@ Item {
     property string kernel: "--"
     property string osName: "--"
 
+    // Top processes
+    property var topCpuList: []
+    property var topMemList: []
+    property string processTab: "cpu" // "cpu" or "mem"
 
-    // CPU needs two /proc/stat samples to calculate usage.
+    // CPU delta calculation
     property double previousCpuTotal: 0
     property double previousCpuIdle: 0
 
-
-    // Graph history.
+    // History graphs (36 samples)
     property var cpuHistory: []
     property var ramHistory: []
-
-    readonly property int historyLength: 42
-
-
-    // ============================================================
-    // LAYOUT
-    // ============================================================
-
-    readonly property int gap:
-        Nexa.Theme.spacingMd
-
-    readonly property int infoWidth:
-        Math.round(width * 0.27)
-
-    readonly property int dividerWidth: 1
-
-    readonly property int graphAreaWidth:
-        width
-        - infoWidth
-        - dividerWidth
-        - gap * 2
-
-    readonly property int topCardHeight:
-        Math.floor((height - gap) * 0.46)
-
-    readonly property int cpuCardHeight:
-        height
-        - topCardHeight
-        - gap
-
+    readonly property int historyLength: 36
 
     // ============================================================
     // HELPERS
     // ============================================================
 
-    function clamp(value, minimum, maximum) {
-        return Math.max(minimum, Math.min(maximum, value))
+    function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val))
     }
 
-
-    function appendHistory(history, value) {
-        let result = history.slice()
-
-        result.push(
-            clamp(value, 0, 100)
-        )
-
-        while (result.length > root.historyLength)
-            result.shift()
-
-        return result
+    function appendHistory(history, val) {
+        let res = history ? history.slice() : []
+        const clampedVal = clamp(val, 0, 100)
+        if (res.length === 0) {
+            for (let i = 0; i < root.historyLength; ++i)
+                res.push(clampedVal)
+        } else {
+            res.push(clampedVal)
+            while (res.length > root.historyLength)
+                res.shift()
+        }
+        return res
     }
-
 
     function formatBytes(bytes) {
-        const value = Number(bytes)
-
-        if (!isFinite(value))
-            return "--"
-
-        const gib = value / 1073741824
-
-        if (gib >= 100)
-            return gib.toFixed(0) + " GB"
-
+        const val = Number(bytes)
+        if (!isFinite(val)) return "--"
+        const gib = val / 1073741824
+        if (gib >= 100) return gib.toFixed(0) + " GB"
         return gib.toFixed(1) + " GB"
     }
 
+    function appIcon(name) {
+        const n = String(name || "").toLowerCase()
+        if (n.includes("chrome") || n.includes("chromium") || n.includes("brave")) return "󰊯"
+        if (n.includes("firefox")) return "󰈹"
+        if (n.includes("code") || n.includes("vsc")) return "󰨞"
+        if (n.includes("spotify")) return "󰓇"
+        if (n.includes("vlc") || n.includes("mpv")) return "󰕼"
+        if (n.includes("kitty") || n.includes("alacritty") || n.includes("bash") || n.includes("zsh")) return "󰆍"
+        if (n.includes("quickshell")) return "󰘚"
+        if (n.includes("hypr") || n.includes("waybar")) return "󰍹"
+        if (n.includes("discord") || n.includes("vesktop")) return "󰙯"
+        if (n.includes("steam")) return "󰓓"
+        return "󰘳"
+    }
 
     function openMonitor() {
         Quickshell.execDetached([
             "kitty",
             "--title",
             "System Monitor",
-            Quickshell.env("HOME") + "/.config/nexa/scripts/open-monitor.sh"
+            "-e",
+            "btop"
         ])
     }
 
+    function clearCache() {
+        Quickshell.execDetached([
+            "sh",
+            "-c",
+            "sync; (echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true)"
+        ])
+        trimFeedbackTimer.restart()
+        liveStatsProcess.running = true
+    }
+
+    function killProcess(pid) {
+        if (!pid) return
+        Quickshell.execDetached([
+            "kill",
+            "-9",
+            String(pid)
+        ])
+        root.topCpuList = root.topCpuList.filter(p => String(p.pid) !== String(pid))
+        root.topMemList = root.topMemList.filter(p => String(p.pid) !== String(pid))
+        liveStatsProcess.running = true
+    }
+
+    Timer {
+        id: trimFeedbackTimer
+        interval: 2000
+        repeat: false
+    }
 
     // ============================================================
-    // LIVE CPU / RAM PROCESS
-    //
-    // Reads:
-    //   /proc/stat
-    //   /proc/meminfo
-    //
-    // One lightweight refresh per second.
+    // LIVE METRICS & SENSORS PROCESS (Runs every 1.5 seconds)
     // ============================================================
 
     Process {
         id: liveStatsProcess
-
         command: [
             "sh",
             "-c",
             [
-                "awk '",
-                "/^cpu / {",
-                    "total=0;",
-                    "for(i=2;i<=NF;i++) total+=$i;",
-                    "idle=$5+$6;",
-                    "printf \"CPU %.0f %.0f\\n\", total, idle",
-                "}",
-                "' /proc/stat; ",
-
-                "awk '",
-                "/^MemTotal:/ { total=$2 }",
-                "/^MemAvailable:/ { avail=$2 }",
-                "END {",
-                    "used=total-avail;",
-                    "printf \"RAM %.0f %.0f %.0f\\n\",",
-                    "used, total, (used/total)*100",
-                "}",
-                "' /proc/meminfo"
+                "# CPU /proc/stat\n",
+                "awk '/^cpu / { total=0; for(i=2;i<=NF;i++) total+=$i; idle=$5+$6; printf \"CPU %.0f %.0f\\n\", total, idle }' /proc/stat;\n",
+                "# RAM /proc/meminfo\n",
+                "awk '/^MemTotal:/ { total=$2 } /^MemAvailable:/ { avail=$2 } END { used=total-avail; printf \"RAM %.0f %.0f %.0f\\n\", used, total, (used/total)*100 }' /proc/meminfo;\n",
+                "# Sensors (CPU, GPU, NVMe)\n",
+                "sensors 2>/dev/null | awk '/Tctl:/ { gsub(\"[+°C]\", \"\", $2); printf \"CPUTEMP %s\\n\", int($2) } /edge:/ { gsub(\"[+°C]\", \"\", $2); printf \"GPUTEMP %s\\n\", int($2) } /PPT:/ { printf \"GPUPOWER %s\\n\", $2 } /Composite:/ { gsub(\"[+°C]\", \"\", $2); printf \"NVMETEMP %s\\n\", int($2) }';\n",
+                "# Top 3 CPU\n",
+                "printf \"TOP_CPU_START\\n\";\n",
+                "ps -eo pid,comm,%cpu --sort=-%cpu --no-headers | head -n 3 | while read -r pid comm cpu; do printf \"TOP_CPU %s %s %s\\n\" \"$pid\" \"$comm\" \"$cpu\"; done;\n",
+                "# Top 3 RAM\n",
+                "printf \"TOP_MEM_START\\n\";\n",
+                "ps -eo pid,comm,rss --sort=-rss --no-headers | head -n 3 | while read -r pid comm rss; do mb=$(( rss / 1024 )); printf \"TOP_MEM %s %s %s\\n\" \"$pid\" \"$comm\" \"$mb\"; done\n"
             ].join("")
         ]
-
         running: true
-
 
         stdout: StdioCollector {
             onStreamFinished: {
-                const lines =
-                    text.trim().split("\n")
+                const lines = text.trim().split("\n")
+                const newTopCpu = []
+                const newTopMem = []
 
                 for (let i = 0; i < lines.length; ++i) {
-                    const fields =
-                        lines[i].trim().split(/\s+/)
+                    const fields = lines[i].trim().split(/\s+/)
+                    if (fields.length === 0 || fields[0] === "") continue
 
-                    if (fields.length === 0)
-                        continue
-
-
-                    // --------------------------------------------
-                    // CPU
-                    // --------------------------------------------
-
-                    if (fields[0] === "CPU"
-                            && fields.length >= 3) {
-
-                        const total =
-                            Number(fields[1])
-
-                        const idle =
-                            Number(fields[2])
-
-
+                    // CPU Usage
+                    if (fields[0] === "CPU" && fields.length >= 3) {
+                        const total = Number(fields[1])
+                        const idle = Number(fields[2])
                         if (root.previousCpuTotal > 0) {
-
-                            const totalDelta =
-                                total
-                                - root.previousCpuTotal
-
-                            const idleDelta =
-                                idle
-                                - root.previousCpuIdle
-
-
+                            const totalDelta = total - root.previousCpuTotal
+                            const idleDelta = idle - root.previousCpuIdle
                             if (totalDelta > 0) {
-                                root.cpuUsage =
-                                    root.clamp(
-                                        (
-                                            1
-                                            - idleDelta
-                                            / totalDelta
-                                        ) * 100,
-                                        0,
-                                        100
-                                    )
-
-                                root.cpuHistory =
-                                    root.appendHistory(
-                                        root.cpuHistory,
-                                        root.cpuUsage
-                                    )
-
+                                root.cpuUsage = root.clamp((1.0 - idleDelta / totalDelta) * 100, 0, 100)
+                                root.cpuHistory = root.appendHistory(root.cpuHistory, root.cpuUsage)
                                 cpuGraph.requestPaint()
                             }
+                        } else {
+                            root.cpuHistory = root.appendHistory(root.cpuHistory, 5)
+                            cpuGraph.requestPaint()
                         }
-
-
-                        root.previousCpuTotal =
-                            total
-
-                        root.previousCpuIdle =
-                            idle
+                        root.previousCpuTotal = total
+                        root.previousCpuIdle = idle
                     }
 
-
-                    // --------------------------------------------
-                    // RAM
-                    // --------------------------------------------
-
-                    if (fields[0] === "RAM"
-                            && fields.length >= 4) {
-
-                        const usedKb =
-                            Number(fields[1])
-
-                        const totalKb =
-                            Number(fields[2])
-
-                        const percent =
-                            Number(fields[3])
-
-
-                        root.ramUsage =
-                            root.clamp(
-                                percent,
-                                0,
-                                100
-                            )
-
-
-                        root.ramUsed =
-                            root.formatBytes(
-                                usedKb * 1024
-                            )
-
-                        root.ramTotal =
-                            root.formatBytes(
-                                totalKb * 1024
-                            )
-
-
-                        root.ramHistory =
-                            root.appendHistory(
-                                root.ramHistory,
-                                root.ramUsage
-                            )
-
-
+                    // RAM Usage
+                    else if (fields[0] === "RAM" && fields.length >= 4) {
+                        const usedKb = Number(fields[1])
+                        const totalKb = Number(fields[2])
+                        const percent = Number(fields[3])
+                        root.ramUsage = root.clamp(percent, 0, 100)
+                        root.ramUsed = root.formatBytes(usedKb * 1024)
+                        root.ramTotal = root.formatBytes(totalKb * 1024)
+                        root.ramHistory = root.appendHistory(root.ramHistory, root.ramUsage)
                         ramGraph.requestPaint()
                     }
+
+                    // Thermals
+                    else if (fields[0] === "CPUTEMP" && fields.length >= 2) {
+                        root.cpuTemp = Number(fields[1]) || 0
+                    }
+                    else if (fields[0] === "GPUTEMP" && fields.length >= 2) {
+                        root.gpuTemp = Number(fields[1]) || 0
+                    }
+                    else if (fields[0] === "GPUPOWER" && fields.length >= 2) {
+                        const w = Math.round(Number(fields[1])) || 0
+                        root.gpuPower = w > 0 ? w + "W" : fields[1]
+                    }
+                    else if (fields[0] === "NVMETEMP" && fields.length >= 2) {
+                        root.nvmeTemp = Number(fields[1]) || 0
+                    }
+
+                    // Top CPU List
+                    else if (fields[0] === "TOP_CPU" && fields.length >= 4) {
+                        newTopCpu.push({
+                            pid: fields[1],
+                            name: fields[2],
+                            value: fields[3] + "%"
+                        })
+                    }
+
+                    // Top RAM List
+                    else if (fields[0] === "TOP_MEM" && fields.length >= 4) {
+                        newTopMem.push({
+                            pid: fields[1],
+                            name: fields[2],
+                            value: fields[3] + " MB"
+                        })
+                    }
                 }
+
+                if (newTopCpu.length > 0) root.topCpuList = newTopCpu
+                if (newTopMem.length > 0) root.topMemList = newTopMem
             }
         }
     }
 
-
     Timer {
-        interval: 1000
+        interval: 1500
         running: root.visible
         repeat: true
-
         onTriggered: {
-            if (!liveStatsProcess.running)
-                liveStatsProcess.running = true
+            if (!liveStatsProcess.running) liveStatsProcess.running = true
         }
     }
 
-
     // ============================================================
-    // SLOW DATA
-    //
-    // Disk + identity/system information.
-    //
-    // No reason to update this every second.
+    // SLOW STATS PROCESS (Disk, Uptime, Identity - every 20s)
     // ============================================================
 
     Process {
         id: slowStatsProcess
-
         command: [
             "sh",
             "-c",
             [
-                "df -B1 / | awk 'NR==2 {",
-                    "gsub(\"%\", \"\", $5);",
-                    "printf \"DISK %s %s %s\\n\",",
-                    "$3, $2, $5",
-                "}'; ",
-
+                "df -B1 / | awk 'NR==2 { gsub(\"%\", \"\", $5); printf \"DISK %s %s %s\\n\", $3, $2, $5 }'; ",
                 "printf 'USER %s\\n' \"$(whoami)\"; ",
                 "printf 'HOST %s\\n' \"$(hostname)\"; ",
-
-                "printf 'UPTIME %s\\n' \"$(",
-                    "uptime -p | sed 's/^up //'",
-                ")\"; ",
-
-                "printf 'KERNEL %s\\n' \"$(",
-                    "uname -r",
-                ")\"; ",
-
-                "printf 'OS %s\\n' \"$(",
-                    ". /etc/os-release 2>/dev/null; ",
-                    "printf '%s' \"${PRETTY_NAME:-Linux}\"",
-                ")\""
+                "printf 'UPTIME %s\\n' \"$(uptime -p | sed 's/^up //')\"; ",
+                "printf 'KERNEL %s\\n' \"$(uname -r)\"; ",
+                "printf 'OS %s\\n' \"$(. /etc/os-release 2>/dev/null; printf '%s' \"${PRETTY_NAME:-Arch Linux}\")\""
             ].join("")
         ]
-
         running: true
-
 
         stdout: StdioCollector {
             onStreamFinished: {
-                const lines =
-                    text.trim().split("\n")
-
+                const lines = text.trim().split("\n")
                 for (let i = 0; i < lines.length; ++i) {
-
-                    const line =
-                        lines[i].trim()
-
-                    const split =
-                        line.indexOf(" ")
-
-                    if (split < 0)
-                        continue
-
-
-                    const key =
-                        line.substring(0, split)
-
-                    const value =
-                        line.substring(split + 1)
-
+                    const line = lines[i].trim()
+                    const split = line.indexOf(" ")
+                    if (split < 0) continue
+                    const key = line.substring(0, split)
+                    const value = line.substring(split + 1)
 
                     switch (key) {
-
                     case "DISK": {
-                        const disk =
-                            value.split(/\s+/)
-
+                        const disk = value.split(/\s+/)
                         if (disk.length >= 3) {
-                            root.diskUsed =
-                                root.formatBytes(
-                                    Number(disk[0])
-                                )
-
-                            root.diskTotal =
-                                root.formatBytes(
-                                    Number(disk[1])
-                                )
-
-                            root.diskUsage =
-                                root.clamp(
-                                    Number(disk[2]),
-                                    0,
-                                    100
-                                )
-
-                            diskGraph.requestPaint()
+                            root.diskUsed = root.formatBytes(Number(disk[0]))
+                            root.diskTotal = root.formatBytes(Number(disk[1]))
+                            root.diskUsage = root.clamp(Number(disk[2]), 0, 100)
                         }
-
                         break
                     }
-
-
-                    case "USER":
-                        root.userName =
-                            value
-                        break
-
-
-                    case "HOST":
-                        root.hostName =
-                            value
-                        break
-
-
-                    case "UPTIME":
-                        root.uptime =
-                            value
-                        break
-
-
-                    case "KERNEL":
-                        root.kernel =
-                            value
-                        break
-
-
-                    case "OS":
-                        root.osName =
-                            value
-                        break
+                    case "USER": root.userName = value; break
+                    case "HOST": root.hostName = value; break
+                    case "UPTIME": root.uptime = value; break
+                    case "KERNEL": root.kernel = value; break
+                    case "OS": root.osName = value; break
                     }
                 }
             }
         }
     }
-
 
     Timer {
-        interval: 30000
+        interval: 20000
         running: root.visible
         repeat: true
-
         onTriggered: {
-            if (!slowStatsProcess.running)
-                slowStatsProcess.running = true
+            if (!slowStatsProcess.running) slowStatsProcess.running = true
         }
     }
 
-
     // ============================================================
-    // LEFT GRAPH AREA
-    // ============================================================
-
-    Item {
-        id: graphArea
-
-        anchors {
-            top: parent.top
-            bottom: parent.bottom
-            left: parent.left
-        }
-
-        width:
-            root.graphAreaWidth
-
-
-        // ========================================================
-        // DISK
-        // ========================================================
-
-        NexaUI.NexaCard {
-            id: diskCard
-
-            anchors {
-                top: parent.top
-                left: parent.left
-            }
-
-            width:
-                Math.floor(
-                    (parent.width - root.gap) / 2
-                )
-
-            height:
-                root.topCardHeight
-                
-            clip: true
-            
-            padding: 0
-            interactive: true
-            onClicked: root.openMonitor()
-
-
-            Text {
-                id: diskTitle
-
-                anchors {
-                    top: parent.top
-                    left: parent.left
-
-                    topMargin:
-                        Nexa.Theme.spacingMd
-
-                    leftMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                text:
-                    "Disk"
-
-                color:
-                    Nexa.Theme.text
-
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
-
-                    pixelSize:
-                        Nexa.Theme.fontSizeMd
-
-                    weight:
-                        Nexa.Theme.fontWeightDemiBold
-                }
-            }
-
-
-            Text {
-                anchors {
-                    top: parent.top
-                    right: parent.right
-
-                    topMargin:
-                        Nexa.Theme.spacingMd
-
-                    rightMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                text:
-                    Math.round(root.diskUsage)
-                    + "%"
-
-                color:
-                    Nexa.Theme.primary
-
-                font {
-                    family:
-                        Nexa.Theme.monoFontFamily
-
-                    pixelSize:
-                        Nexa.Theme.fontSizeSm
-
-                    weight:
-                        Nexa.Theme.fontWeightDemiBold
-                }
-            }
-
-
-            Text {
-                anchors {
-                    top: diskTitle.bottom
-                    left: parent.left
-
-                    topMargin:
-                        Nexa.Theme.spacing2Xs
-
-                    leftMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                text:
-                    root.diskUsed
-                    + " / "
-                    + root.diskTotal
-
-                color:
-                    Nexa.Theme.mutedText
-
-                font {
-                    family:
-                        Nexa.Theme.monoFontFamily
-
-                    pixelSize:
-                        Nexa.Theme.fontSizeXs
-                }
-            }
-
-
-            Canvas {
-                id: diskGraph
-
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    bottom: parent.bottom
-
-                    leftMargin:
-                        Nexa.Theme.spacingMd
-
-                    rightMargin:
-                        Nexa.Theme.spacingMd
-
-                    bottomMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                height:
-                    Math.max(
-                        24,
-                        parent.height * 0.34
-                    )
-
-                antialiasing: true
-
-
-                onPaint: {
-                    const ctx =
-                        getContext("2d")
-
-                    ctx.reset()
-
-
-                    const percentage =
-                        root.diskUsage / 100
-
-                    const y =
-                        height * (1 - percentage)
-
-
-                    ctx.beginPath()
-
-                    ctx.moveTo(
-                        0,
-                        height
-                    )
-
-                    ctx.lineTo(
-                        0,
-                        y
-                    )
-
-                    ctx.lineTo(
-                        width,
-                        y
-                    )
-
-                    ctx.lineTo(
-                        width,
-                        height
-                    )
-
-                    ctx.closePath()
-
-
-                    const fill =
-                        ctx.createLinearGradient(
-                            0,
-                            0,
-                            0,
-                            height
-                        )
-
-                    fill.addColorStop(
-                        0,
-                        Qt.rgba(
-                            Nexa.Theme.primary.r,
-                            Nexa.Theme.primary.g,
-                            Nexa.Theme.primary.b,
-                            0.30
-                        )
-                    )
-
-                    fill.addColorStop(
-                        1,
-                        Qt.rgba(
-                            Nexa.Theme.primary.r,
-                            Nexa.Theme.primary.g,
-                            Nexa.Theme.primary.b,
-                            0.03
-                        )
-                    )
-
-
-                    ctx.fillStyle =
-                        fill
-
-                    ctx.fill()
-
-
-                    ctx.beginPath()
-
-                    ctx.moveTo(
-                        0,
-                        y
-                    )
-
-                    ctx.lineTo(
-                        width,
-                        y
-                    )
-
-                    ctx.strokeStyle =
-                        Nexa.Theme.primary
-
-                    ctx.lineWidth =
-                        1.5
-
-                    ctx.stroke()
-                }
-
-
-                Connections {
-                    target:
-                        Nexa.Theme
-
-                    function onPrimaryChanged() {
-                        diskGraph.requestPaint()
-                    }
-                }
-            }
-
-
-
-        }
-
-
-        // ========================================================
-        // RAM
-        // ========================================================
-
-        NexaUI.NexaCard {
-            id: ramCard
-
-            anchors {
-                top: parent.top
-                right: parent.right
-            }
-
-            width:
-                Math.ceil(
-                    (parent.width - root.gap) / 2
-                )
-
-            height:
-                root.topCardHeight
-                
-            clip: true
-            
-            padding: 0
-            interactive: true
-            onClicked: root.openMonitor()
-
-
-            Text {
-                id: ramTitle
-
-                anchors {
-                    top: parent.top
-                    left: parent.left
-
-                    topMargin:
-                        Nexa.Theme.spacingMd
-
-                    leftMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                text:
-                    "RAM"
-
-                color:
-                    Nexa.Theme.text
-
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
-
-                    pixelSize:
-                        Nexa.Theme.fontSizeMd
-
-                    weight:
-                        Nexa.Theme.fontWeightDemiBold
-                }
-            }
-
-
-            Text {
-                anchors {
-                    top: parent.top
-                    right: parent.right
-
-                    topMargin:
-                        Nexa.Theme.spacingMd
-
-                    rightMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                text:
-                    Math.round(root.ramUsage)
-                    + "%"
-
-                color:
-                    Nexa.Theme.secondary
-
-                font {
-                    family:
-                        Nexa.Theme.monoFontFamily
-
-                    pixelSize:
-                        Nexa.Theme.fontSizeSm
-
-                    weight:
-                        Nexa.Theme.fontWeightDemiBold
-                }
-            }
-
-
-            Text {
-                anchors {
-                    top: ramTitle.bottom
-                    left: parent.left
-
-                    topMargin:
-                        Nexa.Theme.spacing2Xs
-
-                    leftMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                text:
-                    root.ramUsed
-                    + " / "
-                    + root.ramTotal
-
-                color:
-                    Nexa.Theme.mutedText
-
-                font {
-                    family:
-                        Nexa.Theme.monoFontFamily
-
-                    pixelSize:
-                        Nexa.Theme.fontSizeXs
-                }
-            }
-
-
-            Canvas {
-                id: ramGraph
-
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    bottom: parent.bottom
-
-                    leftMargin:
-                        Nexa.Theme.spacingMd
-
-                    rightMargin:
-                        Nexa.Theme.spacingMd
-
-                    bottomMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                height:
-                    Math.max(
-                        28,
-                        parent.height * 0.38
-                    )
-
-                antialiasing:
-                    true
-
-
-                onPaint: {
-                    const ctx =
-                        getContext("2d")
-
-                    ctx.reset()
-
-
-                    if (root.ramHistory.length < 2)
-                        return
-
-
-                    const step =
-                        width
-                        / Math.max(
-                            1,
-                            root.historyLength - 1
-                        )
-
-
-                    ctx.beginPath()
-
-
-                    for (
-                        let i = 0;
-                        i < root.ramHistory.length;
-                        ++i
-                    ) {
-
-                        const x =
-                            width
-                            - (
-                                root.ramHistory.length
-                                - 1
-                                - i
-                            ) * step
-
-                        const y =
-                            height
-                            - (
-                                root.ramHistory[i]
-                                / 100
-                            ) * height
-
-
-                        if (i === 0)
-                            ctx.moveTo(x, y)
-                        else
-                            ctx.lineTo(x, y)
-                    }
-
-
-                    ctx.strokeStyle =
-                        Nexa.Theme.secondary
-
-                    ctx.lineWidth =
-                        1.6
-
-                    ctx.stroke()
-                }
-
-
-                Connections {
-                    target:
-                        Nexa.Theme
-
-                    function onSecondaryChanged() {
-                        ramGraph.requestPaint()
-                    }
-                }
-            }
-
-
-
-        }
-
-
-        // ========================================================
-        // CPU
-        // ========================================================
-
-        NexaUI.NexaCard {
-            id: cpuCard
-
-            anchors {
-                left: parent.left
-                right: parent.right
-                bottom: parent.bottom
-            }
-
-            height:
-                root.cpuCardHeight
-                
-            clip: true
-            
-            padding: 0
-            interactive: true
-            onClicked: root.openMonitor()
-
-
-            Text {
-                anchors {
-                    top: parent.top
-                    left: parent.left
-
-                    topMargin:
-                        Nexa.Theme.spacingMd
-
-                    leftMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                text:
-                    "CPU"
-
-                color:
-                    Nexa.Theme.text
-
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
-
-                    pixelSize:
-                        Nexa.Theme.fontSizeMd
-
-                    weight:
-                        Nexa.Theme.fontWeightDemiBold
-                }
-            }
-
-
-            Text {
-                anchors {
-                    top: parent.top
-                    right: parent.right
-
-                    topMargin:
-                        Nexa.Theme.spacingMd
-
-                    rightMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                text:
-                    Math.round(root.cpuUsage)
-                    + "%"
-
-                color:
-                    Nexa.Theme.tertiary
-
-                font {
-                    family:
-                        Nexa.Theme.monoFontFamily
-
-                    pixelSize:
-                        Nexa.Theme.fontSizeMd
-
-                    weight:
-                        Nexa.Theme.fontWeightDemiBold
-                }
-            }
-
-
-            Canvas {
-                id: cpuGraph
-
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    bottom: parent.bottom
-
-                    leftMargin:
-                        Nexa.Theme.spacingMd
-
-                    rightMargin:
-                        Nexa.Theme.spacingMd
-
-                    bottomMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                height:
-                    Math.max(
-                        46,
-                        parent.height * 0.55
-                    )
-
-                antialiasing:
-                    true
-
-
-                onPaint: {
-                    const ctx =
-                        getContext("2d")
-
-                    ctx.reset()
-
-
-                    if (root.cpuHistory.length < 2)
-                        return
-
-
-                    const step =
-                        width
-                        / Math.max(
-                            1,
-                            root.historyLength - 1
-                        )
-
-
-                    // --------------------------------------------
-                    // Filled graph
-                    // --------------------------------------------
-
-                    ctx.beginPath()
-
-
-                    for (
-                        let i = 0;
-                        i < root.cpuHistory.length;
-                        ++i
-                    ) {
-
-                        const x =
-                            width
-                            - (
-                                root.cpuHistory.length
-                                - 1
-                                - i
-                            ) * step
-
-                        const y =
-                            height
-                            - (
-                                root.cpuHistory[i]
-                                / 100
-                            ) * height
-
-
-                        if (i === 0)
-                            ctx.moveTo(x, y)
-                        else
-                            ctx.lineTo(x, y)
-                    }
-
-
-                    const lastX =
-                        width
-
-                    ctx.lineTo(
-                        lastX,
-                        height
-                    )
-
-                    ctx.lineTo(
-                        Math.max(
-                            0,
-                            width
-                            - (
-                                root.cpuHistory.length
-                                - 1
-                            ) * step
-                        ),
-                        height
-                    )
-
-                    ctx.closePath()
-
-
-                    const fill =
-                        ctx.createLinearGradient(
-                            0,
-                            0,
-                            0,
-                            height
-                        )
-
-                    fill.addColorStop(
-                        0,
-                        Qt.rgba(
-                            Nexa.Theme.tertiary.r,
-                            Nexa.Theme.tertiary.g,
-                            Nexa.Theme.tertiary.b,
-                            0.30
-                        )
-                    )
-
-                    fill.addColorStop(
-                        1,
-                        Qt.rgba(
-                            Nexa.Theme.tertiary.r,
-                            Nexa.Theme.tertiary.g,
-                            Nexa.Theme.tertiary.b,
-                            0.02
-                        )
-                    )
-
-
-                    ctx.fillStyle =
-                        fill
-
-                    ctx.fill()
-
-
-                    // --------------------------------------------
-                    // Graph line
-                    // --------------------------------------------
-
-                    ctx.beginPath()
-
-
-                    for (
-                        let j = 0;
-                        j < root.cpuHistory.length;
-                        ++j
-                    ) {
-
-                        const x =
-                            width
-                            - (
-                                root.cpuHistory.length
-                                - 1
-                                - j
-                            ) * step
-
-                        const y =
-                            height
-                            - (
-                                root.cpuHistory[j]
-                                / 100
-                            ) * height
-
-
-                        if (j === 0)
-                            ctx.moveTo(x, y)
-                        else
-                            ctx.lineTo(x, y)
-                    }
-
-
-                    ctx.strokeStyle =
-                        Nexa.Theme.tertiary
-
-                    ctx.lineWidth =
-                        1.8
-
-                    ctx.stroke()
-                }
-
-
-                Connections {
-                    target:
-                        Nexa.Theme
-
-                    function onTertiaryChanged() {
-                        cpuGraph.requestPaint()
-                    }
-                }
-            }
-
-
-
-        }
-    }
-
-
-    // ============================================================
-    // VERTICAL DIVIDER
+    // MAIN LAYOUT
     // ============================================================
 
-    Rectangle {
-        id: verticalDivider
+    RowLayout {
+        anchors.fill: parent
+        anchors.margins: Nexa.Theme.spacingMd
+        spacing: Nexa.Theme.spacingMd
 
-        anchors {
-            top: parent.top
-            bottom: parent.bottom
-            left: graphArea.right
+        // ========================================================
+        // LEFT: 2x2 HARDWARE & PERFORMANCE GRID (56% width)
+        // ========================================================
 
-            leftMargin:
-                root.gap
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.preferredWidth: 310
+            Layout.fillHeight: true
+            spacing: Nexa.Theme.spacingSm
+
+            // Top Row: CPU Card & RAM Card
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: Nexa.Theme.spacingSm
+
+                // ------------------------------------------------
+                // CPU CARD WITH SMOOTH BEZIER SPARKLINE
+                // ------------------------------------------------
+                NexaUI.NexaCard {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    interactive: true
+                    onClicked: root.openMonitor()
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: Nexa.Theme.spacingSm
+                        spacing: 2
+
+                        // Header: Title & Temp Pill
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            Text {
+                                text: "CPU"
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            // Thermals Badge
+                            Rectangle {
+                                implicitWidth: cpuTempRow.implicitWidth + 10
+                                implicitHeight: 18
+                                radius: 9
+                                color: root.cpuTemp > 75 ? Qt.rgba(0.9, 0.2, 0.2, 0.2) : (root.cpuTemp > 58 ? Qt.rgba(0.9, 0.6, 0.1, 0.2) : Nexa.Theme.surfaceContainerHighest)
+
+                                Row {
+                                    id: cpuTempRow
+                                    anchors.centerIn: parent
+                                    spacing: 3
+                                    Text {
+                                        text: "󰍛"
+                                        color: root.cpuTemp > 75 ? "#EF4444" : (root.cpuTemp > 58 ? "#F59E0B" : Nexa.Theme.primary)
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: 11
+                                    }
+                                    Text {
+                                        text: root.cpuTemp > 0 ? root.cpuTemp + "°C" : "--"
+                                        color: Nexa.Theme.text
+                                        font.family: Nexa.Theme.monoFontFamily
+                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                        font.weight: Nexa.Theme.fontWeightMedium
+                                    }
+                                }
+                            }
+                        }
+
+                        // Usage Percentage
+                        Text {
+                            text: Math.round(root.cpuUsage) + "%"
+                            color: Nexa.Theme.primary
+                            font.family: Nexa.Theme.monoFontFamily
+                            font.pixelSize: 20
+                            font.weight: Nexa.Theme.fontWeightBold
+                        }
+
+                        // Sparkline Canvas with Bezier Curve smoothing
+                        Canvas {
+                            id: cpuGraph
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            antialiasing: true
+
+                            onPaint: {
+                                const ctx = getContext("2d")
+                                ctx.reset()
+                                if (!root.cpuHistory || root.cpuHistory.length < 2) return
+
+                                const data = root.cpuHistory
+                                const step = width / (data.length - 1)
+
+                                // Gradient Area Fill
+                                ctx.beginPath()
+                                ctx.moveTo(0, height * (1.0 - (data[0] / 100.0)))
+                                for (let i = 0; i < data.length - 1; ++i) {
+                                    const x0 = i * step
+                                    const y0 = height * (1.0 - (data[i] / 100.0))
+                                    const x1 = (i + 1) * step
+                                    const y1 = height * (1.0 - (data[i + 1] / 100.0))
+                                    const midX = (x0 + x1) / 2
+                                    const midY = (y0 + y1) / 2
+                                    ctx.quadraticCurveTo(x0, y0, midX, midY)
+                                }
+                                const lastX = (data.length - 1) * step
+                                const lastY = height * (1.0 - (data[data.length - 1] / 100.0))
+                                ctx.lineTo(lastX, lastY)
+                                ctx.lineTo(width, height)
+                                ctx.lineTo(0, height)
+                                ctx.closePath()
+
+                                const fill = ctx.createLinearGradient(0, 0, 0, height)
+                                fill.addColorStop(0, Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.38))
+                                fill.addColorStop(1, Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.02))
+                                ctx.fillStyle = fill
+                                ctx.fill()
+
+                                // Line Stroke
+                                ctx.beginPath()
+                                ctx.moveTo(0, height * (1.0 - (data[0] / 100.0)))
+                                for (let i = 0; i < data.length - 1; ++i) {
+                                    const x0 = i * step
+                                    const y0 = height * (1.0 - (data[i] / 100.0))
+                                    const x1 = (i + 1) * step
+                                    const y1 = height * (1.0 - (data[i + 1] / 100.0))
+                                    const midX = (x0 + x1) / 2
+                                    const midY = (y0 + y1) / 2
+                                    ctx.quadraticCurveTo(x0, y0, midX, midY)
+                                }
+                                ctx.lineTo(lastX, lastY)
+                                ctx.strokeStyle = Nexa.Theme.primary
+                                ctx.lineWidth = 1.8
+                                ctx.stroke()
+                            }
+                        }
+                    }
+                }
+
+                // ------------------------------------------------
+                // RAM CARD WITH LIVE BEZIER HISTORY
+                // ------------------------------------------------
+                NexaUI.NexaCard {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    interactive: true
+                    onClicked: root.openMonitor()
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: Nexa.Theme.spacingSm
+                        spacing: 2
+
+                        // Header: Title & Used Text
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            Text {
+                                text: "RAM"
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Text {
+                                text: root.ramUsed
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.monoFontFamily
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
+                            }
+                        }
+
+                        // Usage Percentage
+                        Text {
+                            text: Math.round(root.ramUsage) + "%"
+                            color: Nexa.Theme.secondary
+                            font.family: Nexa.Theme.monoFontFamily
+                            font.pixelSize: 20
+                            font.weight: Nexa.Theme.fontWeightBold
+                        }
+
+                        // Sparkline Canvas with Bezier Curve smoothing
+                        Canvas {
+                            id: ramGraph
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            antialiasing: true
+
+                            onPaint: {
+                                const ctx = getContext("2d")
+                                ctx.reset()
+                                if (!root.ramHistory || root.ramHistory.length < 2) return
+
+                                const data = root.ramHistory
+                                const step = width / (data.length - 1)
+
+                                // Gradient Area Fill
+                                ctx.beginPath()
+                                ctx.moveTo(0, height * (1.0 - (data[0] / 100.0)))
+                                for (let i = 0; i < data.length - 1; ++i) {
+                                    const x0 = i * step
+                                    const y0 = height * (1.0 - (data[i] / 100.0))
+                                    const x1 = (i + 1) * step
+                                    const y1 = height * (1.0 - (data[i + 1] / 100.0))
+                                    const midX = (x0 + x1) / 2
+                                    const midY = (y0 + y1) / 2
+                                    ctx.quadraticCurveTo(x0, y0, midX, midY)
+                                }
+                                const lastX = (data.length - 1) * step
+                                const lastY = height * (1.0 - (data[data.length - 1] / 100.0))
+                                ctx.lineTo(lastX, lastY)
+                                ctx.lineTo(width, height)
+                                ctx.lineTo(0, height)
+                                ctx.closePath()
+
+                                const fill = ctx.createLinearGradient(0, 0, 0, height)
+                                fill.addColorStop(0, Qt.rgba(Nexa.Theme.secondary.r, Nexa.Theme.secondary.g, Nexa.Theme.secondary.b, 0.38))
+                                fill.addColorStop(1, Qt.rgba(Nexa.Theme.secondary.r, Nexa.Theme.secondary.g, Nexa.Theme.secondary.b, 0.02))
+                                ctx.fillStyle = fill
+                                ctx.fill()
+
+                                // Line Stroke
+                                ctx.beginPath()
+                                ctx.moveTo(0, height * (1.0 - (data[0] / 100.0)))
+                                for (let i = 0; i < data.length - 1; ++i) {
+                                    const x0 = i * step
+                                    const y0 = height * (1.0 - (data[i] / 100.0))
+                                    const x1 = (i + 1) * step
+                                    const y1 = height * (1.0 - (data[i + 1] / 100.0))
+                                    const midX = (x0 + x1) / 2
+                                    const midY = (y0 + y1) / 2
+                                    ctx.quadraticCurveTo(x0, y0, midX, midY)
+                                }
+                                ctx.lineTo(lastX, lastY)
+                                ctx.strokeStyle = Nexa.Theme.secondary
+                                ctx.lineWidth = 1.8
+                                ctx.stroke()
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Bottom Row: GPU & Thermals Card + NVMe Storage Card
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: Nexa.Theme.spacingSm
+
+                // ------------------------------------------------
+                // GPU & THERMALS CARD
+                // ------------------------------------------------
+                NexaUI.NexaCard {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: Nexa.Theme.spacingSm
+                        spacing: 4
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Text {
+                                text: "GPU & Thermals"
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                            }
+                            Item { Layout.fillWidth: true }
+                            Text {
+                                text: "󰢮"
+                                color: Nexa.Theme.primary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: Nexa.Theme.iconSm
+                            }
+                        }
+
+                        // GPU Temp & Wattage Row
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            Column {
+                                spacing: 1
+                                Text {
+                                    text: "GPU Temp"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSize2Xs
+                                }
+                                Text {
+                                    text: root.gpuTemp > 0 ? root.gpuTemp + "°C" : "--"
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.monoFontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeSm
+                                    font.weight: Nexa.Theme.fontWeightBold
+                                }
+                            }
+
+                            Rectangle {
+                                width: 1
+                                height: 20
+                                color: Nexa.Theme.divider
+                            }
+
+                            Column {
+                                spacing: 1
+                                Text {
+                                    text: "Power"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSize2Xs
+                                }
+                                Text {
+                                    text: root.gpuPower
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.monoFontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeSm
+                                    font.weight: Nexa.Theme.fontWeightBold
+                                }
+                            }
+
+                            Rectangle {
+                                width: 1
+                                height: 20
+                                color: Nexa.Theme.divider
+                            }
+
+                            Column {
+                                spacing: 1
+                                Text {
+                                    text: "NVMe"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSize2Xs
+                                }
+                                Text {
+                                    text: root.nvmeTemp > 0 ? root.nvmeTemp + "°C" : "--"
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.monoFontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeSm
+                                    font.weight: Nexa.Theme.fontWeightBold
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ------------------------------------------------
+                // NVME STORAGE CARD
+                // ------------------------------------------------
+                NexaUI.NexaCard {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: Nexa.Theme.spacingSm
+                        spacing: 4
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Text {
+                                text: "Storage"
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                            }
+                            Item { Layout.fillWidth: true }
+                            Text {
+                                text: Math.round(root.diskUsage) + "%"
+                                color: Nexa.Theme.primary
+                                font.family: Nexa.Theme.monoFontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                font.weight: Nexa.Theme.fontWeightBold
+                            }
+                        }
+
+                        Text {
+                            text: root.diskUsed + " / " + root.diskTotal
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.monoFontFamily
+                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                        }
+
+                        // Storage Progress Bar
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 6
+                            radius: 3
+                            color: Nexa.Theme.surfaceContainerHighest
+
+                            Rectangle {
+                                height: parent.height
+                                width: Math.max(6, parent.width * (root.diskUsage / 100.0))
+                                radius: parent.radius
+                                color: Nexa.Theme.primary
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        width:
-            root.dividerWidth
+        // ========================================================
+        // RIGHT: MINI TASK MANAGER & SYSTEM UTILITIES (44% width)
+        // ========================================================
 
-        color:
-            Nexa.Theme.divider
-    }
-
-
-    // ============================================================
-    // RIGHT SYSTEM INFORMATION
-    // ============================================================
-
-    Item {
-        id: infoArea
-
-        anchors {
-            top: parent.top
-            right: parent.right
-            bottom: parent.bottom
-            left: verticalDivider.right
-
-            leftMargin:
-                root.gap
-        }
-
-
-        Column {
-            anchors {
-                fill: parent
-            }
-
-            spacing:
-                Nexa.Theme.spacingSm
-
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: Nexa.Theme.spacingSm
 
             // ----------------------------------------------------
-            // USER
+            // MINI TASK MANAGER CARD (Top Resource Consumers)
             // ----------------------------------------------------
+            NexaUI.NexaCard {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
 
-            Column {
-                width:
-                    parent.width
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: Nexa.Theme.spacingSm
+                    spacing: 4
 
-                spacing:
-                    Nexa.Theme.spacing2Xs
+                    // Tab Segmented Switcher (CPU vs RAM)
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
 
+                        Text {
+                            text: "Processes"
+                            color: Nexa.Theme.text
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            font.weight: Nexa.Theme.fontWeightDemiBold
+                        }
 
-                Text {
-                    width:
-                        parent.width
+                        Item { Layout.fillWidth: true }
 
-                    text:
-                        "USER"
+                        Rectangle {
+                            implicitWidth: 84
+                            implicitHeight: 20
+                            radius: 10
+                            color: Nexa.Theme.surfaceContainerHighest
 
-                    color:
-                        Nexa.Theme.mutedText
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 2
 
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
+                                // CPU Tab
+                                Rectangle {
+                                    width: 38
+                                    height: 16
+                                    radius: 8
+                                    color: root.processTab === "cpu" ? Nexa.Theme.primary : "transparent"
 
-                        pixelSize:
-                            Nexa.Theme.fontSize2Xs
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "CPU"
+                                        color: root.processTab === "cpu" ? Nexa.Theme.onPrimary : Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                        font.weight: Nexa.Theme.fontWeightBold
+                                    }
 
-                        weight:
-                            Nexa.Theme.fontWeightDemiBold
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.processTab = "cpu"
+                                    }
+                                }
+
+                                // RAM Tab
+                                Rectangle {
+                                    width: 38
+                                    height: 16
+                                    radius: 8
+                                    color: root.processTab === "mem" ? Nexa.Theme.primary : "transparent"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "RAM"
+                                        color: root.processTab === "mem" ? Nexa.Theme.onPrimary : Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                        font.weight: Nexa.Theme.fontWeightBold
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.processTab = "mem"
+                                    }
+                                }
+                            }
+                        }
                     }
-                }
 
+                    // Process Rows (Top 3)
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        spacing: 2
 
-                Text {
-                    width:
-                        parent.width
+                        Repeater {
+                            model: root.processTab === "cpu" ? root.topCpuList : root.topMemList
+                            delegate: Rectangle {
+                                id: procRow
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 22
+                                radius: 4
+                                color: hoverHandler.hovered ? Nexa.Theme.hover : "transparent"
 
-                    text:
-                        root.userName
+                                HoverHandler {
+                                    id: hoverHandler
+                                }
 
-                    color:
-                        Nexa.Theme.text
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 4
+                                    anchors.rightMargin: 4
+                                    spacing: 5
 
-                    elide:
-                        Text.ElideRight
+                                    // App Icon
+                                    Text {
+                                        text: root.appIcon(modelData.name)
+                                        color: Nexa.Theme.primary
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: 12
+                                    }
 
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
+                                    // Process Name
+                                    Text {
+                                        text: modelData.name || "--"
+                                        color: Nexa.Theme.text
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        font.weight: Nexa.Theme.fontWeightMedium
+                                        Layout.fillWidth: true
+                                        elide: Text.ElideRight
+                                    }
 
-                        pixelSize:
-                            Nexa.Theme.fontSizeMd
+                                    // Resource Usage Badge
+                                    Rectangle {
+                                        implicitWidth: usageText.implicitWidth + 6
+                                        implicitHeight: 15
+                                        radius: 3
+                                        color: Nexa.Theme.surfaceContainerHighest
 
-                        weight:
-                            Nexa.Theme.fontWeightDemiBold
-                    }
-                }
-            }
+                                        Text {
+                                            id: usageText
+                                            anchors.centerIn: parent
+                                            text: modelData.value || "--"
+                                            color: root.processTab === "cpu" ? Nexa.Theme.primary : Nexa.Theme.secondary
+                                            font.family: Nexa.Theme.monoFontFamily
+                                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                                            font.weight: Nexa.Theme.fontWeightDemiBold
+                                        }
+                                    }
 
+                                    // Kill Action Button
+                                    Rectangle {
+                                        id: killBtn
+                                        implicitWidth: 16
+                                        implicitHeight: 16
+                                        radius: 8
+                                        color: killMouse.containsMouse ? Qt.rgba(0.9, 0.2, 0.2, 0.35) : "transparent"
+                                        visible: hoverHandler.hovered
 
-            // ----------------------------------------------------
-            // HOST
-            // ----------------------------------------------------
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "󰅙"
+                                            color: killMouse.containsMouse ? "#EF4444" : Nexa.Theme.mutedText
+                                            font.family: Nexa.Theme.iconFontFamily
+                                            font.pixelSize: 11
+                                        }
 
-            Column {
-                width:
-                    parent.width
-
-                spacing:
-                    Nexa.Theme.spacing2Xs
-
-
-                Text {
-                    text:
-                        "HOST"
-
-                    color:
-                        Nexa.Theme.mutedText
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSize2Xs
-
-                        weight:
-                            Nexa.Theme.fontWeightDemiBold
-                    }
-                }
-
-
-                Text {
-                    width:
-                        parent.width
-
-                    text:
-                        root.hostName
-
-                    color:
-                        Nexa.Theme.text
-
-                    elide:
-                        Text.ElideRight
-
-                    font {
-                        family:
-                            Nexa.Theme.monoFontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSizeSm
-
-                        weight:
-                            Nexa.Theme.fontWeightMedium
-                    }
-                }
-            }
-
-
-            // ----------------------------------------------------
-            // UPTIME
-            // ----------------------------------------------------
-
-            Column {
-                width:
-                    parent.width
-
-                spacing:
-                    Nexa.Theme.spacing2Xs
-
-
-                Text {
-                    text:
-                        "UPTIME"
-
-                    color:
-                        Nexa.Theme.mutedText
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSize2Xs
-
-                        weight:
-                            Nexa.Theme.fontWeightDemiBold
-                    }
-                }
-
-
-                Text {
-                    width:
-                        parent.width
-
-                    text:
-                        root.uptime
-
-                    color:
-                        Nexa.Theme.text
-
-                    elide:
-                        Text.ElideRight
-
-                    font {
-                        family:
-                            Nexa.Theme.monoFontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSizeXs
+                                        MouseArea {
+                                            id: killMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                root.killProcess(modelData.pid)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-
             // ----------------------------------------------------
-            // KERNEL
+            // QUICK UTILITIES & SPECS FOOTER
             // ----------------------------------------------------
+            NexaUI.NexaCard {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 52
+                clip: true
 
-            Column {
-                width:
-                    parent.width
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: Nexa.Theme.spacingSm
+                    spacing: Nexa.Theme.spacingSm
 
-                spacing:
-                    Nexa.Theme.spacing2Xs
+                    // Monitor Launcher Button
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        radius: Nexa.Theme.radiusSm
+                        color: monMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest
 
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 5
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "󰌌"
+                                color: monMouse.containsMouse ? Nexa.Theme.onPrimary : Nexa.Theme.primary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: Nexa.Theme.iconSm
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Monitor"
+                                color: monMouse.containsMouse ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                font.weight: Nexa.Theme.fontWeightMedium
+                            }
+                        }
 
-                Text {
-                    text:
-                        "KERNEL"
-
-                    color:
-                        Nexa.Theme.mutedText
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSize2Xs
-
-                        weight:
-                            Nexa.Theme.fontWeightDemiBold
+                        MouseArea {
+                            id: monMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.openMonitor()
+                        }
                     }
-                }
 
+                    // Trim Memory / Cache Button
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        radius: Nexa.Theme.radiusSm
+                        color: trimFeedbackTimer.running ? Qt.rgba(0.2, 0.8, 0.4, 0.25) : (trimMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest)
 
-                Text {
-                    width:
-                        parent.width
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 5
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: trimFeedbackTimer.running ? "󰄬" : "󰃮"
+                                color: trimFeedbackTimer.running ? "#10B981" : (trimMouse.containsMouse ? Nexa.Theme.onPrimary : Nexa.Theme.secondary)
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: Nexa.Theme.iconSm
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: trimFeedbackTimer.running ? "Trimmed!" : "Trim RAM"
+                                color: trimFeedbackTimer.running ? "#10B981" : (trimMouse.containsMouse ? Nexa.Theme.onPrimary : Nexa.Theme.text)
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                font.weight: Nexa.Theme.fontWeightMedium
+                            }
+                        }
 
-                    text:
-                        root.kernel
-
-                    color:
-                        Nexa.Theme.text
-
-                    elide:
-                        Text.ElideRight
-
-                    font {
-                        family:
-                            Nexa.Theme.monoFontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSizeXs
+                        MouseArea {
+                            id: trimMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.clearCache()
+                        }
                     }
                 }
             }
 
-
-            // ----------------------------------------------------
-            // OS
-            // ----------------------------------------------------
-
-            Column {
-                width:
-                    parent.width
-
-                spacing:
-                    Nexa.Theme.spacing2Xs
-
+            // Host & Uptime Meta Bar
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 6
 
                 Text {
-                    text:
-                        "OS"
-
-                    color:
-                        Nexa.Theme.mutedText
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSize2Xs
-
-                        weight:
-                            Nexa.Theme.fontWeightDemiBold
-                    }
+                    text: "󰌢 " + root.hostName
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: Nexa.Theme.fontSize2Xs
                 }
 
+                Text {
+                    text: "•"
+                    color: Nexa.Theme.divider
+                    font.pixelSize: Nexa.Theme.fontSize2Xs
+                }
 
                 Text {
-                    width:
-                        parent.width
-
-                    text:
-                        root.osName
-
-                    color:
-                        Nexa.Theme.text
-
-                    elide:
-                        Text.ElideRight
-
-                    maximumLineCount:
-                        2
-
-                    wrapMode:
-                        Text.Wrap
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSizeXs
-                    }
+                    text: "up " + root.uptime
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: Nexa.Theme.fontSize2Xs
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
                 }
             }
         }

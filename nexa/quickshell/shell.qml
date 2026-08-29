@@ -4,7 +4,6 @@ import Quickshell.Io
 import "wallpaper" as Wallpaper
 import "bar"
 import "island"
-import "modules/appLauncher" as AppLauncher
 import "modules/clipboard" as Clipboard
 import "modules/lockscreen" as LockScreenModule
 import "panel" as Panel
@@ -37,10 +36,6 @@ ShellRoot {
 
     Wallpaper.WallpaperView {
         id: wallpaperView
-    }
-
-    AppLauncher.AppLauncher {
-        id: appLauncher
     }
 
     Clipboard.Clipboard {
