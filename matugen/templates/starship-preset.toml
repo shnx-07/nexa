@@ -13,38 +13,38 @@ ${custom.prompt_path}$git_branch$git_status$fill$time
 $character"""
 
 [palettes.nexa]
-text   = "#e2e2e2"
-muted  = "#919191"
-crust  = "#0e0e0e"
-surface = "#131313"
-surface_container = "#1f1f1f"
-surface_container_high = "#2a2a2a"
-primary = "#ffb3b0"
-on_primary = "#5f1317"
-primary_container = "#7e2a2b"
-on_primary_container = "#ffdad8"
-secondary = "#e6bdba"
-on_secondary = "#442928"
-secondary_container = "#5d3f3e"
-on_secondary_container = "#ffdad8"
-tertiary = "#e3c28c"
-on_tertiary = "#412d05"
-tertiary_container = "#5a4319"
-on_tertiary_container = "#ffdeaa"
-success = "#78e29c"
-on_success = "#083617"
-warning = "#efc36c"
-on_warning = "#372706"
-error = "#f0757f"
-on_error = "#37060a"
-info = "#79cfec"
-on_info = "#062b37"
-outline = "#919191"
-neon = "#ffb3b0"
-moss = "#78e29c"
-amber = "#efc36c"
-rose = "#f0757f"
-denim = "#79cfec"
+text   = "{{colors.on_background}}"
+muted  = "{{colors.outline}}"
+crust  = "{{colors.surface_container_lowest}}"
+surface = "{{colors.surface}}"
+surface_container = "{{colors.surface_container}}"
+surface_container_high = "{{colors.surface_container_high}}"
+primary = "{{colors.primary}}"
+on_primary = "{{colors.on_primary}}"
+primary_container = "{{colors.primary_container}}"
+on_primary_container = "{{colors.on_primary_container}}"
+secondary = "{{colors.secondary}}"
+on_secondary = "{{colors.on_secondary}}"
+secondary_container = "{{colors.secondary_container}}"
+on_secondary_container = "{{colors.on_secondary_container}}"
+tertiary = "{{colors.tertiary}}"
+on_tertiary = "{{colors.on_tertiary}}"
+tertiary_container = "{{colors.tertiary_container}}"
+on_tertiary_container = "{{colors.on_tertiary_container}}"
+success = "{{colors.success}}"
+on_success = "{{colors.on_success}}"
+warning = "{{colors.warning}}"
+on_warning = "{{colors.on_warning}}"
+error = "{{colors.error}}"
+on_error = "{{colors.on_error}}"
+info = "{{colors.info}}"
+on_info = "{{colors.on_info}}"
+outline = "{{colors.outline}}"
+neon = "{{colors.primary}}"
+moss = "{{colors.success}}"
+amber = "{{colors.warning}}"
+rose = "{{colors.error}}"
+denim = "{{colors.info}}"
 
 # ============================================================
 # FIRST LINE: UNIFIED USER, HOST, AND RAINBOW PATH
@@ -87,28 +87,28 @@ to_rgb() {
   echo "${v// /;}"
 }
 
-bracket_fg=$(to_rgb "145,145,145")
-user_bg=$(to_rgb "255,179,176")
-user_fg=$(to_rgb "95,19,23")
+bracket_fg=$(to_rgb "{{rgb.outline}}")
+user_bg=$(to_rgb "{{rgb.primary}}")
+user_fg=$(to_rgb "{{rgb.on_primary}}")
 
 bg_colors=(
-  $(to_rgb "230,189,186")
-  $(to_rgb "227,194,140")
-  $(to_rgb "121,207,236")
-  $(to_rgb "120,226,156")
-  $(to_rgb "239,195,108")
-  $(to_rgb "93,63,62")
-  $(to_rgb "90,67,25")
+  $(to_rgb "{{rgb.secondary}}")
+  $(to_rgb "{{rgb.tertiary}}")
+  $(to_rgb "{{rgb.info}}")
+  $(to_rgb "{{rgb.success}}")
+  $(to_rgb "{{rgb.warning}}")
+  $(to_rgb "{{rgb.secondary_container}}")
+  $(to_rgb "{{rgb.tertiary_container}}")
 )
 
 fg_colors=(
-  $(to_rgb "68,41,40")
-  $(to_rgb "65,45,5")
-  $(to_rgb "6,43,55")
-  $(to_rgb "8,54,23")
-  $(to_rgb "55,39,6")
-  $(to_rgb "255,218,216")
-  $(to_rgb "255,222,170")
+  $(to_rgb "{{rgb.on_secondary}}")
+  $(to_rgb "{{rgb.on_tertiary}}")
+  $(to_rgb "{{rgb.on_info}}")
+  $(to_rgb "{{rgb.on_success}}")
+  $(to_rgb "{{rgb.on_warning}}")
+  $(to_rgb "{{rgb.on_secondary_container}}")
+  $(to_rgb "{{rgb.on_tertiary_container}}")
 )
 
 color_count=${#bg_colors[@]}
