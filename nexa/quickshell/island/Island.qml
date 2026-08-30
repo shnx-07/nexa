@@ -55,7 +55,7 @@ PanelWindow {
         top: 3
 
         left: Math.round(
-            (screen.width - implicitWidth) / 2
+            ((screen ? screen.width : 1920) - implicitWidth) / 2
         )
     }
 

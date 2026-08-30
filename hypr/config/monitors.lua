@@ -20,6 +20,7 @@ hl.on("monitor.added", function(monitor)
 			output = "eDP-1",
 			disabled = true,
 		})
+		hl.exec_cmd("sleep 0.8 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/scripts/restore-wallpaper.sh")
 	end
 end)
 
@@ -32,5 +33,6 @@ hl.on("monitor.removed", function(monitor)
 			scale = 1,
 			disabled = false,
 		})
+		hl.exec_cmd("sleep 0.8 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/scripts/restore-wallpaper.sh")
 	end
 end)

@@ -362,40 +362,6 @@ Item {
                     else compactTickerAnim.stop()
                 }
             }
-
-            // Animated 3-Bar Equalizer
-            Row {
-                spacing: 2
-                Layout.alignment: Qt.AlignVCenter
-                visible: root.hasTrack
-
-                Repeater {
-                    model: 3
-                    delegate: Rectangle {
-                        id: eqBar
-                        required property int index
-                        width: 3
-                        height: root.playing ? 6 : 3
-                        radius: 1.5
-                        color: Nexa.Theme.primary
-
-                        SequentialAnimation on height {
-                            running: root.playing
-                            loops: Animation.Infinite
-                            NumberAnimation {
-                                to: index === 0 ? 12 : (index === 1 ? 16 : 9)
-                                duration: index === 0 ? 320 : (index === 1 ? 420 : 360)
-                                easing.type: Easing.InOutSine
-                            }
-                            NumberAnimation {
-                                to: index === 0 ? 4 : (index === 1 ? 3 : 5)
-                                duration: index === 0 ? 280 : (index === 1 ? 380 : 310)
-                                easing.type: Easing.InOutSine
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 

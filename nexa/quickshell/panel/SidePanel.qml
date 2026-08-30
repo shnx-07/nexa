@@ -37,7 +37,7 @@ Scope {
 
         // Do NOT cover the Top Bar.
         implicitHeight:
-            screen.height - Nexa.Theme.barHeight
+            (screen ? screen.height : 1080) - Nexa.Theme.barHeight
 
         color: "transparent"
 

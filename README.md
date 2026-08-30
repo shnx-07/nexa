@@ -111,7 +111,19 @@ bash ~/.config/nexa/scripts/nexa-restart.sh
 ### 🌟 Top Bar & Dynamic Island
 * **Live Workspaces:** Dynamic pill indicator with smooth sliding animation and active window tracking.
 * **Dynamic Island:** Interactive notch supporting Clock, Calendar, Stopwatch, Media player, Theme switcher, System Monitor, Audio visualizer, and Notification banners.
+* **On-Screen Display (OSD):** Zero-latency hardware feedback popups directly in the Dynamic Island with tailored dimensions:
+  * **Master Volume:** `320px` × `48px` capsule gauge with dynamic speaker icon (`F2` / `F3`)
+  * **Audio Output Mute:** `240px` × `44px` status pill with volume readout (`F1`)
+  * **Microphone Mute:** `240px` × `44px` status pill with mic input indicator (`F4`)
+  * **Display Brightness:** `320px` × `48px` capsule gauge with amber sun indicator (`F5` / `F6`)
+  * **Airplane Mode:** `260px` × `46px` quick toggle indicator (`F8`)
 * **Status Cluster:** Wi-Fi, Bluetooth, Battery, Side Panel toggle, and Power menu.
+
+### ⚙️ Quick Settings & Audio Control
+* **Modern Capsule Sliders:** Sleek volume, brightness, and screen temperature (`hyprsunset`) sliders with scroll-hijacking protection.
+* **PipeWire Audio Sink Switcher:** Real-time dropdown to switch audio outputs without opening pavucontrol.
+* **Microphone Sound Reactivity:** Live microphone audio meter showing real-time input levels.
+* **Weather Widget:** Current weather with an interactive location modal, search autofocus, click-outside dismissal, and Escape key handling.
 
 ### 📱 Modern App Launcher
 * High-density 2-column grid layout with fluid spring entrance motion.
@@ -127,7 +139,8 @@ bash ~/.config/nexa/scripts/nexa-restart.sh
 
 ### 🎨 Material You Theme System (Matugen)
 * Automatic color scheme generation from any wallpaper or manual color presets.
-* Dynamic GTK3/4, Qt5/6, Kitty, and Quickshell synchronized color palettes.
+* Dynamic GTK3/4, Qt5/6, Kitty, Quickshell, and **Starship Prompt** synchronized color palettes.
+* **Two-Line Powerline Starship Prompt:** Dynamic user/host filled capsule, seamless directory breadcrumbs, and theme-colored prompt symbols.
 * Screen temperature tuning via `hyprsunset`.
 
 ### 📋 Clipboard & Utilities
@@ -139,7 +152,7 @@ bash ~/.config/nexa/scripts/nexa-restart.sh
 
 ## ⌨️ Recommended Keybindings (Hyprland)
 
-Add these bindings to your Hyprland configuration (`hyprland.conf` or `keybinds.lua`):
+Add these bindings to your Hyprland configuration (`hyprland.conf` or `binds.lua`):
 
 ```ini
 # App Launcher
@@ -148,8 +161,8 @@ bind = SUPER, A, exec, qs -p ~/.config/nexa/quickshell ipc call appLauncher togg
 # Workspace Manager Overview
 bind = SUPER, TAB, exec, qs -p ~/.config/nexa/quickshell ipc call workspaceManager toggle
 
-# Dynamic Island Search
-bind = SUPER, SPACE, exec, qs -p ~/.config/nexa/quickshell ipc call island openSearch
+# Dynamic Island Search & Commands
+bind = SUPER, SPACE, exec, qs -p ~/.config/nexa/quickshell ipc call nexaIsland openSearch
 
 # Lock Screen
 bind = SUPER, L, exec, qs -p ~/.config/nexa/quickshell ipc call lockScreen lock
@@ -160,6 +173,15 @@ bind = SUPER SHIFT, V, exec, qs -p ~/.config/nexa/quickshell ipc call clipboard 
 # Screenshots & Snipping
 bind = SUPER, PRINT, exec, ~/.config/nexa/scripts/screenshot.sh full
 bind = SUPER SHIFT, PRINT, exec, ~/.config/nexa/scripts/screenshot.sh region
+
+# Dynamic Island OSD Hardware Controls
+bind = , F1, exec, qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleMute
+bind = , F2, exec, qs -p ~/.config/nexa/quickshell ipc call nexaIsland volumeDown
+bind = , F3, exec, qs -p ~/.config/nexa/quickshell ipc call nexaIsland volumeUp
+bind = , F4, exec, qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleMicMute
+bind = , F5, exec, qs -p ~/.config/nexa/quickshell ipc call nexaIsland brightnessDown
+bind = , F6, exec, qs -p ~/.config/nexa/quickshell ipc call nexaIsland brightnessUp
+bind = , F8, exec, qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleAirplane
 ```
 
 ---
