@@ -108,7 +108,11 @@ pub fn set(
         &value,
     ])?;
 
-    info()
+    let res = info()?;
+    let _ = crate::state::update_state(|s| {
+        s.brightness = res.brightness;
+    });
+    Ok(res)
 }
 
 pub fn up(
@@ -125,7 +129,11 @@ pub fn up(
         &value,
     ])?;
 
-    info()
+    let res = info()?;
+    let _ = crate::state::update_state(|s| {
+        s.brightness = res.brightness;
+    });
+    Ok(res)
 }
 
 pub fn down(
@@ -142,7 +150,11 @@ pub fn down(
         &value,
     ])?;
 
-    info()
+    let res = info()?;
+    let _ = crate::state::update_state(|s| {
+        s.brightness = res.brightness;
+    });
+    Ok(res)
 }
 
 fn print_json(

@@ -22,6 +22,19 @@ ShellRoot {
 
         running: true
     }
+
+    Process {
+        id: settingsStateRestore
+
+        command: [
+            Quickshell.env("HOME")
+            + "/.config/nexa/rust/target/release/nexad",
+            "state",
+            "restore"
+        ]
+
+        running: true
+    }
    
     WorkspaceModule.WorkspaceManager {
         id: workspaceManager

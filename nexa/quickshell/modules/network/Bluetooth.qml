@@ -67,6 +67,10 @@ Item {
     // ============================================================
 
     function toggle() {
+        if (adapter !== null) {
+            adapter.enabled = !adapter.enabled
+        }
+
         Quickshell.execDetached([
             nexad,
             "network",

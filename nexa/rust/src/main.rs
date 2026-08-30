@@ -22,6 +22,7 @@ mod lock;
 mod power;
 mod audio;
 mod brightness;
+mod state;
 
 use std::env;
 
@@ -1210,6 +1211,18 @@ fn main() {
             );
         }
 
+
+        // ========================================================
+        // STATE
+        // ========================================================
+
+        "state" => {
+            if let Err(error) =
+                state::handle(&args[2..])
+            {
+                eprintln!("{error}");
+            }
+        }
 
         // ========================================================
         // POWER

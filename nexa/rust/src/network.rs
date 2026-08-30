@@ -660,14 +660,28 @@ impl NetworkService {
         &self,
         enabled: bool,
     ) -> Result<(), String> {
+        if enabled {
+            let _ = Command::new("rfkill").args(["unblock", "bluetooth"]).status();
+            let _ = run(
+                "bluetoothctl",
+                [
+                    "power",
+                    "on",
+                ],
+            );
+        } else {
+            let _ = run(
+                "bluetoothctl",
+                [
+                    "power",
+                    "off",
+                ],
+            );
+        }
 
-        run(
-            "bluetoothctl",
-            [
-                "power",
-                if enabled { "on" } else { "off" },
-            ],
-        )?;
+        let _ = crate::state::update_state(|s| {
+            s.bluetooth_enabled = enabled;
+        });
 
         Ok(())
     }

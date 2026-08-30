@@ -175,34 +175,51 @@ pub fn info() -> Result<AudioInfo, String> {
 pub fn set(
     volume: u32
 ) -> Result<AudioInfo, String> {
-    device_set_volume(
+    let res = device_set_volume(
         "@DEFAULT_AUDIO_SINK@",
         volume,
-    )
+    )?;
+    let _ = crate::state::update_state(|s| {
+        s.volume = res.volume;
+        s.muted = res.muted;
+    });
+    Ok(res)
 }
 
 
 pub fn mute() -> Result<AudioInfo, String> {
-    device_set_mute(
+    let res = device_set_mute(
         "@DEFAULT_AUDIO_SINK@",
         "1",
-    )
+    )?;
+    let _ = crate::state::update_state(|s| {
+        s.muted = res.muted;
+    });
+    Ok(res)
 }
 
 
 pub fn unmute() -> Result<AudioInfo, String> {
-    device_set_mute(
+    let res = device_set_mute(
         "@DEFAULT_AUDIO_SINK@",
         "0",
-    )
+    )?;
+    let _ = crate::state::update_state(|s| {
+        s.muted = res.muted;
+    });
+    Ok(res)
 }
 
 
 pub fn toggle_mute() -> Result<AudioInfo, String> {
-    device_set_mute(
+    let res = device_set_mute(
         "@DEFAULT_AUDIO_SINK@",
         "toggle",
-    )
+    )?;
+    let _ = crate::state::update_state(|s| {
+        s.muted = res.muted;
+    });
+    Ok(res)
 }
 
 
@@ -220,36 +237,53 @@ pub fn input_info() -> Result<AudioInfo, String> {
 pub fn input_set(
     volume: u32
 ) -> Result<AudioInfo, String> {
-    device_set_volume(
+    let res = device_set_volume(
         "@DEFAULT_AUDIO_SOURCE@",
         volume,
-    )
+    )?;
+    let _ = crate::state::update_state(|s| {
+        s.input_volume = res.volume;
+        s.input_muted = res.muted;
+    });
+    Ok(res)
 }
 
 
 pub fn input_mute() -> Result<AudioInfo, String> {
-    device_set_mute(
+    let res = device_set_mute(
         "@DEFAULT_AUDIO_SOURCE@",
         "1",
-    )
+    )?;
+    let _ = crate::state::update_state(|s| {
+        s.input_muted = res.muted;
+    });
+    Ok(res)
 }
 
 
 pub fn input_unmute() -> Result<AudioInfo, String> {
-    device_set_mute(
+    let res = device_set_mute(
         "@DEFAULT_AUDIO_SOURCE@",
         "0",
-    )
+    )?;
+    let _ = crate::state::update_state(|s| {
+        s.input_muted = res.muted;
+    });
+    Ok(res)
 }
 
 
 pub fn input_toggle_mute()
     -> Result<AudioInfo, String>
 {
-    device_set_mute(
+    let res = device_set_mute(
         "@DEFAULT_AUDIO_SOURCE@",
         "toggle",
-    )
+    )?;
+    let _ = crate::state::update_state(|s| {
+        s.input_muted = res.muted;
+    });
+    Ok(res)
 }
 
 
