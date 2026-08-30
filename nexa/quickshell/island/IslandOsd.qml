@@ -19,6 +19,8 @@ Item {
             return "󰕿"
         case "mute":
             return root.muted ? "󰝟" : "󰕾"
+        case "mic":
+            return root.muted ? "󰍭" : "󰍬"
         case "brightness":
             if (root.value > 0.66) return "󰃠"
             if (root.value > 0.33) return "󰃟"
@@ -35,6 +37,8 @@ Item {
         case "volume":
             return root.muted ? Nexa.Theme.error : Nexa.Theme.primary
         case "mute":
+            return root.muted ? Nexa.Theme.error : Nexa.Theme.primary
+        case "mic":
             return root.muted ? Nexa.Theme.error : Nexa.Theme.primary
         case "brightness":
             return "#f59e0b" // warm amber sun
@@ -126,7 +130,7 @@ Item {
         anchors.leftMargin: 16
         anchors.rightMargin: 16
         spacing: 10
-        visible: root.osdType === "mute"
+        visible: root.osdType === "mute" || root.osdType === "mic"
 
         Rectangle {
             width: 28
@@ -139,7 +143,9 @@ Item {
 
             Text {
                 anchors.centerIn: parent
-                text: root.muted ? "󰝟" : "󰕾"
+                text: root.osdType === "mic"
+                    ? (root.muted ? "󰍭" : "󰍬")
+                    : (root.muted ? "󰝟" : "󰕾")
                 color: root.muted ? Nexa.Theme.error : Nexa.Theme.primary
                 font.family: Nexa.Theme.iconFontFamily
                 font.pixelSize: 16
@@ -148,7 +154,9 @@ Item {
 
         Text {
             Layout.fillWidth: true
-            text: root.muted ? "Muted" : "Unmuted"
+            text: root.osdType === "mic"
+                ? (root.muted ? "Mic Muted" : "Mic Unmuted")
+                : (root.muted ? "Audio Muted" : "Audio Unmuted")
             color: Nexa.Theme.text
             font.family: Nexa.Theme.fontFamily
             font.pixelSize: Nexa.Theme.fontSizeSm

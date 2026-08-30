@@ -128,7 +128,12 @@ hl.bind(
 )
 hl.bind(
 	"XF86AudioMicMute",
-	hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),
+	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleMicMute"),
+	{ locked = true, repeating = true }
+)
+hl.bind(
+	"F4",
+	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleMicMute"),
 	{ locked = true, repeating = true }
 )
 hl.bind(

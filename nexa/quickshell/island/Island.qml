@@ -158,6 +158,9 @@ PanelWindow {
     readonly property int osdMuteWidth: 240
     readonly property int osdMuteHeight: 44
 
+    readonly property int osdMicWidth: 240
+    readonly property int osdMicHeight: 44
+
     readonly property int osdBrightnessWidth: 320
     readonly property int osdBrightnessHeight: 48
 
@@ -167,6 +170,7 @@ PanelWindow {
     property string osdType: "none"
     property real osdValue: 0.74
     property bool osdMuted: false
+    property bool osdMicMuted: false
     property bool osdAirplaneEnabled: false
     property bool osdActive: false
 
@@ -318,6 +322,45 @@ PanelWindow {
         brightnessSyncTimer.restart()
     }
 
+    Timer {
+        id: micSyncTimer
+        interval: 120
+        repeat: false
+        onTriggered: micQueryProcess.running = true
+    }
+
+    Process {
+        id: micQueryProcess
+        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const text = this.text.trim()
+                if (text.startsWith("Volume:")) {
+                    const isMuted = text.includes("[MUTED]")
+                    const clean = text.replace("Volume:", "").replace("[MUTED]", "").trim()
+                    const val = parseFloat(clean)
+                    if (!isNaN(val)) {
+                        if (root.osdType === "mic") {
+                            root.osdValue = Math.max(0.0, Math.min(1.0, val))
+                        }
+                        root.osdMicMuted = isMuted
+                    }
+                }
+            }
+        }
+    }
+
+    function triggerToggleMicMute(): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "mic"
+        root.osdMicMuted = !root.osdMicMuted
+        root.osdMuted = root.osdMicMuted
+        root.osdActive = true
+        osdDismissTimer.restart()
+        Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"])
+        micSyncTimer.restart()
+    }
+
     function triggerToggleAirplane(): void {
         if (root.full || root.specialModeActive) return
         root.osdType = "airplane"
@@ -346,6 +389,10 @@ PanelWindow {
 
         function toggleMute(): void {
             root.triggerToggleMute()
+        }
+
+        function toggleMicMute(): void {
+            root.triggerToggleMicMute()
         }
 
         function brightnessUp(): void {
@@ -470,6 +517,8 @@ PanelWindow {
                 return root.osdVolumeWidth
             if (root.osdType === "mute")
                 return root.osdMuteWidth
+            if (root.osdType === "mic")
+                return root.osdMicWidth
             if (root.osdType === "brightness")
                 return root.osdBrightnessWidth
             if (root.osdType === "airplane")
@@ -504,6 +553,8 @@ PanelWindow {
                 return root.osdVolumeHeight
             if (root.osdType === "mute")
                 return root.osdMuteHeight
+            if (root.osdType === "mic")
+                return root.osdMicHeight
             if (root.osdType === "brightness")
                 return root.osdBrightnessHeight
             if (root.osdType === "airplane")
@@ -867,6 +918,7 @@ PanelWindow {
 
     Component.onCompleted: {
         volumeQueryProcess.running = true
+        micQueryProcess.running = true
         brightnessQueryProcess.running = true
         airplaneQueryProcess.running = true
     }
