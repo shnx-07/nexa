@@ -455,7 +455,7 @@ Item {
                 }
 
                 NexaUI.NexaButton {
-                    implicitWidth: 88
+                    implicitWidth: 84
                     implicitHeight: 32
                     icon: root.stopwatchRunning ? "󰏤" : "󰐊"
                     text: root.stopwatchRunning ? "Pause" : "Resume"
@@ -463,7 +463,7 @@ Item {
                 }
 
                 NexaUI.NexaButton {
-                    implicitWidth: 88
+                    implicitWidth: 84
                     implicitHeight: 32
                     icon: "󰑐"
                     text: "Restart"
@@ -479,15 +479,17 @@ Item {
                 Column {
                     spacing: 2
                     Row {
-                        spacing: 4
+                        spacing: 6
                         Text {
-                            text: root.focusMode === "focus" ? "󰪠 Focus" : "󰛨 Break"
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.focusMode === "focus" ? "󰪠" : "󰛨"
+                            color: Nexa.Theme.primary
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: Nexa.Theme.iconSm
                         }
                         Text {
-                            text: "• " + root.focusSessions + " done"
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: (root.focusMode === "focus" ? "Focus" : "Break") + " • " + root.focusSessions + " done"
                             color: Nexa.Theme.mutedText
                             font.family: Nexa.Theme.fontFamily
                             font.pixelSize: Nexa.Theme.fontSize2Xs
@@ -503,7 +505,7 @@ Item {
                 }
 
                 NexaUI.NexaButton {
-                    implicitWidth: 88
+                    implicitWidth: 84
                     implicitHeight: 32
                     icon: root.focusRunning ? "󰏤" : "󰐊"
                     text: root.focusRunning ? "Pause" : "Resume"
@@ -511,7 +513,7 @@ Item {
                 }
 
                 NexaUI.NexaButton {
-                    implicitWidth: 78
+                    implicitWidth: 80
                     implicitHeight: 32
                     icon: "󰜉"
                     text: "Reset"
@@ -891,15 +893,26 @@ Item {
                             font.weight: Nexa.Theme.fontWeightBold
                         }
 
-                        Text {
+                        RowLayout {
                             Layout.alignment: Qt.AlignHCenter
-                            text: root.focusMode === "focus"
-                                ? "󰪠 Focus Session"
-                                : (root.focusMode === "short_break" ? "󰛨 Short Break" : "󰛨 Long Break")
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeSm
-                            font.weight: Nexa.Theme.fontWeightMedium
+                            spacing: 8
+
+                            Text {
+                                text: root.focusMode === "focus" ? "󰪠" : "󰛨"
+                                color: Nexa.Theme.primary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: Nexa.Theme.iconSm
+                            }
+
+                            Text {
+                                text: root.focusMode === "focus"
+                                    ? "Focus Session"
+                                    : (root.focusMode === "short_break" ? "Short Break" : "Long Break")
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                font.weight: Nexa.Theme.fontWeightMedium
+                            }
                         }
                     }
 

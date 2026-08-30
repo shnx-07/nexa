@@ -114,7 +114,11 @@ PanelWindow {
         root.compactHeight
 
     // Confirmed hover dimensions.
-    readonly property int hoverWidth: 420
+    readonly property int hoverWidth: {
+        if (islandContent.stopwatchContextActive || islandContent.focusContextActive)
+            return 500
+        return 420
+    }
     readonly property int hoverHeight: 102
 
 

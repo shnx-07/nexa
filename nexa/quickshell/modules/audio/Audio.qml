@@ -27,6 +27,9 @@ Item {
     // ============================================================
 
     property var apps: []
+    property var sinks: []
+    property real micPeak: 0.0
+    property bool micMonitorActive: true
 
 
     // ============================================================
@@ -106,6 +109,25 @@ Item {
             "toggle-mute"
         ])
 
+        masterRefreshDelay.restart()
+    }
+
+
+    function refreshSinks() {
+        if (!sinksProcess.running)
+            sinksProcess.running = true
+    }
+
+
+    function setSink(id) {
+        Quickshell.execDetached([
+            nexad,
+            "audio",
+            "set-sink",
+            id.toString()
+        ])
+
+        sinksRefreshDelay.restart()
         masterRefreshDelay.restart()
     }
 
@@ -487,6 +509,59 @@ Item {
     }
 
 
+    Process {
+        id: sinksProcess
+        running: false
+        command: [
+            root.nexad,
+            "audio",
+            "sinks"
+        ]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const text = this.text.trim()
+                    if (text.length > 0)
+                        root.sinks = JSON.parse(text)
+                } catch (e) {
+                    console.error("[Audio:Sinks]", e)
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: sinksRefreshDelay
+        interval: 250
+        repeat: false
+        onTriggered: root.refreshSinks()
+    }
+
+    Process {
+        id: micMonitorProcess
+        running: !root.inputMuted && root.micMonitorActive
+        command: [
+            root.nexad,
+            "audio",
+            "mic-monitor"
+        ]
+
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: data => {
+                const val = parseFloat(data.trim())
+                if (!isNaN(val)) {
+                    root.micPeak = Math.max(0.0, Math.min(1.0, val))
+                }
+            }
+        }
+
+        onRunningChanged: {
+            if (!running) root.micPeak = 0.0
+        }
+    }
+
     // ============================================================
     // LIVE STATE
     // ============================================================
@@ -499,12 +574,13 @@ Item {
         onTriggered: {
             root.refresh()
             root.refreshInput()
+            root.refreshSinks()
         }
     }
-
 
     Component.onCompleted: {
         root.refresh()
         root.refreshInput()
+        root.refreshSinks()
     }
 }

@@ -1716,8 +1716,12 @@ fn launch_with_exec(
     let program =
         &words[0];
 
-    let arguments =
-        &words[1..];
+    let mut arguments =
+        words[1..].to_vec();
+
+    if program.ends_with("btop") && !arguments.iter().any(|arg| arg == "--force-utf") {
+        arguments.push("--force-utf".to_string());
+    }
 
     let mut command =
         if app.app.terminal {
@@ -1745,7 +1749,7 @@ fn launch_with_exec(
 
             command
                 .arg(program)
-                .args(arguments);
+                .args(&arguments);
 
             command
         } else {
@@ -1755,13 +1759,18 @@ fn launch_with_exec(
                 );
 
             command.args(
-                arguments,
+                &arguments,
             );
 
             command
         };
 
+    let lang = env::var("LANG").unwrap_or_else(|_| "en_US.UTF-8".to_string());
+    let lc_all = env::var("LC_ALL").unwrap_or_else(|_| "en_US.UTF-8".to_string());
+
     command
+        .env("LANG", lang)
+        .env("LC_ALL", lc_all)
         .stdin(
             Stdio::null(),
         )
@@ -1784,7 +1793,7 @@ fn launch_with_exec(
 fn launch_desktop_entry(
     app: &DiscoveredApp,
 ) -> Result<(), String> {
-    if command_exists("gio") {
+    if !app.app.terminal && command_exists("gio") {
         match Command::new("gio")
             .arg("launch")
             .arg(

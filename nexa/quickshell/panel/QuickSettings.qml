@@ -15,6 +15,8 @@ import "../modules/nightlight" as NightLightModule
 import "../modules/screenfilter" as ScreenFilterModule
 import "../modules/notifications" as NotificationModule
 import "../modules/recorder" as RecorderModule
+import "../modules/battery" as BatteryModule
+
 Item {
     id: root
 
@@ -23,6 +25,7 @@ Item {
 
     property bool appsExpanded: false
     property bool screenFilterDropdownOpen: false
+    property bool sinkMenuOpen: false
 
     // ============================================================
     // ACTION HELPERS
@@ -248,6 +251,12 @@ Item {
                         }
                     }
                 }
+
+                Item { Layout.fillWidth: true }
+
+                BatteryModule.Battery {
+                    Layout.alignment: Qt.AlignVCenter
+                }
             }
         }
 
@@ -257,26 +266,31 @@ Item {
         // ========================================================
 
         Flickable {
+            id: qsFlickable
             Layout.fillWidth: true
             Layout.fillHeight: true
+            clip: true
+            contentWidth: width
+            contentHeight: contentColumn.height
+            boundsBehavior: Flickable.DragAndOvershootBounds
+            maximumFlickVelocity: 2200
+            flickDeceleration: 1400
 
-            clip:
-                true
-
-            contentWidth:
-                width
-
-            contentHeight:
-                contentColumn.height
-
-            boundsBehavior:
-                Flickable.StopAtBounds
-
-            maximumFlickVelocity:
-                root.theme.flickVelocityMax
-
-            flickDeceleration:
-                root.theme.flickDeceleration
+            // Modern auto-hiding scrollbar
+            Rectangle {
+                id: scrollbar
+                anchors.right: parent.right
+                anchors.rightMargin: 3
+                y: qsFlickable.visibleArea.yPosition * qsFlickable.height
+                height: Math.max(32, qsFlickable.visibleArea.heightRatio * qsFlickable.height)
+                width: 4
+                radius: 2
+                color: root.theme.primary
+                opacity: (qsFlickable.moving || qsFlickable.flicking) ? 0.6 : 0.0
+                Behavior on opacity {
+                    NumberAnimation { duration: root.theme.animationNormal }
+                }
+            }
 
 
             Column {
@@ -579,24 +593,154 @@ Item {
 
 
                     // ============================================
-                    // AUDIO HEADER
+                    // AUDIO HEADER & OUTPUT DEVICE SELECTOR
                     // ============================================
 
-                    Text {
-                        text:
-                            "Audio"
+                    RowLayout {
+                        width: parent.width
 
-                        color:
-                            root.theme.text
+                        Text {
+                            text: "Audio"
+                            color: root.theme.text
+                            font.family: root.theme.fontFamily
+                            font.pixelSize: root.theme.fontSizeLg
+                            font.weight: root.theme.fontWeightDemiBold
+                        }
 
-                        font.family:
-                            root.theme.fontFamily
+                        Item { Layout.fillWidth: true }
 
-                        font.pixelSize:
-                            root.theme.fontSizeLg
+                        // Audio Output Device Chip
+                        Rectangle {
+                            id: sinkChip
+                            implicitHeight: 28
+                            implicitWidth: sinkChipContent.implicitWidth + 20
+                            radius: 14
+                            color: root.sinkMenuOpen
+                                ? root.theme.primaryContainer
+                                : sinkChipMouse.containsMouse
+                                    ? root.theme.hoverStrong
+                                    : root.theme.cardBackgroundElevated
 
-                        font.weight:
-                            root.theme.fontWeightDemiBold
+                            border.width: root.theme.borderThin
+                            border.color: root.sinkMenuOpen ? root.theme.primary : root.theme.border
+
+                            Row {
+                                id: sinkChipContent
+                                anchors.centerIn: parent
+                                spacing: 6
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: {
+                                        for (let i = 0; i < audio.sinks.length; ++i) {
+                                            if (audio.sinks[i].active) return audio.sinks[i].icon
+                                        }
+                                        return "󰕾"
+                                    }
+                                    font.family: root.theme.iconFontFamily
+                                    font.pixelSize: root.theme.iconSm
+                                    color: root.sinkMenuOpen ? root.theme.primaryContainerText : root.theme.primary
+                                }
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: {
+                                        for (let i = 0; i < audio.sinks.length; ++i) {
+                                            if (audio.sinks[i].active) {
+                                                const d = audio.sinks[i].description
+                                                return d.length > 18 ? d.substring(0, 16) + "…" : d
+                                            }
+                                        }
+                                        return "Output Device"
+                                    }
+                                    font.family: root.theme.fontFamily
+                                    font.pixelSize: root.theme.fontSize2Xs
+                                    font.weight: root.theme.fontWeightMedium
+                                    color: root.sinkMenuOpen ? root.theme.primaryContainerText : root.theme.text
+                                }
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: root.sinkMenuOpen ? "▴" : "▾"
+                                    font.family: root.theme.fontFamily
+                                    font.pixelSize: root.theme.fontSize2Xs
+                                    color: root.sinkMenuOpen ? root.theme.primaryContainerText : root.theme.mutedText
+                                }
+                            }
+
+                            MouseArea {
+                                id: sinkChipMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.sinkMenuOpen = !root.sinkMenuOpen
+                            }
+                        }
+                    }
+
+                    // Expandable Audio Sinks Menu
+                    Column {
+                        visible: root.sinkMenuOpen && audio.sinks.length > 0
+                        width: parent.width
+                        spacing: root.theme.spacingXs
+
+                        Repeater {
+                            model: audio.sinks
+                            delegate: Rectangle {
+                                width: parent.width
+                                height: 36
+                                radius: root.theme.radiusMd
+                                color: modelData.active
+                                    ? root.theme.primaryContainer
+                                    : (sinkItemMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
+
+                                border.width: root.theme.borderThin
+                                border.color: modelData.active ? root.theme.primary : root.theme.border
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: root.theme.spacingMd
+                                    anchors.rightMargin: root.theme.spacingMd
+                                    spacing: root.theme.spacingSm
+
+                                    Text {
+                                        text: modelData.icon
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: modelData.active ? root.theme.primaryContainerText : root.theme.primary
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: modelData.description
+                                        elide: Text.ElideRight
+                                        font.family: root.theme.fontFamily
+                                        font.pixelSize: root.theme.fontSizeXs
+                                        font.weight: modelData.active ? root.theme.fontWeightDemiBold : root.theme.fontWeightRegular
+                                        color: modelData.active ? root.theme.primaryContainerText : root.theme.text
+                                    }
+
+                                    Text {
+                                        visible: modelData.active
+                                        text: "󰄬"
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: root.theme.primaryContainerText
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: sinkItemMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        audio.setSink(modelData.name)
+                                        root.sinkMenuOpen = false
+                                    }
+                                }
+                            }
+                        }
                     }
 
 
@@ -795,16 +939,15 @@ Item {
 
 
                         NexaUI.NexaSlider {
-                            width:
-                                parent.width
-
+                            width: parent.width
+                            sliderHeight: 34
+                            sliderRadius: 10
                             from: 0
                             to: 100
-
-                            value:
-                                audio.volume
-
-
+                            value: audio.volume
+                            icon: audio.muted ? "󰝟" : (audio.volume > 50 ? "󰕾" : (audio.volume > 0 ? "󰖀" : "󰕿"))
+                            iconInteractive: true
+                            onIconClicked: audio.toggleMute()
                             onMoved: (val) => audio.setVolume(val)
                             onReleased: (val) => audio.setVolumeImmediate(val)
                         }
@@ -1070,10 +1213,9 @@ Item {
 
 
                                 NexaUI.NexaSlider {
-                                    width:
-                                        parent.width
-
-                                    height: 28
+                                    width: parent.width
+                                    sliderHeight: 28
+                                    sliderRadius: 8
 
                                     from: 0
                                     to: 100
@@ -1274,16 +1416,16 @@ Item {
 
 
                         NexaUI.NexaSlider {
-                            width:
-                                parent.width
-
+                            width: parent.width
+                            sliderHeight: 34
+                            sliderRadius: 10
                             from: 0
                             to: 100
-
-                            value:
-                                audio.inputVolume
-
-
+                            value: audio.inputVolume
+                            icon: audio.inputMuted ? "󰍭" : "󰍬"
+                            iconInteractive: true
+                            livePulse: !audio.inputMuted ? audio.micPeak : 0.0
+                            onIconClicked: audio.toggleInputMute()
                             onMoved: (val) => audio.setInputVolume(val)
                             onReleased: (val) => audio.setInputVolumeImmediate(val)
                         }
@@ -1790,19 +1932,45 @@ Item {
                     }
 
 
-                    NexaUI.NexaSlider {
-                        width:
-                            parent.width
+                    RowLayout {
+                        width: parent.width
+                        spacing: 8
 
-                        from: 1
-                        to: 100
+                        Rectangle {
+                            implicitWidth: 34
+                            implicitHeight: 34
+                            radius: 10
+                            color: nightLight.enabled ? root.theme.primary : root.theme.cardBackgroundElevated
+                            border.width: root.theme.borderThin
+                            border.color: nightLight.enabled ? root.theme.primary : root.theme.border
 
-                        value:
-                            brightness.brightness
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰃛"
+                                font.family: root.theme.iconFontFamily
+                                font.pixelSize: 15
+                                color: nightLight.enabled ? root.theme.primaryContainerText : root.theme.text
+                            }
 
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: nightLight.toggle()
+                            }
+                        }
 
-                        onMoved: (val) => brightness.setBrightness(val)
-                        onReleased: (val) => brightness.setBrightnessImmediate(val)
+                        NexaUI.NexaSlider {
+                            Layout.fillWidth: true
+                            sliderHeight: 34
+                            sliderRadius: 10
+                            from: 1
+                            to: 100
+                            value: brightness.brightness
+                            icon: "󰃠"
+                            onMoved: (val) => brightness.setBrightness(val)
+                            onReleased: (val) => brightness.setBrightnessImmediate(val)
+                        }
                     }
                 }
             }
@@ -2109,9 +2277,10 @@ Item {
 
                     NexaUI.NexaSlider {
                         id: temperatureSlider
-
-                        width:
-                            parent.width
+                        width: parent.width
+                        sliderHeight: 34
+                        sliderRadius: 10
+                        icon: "󰖔"
 
                         from:
                             nightLight.minimumTemperature

@@ -691,45 +691,23 @@ Item {
 
 
                                 Text {
-                                    text: ""
-
+                                    text: "󰍎"
                                     color: Nexa.Theme.primary
-
-                                    font.family:
-                                        Nexa.Theme.iconFontFamily
-
+                                    font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: 12
                                 }
 
-
                                 Text {
-                                    text:
-                                        root.locationText()
-
-                                    color:
-                                        locationMouse.containsMouse
-                                        ? Nexa.Theme.text
-                                        : Nexa.Theme.mutedText
-
-                                    font.family:
-                                        Nexa.Theme.fontFamily
-
+                                    text: root.locationText()
+                                    color: locationMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
                                     font.pixelSize: 11
                                 }
 
-
                                 Text {
-                                    text:
-                                        root.locationEditorOpen
-                                        ? ""
-                                        : ""
-
-                                    color:
-                                        Nexa.Theme.mutedText
-
-                                    font.family:
-                                        Nexa.Theme.iconFontFamily
-
+                                    text: root.locationEditorOpen ? "󰅃" : "󰅀"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: 10
                                 }
                             }
@@ -1388,11 +1366,21 @@ Item {
             }
         }
     }
+}
 
 
     // ============================================================
     // LOCATION EDITOR
     // ============================================================
+
+    // Dismissal backdrop when location editor is open (click anywhere outside to close)
+    MouseArea {
+        anchors.fill: parent
+        visible: root.locationEditorOpen
+        z: 999
+        hoverEnabled: false
+        onClicked: root.locationEditorOpen = false
+    }
 
     Rectangle {
         id: locationPopup
@@ -1434,45 +1422,35 @@ Item {
             RowLayout {
                 Layout.fillWidth: true
 
-
                 Text {
                     Layout.fillWidth: true
-
                     text: "Location"
-
-                    color:
-                        Nexa.Theme.text
-
-                    font.family:
-                        Nexa.Theme.fontFamily
-
-                    font.pixelSize:
-                        Nexa.Theme.fontSizeSm
-
-                    font.weight:
-                        Nexa.Theme.fontWeightMedium
+                    color: Nexa.Theme.text
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: Nexa.Theme.fontSizeSm
+                    font.weight: Nexa.Theme.fontWeightMedium
                 }
 
+                Rectangle {
+                    implicitWidth: 24
+                    implicitHeight: 24
+                    radius: Nexa.Theme.radiusSm
+                    color: closeLocationMouse.containsMouse ? Nexa.Theme.hover : "transparent"
 
-                Text {
-                    text: ""
-
-                    color:
-                        Nexa.Theme.mutedText
-
-                    font.family:
-                        Nexa.Theme.iconFontFamily
-
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰅖"
+                        color: closeLocationMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: Nexa.Theme.iconSm
+                    }
 
                     MouseArea {
+                        id: closeLocationMouse
                         anchors.fill: parent
-                        anchors.margins: -6
-
-                        cursorShape:
-                            Qt.PointingHandCursor
-
-                        onClicked:
-                            root.locationEditorOpen = false
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.locationEditorOpen = false
                     }
                 }
             }
@@ -1504,47 +1482,28 @@ Item {
 
 
                     Text {
-                        text: ""
-
-                        color:
-                            Nexa.Theme.primary
-
-                        font.family:
-                            Nexa.Theme.iconFontFamily
+                        text: "󰑐"
+                        color: Nexa.Theme.primary
+                        font.family: Nexa.Theme.iconFontFamily
                     }
-
 
                     Text {
                         Layout.fillWidth: true
-
                         text: "Automatic location"
-
-                        color:
-                            Nexa.Theme.text
-
-                        font.family:
-                            Nexa.Theme.fontFamily
-
-                        font.pixelSize:
-                            Nexa.Theme.fontSizeXs
+                        color: Nexa.Theme.text
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeXs
                     }
                 }
 
-
                 MouseArea {
                     id: autoMouse
-
                     anchors.fill: parent
                     hoverEnabled: true
-
-                    cursorShape:
-                        Qt.PointingHandCursor
-
-                    onClicked:
-                        root.useAutomaticLocation()
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.useAutomaticLocation()
                 }
             }
-
 
             // --------------------------------------------------------
             // MANUAL CITY
@@ -1553,98 +1512,55 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 32
+                radius: Nexa.Theme.radiusSm
+                color: Nexa.Theme.surface
 
-                radius:
-                    Nexa.Theme.radiusSm
-
-                color:
-                    Nexa.Theme.surface
-
-                border.width:
-                    Nexa.Theme.borderThin
-
-                border.color:
-                    cityInput.activeFocus
+                border.width: Nexa.Theme.borderThin
+                border.color: cityInput.activeFocus
                     ? Nexa.Theme.primary
                     : Nexa.Theme.border
 
-
                 RowLayout {
                     anchors.fill: parent
-
                     anchors.leftMargin: 8
                     anchors.rightMargin: 5
-
                     spacing: 5
 
-
                     Text {
-                        text: ""
-
-                        color:
-                            Nexa.Theme.mutedText
-
-                        font.family:
-                            Nexa.Theme.iconFontFamily
+                        text: "󰍉"
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.iconFontFamily
                     }
-
 
                     TextInput {
                         id: cityInput
-
                         Layout.fillWidth: true
-
-                        text:
-                            root.locationQuery
-
-                        color:
-                            Nexa.Theme.text
-
-                        selectionColor:
-                            Nexa.Theme.primary
-
-                        font.family:
-                            Nexa.Theme.fontFamily
-
-                        font.pixelSize:
-                            Nexa.Theme.fontSizeXs
-
+                        text: root.locationQuery
+                        color: Nexa.Theme.text
+                        selectionColor: Nexa.Theme.primary
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeXs
                         clip: true
-
 
                         onTextChanged: {
                             root.locationQuery = text
-
                             locationSearchTimer.restart()
                         }
 
-
-                        Keys.onReturnPressed:
-                            root.setManualLocation(text)
+                        Keys.onReturnPressed: root.setManualLocation(text)
+                        Keys.onEscapePressed: root.locationEditorOpen = false
                     }
 
-
                     Text {
-                        text: ""
-
-                        color:
-                            Nexa.Theme.primary
-
-                        font.family:
-                            Nexa.Theme.iconFontFamily
-
+                        text: "󰄬"
+                        color: Nexa.Theme.primary
+                        font.family: Nexa.Theme.iconFontFamily
 
                         MouseArea {
                             anchors.fill: parent
                             anchors.margins: -5
-
-                            cursorShape:
-                                Qt.PointingHandCursor
-
-                            onClicked:
-                                root.setManualLocation(
-                                    cityInput.text
-                                )
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.setManualLocation(cityInput.text)
                         }
                     }
                 }
@@ -1812,7 +1728,6 @@ Item {
             }
         }
     }
-}
 
 
     // ============================================================
