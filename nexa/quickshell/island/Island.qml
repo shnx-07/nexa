@@ -148,19 +148,217 @@ PanelWindow {
     readonly property int powerWidth: 760
     readonly property int powerHeight: 144
 
-    //search n command 
+    // ============================================================
+    // OSD DIMENSIONS (UNIQUE SIZES PER NOTIFICATION TYPE)
+    // ============================================================
 
+    readonly property int osdVolumeWidth: 320
+    readonly property int osdVolumeHeight: 48
 
+    readonly property int osdMuteWidth: 240
+    readonly property int osdMuteHeight: 44
+
+    readonly property int osdBrightnessWidth: 320
+    readonly property int osdBrightnessHeight: 48
+
+    readonly property int osdAirplaneWidth: 260
+    readonly property int osdAirplaneHeight: 46
+
+    property string osdType: "none"
+    property real osdValue: 0.74
+    property bool osdMuted: false
+    property bool osdAirplaneEnabled: false
+    property bool osdActive: false
+
+    Timer {
+        id: osdDismissTimer
+        interval: 1800
+        repeat: false
+        onTriggered: {
+            root.osdActive = false
+            root.osdType = "none"
+        }
+    }
+
+    Timer {
+        id: volumeSyncTimer
+        interval: 120
+        repeat: false
+        onTriggered: volumeQueryProcess.running = true
+    }
+
+    Timer {
+        id: brightnessSyncTimer
+        interval: 120
+        repeat: false
+        onTriggered: brightnessQueryProcess.running = true
+    }
+
+    Process {
+        id: volumeQueryProcess
+        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const text = this.text.trim()
+                if (text.startsWith("Volume:")) {
+                    const isMuted = text.includes("[MUTED]")
+                    const clean = text.replace("Volume:", "").replace("[MUTED]", "").trim()
+                    const val = parseFloat(clean)
+                    if (!isNaN(val)) {
+                        root.osdValue = Math.max(0.0, Math.min(1.0, val))
+                        root.osdMuted = isMuted
+                    }
+                }
+            }
+        }
+    }
+
+    Process {
+        id: brightnessQueryProcess
+        command: ["brightnessctl", "-m"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const parts = this.text.trim().split(",")
+                if (parts.length >= 4 && parts[3].endsWith("%")) {
+                    const pct = parseFloat(parts[3].replace("%", ""))
+                    if (!isNaN(pct)) {
+                        if (root.osdType === "brightness" || !root.osdActive) {
+                            root.osdValue = Math.max(0.0, Math.min(1.0, pct / 100.0))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Process {
+        id: airplaneToggleProcess
+        command: [
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "system",
+            "airplane",
+            "toggle"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const data = JSON.parse(this.text.trim())
+                    root.osdAirplaneEnabled = Boolean(data.enabled)
+                } catch (e) {}
+            }
+        }
+    }
+
+    Process {
+        id: airplaneQueryProcess
+        command: [
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "system",
+            "airplane",
+            "info"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const data = JSON.parse(this.text.trim())
+                    root.osdAirplaneEnabled = Boolean(data.enabled)
+                } catch (e) {}
+            }
+        }
+    }
+
+    function triggerVolumeUp(): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "volume"
+        root.osdMuted = false
+        root.osdValue = Math.min(1.0, root.osdValue + 0.05)
+        root.osdActive = true
+        osdDismissTimer.restart()
+        Quickshell.execDetached(["wpctl", "set-volume", "-l", "1", "@DEFAULT_AUDIO_SINK@", "5%+"])
+        volumeSyncTimer.restart()
+    }
+
+    function triggerVolumeDown(): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "volume"
+        root.osdValue = Math.max(0.0, root.osdValue - 0.05)
+        root.osdActive = true
+        osdDismissTimer.restart()
+        Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"])
+        volumeSyncTimer.restart()
+    }
+
+    function triggerToggleMute(): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "mute"
+        root.osdMuted = !root.osdMuted
+        root.osdActive = true
+        osdDismissTimer.restart()
+        Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
+        volumeSyncTimer.restart()
+    }
+
+    function triggerBrightnessUp(): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "brightness"
+        root.osdValue = Math.min(1.0, root.osdValue + 0.05)
+        root.osdActive = true
+        osdDismissTimer.restart()
+        Quickshell.execDetached(["brightnessctl", "-e4", "-n2", "set", "5%+"])
+        brightnessSyncTimer.restart()
+    }
+
+    function triggerBrightnessDown(): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "brightness"
+        root.osdValue = Math.max(0.01, root.osdValue - 0.05)
+        root.osdActive = true
+        osdDismissTimer.restart()
+        Quickshell.execDetached(["brightnessctl", "-e4", "-n2", "set", "5%-"])
+        brightnessSyncTimer.restart()
+    }
+
+    function triggerToggleAirplane(): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "airplane"
+        root.osdAirplaneEnabled = !root.osdAirplaneEnabled
+        root.osdActive = true
+        osdDismissTimer.restart()
+        airplaneToggleProcess.running = true
+    }
 
     property string specialMode: "none"
     // none | search | command | power | appLauncher
 
     readonly property bool specialModeActive:
         specialMode !== "none"
-  
-    
+
     IpcHandler {
         target: "nexaIsland"
+
+        function volumeUp(): void {
+            root.triggerVolumeUp()
+        }
+
+        function volumeDown(): void {
+            root.triggerVolumeDown()
+        }
+
+        function toggleMute(): void {
+            root.triggerToggleMute()
+        }
+
+        function brightnessUp(): void {
+            root.triggerBrightnessUp()
+        }
+
+        function brightnessDown(): void {
+            root.triggerBrightnessDown()
+        }
+
+        function toggleAirplane(): void {
+            root.triggerToggleAirplane()
+        }
 
         function openSearch(): void {
             root.specialMode = "search"
@@ -267,6 +465,18 @@ PanelWindow {
         if (root.full || root.specialModeActive)
             return root.fullWidth
 
+        if (root.osdActive) {
+            if (root.osdType === "volume")
+                return root.osdVolumeWidth
+            if (root.osdType === "mute")
+                return root.osdMuteWidth
+            if (root.osdType === "brightness")
+                return root.osdBrightnessWidth
+            if (root.osdType === "airplane")
+                return root.osdAirplaneWidth
+            return 320
+        }
+
         if (root.notificationActive)
             return root.hoverWidth
 
@@ -288,6 +498,18 @@ PanelWindow {
 
         if (root.full || root.specialModeActive)
             return root.fullHeight
+
+        if (root.osdActive) {
+            if (root.osdType === "volume")
+                return root.osdVolumeHeight
+            if (root.osdType === "mute")
+                return root.osdMuteHeight
+            if (root.osdType === "brightness")
+                return root.osdBrightnessHeight
+            if (root.osdType === "airplane")
+                return root.osdAirplaneHeight
+            return 48
+        }
 
         if (root.notificationActive)
             return root.hoverHeight
@@ -416,7 +638,7 @@ PanelWindow {
           || root.hovered
           || root.notificationActive
           ? Nexa.Theme.radiusLg
-          : Nexa.Theme.radiusPill
+          : (root.osdActive ? Math.round(targetHeight / 2) : Nexa.Theme.radiusPill)
 
 
         // --------------------------------------------------------
@@ -428,6 +650,7 @@ PanelWindow {
           || root.specialModeActive
           || root.hovered
           || root.notificationActive
+          || root.osdActive
           ? Nexa.Theme.islandBackgroundExpanded
           : Nexa.Theme.islandBackground
 
@@ -439,6 +662,7 @@ PanelWindow {
           root.full
           || root.hovered
           || root.notificationActive
+          || root.osdActive
           ? Nexa.Theme.borderStrong
           : Nexa.Theme.border
 
@@ -509,6 +733,7 @@ PanelWindow {
               !root.full
               && !root.specialModeActive
               && !root.notificationActive
+              && !root.osdActive
 
             onHoveredChanged: {
                 root.hovered =
@@ -550,6 +775,7 @@ PanelWindow {
               !root.full
               && !root.specialModeActive
               && !root.notificationActive
+              && !root.osdActive
 
             cursorShape: Qt.PointingHandCursor
 
@@ -603,6 +829,20 @@ PanelWindow {
               specialMode:
                   root.specialMode
 
+              osdActive:
+                  root.osdActive
+
+              osdType:
+                  root.osdType
+
+              osdValue:
+                  root.osdValue
+
+              osdMuted:
+                  root.osdMuted
+
+              osdAirplaneEnabled:
+                  root.osdAirplaneEnabled
 
               onRequestCloseSpecialMode:
                   root.closeIsland()
@@ -623,5 +863,11 @@ PanelWindow {
           }
 
         }
+    }
+
+    Component.onCompleted: {
+        volumeQueryProcess.running = true
+        brightnessQueryProcess.running = true
+        airplaneQueryProcess.running = true
     }
 }

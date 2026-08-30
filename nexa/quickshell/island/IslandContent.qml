@@ -60,6 +60,16 @@ Item {
     signal notificationPreviewActivated()
 
     // ============================================================
+    // TRANSIENT OSD (VOLUME / MUTE / BRIGHTNESS / AIRPLANE)
+    // ============================================================
+
+    property string osdType: "none"
+    property real osdValue: 0.0
+    property bool osdMuted: false
+    property bool osdAirplaneEnabled: false
+    property bool osdActive: false
+
+    // ============================================================
     // CONTEXT
     //
     // Future examples:
@@ -269,7 +279,20 @@ Item {
         }
     }    
 
+    // ============================================================
+    // TRANSIENT OSD PREVIEW
+    // ============================================================
 
+    IslandOsd {
+        id: islandOsd
+        anchors.fill: parent
+        z: 250
+        visible: root.osdActive && !root.full && !root.specialModeActive
+        osdType: root.osdType
+        value: root.osdValue
+        muted: root.osdMuted
+        airplaneEnabled: root.osdAirplaneEnabled
+    }
 
     // ============================================================
     // SINGLE PERSISTENT RECORDER MODULE
@@ -284,6 +307,7 @@ Item {
         visible:
             !root.specialModeActive
             && !root.full
+            && !root.osdActive
             && root.recorderContextActive
 
         presentation: {
@@ -467,7 +491,7 @@ Item {
             if (root.mediaContextActive)
                return false
 
-            if (root.notificationActive)
+            if (root.notificationActive || root.osdActive)
                return false
 
             return true
@@ -572,6 +596,9 @@ Item {
 
               if (root.full)
                   return root.section === "music"
+
+              if (root.notificationActive || root.osdActive)
+                  return false
 
               return root.mediaContextActive
           }
