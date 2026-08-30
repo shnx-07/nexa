@@ -27,10 +27,31 @@ Item {
     // MPRIS PLAYER
     // ============================================================
 
-    readonly property var player:
-        Mpris.players.values.length > 0
-        ? Mpris.players.values[0]
-        : null
+    readonly property var player: {
+        const list = Mpris.players.values
+        if (!list || list.length === 0) return null
+
+        // 1. Prioritize any player actively playing
+        for (let i = 0; i < list.length; ++i) {
+            if (list[i] && list[i].playbackState === MprisPlaybackState.Playing)
+                return list[i]
+        }
+
+        // 2. Prioritize paused player with track metadata
+        for (let i = 0; i < list.length; ++i) {
+            if (list[i] && list[i].playbackState === MprisPlaybackState.Paused && (list[i].trackTitle || list[i].trackArtist))
+                return list[i]
+        }
+
+        // 3. Fallback to any player with track metadata
+        for (let i = 0; i < list.length; ++i) {
+            if (list[i] && (list[i].trackTitle || list[i].trackArtist))
+                return list[i]
+        }
+
+        // 4. Default to first available player
+        return list[0]
+    }
 
     readonly property bool available:
         player !== null

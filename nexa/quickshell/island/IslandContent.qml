@@ -68,6 +68,11 @@ Item {
     property bool osdMuted: false
     property bool osdAirplaneEnabled: false
     property bool osdActive: false
+    property string osdTitle: ""
+    property string osdSubtitle: ""
+    property string osdIcon: ""
+    property bool osdBatteryCharging: false
+    property bool osdHasInternet: true
 
     // ============================================================
     // CONTEXT
@@ -292,6 +297,11 @@ Item {
         value: root.osdValue
         muted: root.osdMuted
         airplaneEnabled: root.osdAirplaneEnabled
+        title: root.osdTitle
+        subtitle: root.osdSubtitle
+        icon: root.osdIcon
+        batteryCharging: root.osdBatteryCharging
+        hasInternet: root.osdHasInternet
     }
 
     // ============================================================

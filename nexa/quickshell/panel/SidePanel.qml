@@ -234,6 +234,13 @@ Scope {
                 "read-all"
             ])
         }
+
+        function openQuickSettings(): void {
+            root.panelOpen = true
+            Qt.callLater(function() {
+                panelContent.currentPage = 1
+            })
+        }
     }
 
 

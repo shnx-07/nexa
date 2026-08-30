@@ -2,6 +2,9 @@ import QtQuick
 import Quickshell.Io
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Services.UPower
+import Quickshell.Bluetooth
+import Quickshell.Networking
 
 import "../theme" as Nexa
 
@@ -167,16 +170,30 @@ PanelWindow {
     readonly property int osdAirplaneWidth: 260
     readonly property int osdAirplaneHeight: 46
 
+    readonly property int osdBatteryWidth: 280
+    readonly property int osdBatteryHeight: 46
+
+    readonly property int osdBluetoothWidth: 320
+    readonly property int osdBluetoothHeight: 46
+
+    readonly property int osdWifiWidth: 320
+    readonly property int osdWifiHeight: 46
+
     property string osdType: "none"
     property real osdValue: 0.74
     property bool osdMuted: false
     property bool osdMicMuted: false
     property bool osdAirplaneEnabled: false
     property bool osdActive: false
+    property string osdTitle: ""
+    property string osdSubtitle: ""
+    property string osdIcon: ""
+    property bool osdBatteryCharging: false
+    property bool osdHasInternet: true
 
     Timer {
         id: osdDismissTimer
-        interval: 1800
+        interval: 2600
         repeat: false
         onTriggered: {
             root.osdActive = false
@@ -370,6 +387,208 @@ PanelWindow {
         airplaneToggleProcess.running = true
     }
 
+    // ============================================================
+    // BATTERY HARDWARE WATCHER (APPLE MAGSAFE STYLE)
+    // ============================================================
+
+    readonly property var batteryDevice: UPower.displayDevice
+    readonly property bool batteryReady: batteryDevice && batteryDevice.ready
+    readonly property bool onBattery: UPower.onBattery
+    property bool batteryInitialized: false
+
+    function triggerBatteryOsd(charging: bool, pct: int): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "battery"
+        root.osdBatteryCharging = charging
+        root.osdValue = Math.max(0.0, Math.min(1.0, pct / 100.0))
+        root.osdTitle = charging ? "Charging" : "On Battery"
+        root.osdSubtitle = pct + "%"
+        root.osdActive = true
+        osdDismissTimer.restart()
+    }
+
+    Timer {
+        id: batteryInitTimer
+        interval: 2000
+        running: true
+        repeat: false
+        onTriggered: {
+            root.batteryInitialized = true
+        }
+    }
+
+    onOnBatteryChanged: {
+        if (!root.batteryInitialized || !root.batteryReady) return
+        const pct = Math.round(batteryDevice.percentage * 100)
+        root.triggerBatteryOsd(!root.onBattery, pct)
+    }
+
+    // ============================================================
+    // BLUETOOTH DEVICE CONNECTION WATCHER
+    // ============================================================
+
+    property var knownConnectedDevices: ({})
+    property bool bluetoothWatcherReady: false
+
+    Timer {
+        id: bluetoothInitTimer
+        interval: 3000
+        running: true
+        repeat: false
+        onTriggered: {
+            root.bluetoothWatcherReady = true
+            const current = {}
+            for (let dev of Bluetooth.devices.values) {
+                if (dev.connected) {
+                    current[dev.address] = true
+                }
+            }
+            root.knownConnectedDevices = current
+        }
+    }
+
+    Connections {
+        target: Bluetooth.devices
+        function onValuesChanged() {
+            if (!root.bluetoothWatcherReady) return
+
+            const current = {}
+            for (let dev of Bluetooth.devices.values) {
+                if (dev.connected) {
+                    current[dev.address] = true
+                    if (!root.knownConnectedDevices[dev.address]) {
+                        root.triggerBluetoothOsd(dev)
+                    }
+                }
+            }
+            root.knownConnectedDevices = current
+        }
+    }
+
+    function triggerBluetoothOsd(device: var): void {
+        if (!device || root.full || root.specialModeActive) return
+        root.osdType = "bluetooth"
+        root.osdTitle = (device.name && device.name.length > 0) ? device.name : "Bluetooth Device"
+
+        let iconName = "󰂯"
+        const devIcon = (device.icon || "").toLowerCase()
+        if (devIcon.includes("head") || devIcon.includes("audio")) iconName = "󰋋"
+        else if (devIcon.includes("mouse")) iconName = "󰍽"
+        else if (devIcon.includes("keyboard")) iconName = "󰌌"
+        else if (devIcon.includes("phone")) iconName = "󰏲"
+        else if (devIcon.includes("gamepad") || devIcon.includes("controller")) iconName = "󰊖"
+        root.osdIcon = iconName
+
+        let batt = 0
+        if (device.batteryAvailable && device.batteryPercentage > 0) {
+            batt = device.batteryPercentage
+            root.osdSubtitle = "Battery " + batt + "%"
+            root.osdValue = batt / 100.0
+        } else {
+            root.osdSubtitle = "Connected"
+            root.osdValue = 0
+        }
+
+        root.osdActive = true
+        osdDismissTimer.restart()
+    }
+
+    // ============================================================
+    // WI-FI CONNECTION WATCHER (WITH SSID & INTERNET CONNECTIVITY CHECK)
+    // ============================================================
+
+    readonly property var wifiDevice: {
+        for (let d of Networking.devices.values) {
+            if (d.type === DeviceType.Wifi) return d
+        }
+        return null
+    }
+
+    readonly property bool wifiConnected:
+        wifiDevice !== null && wifiDevice.connected
+
+    property bool wifiWasConnected: false
+    property bool wifiWatcherReady: false
+
+    Timer {
+        id: wifiInitTimer
+        interval: 3500
+        running: true
+        repeat: false
+        onTriggered: {
+            root.wifiWatcherReady = true
+            root.wifiWasConnected = root.wifiConnected
+        }
+    }
+
+    Timer {
+        id: wifiQueryDelayTimer
+        interval: 650
+        repeat: false
+        onTriggered: {
+            wifiStatusQueryProcess.running = true
+        }
+    }
+
+    Process {
+        id: wifiStatusQueryProcess
+        command: ["bash", "-c", "nmcli -t -f ACTIVE,SSID,SIGNAL dev wifi | grep '^yes:'; nmcli -t -f CONNECTIVITY g"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const lines = this.text.trim().split("\n")
+                let ssid = ""
+                let strength = 0
+                let connectivity = "full"
+
+                for (let line of lines) {
+                    const l = line.trim()
+                    if (l.startsWith("yes:")) {
+                        const parts = l.split(":")
+                        if (parts.length >= 2) ssid = parts[1]
+                        if (parts.length >= 3) strength = parseInt(parts[2]) || 0
+                    } else if (l === "full" || l === "limited" || l === "none" || l === "portal") {
+                        connectivity = l
+                    }
+                }
+
+                // If nmcli line is empty, fallback to device network name
+                if (ssid.length === 0 && wifiDevice) {
+                    for (let n of wifiDevice.networks.values) {
+                        if (n.connected) {
+                            ssid = n.name
+                            strength = Math.round(n.signalStrength * 100)
+                            break
+                        }
+                    }
+                }
+
+                const hasInternet = (connectivity === "full")
+                root.triggerWifiOsd(ssid, strength, hasInternet)
+            }
+        }
+    }
+
+    onWifiConnectedChanged: {
+        if (!root.wifiWatcherReady) return
+
+        if (wifiConnected && !wifiWasConnected) {
+            // Delay 650ms to allow IP address assignment and connectivity verification
+            wifiQueryDelayTimer.restart()
+        }
+        root.wifiWasConnected = wifiConnected
+    }
+
+    function triggerWifiOsd(ssid: string, strength: int, hasInternet: bool): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "wifi"
+        root.osdTitle = (ssid && ssid.length > 0) ? ssid : "Wi-Fi Network"
+        root.osdHasInternet = (hasInternet !== undefined) ? hasInternet : true
+        root.osdSubtitle = root.osdHasInternet ? "Connected" : "No Internet"
+        root.osdValue = strength > 0 ? (strength / 100.0) : 0.8
+        root.osdActive = true
+        osdDismissTimer.restart()
+    }
+
     property string specialMode: "none"
     // none | search | command | power | appLauncher
 
@@ -378,6 +597,23 @@ PanelWindow {
 
     IpcHandler {
         target: "nexaIsland"
+
+        function triggerBatteryOsd(charging: bool, pct: int): void {
+            root.triggerBatteryOsd(charging, pct)
+        }
+
+        function triggerBluetoothOsd(name: string, icon: string): void {
+            root.triggerBluetoothOsd({
+                name: name || "AirPods Pro",
+                icon: icon || "audio-headset",
+                batteryAvailable: true,
+                batteryPercentage: 94
+            })
+        }
+
+        function triggerWifiOsd(ssid: string, strength: int, hasInternet: bool): void {
+            root.triggerWifiOsd(ssid || "Home_5G", strength || 92, hasInternet !== false)
+        }
 
         function volumeUp(): void {
             root.triggerVolumeUp()
@@ -523,6 +759,12 @@ PanelWindow {
                 return root.osdBrightnessWidth
             if (root.osdType === "airplane")
                 return root.osdAirplaneWidth
+            if (root.osdType === "battery")
+                return root.osdBatteryWidth
+            if (root.osdType === "bluetooth")
+                return root.osdBluetoothWidth
+            if (root.osdType === "wifi")
+                return root.osdWifiWidth
             return 320
         }
 
@@ -559,6 +801,12 @@ PanelWindow {
                 return root.osdBrightnessHeight
             if (root.osdType === "airplane")
                 return root.osdAirplaneHeight
+            if (root.osdType === "battery")
+                return root.osdBatteryHeight
+            if (root.osdType === "bluetooth")
+                return root.osdBluetoothHeight
+            if (root.osdType === "wifi")
+                return root.osdWifiHeight
             return 48
         }
 
@@ -677,6 +925,7 @@ PanelWindow {
 
         width: root.targetWidth
         height: root.targetHeight
+        clip: true
 
 
         // --------------------------------------------------------
@@ -894,6 +1143,21 @@ PanelWindow {
 
               osdAirplaneEnabled:
                   root.osdAirplaneEnabled
+
+              osdTitle:
+                  root.osdTitle
+
+              osdSubtitle:
+                  root.osdSubtitle
+
+              osdIcon:
+                  root.osdIcon
+
+              osdBatteryCharging:
+                  root.osdBatteryCharging
+
+              osdHasInternet:
+                  root.osdHasInternet
 
               onRequestCloseSpecialMode:
                   root.closeIsland()
