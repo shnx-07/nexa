@@ -340,9 +340,7 @@ PanelWindow {
               + " to background..."
 
           Quickshell.execDetached([
-              nexad,
-              "wallpaper",
-              "apply",
+              applyScript,
               entry.wallPath
           ])
 
@@ -388,9 +386,7 @@ PanelWindow {
               + " to both..."
 
           Quickshell.execDetached([
-              nexad,
-              "wallpaper",
-              "apply",
+              applyScript,
               entry.wallPath
           ])
 
