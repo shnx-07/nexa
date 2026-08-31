@@ -169,6 +169,12 @@ pub fn sync_from_system() -> SettingsState {
 // ============================================================
 
 pub fn restore_all() -> Result<(), String> {
+    let flag_path = PathBuf::from("/tmp/nexa-state-restored");
+    if flag_path.exists() {
+        println!("settings_state=already_restored_this_boot");
+        return Ok(());
+    }
+
     let state = load_state();
 
     // 1. Audio Output Volume & Mute
@@ -234,6 +240,7 @@ pub fn restore_all() -> Result<(), String> {
         crate::notifications::dnd_off();
     }
 
+    let _ = fs::write(&flag_path, "1");
     println!("settings_state=restored");
     Ok(())
 }

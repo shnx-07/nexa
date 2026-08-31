@@ -14,6 +14,7 @@ Item {
     property string icon: ""
     property bool batteryCharging: false
     property bool hasInternet: true
+    property bool lockEnabled: false
 
     readonly property string iconText: {
         switch (root.osdType) {
@@ -32,6 +33,10 @@ Item {
             return "󰃞"
         case "airplane":
             return root.airplaneEnabled ? "󰀝" : "󰀞"
+        case "capslock":
+            return "󰬈"
+        case "numlock":
+            return "󰎤"
         default:
             return ""
         }
@@ -49,6 +54,9 @@ Item {
             return "#f59e0b" // warm amber sun
         case "airplane":
             return root.airplaneEnabled ? "#38bdf8" : Nexa.Theme.mutedText
+        case "capslock":
+        case "numlock":
+            return root.lockEnabled ? "#22c55e" : Nexa.Theme.mutedText
         default:
             return Nexa.Theme.primary
         }
@@ -514,6 +522,106 @@ Item {
                         "openQuickSettings"
                     ])
                 }
+            }
+        }
+    }
+
+    // ============================================================
+    // 7. KEYBOARD LOCK LAYOUT (CAPS LOCK / NUM LOCK)
+    // ============================================================
+
+    RowLayout {
+        id: keyLockLayout
+        anchors.fill: parent
+        anchors.leftMargin: 12
+        anchors.rightMargin: 14
+        spacing: 10
+        visible: root.osdType === "capslock" || root.osdType === "numlock"
+
+        // Leading Key Icon Badge
+        Rectangle {
+            id: keyBadge
+            width: 32
+            height: 32
+            radius: 9
+            color: root.lockEnabled
+                ? Qt.rgba(34/255, 197/255, 94/255, 0.18)
+                : Qt.rgba(255/255, 255/255, 255/255, 0.08)
+            border.width: Nexa.Theme.borderThin
+            border.color: root.lockEnabled
+                ? Qt.rgba(34/255, 197/255, 94/255, 0.38)
+                : Qt.rgba(255/255, 255/255, 255/255, 0.14)
+            Layout.alignment: Qt.AlignVCenter
+
+            Text {
+                anchors.centerIn: parent
+                text: root.osdType === "capslock" ? "󰬈" : "󰎤"
+                color: root.lockEnabled ? "#22c55e" : Nexa.Theme.mutedText
+                font.family: Nexa.Theme.iconFontFamily
+                font.pixelSize: 18
+            }
+        }
+
+        // Info Text Column
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
+            spacing: 1
+
+            Text {
+                text: root.title !== "" ? root.title : (root.osdType === "capslock" ? "Caps Lock" : "Num Lock")
+                color: Nexa.Theme.text
+                font.family: Nexa.Theme.fontFamily
+                font.pixelSize: 13
+                font.weight: Font.DemiBold
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+            }
+
+            RowLayout {
+                spacing: 5
+                Layout.fillWidth: true
+
+                Rectangle {
+                    width: 6
+                    height: 6
+                    radius: 3
+                    color: root.lockEnabled ? "#22c55e" : Nexa.Theme.mutedText
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Text {
+                    text: root.lockEnabled ? "On" : "Off"
+                    color: root.lockEnabled ? "#22c55e" : Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 11
+                    font.weight: Font.Medium
+                    Layout.alignment: Qt.AlignVCenter
+                }
+            }
+        }
+
+        // Trailing Status Pill Badge
+        Rectangle {
+            width: 44
+            height: 24
+            radius: 12
+            color: root.lockEnabled
+                ? Qt.rgba(34/255, 197/255, 94/255, 0.18)
+                : Qt.rgba(255/255, 255/255, 255/255, 0.08)
+            border.width: Nexa.Theme.borderThin
+            border.color: root.lockEnabled
+                ? Qt.rgba(34/255, 197/255, 94/255, 0.35)
+                : Qt.rgba(255/255, 255/255, 255/255, 0.14)
+            Layout.alignment: Qt.AlignVCenter
+
+            Text {
+                anchors.centerIn: parent
+                text: root.lockEnabled ? "ON" : "OFF"
+                color: root.lockEnabled ? "#22c55e" : Nexa.Theme.mutedText
+                font.family: Nexa.Theme.fontFamily
+                font.pixelSize: 11
+                font.weight: Font.Bold
             }
         }
     }

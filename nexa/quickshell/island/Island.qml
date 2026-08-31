@@ -179,6 +179,9 @@ PanelWindow {
     readonly property int osdWifiWidth: 320
     readonly property int osdWifiHeight: 46
 
+    readonly property int osdKeyLockWidth: 240
+    readonly property int osdKeyLockHeight: 46
+
     property string osdType: "none"
     property real osdValue: 0.74
     property bool osdMuted: false
@@ -190,6 +193,7 @@ PanelWindow {
     property string osdIcon: ""
     property bool osdBatteryCharging: false
     property bool osdHasInternet: true
+    property bool osdLockEnabled: false
 
     Timer {
         id: osdDismissTimer
@@ -589,6 +593,51 @@ PanelWindow {
         osdDismissTimer.restart()
     }
 
+    // ============================================================
+    // KEYBOARD LOCK (CAPS LOCK / NUM LOCK) WATCHER
+    // ============================================================
+
+    function triggerCapsLockOsd(enabled: bool): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "capslock"
+        root.osdTitle = "Caps Lock"
+        root.osdLockEnabled = enabled
+        root.osdActive = true
+        osdDismissTimer.restart()
+    }
+
+    function triggerNumLockOsd(enabled: bool): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "numlock"
+        root.osdTitle = "Num Lock"
+        root.osdLockEnabled = enabled
+        root.osdActive = true
+        osdDismissTimer.restart()
+    }
+
+    Process {
+        id: keylockWatcherProcess
+        command: [
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "system",
+            "keylock-watch"
+        ]
+        running: true
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: data => {
+                const line = data.trim()
+                if (line.startsWith("CAPS:")) {
+                    const active = line.endsWith("true")
+                    root.triggerCapsLockOsd(active)
+                } else if (line.startsWith("NUM:")) {
+                    const active = line.endsWith("true")
+                    root.triggerNumLockOsd(active)
+                }
+            }
+        }
+    }
+
     property string specialMode: "none"
     // none | search | command | power | appLauncher
 
@@ -597,6 +646,14 @@ PanelWindow {
 
     IpcHandler {
         target: "nexaIsland"
+
+        function triggerCapsLockOsd(enabled: bool): void {
+            root.triggerCapsLockOsd(enabled)
+        }
+
+        function triggerNumLockOsd(enabled: bool): void {
+            root.triggerNumLockOsd(enabled)
+        }
 
         function triggerBatteryOsd(charging: bool, pct: int): void {
             root.triggerBatteryOsd(charging, pct)
@@ -765,6 +822,8 @@ PanelWindow {
                 return root.osdBluetoothWidth
             if (root.osdType === "wifi")
                 return root.osdWifiWidth
+            if (root.osdType === "capslock" || root.osdType === "numlock")
+                return root.osdKeyLockWidth
             return 320
         }
 
@@ -807,6 +866,8 @@ PanelWindow {
                 return root.osdBluetoothHeight
             if (root.osdType === "wifi")
                 return root.osdWifiHeight
+            if (root.osdType === "capslock" || root.osdType === "numlock")
+                return root.osdKeyLockHeight
             return 48
         }
 
@@ -1158,6 +1219,9 @@ PanelWindow {
 
               osdHasInternet:
                   root.osdHasInternet
+
+              osdLockEnabled:
+                  root.osdLockEnabled
 
               onRequestCloseSpecialMode:
                   root.closeIsland()

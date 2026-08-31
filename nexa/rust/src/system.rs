@@ -7,8 +7,11 @@ use std::{
     env,
     ffi::OsStr,
     fs,
+    io::Write,
     path::PathBuf,
     process::Command,
+    thread::sleep,
+    time::Duration,
 };
 
 
@@ -87,12 +90,77 @@ impl Default for SystemState {
 
 
 // ============================================================
+// KEYBOARD LOCK LED WATCHER
+// ============================================================
+
+fn read_led_state(keyword: &str) -> bool {
+    let Ok(entries) = fs::read_dir("/sys/class/leds") else {
+        return false;
+    };
+
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.contains(keyword) {
+            let brightness_path = entry.path().join("brightness");
+            if let Ok(content) = fs::read_to_string(brightness_path) {
+                if content.trim() != "0" {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
+pub fn keylock_watch() {
+    let mut last_caps = read_led_state("capslock");
+    let mut last_num = read_led_state("numlock");
+
+    // Small startup sleep to let initial compositor state settle
+    sleep(Duration::from_millis(600));
+    last_caps = read_led_state("capslock");
+    last_num = read_led_state("numlock");
+
+    let stdout = std::io::stdout();
+    let mut handle = stdout.lock();
+
+    loop {
+        sleep(Duration::from_millis(50));
+
+        let caps = read_led_state("capslock");
+        if caps != last_caps {
+            let _ = writeln!(handle, "CAPS:{}", caps);
+            let _ = handle.flush();
+            last_caps = caps;
+        }
+
+        let num = read_led_state("numlock");
+        if num != last_num {
+            let _ = writeln!(handle, "NUM:{}", num);
+            let _ = handle.flush();
+            last_num = num;
+        }
+    }
+}
+
+
+// ============================================================
 // CLI
 // ============================================================
 
 pub fn handle(
     args: &[String],
 ) {
+    if args.is_empty() {
+        print_usage();
+        return;
+    }
+
+    if args[0] == "keylock-watch" || args[0] == "lock-watch" {
+        keylock_watch();
+        return;
+    }
+
     if args.len() < 2 {
         print_usage();
         return;
@@ -1037,6 +1105,8 @@ fn print_usage() {
   nexad system vpn info
   nexad system vpn connect <profile>
   nexad system vpn disconnect
-  nexad system vpn toggle"
+  nexad system vpn toggle
+
+  nexad system keylock-watch"
     );
 }

@@ -768,10 +768,7 @@ apps|app-set|app-mute|app-unmute|app-toggle-mute>"
 
         _ => {
             Err(
-                "usage: nexad audio \
-<info|set|mute|unmute|toggle-mute|\
-input-info|input-set|input-mute|input-unmute|input-toggle-mute|\
-apps|app-set|app-mute|app-unmute|app-toggle-mute|\
+                "usage: nexad audio <info|set|mute|unmute|toggle-mute|input-info|input-set|input-mute|input-unmute|input-toggle-mute|apps|app-set|app-mute|app-unmute|app-toggle-mute>".to_string()
             )
         }
     }

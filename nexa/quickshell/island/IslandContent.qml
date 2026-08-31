@@ -73,6 +73,7 @@ Item {
     property string osdIcon: ""
     property bool osdBatteryCharging: false
     property bool osdHasInternet: true
+    property bool osdLockEnabled: false
 
     // ============================================================
     // CONTEXT
@@ -302,6 +303,7 @@ Item {
         icon: root.osdIcon
         batteryCharging: root.osdBatteryCharging
         hasInternet: root.osdHasInternet
+        lockEnabled: root.osdLockEnabled
     }
 
     // ============================================================

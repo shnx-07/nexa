@@ -65,6 +65,7 @@ fn lock() -> Result<(), String> {
 // ============================================================
 
 fn suspend() -> Result<(), String> {
+    let _ = crate::state::sync_from_system();
     run_command(
         "systemctl",
         &["suspend"],
@@ -77,6 +78,7 @@ fn suspend() -> Result<(), String> {
 // ============================================================
 
 fn logout() -> Result<(), String> {
+    let _ = crate::state::sync_from_system();
     run_command(
         "hyprctl",
         &[
@@ -92,6 +94,7 @@ fn logout() -> Result<(), String> {
 // ============================================================
 
 fn reboot() -> Result<(), String> {
+    let _ = crate::state::sync_from_system();
     run_command(
         "systemctl",
         &["reboot"],
@@ -104,6 +107,7 @@ fn reboot() -> Result<(), String> {
 // ============================================================
 
 fn shutdown() -> Result<(), String> {
+    let _ = crate::state::sync_from_system();
     run_command(
         "systemctl",
         &["poweroff"],
