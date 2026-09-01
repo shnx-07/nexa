@@ -129,7 +129,6 @@ local fileManagerApps = "^(org\\.kde\\.dolphin|nemo|Nemo|yazi)$"
 hl.window_rule({
 	match = {
 		class = fileManagerApps,
-		title = "negative:^(Moving.*|Create New.*|Extract.*|Compress.*|Copying.*|Progress.*|Configure.*|Properties.*|Choose\\sApplication.*)$",
 	},
 	float = true,
 	size = { "max(monitor_w, monitor_h)*0.50", "min(monitor_w, monitor_h)*0.55" },
@@ -138,7 +137,16 @@ hl.window_rule({
 
 hl.window_rule({
 	match = {
-		title = "^(yazi.*)$",
+		initial_class = fileManagerApps,
+	},
+	float = true,
+	size = { "max(monitor_w, monitor_h)*0.50", "min(monitor_w, monitor_h)*0.55" },
+	move = { "((monitor_w - window_w) / 2)", "((monitor_h - window_h) / 2) + 60" },
+})
+
+hl.window_rule({
+	match = {
+		title = "^(.*[Yy]azi.*)$",
 	},
 	float = true,
 	size = { "max(monitor_w, monitor_h)*0.50", "min(monitor_w, monitor_h)*0.55" },
