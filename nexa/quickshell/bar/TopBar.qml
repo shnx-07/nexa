@@ -192,53 +192,7 @@ PanelWindow {
 
 
             // ----------------------------------------------------
-            // PILL 3 — SIDE PANEL BUTTON
-            // ----------------------------------------------------
-
-            Rectangle {
-                id: panelPillContainer
-
-                implicitHeight: Nexa.Theme.controlHeightSm
-                implicitWidth: Nexa.Theme.controlHeightSm
-
-                radius: height / 2
-                color: Nexa.Theme.surfaceContainer
-
-                border {
-                    width: Nexa.Theme.borderThin
-                    color: Nexa.Theme.border
-                }
-
-                Behavior on color {
-                    ColorAnimation { duration: Nexa.Theme.animationFast }
-                }
-
-                NexaUI.NexaIconButton {
-                    id: panelPill
-
-                    anchors.fill: parent
-                    radius: height / 2
-
-                    icon: "󰕰"
-                    iconSize: Nexa.Theme.iconSm
-
-                    onClicked: {
-                        Quickshell.execDetached([
-                            "qs",
-                            "-p",
-                            Quickshell.env("HOME") + "/.config/nexa/quickshell",
-                            "ipc",
-                            "call",
-                            "sidePanel",
-                            "toggle"
-                        ])
-                    }
-                }
-            }
-
-
-            // ----------------------------------------------------
-            // PILL 4 — POWER
+            // PILL 3 — POWER
             // ----------------------------------------------------
 
             Rectangle {

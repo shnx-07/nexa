@@ -976,6 +976,25 @@ Item {
             root.requestCloseSpecialMode()
     }
 
+    ControlCenterIsland {
+        id: controlCenterIsland
+
+        anchors.fill: parent
+
+        visible:
+            root.full
+            && root.specialMode === "controlCenter"
+
+        z: 100
+
+        onRequestClose:
+            root.requestCloseSpecialMode()
+    }
+
+    function setControlCenterPage(page) {
+        controlCenterIsland.currentPage = page
+    }
+
     // ============================================================
     // TEMPORARY SYSTEM PLACEHOLDER
     //

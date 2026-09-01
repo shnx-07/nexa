@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 
@@ -491,383 +492,245 @@ Item {
     // PAGE
     // ============================================================
 
-    ColumnLayout {
+    RowLayout {
         anchors {
             fill: parent
-            margins: Nexa.Theme.spacingLg
+            margins: 10
         }
-        spacing: Nexa.Theme.spacingSm
-
+        spacing: 8
 
         // ========================================================
-        // HEADER
+        // LEFT HALF — Current Weather + Scrollable Details
         // ========================================================
-
         Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight:
-                weatherHeaderRow.implicitHeight
-                + Nexa.Theme.spacingMd * 2
-
-            color: Nexa.Theme.panelBackgroundElevated
-            radius: Nexa.Theme.radiusXl
-
-            // Flatten the bottom edge
-            Rectangle {
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    bottom: parent.bottom
-                }
-                height: parent.radius
-                color: parent.color
-            }
-
-            border {
-                width: Nexa.Theme.borderThin
-                color: Nexa.Theme.divider
-            }
-
-            RowLayout {
-                id: weatherHeaderRow
-
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    verticalCenter: parent.verticalCenter
-                    leftMargin: Nexa.Theme.spacingLg
-                    rightMargin: Nexa.Theme.spacingMd
-                }
-
-                spacing: Nexa.Theme.spacingSm
-
-                Text {
-                    text: "󰖐"
-                    color: Nexa.Theme.primary
-                    font {
-                        family: Nexa.Theme.iconFontFamily
-                        pixelSize: Nexa.Theme.iconMd
-                    }
-                }
-
-                Text {
-                    text: "Weather"
-                    color: Nexa.Theme.text
-                    font {
-                        family: Nexa.Theme.fontFamily
-                        pixelSize: Nexa.Theme.fontSizeXl
-                        weight: Nexa.Theme.fontWeightDemiBold
-                    }
-                }
-
-                Item { Layout.fillWidth: true }
-            }
-        }
-
-
-        // ========================================================
-        // CONTENT
-        // ========================================================
-
-        RowLayout {
-            Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.fillWidth: true
 
-            spacing:
-                Nexa.Theme.spacingSm
+            radius: Nexa.Theme.radiusLg
+            color: Nexa.Theme.cardBackground
+            border.width: Nexa.Theme.borderThin
+            border.color: Nexa.Theme.border
+            clip: true
 
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: 8
 
-        // ========================================================
-        // LEFT SIDE
-        // ========================================================
-
-        ColumnLayout {
-            Layout.preferredWidth: 205
-            Layout.minimumWidth: 205
-            Layout.maximumWidth: 205
-
-            Layout.fillHeight: true
-
-            spacing:
-                Nexa.Theme.spacingSm
-
-
-            // ====================================================
-            // CURRENT WEATHER
-            // ====================================================
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 160
-
-                radius:
-                    Nexa.Theme.radiusLg
-
-                color:
-                    Nexa.Theme.cardBackground
-
-                border.width:
-                    Nexa.Theme.borderThin
-
-                border.color:
-                    Nexa.Theme.border
-
-
+                // ── Current weather ──────────────────────────────
                 RowLayout {
-                    anchors.centerIn: parent
-                    spacing: 18
+                    Layout.fillWidth: true
+                    spacing: 12
 
+                    // Big weather icon
                     Text {
-                        text:
-                            root.hasWeather
+                        text: root.hasWeather
                             ? root.weatherIcon(root.weatherData.current.icon)
-                            : ""
-
+                            : "󰖐"
                         color: Nexa.Theme.primary
                         font.family: Nexa.Theme.iconFontFamily
-                        font.pixelSize: 62
+                        font.pixelSize: 52
                     }
 
                     ColumnLayout {
-                        spacing: 3
+                        spacing: 2
 
+                        // Temperature
                         Text {
-                            text:
-                                root.hasWeather
+                            text: root.hasWeather
                                 ? root.temperature(root.weatherData.current.temperature)
                                 : "--°"
-
                             color: Nexa.Theme.text
                             font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 44
+                            font.pixelSize: 38
                             font.weight: Font.DemiBold
                         }
 
+                        // Min / Max
                         Text {
-                            text:
-                                root.hasWeather
+                            text: root.hasWeather
                                 ? root.temperature(root.weatherData.current.min_temperature)
-                                    + " / "
-                                    + root.temperature(root.weatherData.current.max_temperature)
+                                  + " / "
+                                  + root.temperature(root.weatherData.current.max_temperature)
                                 : "-- / --"
-
                             color: Nexa.Theme.primary
-                            font.pixelSize: 13
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 12
                         }
 
+                        // Condition
                         Text {
-                            text:
-                                root.hasWeather
+                            text: root.hasWeather
                                 ? root.weatherData.current.condition
-                                : root.loading
-                                    ? "Loading weather..."
-                                    : "Weather unavailable"
-
+                                : root.loading ? "Loading…" : "Unavailable"
                             color: Nexa.Theme.text
-                            font.pixelSize: 13
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 12
                             font.weight: Font.Medium
                         }
 
+                        // Location button
                         Rectangle {
                             id: locationButton
-
-                            Layout.preferredHeight: 25
-                            Layout.minimumWidth: locationRow.implicitWidth + 14
-
+                            height: 22
+                            width: locationRow.implicitWidth + 14
                             radius: Nexa.Theme.radiusSm
+                            color: locationMouse.containsMouse ? Nexa.Theme.hover : "transparent"
 
-                            color:
-                                locationMouse.containsMouse
-                                ? Nexa.Theme.hover
-                                : "transparent"
-
-
-                            RowLayout {
+                            Row {
                                 id: locationRow
-
                                 anchors.centerIn: parent
-
-                                spacing: 5
-
+                                spacing: 4
 
                                 Text {
                                     text: "󰍎"
                                     color: Nexa.Theme.primary
                                     font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: 12
+                                    font.pixelSize: 11
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
-
                                 Text {
                                     text: root.locationText()
                                     color: locationMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
                                     font.family: Nexa.Theme.fontFamily
                                     font.pixelSize: 11
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
-
                                 Text {
                                     text: root.locationEditorOpen ? "󰅃" : "󰅀"
                                     color: Nexa.Theme.mutedText
                                     font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: 10
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
                             }
 
-
                             MouseArea {
                                 id: locationMouse
-
                                 anchors.fill: parent
-
                                 hoverEnabled: true
-
-                                cursorShape:
-                                    Qt.PointingHandCursor
-
-                                onClicked:
-                                    root.locationEditorOpen =
-                                        !root.locationEditorOpen
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.locationEditorOpen = !root.locationEditorOpen
                             }
                         }
                     }
                 }
-            }
 
+                // ── Thin divider ─────────────────────────────────
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: Nexa.Theme.divider
+                }
 
-            // ====================================================
-            // DETAILS
-            // ====================================================
+                // ── Scrollable Details ───────────────────────────
+                Flickable {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    contentHeight: detailsCol.implicitHeight
+                    contentWidth: width
+                    boundsBehavior: Flickable.StopAtBounds
+                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                    Column {
+                        id: detailsCol
+                        width: parent.width
+                        spacing: 0
 
-                radius:
-                    Nexa.Theme.radiusLg
+                        // Helper component
+                        component DetailItem: Item {
+                            property string icon: ""
+                            property string label: ""
+                            property string value: ""
+                            property bool last: false
 
-                color:
-                    Nexa.Theme.cardBackground
+                            width: parent.width
+                            height: 28
 
-                border.width:
-                    Nexa.Theme.borderThin
+                            RowLayout {
+                                anchors.fill: parent
+                                spacing: 8
 
-                border.color:
-                    Nexa.Theme.border
+                                Text {
+                                    Layout.preferredWidth: 20
+                                    text: parent.parent.icon
+                                    color: Nexa.Theme.primary
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                    horizontalAlignment: Text.AlignHCenter
+                                }
 
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: parent.parent.label
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    elide: Text.ElideRight
+                                }
 
-                ColumnLayout {
-                    anchors.fill: parent
+                                Text {
+                                    text: parent.parent.value
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                            }
 
-                    anchors.margins:
-                        Nexa.Theme.spacingMd
+                            Rectangle {
+                                visible: !parent.last
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                height: 1
+                                color: Nexa.Theme.divider
+                            }
+                        }
 
-                    spacing: 0
-
-
-                    WeatherDetailRow {
-                        icon: "󰔄"
-                        label: "Temperature Min"
-
-                        value:
-                            root.hasWeather
-                            ? root.temperature(
-                                root.weatherData.details.temperature_min
-                            )
-                            : "--"
-                    }
-
-
-                    WeatherDetailRow {
-                        icon: "󰔅"
-                        label: "Temperature Max"
-
-                        value:
-                            root.hasWeather
-                            ? root.temperature(
-                                root.weatherData.details.temperature_max
-                            )
-                            : "--"
-                    }
-
-
-                    WeatherDetailRow {
-                        icon: "󰖝"
-                        label: "Wind"
-
-                        value:
-                            root.hasWeather
-                            ? (
-                                root.numberText(
-                                    root.weatherData.details.wind_speed
-                                )
-                                + " km/h "
-                                + root.weatherData.details.wind_direction
-                            )
-                            : "--"
-                    }
-
-
-                    WeatherDetailRow {
-                        icon: "󰖛"
-                        label: "Sunrise"
-
-                        value:
-                            root.hasWeather
-                            ? root.weatherData.details.sunrise
-                            : "--"
-                    }
-
-
-                    WeatherDetailRow {
-                        icon: "󰖚"
-                        label: "Sunset"
-
-                        value:
-                            root.hasWeather
-                            ? root.weatherData.details.sunset
-                            : "--"
-                    }
-
-
-                    WeatherDetailRow {
-                        icon: "󰓁"
-                        label: "Elevation"
-
-                        value:
-                            root.hasWeather
-                            ? (
-                                root.numberText(
-                                    root.weatherData.details.elevation
-                                )
-                                + " m"
-                            )
-                            : "--"
-                    }
-
-
-                    WeatherDetailRow {
-                        icon: "󰖨"
-                        label: "UV Index"
-
-                        value:
-                            root.hasWeather
-                            ? Number(
-                                root.weatherData.details.uv_index
-                            ).toFixed(1)
-                            : "--"
-                    }
-
-
-                    WeatherDetailRow {
-                        icon: "󰥔"
-                        label: "Timezone"
-
-                        value:
-                            root.hasWeather
-                            ? root.weatherData.details.timezone_abbreviation
-                            : "--"
-
-                        separatorVisible:
-                            false
+                        DetailItem {
+                            icon: "󰔄"
+                            label: "Temperature Min"
+                            value: root.hasWeather ? root.temperature(root.weatherData.details.temperature_min) : "--"
+                        }
+                        DetailItem {
+                            icon: "󰔅"
+                            label: "Temperature Max"
+                            value: root.hasWeather ? root.temperature(root.weatherData.details.temperature_max) : "--"
+                        }
+                        DetailItem {
+                            icon: "󰖝"
+                            label: "Wind"
+                            value: root.hasWeather ? (root.numberText(root.weatherData.details.wind_speed) + " km/h " + root.weatherData.details.wind_direction) : "--"
+                        }
+                        DetailItem {
+                            icon: "󰖛"
+                            label: "Sunrise"
+                            value: root.hasWeather ? root.weatherData.details.sunrise : "--"
+                        }
+                        DetailItem {
+                            icon: "󰖚"
+                            label: "Sunset"
+                            value: root.hasWeather ? root.weatherData.details.sunset : "--"
+                        }
+                        DetailItem {
+                            icon: "󰓁"
+                            label: "Elevation"
+                            value: root.hasWeather ? (root.numberText(root.weatherData.details.elevation) + " m") : "--"
+                        }
+                        DetailItem {
+                            icon: "󰖨"
+                            label: "UV Index"
+                            value: root.hasWeather ? Number(root.weatherData.details.uv_index).toFixed(1) : "--"
+                        }
+                        DetailItem {
+                            icon: "󰥔"
+                            label: "Timezone"
+                            value: root.hasWeather ? root.weatherData.details.timezone_abbreviation : "--"
+                            last: true
+                        }
                     }
                 }
             }
@@ -875,53 +738,32 @@ Item {
 
 
         // ========================================================
-        // FORECAST CARD
+        // RIGHT HALF — Forecast (scrollable)
         // ========================================================
-
         Rectangle {
-            Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.fillWidth: true
 
+            radius: Nexa.Theme.radiusLg
+            color: Nexa.Theme.cardBackground
+            border.width: Nexa.Theme.borderThin
+            border.color: Nexa.Theme.border
             clip: true
-
-            radius:
-                Nexa.Theme.radiusLg
-
-            color:
-                Nexa.Theme.cardBackground
-
-            border.width:
-                Nexa.Theme.borderThin
-
-            border.color:
-                Nexa.Theme.border
-
 
             ColumnLayout {
                 anchors.fill: parent
+                anchors.margins: 12
+                spacing: 8
 
-                anchors.margins:
-                    Nexa.Theme.spacingMd
-
-                spacing:
-                    Nexa.Theme.spacingSm
-
-
-                // =================================================
-                // HEADER
-                // =================================================
-
+                // ── Forecast header: toggle + refresh ────────────
                 RowLayout {
                     Layout.fillWidth: true
+                    spacing: 8
 
-                    spacing:
-                        Nexa.Theme.spacingXs
-
-
+                    // Daily / Hourly pill toggle
                     Rectangle {
-                        Layout.preferredWidth: 140
-                        Layout.preferredHeight: 32
-
+                        width: 130
+                        height: 28
                         radius: Nexa.Theme.radiusSm
                         color: Nexa.Theme.surface
                         border.width: Nexa.Theme.borderThin
@@ -934,439 +776,250 @@ Item {
                             ForecastButton {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-
                                 text: "Daily"
                                 selected: root.forecastMode === 0
-
-                                onClicked:
-                                    root.forecastMode = 0
+                                onClicked: root.forecastMode = 0
                             }
-
                             ForecastButton {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-
                                 text: "Hourly"
                                 selected: root.forecastMode === 1
-
-                                onClicked:
-                                    root.forecastMode = 1
+                                onClicked: root.forecastMode = 1
                             }
                         }
                     }
 
+                    Item { Layout.fillWidth: true }
 
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-
+                    // Refresh button
                     Rectangle {
-                        Layout.preferredWidth:
-                            Nexa.Theme.controlHeightSm
-
-                        Layout.preferredHeight:
-                            Nexa.Theme.controlHeightSm
-
-                        radius:
-                            Nexa.Theme.radiusSm
-
-                        color:
-                            refreshMouse.containsMouse
-                            ? Nexa.Theme.hoverStrong
-                            : "transparent"
-
+                        width: 28
+                        height: 28
+                        radius: Nexa.Theme.radiusSm
+                        color: refreshMouse.containsMouse ? Nexa.Theme.hoverStrong : "transparent"
 
                         Text {
                             anchors.centerIn: parent
-
-                            text:
-                                "󰑐"
-
-                            color:
-                                root.loading
-                                ? Nexa.Theme.primary
-                                : Nexa.Theme.mutedText
-
-                            font.family:
-                                Nexa.Theme.iconFontFamily
-
-                            font.pixelSize:
-                                Nexa.Theme.iconSm
-
-                            rotation:
-                                root.loading
-                                ? 360
-                                : 0
-
+                            text: "󰑐"
+                            color: root.loading ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: Nexa.Theme.iconSm
+                            rotation: root.loading ? 360 : 0
 
                             Behavior on rotation {
-                                NumberAnimation {
-                                    duration:
-                                        Nexa.Theme.animationSlow
-
-                                    easing.type:
-                                        Nexa.Theme.easingStandard
-                                }
+                                NumberAnimation { duration: Nexa.Theme.animationSlow; easing.type: Nexa.Theme.easingStandard }
                             }
                         }
-
 
                         MouseArea {
                             id: refreshMouse
-
                             anchors.fill: parent
-
                             hoverEnabled: true
-
-                            cursorShape:
-                                Qt.PointingHandCursor
-
-                            onClicked:
-                                root.refreshWeather()
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.refreshWeather()
                         }
                     }
                 }
 
+                // ── Thin divider ─────────────────────────────────
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: Nexa.Theme.divider
+                }
 
-                // =================================================
-                // DAILY
-                // =================================================
-
-                ListView {
-                    id: dailyList
-
+                // ── Scrollable forecast list ──────────────────────
+                Flickable {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-
-                    visible:
-                        root.forecastMode === 0
-
                     clip: true
+                    contentHeight: forecastMode === 0 ? dailyCol.implicitHeight : hourlyCol.implicitHeight
+                    contentWidth: width
+                    boundsBehavior: Flickable.StopAtBounds
+                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-                    model:
-                        root.hasWeather
-                        ? root.weatherData.daily
-                        : []
+                    // DAILY
+                    Column {
+                        id: dailyCol
+                        width: parent.width
+                        visible: root.forecastMode === 0
+                        spacing: 0
 
+                        Repeater {
+                            model: root.hasWeather ? root.weatherData.daily : []
+                            delegate: Item {
+                                required property var modelData
+                                width: dailyCol.width
+                                height: 46
 
-                    delegate: Item {
-                        required property var modelData
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 2
+                                    anchors.rightMargin: 2
+                                    spacing: 8
 
-                        width:
-                            dailyList.width
+                                    // Day name
+                                    Text {
+                                        Layout.preferredWidth: 30
+                                        text: root.dayName(modelData.date)
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        font.weight: Font.Medium
+                                    }
 
-                        height: 62
+                                    // Icon
+                                    Text {
+                                        Layout.preferredWidth: 22
+                                        text: root.weatherIcon(modelData.icon)
+                                        color: Nexa.Theme.primary
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: Nexa.Theme.iconLg
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
 
+                                    // Condition description
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 1
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 2
-                            anchors.rightMargin: 2
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: root.temperature(modelData.min_temperature) + " / " + root.temperature(modelData.max_temperature)
+                                            color: Nexa.Theme.text
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: Nexa.Theme.fontSizeXs
+                                            font.weight: Font.Medium
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.condition
+                                            color: Nexa.Theme.mutedText
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: Nexa.Theme.fontSizeXs
+                                            elide: Text.ElideRight
+                                        }
+                                    }
 
-                            spacing: 4
-
-
-                            Text {
-                                Layout.preferredWidth: 26
-
-                                text:
-                                    root.dayName(
-                                        modelData.date
-                                    )
-
-                                color:
-                                    Nexa.Theme.mutedText
-
-                                font.family:
-                                    Nexa.Theme.fontFamily
-
-                                font.pixelSize:
-                                    Nexa.Theme.fontSizeXs
-                            }
-
-
-                            Text {
-                                Layout.preferredWidth: 24
-
-                                text:
-                                    root.weatherIcon(
-                                        modelData.icon
-                                    )
-
-                                color:
-                                    Nexa.Theme.primary
-
-                                font.family:
-                                    Nexa.Theme.iconFontFamily
-
-                                font.pixelSize:
-                                    Nexa.Theme.iconLg
-
-                                horizontalAlignment:
-                                    Text.AlignHCenter
-                            }
-
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: 0
-
-                                spacing: Nexa.Theme.spacing2Xs
-
-                                Text {
-                                    Layout.fillWidth: true
-
-                                    text:
-                                        root.temperature(modelData.min_temperature)
-                                        + " / "
-                                        + root.temperature(modelData.max_temperature)
-
-                                    color: Nexa.Theme.text
-
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeXs
-                                    font.weight: Nexa.Theme.fontWeightMedium
-
-                                    elide: Text.ElideRight
+                                    // Rain probability
+                                    Text {
+                                        Layout.preferredWidth: 34
+                                        text: Math.round(modelData.precipitation_probability) + "%"
+                                        horizontalAlignment: Text.AlignRight
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                    }
                                 }
 
-
-                                Text {
-                                    Layout.fillWidth: true
-
-                                    text:
-                                        modelData.condition
-
-                                    color:
-                                        Nexa.Theme.mutedText
-
-                                    font.family:
-                                        Nexa.Theme.fontFamily
-
-                                    font.pixelSize:
-                                        Nexa.Theme.fontSizeXs
-
-                                    elide:
-                                        Text.ElideRight
+                                // Divider
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.bottom: parent.bottom
+                                    height: 1
+                                    color: Nexa.Theme.divider
                                 }
                             }
-
-
-                            Text {
-                                Layout.preferredWidth: 28
-                                Layout.maximumWidth: 28
-
-                                text:
-                                    Math.round(modelData.precipitation_probability)
-                                    + "%"
-
-                                horizontalAlignment: Text.AlignRight
-
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
-                            }
-                        }
-
-
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.bottom: parent.bottom
-
-                            height: 1
-
-                            color:
-                                Nexa.Theme.divider
                         }
                     }
-                }
 
+                    // HOURLY
+                    Column {
+                        id: hourlyCol
+                        width: parent.width
+                        visible: root.forecastMode === 1
+                        spacing: 0
 
-                // =================================================
-                // HOURLY
-                // =================================================
+                        Repeater {
+                            model: root.hasWeather ? root.weatherData.hourly : []
+                            delegate: Item {
+                                required property var modelData
+                                width: hourlyCol.width
+                                height: 46
 
-                ListView {
-                    id: hourlyList
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 2
+                                    anchors.rightMargin: 2
+                                    spacing: 8
 
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                                    Text {
+                                        Layout.preferredWidth: 38
+                                        text: root.hourlyTime(modelData.time)
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                    }
 
-                    visible:
-                        root.forecastMode === 1
+                                    Text {
+                                        Layout.preferredWidth: 22
+                                        text: root.weatherIcon(modelData.icon)
+                                        color: Nexa.Theme.primary
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: Nexa.Theme.iconLg
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
 
-                    clip: true
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 1
 
-                    model:
-                        root.hasWeather
-                        ? root.weatherData.hourly
-                        : []
+                                        Text {
+                                            text: root.temperature(modelData.temperature)
+                                            color: Nexa.Theme.text
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: Nexa.Theme.fontSizeXs
+                                            font.weight: Font.Medium
+                                        }
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.condition
+                                            color: Nexa.Theme.mutedText
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: Nexa.Theme.fontSizeXs
+                                            elide: Text.ElideRight
+                                        }
+                                    }
 
-
-                    delegate: Item {
-                        required property var modelData
-
-                        width:
-                            hourlyList.width
-
-                        height: 60
-
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 2
-                            anchors.rightMargin: 2
-
-                            spacing: 4
-
-
-                            Text {
-                                Layout.preferredWidth: 34
-
-                                text:
-                                    root.hourlyTime(
-                                        modelData.time
-                                    )
-
-                                color:
-                                    Nexa.Theme.mutedText
-
-                                font.family:
-                                    Nexa.Theme.fontFamily
-
-                                font.pixelSize:
-                                    Nexa.Theme.fontSizeXs
-                            }
-
-
-                            Text {
-                                Layout.preferredWidth: 24
-
-                                text:
-                                    root.weatherIcon(
-                                        modelData.icon
-                                    )
-
-                                color:
-                                    Nexa.Theme.primary
-
-                                font.family:
-                                    Nexa.Theme.iconFontFamily
-
-                                font.pixelSize:
-                                    Nexa.Theme.iconLg
-
-                                horizontalAlignment:
-                                    Text.AlignHCenter
-                            }
-
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: 0
-
-                                spacing:
-                                    Nexa.Theme.spacing2Xs
-
-
-                                Text {
-                                    text:
-                                        root.temperature(
-                                            modelData.temperature
-                                        )
-
-                                    color:
-                                        Nexa.Theme.text
-
-                                    font.family:
-                                        Nexa.Theme.fontFamily
-
-                                    font.pixelSize:
-                                        Nexa.Theme.fontSizeSm
-
-                                    font.weight:
-                                        Nexa.Theme.fontWeightMedium
+                                    Text {
+                                        Layout.preferredWidth: 34
+                                        text: Math.round(modelData.precipitation_probability) + "%"
+                                        horizontalAlignment: Text.AlignRight
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                    }
                                 }
 
-
-                                Text {
-                                    Layout.fillWidth: true
-
-                                    text:
-                                        modelData.condition
-
-                                    color:
-                                        Nexa.Theme.mutedText
-
-                                    font.family:
-                                        Nexa.Theme.fontFamily
-
-                                    font.pixelSize:
-                                        Nexa.Theme.fontSizeXs
-
-                                    elide:
-                                        Text.ElideRight
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.bottom: parent.bottom
+                                    height: 1
+                                    color: Nexa.Theme.divider
                                 }
                             }
-
-
-                            Text {
-                                Layout.preferredWidth: 28
-                                Layout.maximumWidth: 28
-                                horizontalAlignment: Text.AlignRight
-
-                                text:
-                                    Math.round(modelData.precipitation_probability)
-                                    + "%"
-
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
-                            }
-                        }
-
-
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.bottom: parent.bottom
-
-                            height: 1
-
-                            color:
-                                Nexa.Theme.divider
                         }
                     }
-                }
 
-
-                Text {
-                    Layout.fillWidth: true
-
-                    visible:
-                        root.errorText !== ""
-
-                    text:
-                        root.errorText
-
-                    wrapMode:
-                        Text.Wrap
-
-                    color:
-                        Nexa.Theme.error
-
-                    font.family:
-                        Nexa.Theme.fontFamily
-
-                    font.pixelSize:
-                        Nexa.Theme.fontSizeXs
+                    // Error text
+                    Text {
+                        visible: root.errorText !== ""
+                        anchors.centerIn: parent
+                        text: root.errorText
+                        wrapMode: Text.Wrap
+                        width: parent.width
+                        color: Nexa.Theme.error
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeXs
+                    }
                 }
             }
         }
     }
-}
 
 
     // ============================================================
@@ -1744,9 +1397,9 @@ Item {
 
 
         Layout.fillWidth: true
-        Layout.preferredHeight: 34
-        Layout.minimumHeight: 34
-        Layout.maximumHeight: 34
+        Layout.preferredHeight: 30
+        Layout.minimumHeight: 30
+        Layout.maximumHeight: 30
 
 
         RowLayout {

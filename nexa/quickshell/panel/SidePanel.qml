@@ -2,6 +2,7 @@ import QtQuick
 
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 
 import "../theme" as Nexa
 
@@ -18,54 +19,15 @@ Scope {
 
 
     // ============================================================
-    // OUTSIDE CLICK AREA
-    //
-    // Starts BELOW the Top Bar.
-    // Therefore the Top Bar remains fully clickable.
+    // OUTSIDE CLICK (NATIVE HYPRLAND FOCUS GRAB)
     // ============================================================
 
-    PanelWindow {
-        id: outsideWindow
-
-        visible: root.panelOpen
-
-        anchors {
-            left: true
-            right: true
-            bottom: true
-        }
-
-        // Do NOT cover the Top Bar.
-        implicitHeight:
-            (screen ? screen.height : 1080) - Nexa.Theme.barHeight
-
-        color: "transparent"
-
-        exclusionMode: ExclusionMode.Ignore
-        aboveWindows: true
-
-
-        // Only catch clicks outside the Side Panel.
-        mask: Region {
-            x: 0
-            y: 0
-
-            width:
-                outsideWindow.width
-                - root.panelWidth
-                - root.edgeGap
-
-            height:
-                outsideWindow.height
-        }
-
-
-        MouseArea {
-            anchors.fill: parent
-
-            onClicked: {
-                root.panelOpen = false
-            }
+    HyprlandFocusGrab {
+        id: focusGrab
+        windows: [panelWindow]
+        active: root.panelOpen
+        onCleared: {
+            root.panelOpen = false
         }
     }
 

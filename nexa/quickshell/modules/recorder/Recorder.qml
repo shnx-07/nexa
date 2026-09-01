@@ -152,11 +152,16 @@ Item {
     // ============================================================
 
     Timer {
-        interval: 500
+        interval: 1000
         repeat: true
-        running: true
+        running: root.visible || root.recording
 
         onTriggered:
+            root.refreshStatus()
+    }
+
+    onVisibleChanged: {
+        if (root.visible)
             root.refreshStatus()
     }
 

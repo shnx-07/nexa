@@ -89,47 +89,40 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Nexa.Theme.spacingMd
-        spacing: Nexa.Theme.spacingMd
+        anchors.margins: 12
+        spacing: 8
 
         // ========================================================
-        // APPLE-STYLE HEADER
+        // SUBHEADER (Count, Unread badge, Clear All)
         // ========================================================
-
-        Rectangle {
+        RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 52
-            radius: 16
-            color: Nexa.Theme.surfaceContainer
-            border.width: Nexa.Theme.borderThin
-            border.color: Nexa.Theme.border
+            Layout.preferredHeight: 28
+            spacing: 8
 
+            // Count / Status
             RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: Nexa.Theme.spacingLg
-                anchors.rightMargin: Nexa.Theme.spacingLg
-                spacing: Nexa.Theme.spacingSm
+                spacing: 6
 
-                // Section Title
                 Text {
-                    text: "Notifications"
+                    text: root.totalCount > 0
+                        ? (root.totalCount + (root.totalCount === 1 ? " Notification" : " Notifications"))
+                        : ""
                     color: Nexa.Theme.text
                     font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeLg
+                    font.pixelSize: 13
                     font.weight: Nexa.Theme.fontWeightDemiBold
-                    Layout.alignment: Qt.AlignVCenter
                 }
 
-                // Unread Badge Capsule
+                // Unread Badge Pill
                 Rectangle {
                     visible: root.unreadCount > 0
-                    implicitHeight: 22
-                    implicitWidth: unreadBadgeText.implicitWidth + 14
-                    radius: 11
-                    color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.16)
+                    implicitHeight: 20
+                    implicitWidth: unreadBadgeText.implicitWidth + 12
+                    radius: 10
+                    color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.15)
                     border.width: 1
-                    border.color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.35)
-                    Layout.alignment: Qt.AlignVCenter
+                    border.color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.3)
 
                     Text {
                         id: unreadBadgeText
@@ -137,66 +130,61 @@ Item {
                         text: root.unreadCount + " new"
                         color: Nexa.Theme.primary
                         font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: 10
                         font.weight: Nexa.Theme.fontWeightBold
                     }
                 }
+            }
 
-                Item { Layout.fillWidth: true }
+            Item { Layout.fillWidth: true }
 
-                // Clear All Button (Apple-Style Glass Capsule)
-                Rectangle {
-                    id: clearBtn
-                    visible: root.totalCount > 0
-                    implicitHeight: 28
-                    implicitWidth: clearRow.implicitWidth + 16
-                    radius: 14
-                    color: clearMouse.pressed
-                           ? Nexa.Theme.surfaceContainerHighest
-                           : (clearMouse.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainerLow)
-                    border.width: Nexa.Theme.borderThin
-                    border.color: clearMouse.containsMouse ? Nexa.Theme.outline : Nexa.Theme.border
-                    scale: clearMouse.pressed ? 0.96 : (clearMouse.containsMouse ? 1.02 : 1.0)
-                    Layout.alignment: Qt.AlignVCenter
+            // Clear All Button (Sleek Glass Capsule)
+            Rectangle {
+                id: clearBtn
+                visible: root.totalCount > 0
+                implicitHeight: 26
+                implicitWidth: clearRow.implicitWidth + 16
+                radius: 13
+                color: clearMouse.pressed
+                       ? Nexa.Theme.hoverStrong
+                       : (clearMouse.containsMouse ? Nexa.Theme.hover : Nexa.Theme.cardBackgroundElevated)
+                border.width: Nexa.Theme.borderThin
+                border.color: clearMouse.containsMouse ? Nexa.Theme.outline : Nexa.Theme.border
 
-                    Behavior on color { ColorAnimation { duration: 120 } }
-                    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                Row {
+                    id: clearRow
+                    anchors.centerIn: parent
+                    spacing: 5
 
-                    Row {
-                        id: clearRow
-                        anchors.centerIn: parent
-                        spacing: 5
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "󰆴"
-                            color: clearMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.iconFontFamily
-                            font.pixelSize: 13
-                        }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Clear All"
-                            color: clearMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 12
-                            font.weight: Nexa.Theme.fontWeightMedium
-                        }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "󰆴"
+                        color: clearMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: 12
                     }
 
-                    MouseArea {
-                        id: clearMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            Quickshell.execDetached([
-                                "sh",
-                                "-c",
-                                "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications clear"
-                            ])
-                        }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Clear All"
+                        color: clearMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: 11
+                        font.weight: Nexa.Theme.fontWeightMedium
+                    }
+                }
+
+                MouseArea {
+                    id: clearMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        Quickshell.execDetached([
+                            "sh",
+                            "-c",
+                            "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications clear"
+                        ])
                     }
                 }
             }
@@ -205,7 +193,6 @@ Item {
         // ========================================================
         // EMPTY STATE (Apple Minimalist Aesthetic)
         // ========================================================
-
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -213,14 +200,13 @@ Item {
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 12
+                spacing: 10
 
-                // Ambient glowing bell icon container
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
-                    implicitWidth: 68
-                    implicitHeight: 68
-                    radius: 34
+                    implicitWidth: 56
+                    implicitHeight: 56
+                    radius: 28
                     color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.08)
                     border.width: 1
                     border.color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.2)
@@ -230,7 +216,7 @@ Item {
                         text: "󰂚"
                         color: Nexa.Theme.primary
                         font.family: Nexa.Theme.iconFontFamily
-                        font.pixelSize: 30
+                        font.pixelSize: 26
                     }
                 }
 
@@ -239,7 +225,7 @@ Item {
                     text: "No Notifications"
                     color: Nexa.Theme.text
                     font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: 16
+                    font.pixelSize: 15
                     font.weight: Nexa.Theme.fontWeightDemiBold
                 }
 
@@ -248,290 +234,276 @@ Item {
                     text: "You're completely caught up"
                     color: Nexa.Theme.mutedText
                     font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: 13
+                    font.pixelSize: 12
                 }
             }
         }
 
         // ========================================================
-        // NOTIFICATION LIST (Apple Frosted Glass Cards)
+        // 2-COLUMN NOTIFICATION GRID (Widescreen Island Layout)
         // ========================================================
-
-        ListView {
-            id: notificationList
-
+        Flickable {
+            id: notificationFlickable
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: root.totalCount > 0
             clip: true
-            spacing: 10
-            model: root.notificationListModel
-
+            contentWidth: width
+            contentHeight: cardsGrid.implicitHeight + 8
             boundsBehavior: Flickable.StopAtBounds
-            flickDeceleration: Nexa.Theme.flickDeceleration
-            maximumFlickVelocity: Nexa.Theme.flickVelocityMax
+            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-            delegate: Rectangle {
-                id: cardRoot
-                required property var modelData
+            Grid {
+                id: cardsGrid
+                width: notificationFlickable.width
+                columns: 2
+                columnSpacing: 10
+                rowSpacing: 10
 
-                width: notificationList.width
-                implicitHeight: cardCol.implicitHeight + 28
-                radius: 16
-                color: cardMouse.containsMouse
-                       ? Nexa.Theme.surfaceContainerHigh
-                       : Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: !cardRoot.modelData.read
-                              ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.4)
-                              : (cardMouse.containsMouse ? Nexa.Theme.outline : Nexa.Theme.border)
-                scale: cardMouse.pressed ? 0.985 : (cardMouse.containsMouse ? 1.008 : 1.0)
+                Repeater {
+                    model: root.notificationListModel
 
-                Behavior on color { ColorAnimation { duration: 140 } }
-                Behavior on border.color { ColorAnimation { duration: 140 } }
-                Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+                    delegate: Rectangle {
+                        id: cardRoot
+                        required property var modelData
 
-                // ------------------------------------------------
-                // UNREAD ACCENT PILL (Apple-Style Left Indicator)
-                // ------------------------------------------------
-                Rectangle {
-                    visible: !cardRoot.modelData.read
-                    width: 4
-                    height: 28
-                    radius: 2
-                    color: Nexa.Theme.primary
-                    anchors {
-                        left: parent.left
-                        leftMargin: 5
-                        verticalCenter: parent.verticalCenter
-                    }
-                }
+                        width: (cardsGrid.width - cardsGrid.columnSpacing) / 2
+                        implicitHeight: Math.max(76, cardCol.implicitHeight + 20)
+                        radius: Nexa.Theme.radiusMd
+                        color: cardMouse.containsMouse
+                               ? Nexa.Theme.cardBackgroundElevated
+                               : Nexa.Theme.cardBackground
+                        border.width: Nexa.Theme.borderThin
+                        border.color: !cardRoot.modelData.read
+                                      ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.45)
+                                      : (cardMouse.containsMouse ? Nexa.Theme.outline : Nexa.Theme.border)
+                        scale: cardMouse.pressed ? 0.985 : (cardMouse.containsMouse ? 1.008 : 1.0)
 
-                // ------------------------------------------------
-                // CARD CONTENT
-                // ------------------------------------------------
-                ColumnLayout {
-                    id: cardCol
-                    anchors {
-                        left: parent.left
-                        right: parent.right
-                        top: parent.top
-                        leftMargin: cardRoot.modelData.read ? 16 : 18
-                        rightMargin: 14
-                        topMargin: 14
-                    }
-                    spacing: 6
+                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on border.color { ColorAnimation { duration: 120 } }
+                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
-                    // =============================================
-                    // TOP METADATA ROW: Icon + App + Time + Dismiss
-                    // =============================================
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        // App Icon Squircle
+                        // Left Accent Pill for Unread
                         Rectangle {
-                            implicitWidth: 22
-                            implicitHeight: 22
-                            radius: 6
-                            color: Nexa.Theme.surfaceContainerHighest
-                            clip: true
-                            Layout.alignment: Qt.AlignVCenter
-
-                            Image {
-                                id: appImage
-                                anchors.fill: parent
-                                anchors.margins: 2
-                                visible: source.toString().length > 0
-                                source: root.iconSource(cardRoot.modelData.appIcon || "")
-                                fillMode: Image.PreserveAspectFit
-                                asynchronous: true
-                                smooth: true
-                            }
-
-                            Text {
-                                anchors.centerIn: parent
-                                visible: !appImage.visible
-                                text: "󰂚"
-                                color: Nexa.Theme.primary
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 11
+                            visible: !cardRoot.modelData.read
+                            width: 3
+                            height: 24
+                            radius: 1.5
+                            color: Nexa.Theme.primary
+                            anchors {
+                                left: parent.left
+                                leftMargin: 4
+                                verticalCenter: parent.verticalCenter
                             }
                         }
 
-                        // App Name
-                        Text {
-                            text: (cardRoot.modelData.appName || "Notification").toUpperCase()
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 10
-                            font.weight: Nexa.Theme.fontWeightBold
-                            font.letterSpacing: 0.5
-                            elide: Text.ElideRight
-                            Layout.alignment: Qt.AlignVCenter
-                        }
-
-                        // Middle Dot
-                        Text {
-                            text: "•"
-                            color: Nexa.Theme.mutedText
-                            font.pixelSize: 10
-                            opacity: 0.6
-                            Layout.alignment: Qt.AlignVCenter
-                        }
-
-                        // Timestamp
-                        Text {
-                            text: root.formatTimestamp(cardRoot.modelData.timestamp)
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 11
-                            Layout.alignment: Qt.AlignVCenter
-                        }
-
-                        Item { Layout.fillWidth: true }
-
-                        // Apple-Style Circular Micro Dismiss Button
-                        Rectangle {
-                            id: dismissBtn
-                            implicitWidth: 22
-                            implicitHeight: 22
-                            radius: 11
-                            color: dismissMouse.pressed
-                                   ? Nexa.Theme.surfaceContainerHighest
-                                   : (dismissMouse.containsMouse ? Nexa.Theme.surfaceContainerHighest : "transparent")
-                            border.width: dismissMouse.containsMouse ? 1 : 0
-                            border.color: Nexa.Theme.border
-                            scale: dismissMouse.pressed ? 0.9 : 1.0
-
-                            Behavior on color { ColorAnimation { duration: 100 } }
-                            Behavior on scale { NumberAnimation { duration: 100 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰅖"
-                                color: dismissMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 11
+                        ColumnLayout {
+                            id: cardCol
+                            anchors {
+                                left: parent.left
+                                right: parent.right
+                                top: parent.top
+                                leftMargin: cardRoot.modelData.read ? 12 : 14
+                                rightMargin: 10
+                                topMargin: 10
                             }
+                            spacing: 4
 
-                            MouseArea {
-                                id: dismissMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    Quickshell.execDetached([
-                                        "sh",
-                                        "-c",
-                                        "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications dismiss "
-                                            + cardRoot.modelData.id
-                                    ])
+                            // Top Metadata Row: Icon + App Name + Time + Dismiss Button
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+
+                                // App Icon Squircle
+                                Rectangle {
+                                    implicitWidth: 18
+                                    implicitHeight: 18
+                                    radius: 5
+                                    color: Nexa.Theme.surfaceContainerHighest
+                                    clip: true
+                                    Layout.alignment: Qt.AlignVCenter
+
+                                    Image {
+                                        id: appImage
+                                        anchors.fill: parent
+                                        anchors.margins: 1
+                                        visible: source.toString().length > 0
+                                        source: root.iconSource(cardRoot.modelData.appIcon || "")
+                                        fillMode: Image.PreserveAspectFit
+                                        asynchronous: true
+                                        smooth: true
+                                    }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: !appImage.visible
+                                        text: "󰂚"
+                                        color: Nexa.Theme.primary
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: 10
+                                    }
                                 }
-                            }
-                        }
-                    }
 
-                    // =============================================
-                    // SUMMARY / TITLE
-                    // =============================================
-                    Text {
-                        Layout.fillWidth: true
-                        visible: text.length > 0
-                        text: cardRoot.modelData.summary || ""
-                        color: Nexa.Theme.text
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 14
-                        font.weight: Nexa.Theme.fontWeightDemiBold
-                    }
-
-                    // =============================================
-                    // BODY
-                    // =============================================
-                    Text {
-                        Layout.fillWidth: true
-                        visible: text.length > 0
-                        text: cardRoot.modelData.body || ""
-                        color: Nexa.Theme.mutedText
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 3
-                        elide: Text.ElideRight
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 12
-                        lineHeight: 1.15
-                    }
-
-                    // =============================================
-                    // ACTION BUTTONS (Apple Pill Buttons)
-                    // =============================================
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 4
-                        visible: cardRoot.modelData.actions && cardRoot.modelData.actions.length > 0
-                        spacing: 8
-
-                        Repeater {
-                            model: cardRoot.modelData.actions || []
-
-                            delegate: Rectangle {
-                                id: actionPill
-                                required property var modelData
-
-                                implicitHeight: 28
-                                implicitWidth: actionLabel.implicitWidth + 20
-                                radius: 8
-                                color: actionMouse.pressed
-                                       ? Nexa.Theme.surfaceContainerHighest
-                                       : (actionMouse.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainerLow)
-                                border.width: Nexa.Theme.borderThin
-                                border.color: Nexa.Theme.border
-                                scale: actionMouse.pressed ? 0.96 : (actionMouse.containsMouse ? 1.02 : 1.0)
-
-                                Behavior on color { ColorAnimation { duration: 100 } }
-                                Behavior on scale { NumberAnimation { duration: 100 } }
-
+                                // App Name
                                 Text {
-                                    id: actionLabel
-                                    anchors.centerIn: parent
-                                    text: actionPill.modelData.label || ""
-                                    color: Nexa.Theme.text
+                                    text: (cardRoot.modelData.appName || "Notification").toUpperCase()
+                                    color: Nexa.Theme.mutedText
                                     font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: 12
-                                    font.weight: Nexa.Theme.fontWeightMedium
+                                    font.pixelSize: 9
+                                    font.weight: Nexa.Theme.fontWeightBold
+                                    font.letterSpacing: 0.5
+                                    elide: Text.ElideRight
+                                    Layout.alignment: Qt.AlignVCenter
                                 }
 
-                                MouseArea {
-                                    id: actionMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        Quickshell.execDetached([
-                                            "sh",
-                                            "-c",
-                                            "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications action "
-                                                + cardRoot.modelData.id
-                                                + " "
-                                                + "\"" + actionPill.modelData.key + "\""
-                                        ])
+                                // Dot
+                                Text {
+                                    text: "•"
+                                    color: Nexa.Theme.mutedText
+                                    font.pixelSize: 9
+                                    opacity: 0.5
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+
+                                // Timestamp
+                                Text {
+                                    text: root.formatTimestamp(cardRoot.modelData.timestamp)
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 10
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                // Dismiss Button (Micro Glass Circle)
+                                Rectangle {
+                                    id: dismissBtn
+                                    implicitWidth: 18
+                                    implicitHeight: 18
+                                    radius: 9
+                                    color: dismissMouse.pressed
+                                           ? Nexa.Theme.hoverStrong
+                                           : (dismissMouse.containsMouse ? Nexa.Theme.hover : "transparent")
+                                    border.width: dismissMouse.containsMouse ? 1 : 0
+                                    border.color: Nexa.Theme.border
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰅖"
+                                        color: dismissMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: 10
+                                    }
+
+                                    MouseArea {
+                                        id: dismissMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            Quickshell.execDetached([
+                                                "sh",
+                                                "-c",
+                                                "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications dismiss "
+                                                    + cardRoot.modelData.id
+                                            ])
+                                        }
                                     }
                                 }
                             }
+
+                            // Summary / Title
+                            Text {
+                                Layout.fillWidth: true
+                                visible: text.length > 0
+                                text: cardRoot.modelData.summary || ""
+                                color: Nexa.Theme.text
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 1
+                                elide: Text.ElideRight
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 13
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                            }
+
+                            // Body Text
+                            Text {
+                                Layout.fillWidth: true
+                                visible: text.length > 0
+                                text: cardRoot.modelData.body || ""
+                                color: Nexa.Theme.mutedText
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 11
+                                lineHeight: 1.15
+                            }
+
+                            // Action Buttons (if any)
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Layout.topMargin: 2
+                                visible: cardRoot.modelData.actions && cardRoot.modelData.actions.length > 0
+                                spacing: 6
+
+                                Repeater {
+                                    model: cardRoot.modelData.actions || []
+
+                                    delegate: Rectangle {
+                                        id: actionPill
+                                        required property var modelData
+
+                                        implicitHeight: 22
+                                        implicitWidth: actionLabel.implicitWidth + 14
+                                        radius: 6
+                                        color: actionMouse.pressed
+                                               ? Nexa.Theme.hoverStrong
+                                               : (actionMouse.containsMouse ? Nexa.Theme.hover : Nexa.Theme.surfaceContainerLow)
+                                        border.width: Nexa.Theme.borderThin
+                                        border.color: Nexa.Theme.border
+
+                                        Text {
+                                            id: actionLabel
+                                            anchors.centerIn: parent
+                                            text: actionPill.modelData.label || ""
+                                            color: Nexa.Theme.text
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: 11
+                                            font.weight: Nexa.Theme.fontWeightMedium
+                                        }
+
+                                        MouseArea {
+                                            id: actionMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                Quickshell.execDetached([
+                                                    "sh",
+                                                    "-c",
+                                                    "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications action "
+                                                        + cardRoot.modelData.id
+                                                        + " \"" + actionPill.modelData.key + "\""
+                                                ])
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Item { Layout.fillWidth: true }
+                            }
                         }
 
-                        Item { Layout.fillWidth: true }
+                        // Interactive Card MouseArea
+                        MouseArea {
+                            id: cardMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            z: -1
+                        }
                     }
-                }
-
-                // Interactive Card MouseArea for hover lift
-                MouseArea {
-                    id: cardMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    z: -1 // Behind buttons
                 }
             }
         }
@@ -544,6 +516,6 @@ Item {
         interval: 60000
         repeat: true
         running: true
-        onTriggered: notificationList.forceLayout()
+        onTriggered: root.loadState()
     }
 }

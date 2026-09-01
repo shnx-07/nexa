@@ -6,7 +6,6 @@ import "bar"
 import "island"
 import "modules/clipboard" as Clipboard
 import "modules/lockscreen" as LockScreenModule
-import "panel" as Panel
 import "modules/workspace" as WorkspaceModule
 ShellRoot {
 
@@ -44,8 +43,6 @@ ShellRoot {
     TopBar {}
 
     Island {}
-
-    Panel.SidePanel {}
 
     Wallpaper.WallpaperView {
         id: wallpaperView

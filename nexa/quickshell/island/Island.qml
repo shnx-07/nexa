@@ -152,6 +152,13 @@ PanelWindow {
     readonly property int powerHeight: 144
 
     // ============================================================
+    // CONTROL CENTER DIMENSIONS
+    // ============================================================
+
+    readonly property int controlCenterWidth: 760
+    readonly property int controlCenterHeight: 460
+
+    // ============================================================
     // OSD DIMENSIONS (UNIQUE SIZES PER NOTIFICATION TYPE)
     // ============================================================
 
@@ -639,7 +646,7 @@ PanelWindow {
     }
 
     property string specialMode: "none"
-    // none | search | command | power | appLauncher
+    // none | search | command | power | appLauncher | controlCenter
 
     readonly property bool specialModeActive:
         specialMode !== "none"
@@ -743,6 +750,40 @@ PanelWindow {
                 islandFocus.forceActiveFocus()
             }
         }
+
+        function openControlCenter(page: int): void {
+            root.specialMode = "controlCenter"
+            root.full = true
+            root.hovered = false
+            if (page !== undefined && page >= 0) {
+                islandContent.setControlCenterPage(page)
+            }
+            islandFocus.forceActiveFocus()
+        }
+
+        function toggleControlCenter(): void {
+            if (root.specialMode === "controlCenter") {
+                root.closeIsland()
+            } else {
+                root.specialMode = "controlCenter"
+                root.full = true
+                root.hovered = false
+                islandFocus.forceActiveFocus()
+            }
+        }
+
+        function openNotifications(): void {
+            root.openControlCenter(1)
+            Quickshell.execDetached([
+                Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+                "notifications",
+                "read-all"
+            ])
+        }
+
+        function openQuickSettings(): void {
+            root.openControlCenter(0)
+        }
     }
 
     IpcHandler {
@@ -774,6 +815,56 @@ PanelWindow {
         }
     }
 
+    IpcHandler {
+        target: "controlCenter"
+
+        function open(): void {
+            root.openControlCenter(0)
+        }
+
+        function close(): void {
+            if (root.specialMode === "controlCenter")
+                root.closeIsland()
+        }
+
+        function toggle(): void {
+            root.toggleControlCenter()
+        }
+
+        function openNotifications(): void {
+            root.openNotifications()
+        }
+
+        function openQuickSettings(): void {
+            root.openQuickSettings()
+        }
+    }
+
+    IpcHandler {
+        target: "sidePanel"
+
+        function toggle(): void {
+            root.toggleControlCenter()
+        }
+
+        function open(): void {
+            root.openControlCenter(0)
+        }
+
+        function close(): void {
+            if (root.specialMode === "controlCenter")
+                root.closeIsland()
+        }
+
+        function openNotifications(): void {
+            root.openNotifications()
+        }
+
+        function openQuickSettings(): void {
+            root.openQuickSettings()
+        }
+    }
+
 
     // ============================================================
     // CONTENT-DERIVED STATE
@@ -801,6 +892,9 @@ PanelWindow {
 
         if (root.specialMode === "power")
             return root.powerWidth
+
+        if (root.specialMode === "controlCenter")
+            return root.controlCenterWidth
 
         if (root.full || root.specialModeActive)
             return root.fullWidth
@@ -845,6 +939,9 @@ PanelWindow {
 
         if (root.specialMode === "power")
             return root.powerHeight
+
+        if (root.specialMode === "controlCenter")
+            return root.controlCenterHeight
 
         if (root.full || root.specialModeActive)
             return root.fullHeight

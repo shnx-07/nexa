@@ -111,19 +111,28 @@ bash ~/.config/nexa/scripts/nexa-restart.sh
 ### 🌟 Top Bar & Dynamic Island
 * **Live Workspaces:** Dynamic pill indicator with smooth sliding animation and active window tracking.
 * **Dynamic Island:** Interactive notch supporting Clock, Calendar, Stopwatch, Media player, Theme switcher, System Monitor, Audio visualizer, and Notification banners.
+* **Integrated Control Center:** Sleek widescreen (`760px × 460px`) hub built directly into the Dynamic Island with tabbed navigation:
+  * **Controls (Quick Settings):** Dual-column layout featuring Output sink selector chip, per-app audio volume mixer, sound-reactive Microphone input with click-to-mute, Display Brightness & Night Light (with 3-mode switcher), Screen Filters, and unified 2×2 Connectivity & Actions grids.
+  * **Alerts:** Notification center with instant dismissal and history.
+  * **Weather:** Dual-card 50/50 layout with current conditions, scrollable atmospheric metrics, and Daily/Hourly forecast views.
+  * **Profile:** User account overview and system details.
 * **On-Screen Display (OSD):** Zero-latency hardware feedback popups directly in the Dynamic Island with tailored dimensions:
   * **Master Volume:** `320px` × `48px` capsule gauge with dynamic speaker icon (`F2` / `F3`)
   * **Audio Output Mute:** `240px` × `44px` status pill with volume readout (`F1`)
   * **Microphone Mute:** `240px` × `44px` status pill with mic input indicator (`F4`)
   * **Display Brightness:** `320px` × `48px` capsule gauge with amber sun indicator (`F5` / `F6`)
   * **Airplane Mode:** `260px` × `46px` quick toggle indicator (`F8`)
-* **Status Cluster:** Wi-Fi, Bluetooth, Battery, Side Panel toggle, and Power menu.
+* **Status Cluster:** Wi-Fi, Bluetooth, Battery, and Power menu.
 
 ### ⚙️ Quick Settings & Audio Control
-* **Modern Capsule Sliders:** Sleek volume, brightness, and screen temperature (`hyprsunset`) sliders with scroll-hijacking protection.
-* **PipeWire Audio Sink Switcher:** Real-time dropdown to switch audio outputs without opening pavucontrol.
-* **Microphone Sound Reactivity:** Live microphone audio meter showing real-time input levels.
-* **Weather Widget:** Current weather with an interactive location modal, search autofocus, click-outside dismissal, and Escape key handling.
+* **Dual-Column Widescreen Layout:** Left column dedicated to Audio, Display, and Screen Filters; right column features 2×2 Connectivity and Quick Actions grids.
+* **Modern Capsule Sliders:** Sleek, proportional volume, mic, brightness, and color temperature sliders with scroll-hijacking protection.
+* **PipeWire Audio Sink Switcher:** Real-time dropdown to switch active audio output sinks on the fly.
+* **Per-App Volume Mixer:** Expandable stream controller with individual app volume sliders and mute toggles.
+* **Microphone Sound Reactivity:** Live microphone audio meter showing real-time input levels with one-click mute/unmute.
+* **Night Light & Screen Temperature:** Dual-mode color tuning (`hyprsunset`) with 3-mode switcher (`Manual`, `Wallpaper`, `Night`).
+* **Screen Shaders / Filters:** Live toggle and selector for display shader filters.
+* **Dual-Column Weather Center:** 50/50 split layout featuring current conditions, detailed scrollable atmospheric metrics, and Daily/Hourly forecasts with rain probability.
 
 ### 📱 Modern App Launcher
 * High-density 2-column grid layout with fluid spring entrance motion.
@@ -155,6 +164,10 @@ bash ~/.config/nexa/scripts/nexa-restart.sh
 Add these bindings to your Hyprland configuration (`hyprland.conf` or `binds.lua`):
 
 ```ini
+# Dynamic Island Control Center & Notifications
+bind = SUPER, C, exec, qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleControlCenter
+bind = SUPER, N, exec, qs -p ~/.config/nexa/quickshell ipc call nexaIsland openNotifications
+
 # App Launcher
 bind = SUPER, A, exec, qs -p ~/.config/nexa/quickshell ipc call appLauncher toggle
 

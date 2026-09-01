@@ -140,14 +140,18 @@ Item {
 
 
     Timer {
-        interval: 3000
+        interval: 3500
         repeat: true
-        running: true
+        running: root.visible
 
         onTriggered:
             root.refresh()
     }
 
+    onVisibleChanged: {
+        if (root.visible)
+            root.refresh()
+    }
 
     Component.onCompleted:
         root.refresh()

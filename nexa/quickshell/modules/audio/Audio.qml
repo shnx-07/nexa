@@ -567,11 +567,19 @@ Item {
     // ============================================================
 
     Timer {
-        interval: 1000
+        interval: 2000
         repeat: true
-        running: true
+        running: root.visible
 
         onTriggered: {
+            root.refresh()
+            root.refreshInput()
+            root.refreshSinks()
+        }
+    }
+
+    onVisibleChanged: {
+        if (root.visible) {
             root.refresh()
             root.refreshInput()
             root.refreshSinks()

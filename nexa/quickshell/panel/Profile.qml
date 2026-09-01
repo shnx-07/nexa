@@ -11,272 +11,230 @@ Item {
     id: root
 
     property string wallpaperPath: ""
+    property string lockWallpaperPath: ""
     property string userName: ""
     property string hostName: ""
     property string uptimeText: ""
+    property string osInfo: ""
 
 
     // ============================================================
-    // PAGE HEADER
+    // MAIN LAYOUT (1:3 Split for Profile / Lockscreen & Wallpaper)
     // ============================================================
 
-    Rectangle {
-        id: pageHeader
+    RowLayout {
+        anchors.fill: parent
+        anchors.margins: 12
+        spacing: 12
 
-        anchors {
-            top: parent.top
-            left: parent.left
-            right: parent.right
-
-            topMargin: Nexa.Theme.spacingLg
-            leftMargin: Nexa.Theme.spacingLg
-            rightMargin: Nexa.Theme.spacingLg
-        }
-
-        height: profileHeaderRow.implicitHeight + Nexa.Theme.spacingMd * 2
-
-        color: Nexa.Theme.panelBackgroundElevated
-        radius: Nexa.Theme.radiusXl
-
-        // Flatten bottom edge
-        Rectangle {
-            anchors {
-                left: parent.left
-                right: parent.right
-                bottom: parent.bottom
-            }
-            height: parent.radius
-            color: parent.color
-        }
-
-        border {
-            width: Nexa.Theme.borderThin
-            color: Nexa.Theme.divider
-        }
-
-        RowLayout {
-            id: profileHeaderRow
-
-            anchors {
-                left: parent.left
-                right: parent.right
-                verticalCenter: parent.verticalCenter
-                leftMargin: Nexa.Theme.spacingLg
-                rightMargin: Nexa.Theme.spacingMd
-            }
-
-            spacing: Nexa.Theme.spacingSm
-
-            Text {
-                text: ""
-                color: Nexa.Theme.primary
-                font {
-                    family: Nexa.Theme.iconFontFamily
-                    pixelSize: Nexa.Theme.iconMd
-                }
-            }
-
-            Text {
-                text: "Profile"
-                color: Nexa.Theme.text
-                font {
-                    family: Nexa.Theme.fontFamily
-                    pixelSize: Nexa.Theme.fontSizeXl
-                    weight: Nexa.Theme.fontWeightDemiBold
-                }
-            }
-
-            Item { Layout.fillWidth: true }
-        }
-    }
-
-
-    // ============================================================
-    // WALLPAPER / PROFILE INFO
-    // ============================================================
-
-    Rectangle {
-        id: profileHeader
-
-        anchors {
-            top: pageHeader.bottom
-            bottom: parent.bottom
-            left: parent.left
-            right: parent.right
-
-            topMargin:
-                Nexa.Theme.spacingMd
-
-            bottomMargin:
-                Nexa.Theme.spacingLg
-
-            leftMargin:
-                Nexa.Theme.spacingLg
-
-            rightMargin:
-                Nexa.Theme.spacingLg
-        }
-
-        radius:
-            Nexa.Theme.radiusLg
-
-        color:
-            Nexa.Theme.panelBackground
-
-        clip: true
-
-        layer.enabled: true
-        layer.effect: OpacityMask {
-            maskSource: Rectangle {
-                width: profileHeader.width
-                height: profileHeader.height
-                radius: Nexa.Theme.radiusLg
-            }
-        }
-
-
-        // --------------------------------------------------------
-        // WALLPAPER
-        // --------------------------------------------------------
-
-        Image {
-            id: wallpaperImage
-
-            anchors.fill: parent
-
-            sourceSize.width: 600
-            sourceSize.height: 300
-
-            source:
-                root.wallpaperPath !== ""
-                ? "file://" + root.wallpaperPath
-                : ""
-
-            fillMode:
-                Image.PreserveAspectCrop
-
-            horizontalAlignment:
-                Image.AlignHCenter
-
-            verticalAlignment:
-                Image.AlignVCenter
-
-            asynchronous: true
-            cache: false
-            smooth: true
-        }
-
-
-        // --------------------------------------------------------
-        // DARK OVERLAY
-        // --------------------------------------------------------
+        // ========================================================
+        // LEFT CARD: LOCKSCREEN PICTURE (~1/3 WIDTH, PURE ART)
+        // ========================================================
 
         Rectangle {
-            anchors.fill: parent
+            id: lockCard
 
-            color:
-                Nexa.Theme.scrimLight
-        }
+            Layout.preferredWidth: Math.round((root.width - 24 - 12) * 0.33)
+            Layout.fillHeight: true
 
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            z: 100
-            
-            onClicked: {
-                if (typeof wallpaperView !== "undefined") {
-                    wallpaperView.visible = true
-                    wallpaperView.forceActiveFocus()
-                }
+            radius: Nexa.Theme.radiusLg
+            color: Nexa.Theme.cardBackground
+            border.width: Nexa.Theme.borderThin
+            border.color: lockMouse.containsMouse ? Nexa.Theme.outline : Nexa.Theme.border
+            clip: true
 
-                // Close the side panel automatically
-                Quickshell.execDetached([
-                    "qs",
-                    "-p",
-                    Quickshell.env("HOME") + "/.config/nexa/quickshell",
-                    "ipc",
-                    "call",
-                    "sidePanel",
-                    "close"
-                ])
-            }
-        }
+            scale: lockMouse.pressed ? 0.985 : (lockMouse.containsMouse ? 1.01 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+            Behavior on border.color { ColorAnimation { duration: 140 } }
 
-
-        // --------------------------------------------------------
-        // PROFILE INFO
-        // --------------------------------------------------------
-
-        Column {
-            anchors {
-                left: parent.left
-                bottom: parent.bottom
-
-                leftMargin:
-                    Nexa.Theme.spacingLg
-
-                bottomMargin:
-                    Nexa.Theme.spacingLg
-            }
-
-            spacing: 2
-
-
-            Text {
-                text:
-                    root.userName
-
-                color:
-                    "white"
-
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
-
-                    pixelSize:
-                        Nexa.Theme.fontSizeXl
-
-                    weight:
-                        Nexa.Theme.fontWeightDemiBold
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: lockCard.width
+                    height: lockCard.height
+                    radius: Nexa.Theme.radiusLg
                 }
             }
 
+            Image {
+                id: lockImage
+                anchors.fill: parent
 
-            Text {
-                text:
-                    root.userName !== ""
-                    && root.hostName !== ""
-                    ? root.userName + "@" + root.hostName
+                sourceSize.width: 500
+                sourceSize.height: 600
+
+                source: root.lockWallpaperPath !== ""
+                    ? "file://" + root.lockWallpaperPath
                     : ""
 
-                color:
-                    "#DDFFFFFF"
+                fillMode: Image.PreserveAspectCrop
+                horizontalAlignment: Image.AlignHCenter
+                verticalAlignment: Image.AlignVCenter
 
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
+                asynchronous: true
+                cache: false
+                smooth: true
+            }
 
-                    pixelSize:
-                        Nexa.Theme.fontSizeSm
+            // Interactive hover
+            MouseArea {
+                id: lockMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.ArrowCursor
+            }
+        }
+
+        // ========================================================
+        // RIGHT CARD: WALLPAPER & SYSTEM INFO WITH FADE OVERLAY
+        // ========================================================
+
+        Rectangle {
+            id: wallpaperCard
+
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            radius: Nexa.Theme.radiusLg
+            color: Nexa.Theme.cardBackground
+            border.width: Nexa.Theme.borderThin
+            border.color: wpMouse.containsMouse ? Nexa.Theme.outline : Nexa.Theme.border
+            clip: true
+
+            scale: wpMouse.pressed ? 0.99 : 1.0
+            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+            Behavior on border.color { ColorAnimation { duration: 140 } }
+
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: wallpaperCard.width
+                    height: wallpaperCard.height
+                    radius: Nexa.Theme.radiusLg
                 }
             }
 
+            // Desktop Wallpaper Image
+            Image {
+                id: wallpaperImage
+                anchors.fill: parent
 
-            Text {
-                text:
-                    root.uptimeText !== ""
-                    ? "Uptime · " + root.uptimeText
+                sourceSize.width: 900
+                sourceSize.height: 500
+
+                source: root.wallpaperPath !== ""
+                    ? "file://" + root.wallpaperPath
                     : ""
 
-                color:
-                    "#BBFFFFFF"
+                fillMode: Image.PreserveAspectCrop
+                horizontalAlignment: Image.AlignHCenter
+                verticalAlignment: Image.AlignVCenter
 
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
+                asynchronous: true
+                cache: false
+                smooth: true
+            }
 
-                    pixelSize:
-                        Nexa.Theme.fontSizeSm
+            // Horizontal Dark Fade Overlay (Deep dark on left, transparent on right)
+            Rectangle {
+                anchors.fill: parent
+
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.00; color: Qt.rgba(12/255, 16/255, 14/255, 0.94) }
+                    GradientStop { position: 0.26; color: Qt.rgba(12/255, 16/255, 14/255, 0.86) }
+                    GradientStop { position: 0.48; color: Qt.rgba(12/255, 16/255, 14/255, 0.40) }
+                    GradientStop { position: 0.68; color: "transparent" }
+                    GradientStop { position: 1.00; color: "transparent" }
+                }
+            }
+
+            // System & Profile Information (Left-aligned over the dark fade)
+            ColumnLayout {
+                anchors {
+                    left: parent.left
+                    verticalCenter: parent.verticalCenter
+                    leftMargin: 26
+                }
+                spacing: 4
+                z: 10
+
+                // Username
+                Text {
+                    text: root.userName
+                    color: "#FFFFFF"
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 22
+                    font.weight: Nexa.Theme.fontWeightBold
+                }
+
+                // Host string
+                Text {
+                    text: (root.userName !== "" && root.hostName !== "")
+                        ? (root.userName + "@" + root.hostName)
+                        : ""
+                    color: "#99B0BE"
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 13
+                    font.weight: Nexa.Theme.fontWeightMedium
+                }
+
+                // Uptime
+                Text {
+                    text: root.uptimeText !== ""
+                        ? ("Uptime ~ " + root.uptimeText)
+                        : ""
+                    color: "#8EA6B4"
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 12
+                }
+
+                // System / Shell info
+                Text {
+                    text: root.osInfo !== ""
+                        ? ("Nexa • " + root.osInfo)
+                        : "Nexa Shell"
+                    color: "#6E828E"
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 11
+                }
+            }
+
+            // Click Area to Open Wallpaper Picker
+            MouseArea {
+                id: wpMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+                z: 20
+
+                onClicked: {
+                    if (typeof wallpaperView !== "undefined") {
+                        wallpaperView.visible = true
+                        wallpaperView.forceActiveFocus()
+                    }
+
+                    // Close the island control center
+                    Quickshell.execDetached([
+                        "qs",
+                        "-p",
+                        Quickshell.env("HOME") + "/.config/nexa/quickshell",
+                        "ipc",
+                        "call",
+                        "nexaIsland",
+                        "toggleControlCenter"
+                    ])
+
+                    // Also close legacy sidePanel if open
+                    Quickshell.execDetached([
+                        "qs",
+                        "-p",
+                        Quickshell.env("HOME") + "/.config/nexa/quickshell",
+                        "ipc",
+                        "call",
+                        "sidePanel",
+                        "close"
+                    ])
                 }
             }
         }
@@ -284,7 +242,7 @@ Item {
 
 
     // ============================================================
-    // PROFILE DATA
+    // PROFILE & WALLPAPER DATA LOADER
     // ============================================================
 
     Process {
@@ -295,84 +253,48 @@ Item {
             "-c",
             [
                 "printf 'USER %s\\n' \"$(whoami)\"; ",
-
                 "printf 'HOST %s\\n' \"$(hostname)\"; ",
-
-                "printf 'UPTIME %s\\n' \"$(",
-                    "uptime -p | sed 's/^up //'",
-                ")\"; ",
-
-                ". \"$HOME/.config/nexa/config/wallpaper.conf\"; ",
-
-                "printf 'WALLPAPER %s\\n' \"$THEME_SOURCE\""
-              ].join("")
+                "printf 'UPTIME %s\\n' \"$(uptime -p | sed 's/^up //')\"; ",
+                ". \"$HOME/.config/nexa/config/wallpaper.conf\" 2>/dev/null || true; ",
+                "printf 'WALLPAPER %s\\n' \"$WALLPAPER\"; ",
+                ". \"$HOME/.config/nexa/config/lockscreen.conf\" 2>/dev/null || true; ",
+                "printf 'LOCK_WALLPAPER %s\\n' \"$WALLPAPER\"; ",
+                "printf 'OS %s\\n' \"$(grep -s '^PRETTY_NAME=' /etc/os-release | cut -d= -f2 | tr -d '\"')\""
+            ].join("")
         ]
 
         running: true
 
-
         stdout: StdioCollector {
             onStreamFinished: {
-                const lines =
-                    text.trim().split("\n")
-
+                const lines = text.trim().split("\n")
 
                 for (let i = 0; i < lines.length; ++i) {
+                    const line = lines[i].trim()
+                    const split = line.indexOf(" ")
+                    if (split < 0) continue
 
-                    const line =
-                        lines[i].trim()
-
-                    const split =
-                        line.indexOf(" ")
-
-                    if (split < 0)
-                        continue
-
-
-                    const key =
-                        line.substring(
-                            0,
-                            split
-                        )
-
-                    const value =
-                        line.substring(
-                            split + 1
-                        )
-
+                    const key = line.substring(0, split)
+                    const value = line.substring(split + 1)
 
                     switch (key) {
-
                     case "USER":
-                        root.userName =
-                            value
-
+                        root.userName = value
                         break
-
-
                     case "HOST":
-                        root.hostName =
-                            value
-
+                        root.hostName = value
                         break
-
-
                     case "UPTIME":
-                        root.uptimeText =
-                            value
-
+                        root.uptimeText = value
                         break
-
-
                     case "WALLPAPER":
-                        root.wallpaperPath =
-                            value
-
-                        console.log(
-                            "Profile wallpaper:",
-                            value
-                        )
-
+                        root.wallpaperPath = value
+                        break
+                    case "LOCK_WALLPAPER":
+                        root.lockWallpaperPath = value
+                        break
+                    case "OS":
+                        root.osInfo = value
                         break
                     }
                 }

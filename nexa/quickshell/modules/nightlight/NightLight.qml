@@ -515,18 +515,18 @@ Item {
     // ============================================================
 
     Timer {
-        interval: 2000
+        interval: 3000
         repeat: true
-        running: true
+        running: root.visible
 
         onTriggered:
             root.refresh()
     }
 
-
-    // ============================================================
-    // INITIAL LOAD
-    // ============================================================
+    onVisibleChanged: {
+        if (root.visible)
+            root.refresh()
+    }
 
     Component.onCompleted:
         root.refresh()
