@@ -2,7 +2,7 @@
 
 hl.on("hyprland.start", function()
 	-- NEXA / Quickshell
-	--	hl.exec_cmd("quickshell -p ~/.config/nexa/quickshell/shell.qml")
+	hl.exec_cmd("quickshell -p ~/.config/nexa/quickshell/shell.qml")
 
 	-- Wallpaper daemon
 	hl.exec_cmd("awww-daemon")

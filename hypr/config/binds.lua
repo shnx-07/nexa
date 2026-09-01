@@ -93,7 +93,7 @@ hl.bind(MOD .. " + S", hl.dsp.workspace.toggle_special("magic"))
 
 -- System Utilities
 hl.bind(MOD .. " + G", hl.dsp.exec_cmd("hyprctl dispatch workspaceopt allgaps toggle"))
-hl.bind(MOD .. " + N", hl.dsp.exec_cmd("swaync-client -t"))
+hl.bind(MOD .. " + N", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleControlCenter"))
 hl.bind(MOD .. " + SHIFT + C", hl.dsp.exec_cmd("hyprctl reload"))
 
 -- Media & Brightness Keys
