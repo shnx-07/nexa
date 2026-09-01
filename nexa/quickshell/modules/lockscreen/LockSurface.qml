@@ -1194,8 +1194,7 @@ Item {
     Timer {
         interval: 1000
         repeat: true
-        running: true
-
+        running: root.visible
 
         onTriggered: {
             const now =
@@ -1212,6 +1211,14 @@ Item {
                     now,
                     "dddd, d MMMM"
                 )
+        }
+    }
+
+    onVisibleChanged: {
+        if (root.visible) {
+            const now = new Date()
+            clockText.text = Qt.formatDateTime(now, "hh:mm")
+            dateText.text = Qt.formatDateTime(now, "dddd, d MMMM")
         }
     }
 

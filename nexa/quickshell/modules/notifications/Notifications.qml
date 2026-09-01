@@ -515,7 +515,12 @@ Item {
     Timer {
         interval: 60000
         repeat: true
-        running: true
+        running: root.visible
         onTriggered: root.loadState()
+    }
+
+    onVisibleChanged: {
+        if (root.visible)
+            root.loadState()
     }
 }

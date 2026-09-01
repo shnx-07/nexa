@@ -418,6 +418,16 @@ PanelWindow {
         osdDismissTimer.restart()
     }
 
+    function applyPowerState(onBat: bool): void {
+        if (onBat) {
+            Quickshell.execDetached(["powerprofilesctl", "set", "power-saver"])
+            Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false } } })"])
+        } else {
+            Quickshell.execDetached(["powerprofilesctl", "set", "balanced"])
+            Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { blur = { enabled = true }, shadow = { enabled = true } } })"])
+        }
+    }
+
     Timer {
         id: batteryInitTimer
         interval: 2000
@@ -425,6 +435,7 @@ PanelWindow {
         repeat: false
         onTriggered: {
             root.batteryInitialized = true
+            root.applyPowerState(root.onBattery)
         }
     }
 
@@ -432,6 +443,7 @@ PanelWindow {
         if (!root.batteryInitialized || !root.batteryReady) return
         const pct = Math.round(batteryDevice.percentage * 100)
         root.triggerBatteryOsd(!root.onBattery, pct)
+        root.applyPowerState(root.onBattery)
     }
 
     // ============================================================
