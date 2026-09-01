@@ -71,35 +71,36 @@ if hl.plugin and hl.plugin.hyprglass then
 		},
 	})
 
-		-- iOS 26: Crystal Clear Apple Glass (Luminous, sharp specular edge, high clarity, silky frosted blur)
+	-- iOS 26: Crystal Clear Glass (Ultra-transparent, bright luminous pass-through, sharp specular rim, ZERO darkening)
 	hg.preset("ios26", {
-		glass_opacity = 0.82,
-		blur_strength = 2.4,
-		blur_iterations = 4,
-		refraction_strength = 0.40,
+		glass_opacity = 0.55,
+		blur_strength = 0.8,
+		blur_iterations = 2,
+		refraction_strength = 0.45,
 		chromatic_aberration = 0.15,
-		fresnel_strength = 0.60,
-		specular_strength = 0.85,
-		edge_thickness = 0.04,
+		fresnel_strength = 0.85,
+		specular_strength = 0.9,
+		edge_thickness = 0.05,
+		tint_color = tint("#4a9eff", 0.15),
 		lens_distortion = 0.15,
-		brightness = 1.05,
-		contrast = 1.05,
-		saturation = 1.08,
-		vibrancy = 0.25,
-		adaptive_boost = 0.45,
+		brightness = 1.08,
+		contrast = 1.0,
+		saturation = 1.15,
+		vibrancy = 0.4,
+		adaptive_boost = 0.4,
 		dark = {
-			brightness = 0.88,
-			contrast = 0.96,
-			saturation = 0.88,
-			vibrancy = 0.20,
-			adaptive_dim = 0.30,
+			brightness = 1.05,
+			contrast = 1.0,
+			saturation = 1.15,
+			vibrancy = 0.35,
+			adaptive_dim = 0.0,
 		},
 		light = {
 			brightness = 1.15,
-			contrast = 0.98,
-			saturation = 0.95,
-			vibrancy = 0.18,
-			adaptive_boost = 0.40,
+			contrast = 1.0,
+			saturation = 1.15,
+			vibrancy = 0.35,
+			adaptive_boost = 0.35,
 		},
 	})
 
@@ -110,4 +111,69 @@ if hl.plugin and hl.plugin.hyprglass then
 		default_preset = "ios26",
 		layers = { enabled = true },
 	})
+
+	hg.layer("quickshell", { preset = "ios26" })
+	hg.layer("awww-daemon", { exclude = true })
 end
+
+-- ------------------------------------------------------------
+-- DYNAMIC CURSORS (VirtCode)
+-- Realistic physics: stretch, tilt, rotate, and shake to find
+-- ------------------------------------------------------------
+
+hl.config({
+	plugin = {
+		dynamic_cursors = {
+			-- enables the plugin
+			enabled = true,
+
+			-- sets the cursor behaviour, supports: "tilt", "rotate", "stretch", "none"
+			mode = "stretch",
+
+			-- minimum angle difference in degrees after which the shape is changed
+			threshold = 2,
+
+			-- for mode = "rotate"
+			rotate = {
+				length = 20,
+				offset = 0.0,
+			},
+
+			-- for mode = "tilt"
+			tilt = {
+				limit = 5000,
+				activation = "negative_quadratic",
+				window = 100,
+				full = 60,
+			},
+
+			-- for mode = "stretch"
+			stretch = {
+				limit = 3000,
+				activation = "quadratic",
+				window = 100,
+			},
+
+			-- configure shake to find
+			shake = {
+				enabled = true,
+				threshold = 6.0,
+				base = 4.0,
+				speed = 4.0,
+				influence = 0.0,
+				limit = 0.0,
+				timeout = 2000,
+				effects = false,
+				ipc = false,
+			},
+
+			-- use hyprcursor to get a higher resolution texture when the cursor is magnified
+			hyprcursor = {
+				nearest = 1,
+				enabled = true,
+				resolution = -1,
+				fallback = "clientside",
+			},
+		},
+	},
+})
