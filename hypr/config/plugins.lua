@@ -71,11 +71,43 @@ if hl.plugin and hl.plugin.hyprglass then
 		},
 	})
 
+		-- iOS 26: Crystal Clear Apple Glass (Luminous, sharp specular edge, high clarity, silky frosted blur)
+	hg.preset("ios26", {
+		glass_opacity = 0.82,
+		blur_strength = 2.4,
+		blur_iterations = 4,
+		refraction_strength = 0.40,
+		chromatic_aberration = 0.15,
+		fresnel_strength = 0.60,
+		specular_strength = 0.85,
+		edge_thickness = 0.04,
+		lens_distortion = 0.15,
+		brightness = 1.05,
+		contrast = 1.05,
+		saturation = 1.08,
+		vibrancy = 0.25,
+		adaptive_boost = 0.45,
+		dark = {
+			brightness = 0.88,
+			contrast = 0.96,
+			saturation = 0.88,
+			vibrancy = 0.20,
+			adaptive_dim = 0.30,
+		},
+		light = {
+			brightness = 1.15,
+			contrast = 0.98,
+			saturation = 0.95,
+			vibrancy = 0.18,
+			adaptive_boost = 0.40,
+		},
+	})
+
 	-- Global Config
 	hg.config({
 		enabled = true,
 		default_theme = "dark",
-		default_preset = "apple",
+		default_preset = "ios26",
 		layers = { enabled = true },
 	})
 end
