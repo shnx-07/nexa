@@ -124,15 +124,15 @@ hl.window_rule({ match = { class = "^(org\\.kde\\.ark)$" }, size = { "max(monito
 hl.window_rule({ match = { class = "^(.*satty.*)$", title = "^(Satty)$" }, min_size = { "max(monitor_w, monitor_h)*0.35", "min(monitor_w, monitor_h)*0.35" }, float = true })
 hl.window_rule({ match = { class = "^(dev\\.)?(noctalia\\.Noctalia(\\.Settings)?)$" }, float = true, size = { "monitor_w*0.70", "monitor_h*0.70" } })
 -- File Managers (Dolphin, Nemo, Yazi): Centered horizontally, slightly shifted toward bottom
-local fileManagerApps = "^(org\\.kde\\.dolphin|nemo|Nemo|yazi)$"
+local fileManagerApps = "^(org\\.kde\\.dolphin|dolphin|nemo|Nemo|yazi)$"
 
 hl.window_rule({
 	match = {
 		class = fileManagerApps,
 	},
 	float = true,
-	size = { "max(monitor_w, monitor_h)*0.50", "min(monitor_w, monitor_h)*0.55" },
-	move = { "((monitor_w - window_w) / 2)", "((monitor_h - window_h) / 2) + 60" },
+	size = { "monitor_w*0.50", "monitor_h*0.55" },
+	move = "monitor_w*0.25 monitor_h*0.30",
 })
 
 hl.window_rule({
@@ -140,8 +140,8 @@ hl.window_rule({
 		initial_class = fileManagerApps,
 	},
 	float = true,
-	size = { "max(monitor_w, monitor_h)*0.50", "min(monitor_w, monitor_h)*0.55" },
-	move = { "((monitor_w - window_w) / 2)", "((monitor_h - window_h) / 2) + 60" },
+	size = { "monitor_w*0.50", "monitor_h*0.55" },
+	move = "monitor_w*0.25 monitor_h*0.30",
 })
 
 hl.window_rule({
@@ -149,8 +149,8 @@ hl.window_rule({
 		title = "^(.*[Yy]azi.*)$",
 	},
 	float = true,
-	size = { "max(monitor_w, monitor_h)*0.50", "min(monitor_w, monitor_h)*0.55" },
-	move = { "((monitor_w - window_w) / 2)", "((monitor_h - window_h) / 2) + 60" },
+	size = { "monitor_w*0.50", "monitor_h*0.55" },
+	move = "monitor_w*0.25 monitor_h*0.30",
 })
 
 -- Layer Rules
