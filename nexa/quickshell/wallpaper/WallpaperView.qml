@@ -1801,8 +1801,6 @@ PanelWindow {
     // ---------------------------------------------------------
 
     Component.onCompleted: {
-        reload()
-
         Qt.callLater(
             () => view.forceActiveFocus()
         )

@@ -45,7 +45,8 @@ hl.bind("SUPER + L", hl.dsp.global("nexa:lock"))
 hl.bind(MOD .. " + V", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call clipboard toggle"))
 
 -- Window Management
-hl.bind(MOD .. " + Q", hl.dsp.window.close())
+hl.bind(MOD .. " + Q", hl.dsp.exec_cmd("~/.config/hypr/scripts/close-window.sh"))
+hl.bind(MOD .. " + SHIFT + Q", hl.dsp.exec_cmd("~/.config/hypr/scripts/force-kill.sh"))
 hl.bind(MOD .. " + F", hl.dsp.window.fullscreen(mode == 1))
 hl.bind(MOD .. " + T", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(MOD .. " + P", hl.dsp.window.pseudo())

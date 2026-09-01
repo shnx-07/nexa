@@ -376,7 +376,7 @@ Item {
         sourceSize.height: 1080
 
         source:
-            root.wallpaperType === "image"
+            (root.visible && root.wallpaperType === "image")
             ? root.fileUrl(
                 root.wallpaperPath
             )
@@ -386,7 +386,7 @@ Item {
             Image.PreserveAspectCrop
 
         asynchronous: true
-        cache: true
+        cache: false
 
         visible:
             root.wallpaperLoaded
