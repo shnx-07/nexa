@@ -152,6 +152,31 @@ bash ~/.config/nexa/scripts/nexa-restart.sh
 * **Two-Line Powerline Starship Prompt:** Dynamic user/host filled capsule, seamless directory breadcrumbs, and theme-colored prompt symbols.
 * Screen temperature tuning via `hyprsunset`.
 
+### 🔒 Cyber-Minimalist Glass Lock Screen & Profile Pictures
+* **Profile Picture & Illuminated Avatar Halo:** Circular `OpacityMask` cropping with a glowing halo ring that pulses with accent colors when typing passwords.
+* **Intelligent Auto-Detection:** Automatically discovers avatar files from `~/.face`, `~/.face.icon`, or `~/.config/nexa/avatar.png` (or `.jpg`/`.svg`/`.webp`), falling back to a gradient letter badge.
+* **Bundled Presets:** Handcrafted SVG presets (`cyber_neon`, `astro_space`, `mecha_cat`, `crystal_prism`, `minimal_silhouette`).
+* **`nexa-avatar` Command-Line Tool:**
+  ```bash
+  # List all available avatar presets
+  nexa-avatar list
+
+  # Switch to a preset
+  nexa-avatar set astro_space
+  nexa-avatar set mecha_cat
+  nexa-avatar set cyber_neon
+
+  # Set any custom picture or wallpaper from disk as your lock screen avatar
+  nexa-avatar set ~/Pictures/avatar.png
+  ```
+* **System Telemetry & Actions:** Live battery and host telemetry on top, bottom quick actions for Sleep/Reboot/Power-off, and bottom-left Now Playing mini card.
+
+### 🎵 Cyber-Luminous Glass Deck (Music Player)
+* **Spinning Vinyl Disc:** Grooved vinyl record slides out and spins during active playback.
+* **Ambient Artwork Bloom:** Dynamic blurred album art sampling creates an atmospheric underglow behind the player.
+* **Integrated Controls & Scrubber:** High-precision seekbar, hero play/pause button, shuffle/loop toggles, and an **inline system/music volume slider** right on the deck.
+* **48-Band CAVA Spectrum:** Audio-reactive visualizer spectrum across the bottom.
+
 ### 📋 Clipboard & Utilities
 * Clipboard history supporting pinned text and image previews (`cliphist`).
 * Snipping tool & full-screen screen recording with Dynamic Island status.

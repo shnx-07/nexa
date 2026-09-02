@@ -19,6 +19,8 @@ Item {
         sessionLock.secure
 
 
+    property bool previewOpen: false
+
     // ============================================================
     // LOCK CONTROL
     // ============================================================
@@ -27,6 +29,14 @@ Item {
 
         function lock(): void {
             root.lock()
+        }
+
+        function openPreview(): void {
+            root.previewOpen = true
+        }
+
+        function closePreview(): void {
+            root.previewOpen = false
         }
     }
     function lock() {
@@ -140,6 +150,32 @@ Item {
                 "NEXA lockscreen secure:",
                 secure
             )
+        }
+    }
+
+    // ============================================================
+    // PREVIEW WINDOW (SAFE TESTING WITHOUT LOCKOUT)
+    // ============================================================
+
+    PanelWindow {
+        id: previewWindow
+        visible: root.previewOpen
+        color: "#000000"
+        exclusionMode: ExclusionMode.Ignore
+        aboveWindows: true
+        focusable: true
+        anchors {
+            top: true
+            bottom: true
+            left: true
+            right: true
+        }
+
+        LockSurface {
+            anchors.fill: parent
+            onAuthenticationSucceeded: {
+                root.previewOpen = false
+            }
         }
     }
 }

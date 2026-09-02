@@ -837,6 +837,13 @@ PanelWindow {
             root.openControlCenter(0)
         }
 
+        function openFullSection(name: string): void {
+            islandContent.section = name || "music"
+            root.full = true
+            root.hovered = false
+            islandFocus.forceActiveFocus()
+        }
+
         function close(): void {
             root.closeIsland()
         }

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="prismbg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#09090b"/>
+    </radialGradient>
+    <linearGradient id="facet1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="facet2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#f43f5e"/>
+    </linearGradient>
+    <linearGradient id="facet3" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="100" fill="url(#prismbg)"/>
+  <circle cx="100" cy="100" r="94" fill="none" stroke="#27272a" stroke-width="2"/>
+  <!-- Hexagon Gem Facets -->
+  <polygon points="100,35 155,67 100,100" fill="url(#facet1)" opacity="0.85"/>
+  <polygon points="100,35 45,67 100,100" fill="url(#facet3)" opacity="0.9"/>
+  <polygon points="45,67 45,133 100,100" fill="url(#facet1)" opacity="0.7"/>
+  <polygon points="155,67 155,133 100,100" fill="url(#facet2)" opacity="0.75"/>
+  <polygon points="45,133 100,165 100,100" fill="url(#facet2)" opacity="0.9"/>
+  <polygon points="155,133 100,165 100,100" fill="url(#facet3)" opacity="0.85"/>
+  <!-- Specular Center Highlight -->
+  <circle cx="100" cy="100" r="6" fill="#ffffff" opacity="0.8"/>
+</svg>

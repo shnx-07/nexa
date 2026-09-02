@@ -234,6 +234,60 @@ Item {
         return minutes + ":" + String(secs).padStart(2, "0")
     }
 
+    function playerBrandColor(idName) {
+        const id = String(idName || "").toLowerCase()
+        if (id.includes("spotify")) return "#1DB954"
+        if (id.includes("firefox")) return "#FF7139"
+        if (id.includes("chrome") || id.includes("chromium")) return "#4285F4"
+        if (id.includes("brave")) return "#FB542B"
+        if (id.includes("vlc")) return "#FF8800"
+        if (id.includes("mpv")) return "#9C27B0"
+        return Nexa.Theme.primary
+    }
+
+    // ============================================================
+    // SINK VOLUME TRACKING & CONTROLS
+    // ============================================================
+
+    property real sinkVolume: 0.65
+    property bool sinkMuted: false
+
+    Process {
+        id: sinkVolumeReader
+        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: line => {
+                const parts = line.trim().split(" ")
+                if (parts.length >= 2 && parts[0] === "Volume:") {
+                    const val = parseFloat(parts[1])
+                    if (!isNaN(val)) root.sinkVolume = Math.max(0.0, Math.min(1.0, val))
+                    root.sinkMuted = line.includes("[MUTED]")
+                }
+            }
+        }
+    }
+
+    Timer {
+        interval: 1200
+        repeat: true
+        running: root.presentation === "full"
+        onTriggered: {
+            if (!sinkVolumeReader.running) sinkVolumeReader.running = true
+        }
+    }
+
+    function setSinkVolume(val) {
+        root.sinkVolume = Math.max(0.0, Math.min(1.0, val))
+        const pct = Math.round(root.sinkVolume * 100)
+        Quickshell.execDetached(["wpctl", "set-volume", "-l", "1.0", "@DEFAULT_AUDIO_SINK@", pct + "%"])
+    }
+
+    function toggleSinkMute() {
+        Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
+        sinkVolumeReader.running = true
+    }
+
     // ============================================================
     // PLAYBACK ACTIONS
     // ============================================================
@@ -558,37 +612,46 @@ Item {
     }
 
     // ============================================================
-    // FULL MUSIC VIEW
+    // FULL MUSIC VIEW (CYBER-LUMINOUS GLASS DECK)
     // ============================================================
 
     Item {
+        id: fullMusicContainer
         anchors.fill: parent
         visible: root.presentation === "full"
 
-        // Ambient Album Artwork Backdrop
+        // --------------------------------------------------------
+        // 1. AMBIENT BACKDROP & SPECULAR RIM
+        // --------------------------------------------------------
         Rectangle {
             anchors.fill: parent
             radius: Nexa.Theme.radiusLg
             color: Nexa.Theme.surfaceContainerLow
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.08)
             clip: true
             z: -1
 
+            // Dynamic blurred ambient artwork glow
             Image {
+                id: bgAmbientArt
                 anchors.fill: parent
+                anchors.margins: -40
                 source: root.artwork
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: true
-                opacity: root.artwork !== "" ? 0.30 : 0.0
+                opacity: (root.hasTrack && root.artwork !== "") ? 0.35 : 0.0
 
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: Nexa.Theme.animationNormal
+                        duration: 600
                         easing.type: Easing.OutCubic
                     }
                 }
             }
 
+            // High-tech frosted glass vignette
             Rectangle {
                 anchors.fill: parent
                 color: Qt.rgba(
@@ -598,368 +661,890 @@ Item {
                     0.88
                 )
             }
+
+            // Top specular edge highlight
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: Qt.rgba(1, 1, 1, 0.14)
+            }
         }
 
-        RowLayout {
+        // --------------------------------------------------------
+        // 2. IDLE STATE: WHEN NO ACTIVE TRACK IS PLAYING
+        // --------------------------------------------------------
+        Item {
             anchors.fill: parent
-            anchors.margins: Nexa.Theme.spacingMd
-            spacing: Nexa.Theme.spacingXl
+            visible: !root.hasTrack || (!root.playing && !root.paused)
 
-            // ====================================================
-            // LEFT: LARGE ALBUM ARTWORK CARD
-            // ====================================================
+            RowLayout {
+                anchors.centerIn: parent
+                spacing: 36
 
-            Rectangle {
-                Layout.preferredWidth: 200
-                Layout.preferredHeight: 200
-                Layout.alignment: Qt.AlignVCenter
-                radius: 16
-                color: Nexa.Theme.surfaceContainerHigh
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
-                clip: true
-
-                Image {
-                    anchors.fill: parent
-                    source: root.artwork
-                    fillMode: Image.PreserveAspectCrop
-                    visible: root.artwork !== ""
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    visible: root.artwork === ""
-                    text: root.playerIcon(root.identity)
-                    color: Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.iconFontFamily
-                    font.pixelSize: 56
-                }
-            }
-
-            // ====================================================
-            // RIGHT: TRACK INFO, CONTROLS & SLEEK SPECTRUM
-            // ====================================================
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                spacing: 8
-
-                // Top Source Player Badge
-                RowLayout {
-                    Layout.fillWidth: true
+                // Frosted Vinyl Disc
+                Item {
+                    width: 150
+                    height: 150
+                    Layout.alignment: Qt.AlignVCenter
 
                     Rectangle {
-                        implicitWidth: sourceRow.implicitWidth + 16
-                        implicitHeight: 24
-                        radius: 12
-                        color: Nexa.Theme.surfaceContainerHigh
+                        anchors.fill: parent
+                        radius: 75
+                        color: "#14151f"
                         border.width: 1
-                        border.color: Nexa.Theme.border
+                        border.color: Qt.rgba(1, 1, 1, 0.10)
 
-                        Row {
-                            id: sourceRow
+                        // Grooves
+                        Repeater {
+                            model: [130, 110, 90, 70]
+                            delegate: Rectangle {
+                                anchors.centerIn: parent
+                                width: modelData
+                                height: modelData
+                                radius: modelData / 2
+                                color: "transparent"
+                                border.width: 1
+                                border.color: Qt.rgba(255/255, 255/255, 255/255, 0.04)
+                            }
+                        }
+
+                        // Center Label
+                        Rectangle {
                             anchors.centerIn: parent
-                            spacing: 6
+                            width: 50
+                            height: 50
+                            radius: 25
+                            color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.20)
+                            border.width: 1
+                            border.color: Nexa.Theme.primary
 
                             Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: root.playerIcon(root.identity)
+                                anchors.centerIn: parent
+                                text: "󰎆"
                                 color: Nexa.Theme.primary
                                 font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: Nexa.Theme.iconSm
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: root.identity
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSize2Xs
-                                font.weight: Nexa.Theme.fontWeightMedium
+                                font.pixelSize: 22
                             }
                         }
                     }
 
-                    Item { Layout.fillWidth: true }
+                    // Gentle breathing pulse
+                    SequentialAnimation on scale {
+                        loops: Animation.Infinite
+                        running: fullMusicContainer.visible && (!root.hasTrack || (!root.playing && !root.paused))
+                        NumberAnimation { from: 0.98; to: 1.02; duration: 2400; easing.type: Easing.InOutSine }
+                        NumberAnimation { from: 1.02; to: 0.98; duration: 2400; easing.type: Easing.InOutSine }
+                    }
                 }
 
-                // Sliding Marquee Track Title Box
-                Item {
-                    id: fullTitleBox
-                    Layout.fillWidth: true
-                    implicitHeight: fullTitleText.implicitHeight
-                    clip: true
+                // Clean Description & Prompt
+                ColumnLayout {
+                    spacing: 8
+                    Layout.alignment: Qt.AlignVCenter
 
-                    readonly property real overflowDist: Math.max(0, fullTitleText.implicitWidth - width)
-                    readonly property bool needsScroll: overflowDist > 6
+                    Rectangle {
+                        implicitWidth: idleStatusRow.implicitWidth + 18
+                        implicitHeight: 24
+                        radius: 12
+                        color: Qt.rgba(255/255, 255/255, 255/255, 0.06)
+                        border.width: 1
+                        border.color: Qt.rgba(255/255, 255/255, 255/255, 0.08)
+
+                        Row {
+                            id: idleStatusRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Rectangle {
+                                width: 6; height: 6; radius: 3
+                                color: Nexa.Theme.primary
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Text {
+                                text: "READY FOR AUDIO"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 10
+                                font.weight: Nexa.Theme.fontWeightBold
+                                font.letterSpacing: 1.2
+                            }
+                        }
+                    }
 
                     Text {
-                        id: fullTitleText
-                        x: 0
-                        text: root.title
+                        text: "No Media Playing"
                         color: Nexa.Theme.text
                         font.family: Nexa.Theme.fontFamily
                         font.pixelSize: 22
                         font.weight: Nexa.Theme.fontWeightBold
                     }
 
-                    SequentialAnimation {
-                        id: fullTitleAnim
-                        running: fullTitleBox.needsScroll
-                        loops: Animation.Infinite
-
-                        PauseAnimation { duration: 2200 }
-                        NumberAnimation {
-                            target: fullTitleText
-                            property: "x"
-                            from: 0
-                            to: -fullTitleBox.overflowDist - 20
-                            duration: Math.max(1600, (fullTitleBox.overflowDist + 20) * 32)
-                            easing.type: Easing.InOutQuad
-                        }
-                        PauseAnimation { duration: 1800 }
-                        NumberAnimation {
-                            target: fullTitleText
-                            property: "x"
-                            to: 0
-                            duration: Math.max(1200, (fullTitleBox.overflowDist + 20) * 22)
-                            easing.type: Easing.InOutQuad
-                        }
-                    }
-
-                    onWidthChanged: {
-                        fullTitleText.x = 0
-                        if (needsScroll) fullTitleAnim.restart()
-                        else fullTitleAnim.stop()
-                    }
-
-                    Connections {
-                        target: root
-                        function onTitleChanged() {
-                            fullTitleText.x = 0
-                            if (fullTitleBox.needsScroll) fullTitleAnim.restart()
-                            else fullTitleAnim.stop()
-                        }
+                    Text {
+                        text: "Play music or video on Spotify, YouTube, or MPV\nto unlock live controls, audio visualizer, and lyrics."
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: 13
+                        lineHeight: 1.3
                     }
                 }
+            }
+        }
 
-                // Artist & Album
-                Text {
-                    Layout.fillWidth: true
-                    text: root.album !== "" ? root.artist + "  •  " + root.album : root.artist
-                    elide: Text.ElideRight
-                    color: Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeMd
-                    font.weight: Nexa.Theme.fontWeightMedium
-                }
+        // --------------------------------------------------------
+        // 3. ACTIVE STATE: MODERN HERO PLAYER DECK
+        // --------------------------------------------------------
+        Item {
+            anchors.fill: parent
+            visible: root.hasTrack && (root.playing || root.paused)
 
-                // Seekbar & Timestamps
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 2
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: Nexa.Theme.spacingLg
+                spacing: Nexa.Theme.spacingXl
 
-                    Rectangle {
-                        id: seekArea
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 18
-                        color: "transparent"
+                // ====================================================
+                // LEFT: FLOATING VINYL + ALBUM ART CARD
+                // ====================================================
+                Item {
+                    Layout.preferredWidth: 210
+                    Layout.preferredHeight: 210
+                    Layout.alignment: Qt.AlignVCenter
+
+                    // The Spinning Vinyl Record (Slides out when playing)
+                    Item {
+                        id: vinylDisc
+                        width: 190
+                        height: 190
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: root.playing ? 34 : 4
+                        z: 1
+
+                        Behavior on anchors.leftMargin {
+                            NumberAnimation { duration: 600; easing.type: Easing.OutBack }
+                        }
 
                         Rectangle {
-                            id: seekTrack
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            height: 4
-                            radius: 2
-                            color: Nexa.Theme.surfaceContainerHighest
-
-                            Rectangle {
-                                width: parent.width * root.displayedProgress
-                                height: parent.height
-                                radius: parent.radius
-                                color: Nexa.Theme.primary
-                            }
-
-                            // Scrub thumb
-                            Rectangle {
-                                width: 12
-                                height: 12
-                                radius: 6
-                                anchors.verticalCenter: parent.verticalCenter
-                                x: Math.max(0, Math.min(parent.width - width, (parent.width * root.displayedProgress) - width / 2))
-                                color: Nexa.Theme.primary
-                                visible: seekMouse.containsMouse || root.seeking
-                            }
-                        }
-
-                        MouseArea {
-                            id: seekMouse
                             anchors.fill: parent
-                            hoverEnabled: true
-                            enabled: root.available && root.player.canSeek && root.player.positionSupported && root.duration > 0
-                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            radius: width / 2
+                            color: "#0f1015"
+                            border.width: 1
+                            border.color: "#282a36"
 
-                            onPressed: mouse => {
-                                root.seeking = true
-                                root.updateSeekFromX(mouse.x, width)
+                            // Vinyl grooves
+                            Repeater {
+                                model: [170, 150, 130, 110, 90]
+                                delegate: Rectangle {
+                                    anchors.centerIn: parent
+                                    width: modelData
+                                    height: modelData
+                                    radius: modelData / 2
+                                    color: "transparent"
+                                    border.width: 1
+                                    border.color: Qt.rgba(1, 1, 1, 0.04)
+                                }
                             }
-                            onPositionChanged: mouse => {
-                                if (pressed) root.updateSeekFromX(mouse.x, width)
+
+                            // Center Label
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: 66
+                                height: 66
+                                radius: 33
+                                color: Nexa.Theme.surfaceContainerHigh
+                                border.width: 1
+                                border.color: root.playerBrandColor(root.identity)
+                                clip: true
+
+                                Image {
+                                    anchors.fill: parent
+                                    source: root.artwork
+                                    fillMode: Image.PreserveAspectCrop
+                                    visible: root.artwork !== ""
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: root.artwork === ""
+                                    text: "󰎆"
+                                    color: Nexa.Theme.primary
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 22
+                                }
+
+                                // Spindle Hole
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 10; height: 10; radius: 5
+                                    color: "#090a0f"
+                                    border.width: 1; border.color: "#3a3b4a"
+                                }
                             }
-                            onReleased: mouse => {
-                                root.updateSeekFromX(mouse.x, width)
-                                root.commitSeek()
+
+                            RotationAnimation on rotation {
+                                loops: Animation.Infinite
+                                from: 0
+                                to: 360
+                                duration: 9000
+                                running: root.playing && root.presentation === "full"
                             }
                         }
                     }
 
+                    // Front Floating Album Artwork Card
+                    Rectangle {
+                        id: frontArtworkCard
+                        width: 190
+                        height: 190
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        radius: 18
+                        color: Nexa.Theme.surfaceContainerHigh
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.12)
+                        clip: true
+                        z: 2
+                        scale: root.playing ? 1.015 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation { duration: 400; easing.type: Easing.OutCubic }
+                        }
+
+                        Image {
+                            anchors.fill: parent
+                            source: root.artwork
+                            fillMode: Image.PreserveAspectCrop
+                            visible: root.artwork !== ""
+                        }
+
+                        // Fallback when artwork is empty
+                        Rectangle {
+                            anchors.fill: parent
+                            visible: root.artwork === ""
+                            color: "#14161f"
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 8
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: root.playerIcon(root.identity)
+                                    color: root.playerBrandColor(root.identity)
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 48
+                                }
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: root.identity
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 12
+                                    font.weight: Nexa.Theme.fontWeightMedium
+                                }
+                            }
+                        }
+
+                        // Glass sheen line
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 1
+                            color: Qt.rgba(255, 255, 255, 0.20)
+                        }
+                    }
+                }
+
+                // ====================================================
+                // RIGHT: METADATA, SCRUBBER, HERO CONTROLS & SPECTRUM
+                // ====================================================
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 8
+
+                    // Header Status & Source Row
                     RowLayout {
                         Layout.fillWidth: true
+                        spacing: 8
 
-                        Text {
-                            text: root.formatTime(root.displayedPosition)
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.monoFontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeXs
+                        // Source App Pill
+                        Rectangle {
+                            implicitWidth: sourcePillRow.implicitWidth + 18
+                            implicitHeight: 26
+                            radius: 13
+                            color: Qt.rgba(255/255, 255/255, 255/255, 0.06)
+                            border.width: 1
+                            border.color: Qt.rgba(255/255, 255/255, 255/255, 0.10)
+
+                            Row {
+                                id: sourcePillRow
+                                anchors.centerIn: parent
+                                spacing: 6
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: root.playerIcon(root.identity)
+                                    color: root.playerBrandColor(root.identity)
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 14
+                                }
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: root.identity
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 11
+                                    font.weight: Nexa.Theme.fontWeightBold
+                                }
+                            }
+                        }
+
+                        // Live Status Pill (Playing / Paused)
+                        Rectangle {
+                            implicitWidth: statusPillRow.implicitWidth + 16
+                            implicitHeight: 24
+                            radius: 12
+                            color: root.playing
+                                ? Qt.rgba(16/255, 185/255, 129/255, 0.15)
+                                : Qt.rgba(245/255, 158/255, 11/255, 0.15)
+                            border.width: 1
+                            border.color: root.playing
+                                ? Qt.rgba(16/255, 185/255, 129/255, 0.35)
+                                : Qt.rgba(245/255, 158/255, 11/255, 0.35)
+
+                            Row {
+                                id: statusPillRow
+                                anchors.centerIn: parent
+                                spacing: 5
+
+                                Rectangle {
+                                    width: 6; height: 6; radius: 3
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: root.playing ? "#10b981" : "#f59e0b"
+
+                                    SequentialAnimation on opacity {
+                                        loops: Animation.Infinite
+                                        running: root.playing
+                                        NumberAnimation { from: 0.4; to: 1.0; duration: 800 }
+                                        NumberAnimation { from: 1.0; to: 0.4; duration: 800 }
+                                    }
+                                }
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: root.playing ? "PLAYING" : "PAUSED"
+                                    color: root.playing ? "#34d399" : "#fbbf24"
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 10
+                                    font.weight: Nexa.Theme.fontWeightBold
+                                    font.letterSpacing: 0.8
+                                }
+                            }
                         }
 
                         Item { Layout.fillWidth: true }
 
-                        Text {
-                            text: root.formatTime(root.duration)
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.monoFontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeXs
+                        // Quality Badge
+                        Rectangle {
+                            implicitWidth: 70
+                            implicitHeight: 22
+                            radius: 11
+                            color: Qt.rgba(255/255, 255/255, 255/255, 0.04)
+                            border.width: 1
+                            border.color: Qt.rgba(255/255, 255/255, 255/255, 0.07)
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Hi-Fi Stereo"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 10
+                                font.weight: Nexa.Theme.fontWeightMedium
+                            }
                         }
                     }
-                }
 
-                // Playback Controls Deck
-                RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: Nexa.Theme.spacingLg
+                    // Sliding Marquee Track Title Box
+                    Item {
+                        id: fullTitleBox
+                        Layout.fillWidth: true
+                        implicitHeight: fullTitleText.implicitHeight
+                        clip: true
 
-                    // Shuffle
-                    NexaUI.NexaIconButton {
-                        icon: "󰒞"
-                        selected: root.available && root.player.shuffle === true
-                        interactive: root.available && root.player.canShuffle
-                        onClicked: root.toggleShuffle()
-                    }
-
-                    // Previous
-                    NexaUI.NexaIconButton {
-                        icon: "󰒮"
-                        interactive: root.available && root.player.canGoPrevious
-                        onClicked: root.previous()
-                    }
-
-                    // HERO Play / Pause Button
-                    Rectangle {
-                        implicitWidth: 46
-                        implicitHeight: 46
-                        radius: 23
-                        color: playMouse.pressed ? Nexa.Theme.primaryDark : Nexa.Theme.primary
-                        scale: playMouse.containsMouse ? 1.05 : 1.0
-
-                        Behavior on scale {
-                            NumberAnimation { duration: Nexa.Theme.animationFast }
-                        }
-                        Behavior on color {
-                            ColorAnimation { duration: Nexa.Theme.animationFast }
-                        }
+                        readonly property real overflowDist: Math.max(0, fullTitleText.implicitWidth - width)
+                        readonly property bool needsScroll: overflowDist > 6
 
                         Text {
-                            anchors.centerIn: parent
-                            text: root.playing ? "󰏤" : "󰐊"
-                            color: Nexa.Theme.onPrimary
-                            font.family: Nexa.Theme.iconFontFamily
+                            id: fullTitleText
+                            x: 0
+                            text: root.title
+                            color: Nexa.Theme.text
+                            font.family: Nexa.Theme.fontFamily
                             font.pixelSize: 22
+                            font.weight: Nexa.Theme.fontWeightBold
                         }
 
-                        MouseArea {
-                            id: playMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.togglePlaying()
+                        SequentialAnimation {
+                            id: fullTitleAnim
+                            running: fullTitleBox.needsScroll
+                            loops: Animation.Infinite
+
+                            PauseAnimation { duration: 2200 }
+                            NumberAnimation {
+                                target: fullTitleText
+                                property: "x"
+                                from: 0
+                                to: -fullTitleBox.overflowDist - 20
+                                duration: Math.max(1600, (fullTitleBox.overflowDist + 20) * 32)
+                                easing.type: Easing.InOutQuad
+                            }
+                            PauseAnimation { duration: 1800 }
+                            NumberAnimation {
+                                target: fullTitleText
+                                property: "x"
+                                to: 0
+                                duration: Math.max(1200, (fullTitleBox.overflowDist + 20) * 22)
+                                easing.type: Easing.InOutQuad
+                            }
+                        }
+
+                        onWidthChanged: {
+                            fullTitleText.x = 0
+                            if (needsScroll) fullTitleAnim.restart()
+                            else fullTitleAnim.stop()
+                        }
+
+                        Connections {
+                            target: root
+                            function onTitleChanged() {
+                                fullTitleText.x = 0
+                                if (fullTitleBox.needsScroll) fullTitleAnim.restart()
+                                else fullTitleAnim.stop()
+                            }
                         }
                     }
 
-                    // Next
-                    NexaUI.NexaIconButton {
-                        icon: "󰒭"
-                        interactive: root.available && root.player.canGoNext
-                        onClicked: root.next()
+                    // Artist & Album
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        Text {
+                            text: root.artist
+                            color: Nexa.Theme.primary
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 14
+                            font.weight: Nexa.Theme.fontWeightSemiBold
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            visible: root.album !== ""
+                            text: "•"
+                            color: Qt.rgba(255/255, 255/255, 255/255, 0.25)
+                            font.pixelSize: 14
+                        }
+
+                        Text {
+                            visible: root.album !== ""
+                            Layout.fillWidth: true
+                            text: root.album
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 13
+                            elide: Text.ElideRight
+                        }
                     }
 
-                    // Loop / Repeat
-                    NexaUI.NexaIconButton {
-                        icon: root.available && root.player.loopStatus === MprisLoopStatus.Track ? "󰑘" : "󰑖"
-                        selected: root.available && root.player.loopStatus !== MprisLoopStatus.None
-                        interactive: root.available && root.player.canLoop
-                        onClicked: root.toggleLoop()
+                    // ----------------------------------------------------
+                    // Modern Progress Capsule Scrubber
+                    // ----------------------------------------------------
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
+
+                        Rectangle {
+                            id: seekArea
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 16
+                            color: "transparent"
+
+                            Rectangle {
+                                id: seekTrack
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: seekMouse.containsMouse || root.seeking ? 6 : 4
+                                radius: height / 2
+                                color: Qt.rgba(255/255, 255/255, 255/255, 0.10)
+
+                                Behavior on height {
+                                    NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+                                }
+
+                                // Gradient progress fill
+                                Rectangle {
+                                    width: parent.width * root.displayedProgress
+                                    height: parent.height
+                                    radius: parent.radius
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0.0; color: Nexa.Theme.primary }
+                                        GradientStop { position: 1.0; color: Nexa.Theme.tertiary }
+                                    }
+                                }
+
+                                // Glowing playhead thumb
+                                Rectangle {
+                                    id: scrubThumb
+                                    width: seekMouse.containsMouse || root.seeking ? 14 : 10
+                                    height: width
+                                    radius: width / 2
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    x: Math.max(0, Math.min(parent.width - width, (parent.width * root.displayedProgress) - width / 2))
+                                    color: "#ffffff"
+                                    border.width: 2
+                                    border.color: Nexa.Theme.primary
+
+                                    Behavior on width {
+                                        NumberAnimation { duration: 150; easing.type: Easing.OutBack }
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                id: seekMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: root.available && root.player.canSeek && root.player.positionSupported && root.duration > 0
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+
+                                onPressed: mouse => {
+                                    root.seeking = true
+                                    root.updateSeekFromX(mouse.x, width)
+                                }
+                                onPositionChanged: mouse => {
+                                    if (pressed) root.updateSeekFromX(mouse.x, width)
+                                }
+                                onReleased: mouse => {
+                                    root.updateSeekFromX(mouse.x, width)
+                                    root.commitSeek()
+                                }
+                            }
+                        }
+
+                        // Monospace Timestamps
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            Text {
+                                text: root.formatTime(root.displayedPosition)
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.monoFontFamily
+                                font.pixelSize: 11
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Text {
+                                text: root.formatTime(root.duration)
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.monoFontFamily
+                                font.pixelSize: 11
+                            }
+                        }
                     }
-                }
 
-                // ========================================================
-                // SLEEK, MODERN AUDIO EQUALIZER SPECTRUM
-                // ========================================================
+                    // ----------------------------------------------------
+                    // Playback Controls Deck & Volume Bar
+                    // ----------------------------------------------------
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
 
-                Rectangle {
-                    id: spectrumArea
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 38
-                    radius: Nexa.Theme.radiusSm
-                    color: "transparent"
-                    clip: true
+                        // Shuffle Button
+                        Rectangle {
+                            implicitWidth: 36
+                            implicitHeight: 36
+                            radius: 18
+                            color: shufMouse.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.10) : Qt.rgba(255/255, 255/255, 255/255, 0.04)
+                            border.width: 1
+                            border.color: (root.available && root.player.shuffle === true) ? Nexa.Theme.primary : Qt.rgba(255/255, 255/255, 255/255, 0.08)
 
-                    Row {
-                        id: spectrumBars
-                        anchors.fill: parent
-                        anchors.leftMargin: 6
-                        anchors.rightMargin: 6
-                        anchors.bottomMargin: 4
-                        spacing: 2
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰒞"
+                                color: (root.available && root.player.shuffle === true) ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 16
+                            }
 
-                        Repeater {
-                            model: 64
-                            delegate: Item {
-                                id: barSlot
-                                required property int index
+                            MouseArea {
+                                id: shufMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.toggleShuffle()
+                            }
+                        }
 
-                                width: Math.max(1.5, (spectrumBars.width - spectrumBars.spacing * 63) / 64)
-                                height: spectrumBars.height
+                        // Previous Track
+                        Rectangle {
+                            implicitWidth: 36
+                            implicitHeight: 36
+                            radius: 18
+                            color: prevMouse.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.10) : Qt.rgba(255/255, 255/255, 255/255, 0.04)
+                            border.width: 1
+                            border.color: Qt.rgba(255/255, 255/255, 255/255, 0.08)
+                            scale: prevMouse.pressed ? 0.92 : 1.0
 
-                                readonly property real rawTargetLevel: {
-                                    if (!root.spectrumBins || index >= root.spectrumBins.length || !root.playing) return 0.0
-                                    return Number(root.spectrumBins[index]) || 0.0
+                            Behavior on scale { NumberAnimation { duration: 100 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰒮"
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 16
+                            }
+
+                            MouseArea {
+                                id: prevMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.previous()
+                            }
+                        }
+
+                        // HERO Play / Pause Button
+                        Rectangle {
+                            id: heroPlayBtn
+                            implicitWidth: 48
+                            implicitHeight: 48
+                            radius: 24
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: playMouse.pressed ? Nexa.Theme.primaryDark : Nexa.Theme.primary }
+                                GradientStop { position: 1.0; color: Nexa.Theme.primaryDark }
+                            }
+                            scale: playMouse.pressed ? 0.92 : playMouse.containsMouse ? 1.06 : 1.0
+
+                            Behavior on scale {
+                                NumberAnimation { duration: 150; easing.type: Easing.OutBack }
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: root.playing ? "󰏤" : "󰐊"
+                                color: Nexa.Theme.onPrimary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 22
+                            }
+
+                            MouseArea {
+                                id: playMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.togglePlaying()
+                            }
+                        }
+
+                        // Next Track
+                        Rectangle {
+                            implicitWidth: 36
+                            implicitHeight: 36
+                            radius: 18
+                            color: nextMouse.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.10) : Qt.rgba(255/255, 255/255, 255/255, 0.04)
+                            border.width: 1
+                            border.color: Qt.rgba(255/255, 255/255, 255/255, 0.08)
+                            scale: nextMouse.pressed ? 0.92 : 1.0
+
+                            Behavior on scale { NumberAnimation { duration: 100 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰒭"
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 16
+                            }
+
+                            MouseArea {
+                                id: nextMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.next()
+                            }
+                        }
+
+                        // Loop Button
+                        Rectangle {
+                            implicitWidth: 36
+                            implicitHeight: 36
+                            radius: 18
+                            color: loopMouse.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.10) : Qt.rgba(255/255, 255/255, 255/255, 0.04)
+                            border.width: 1
+                            border.color: (root.available && root.player.loopStatus !== MprisLoopStatus.None) ? Nexa.Theme.primary : Qt.rgba(255/255, 255/255, 255/255, 0.08)
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: root.available && root.player.loopStatus === MprisLoopStatus.Track ? "󰑘" : "󰑖"
+                                color: (root.available && root.player.loopStatus !== MprisLoopStatus.None) ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 16
+                            }
+
+                            MouseArea {
+                                id: loopMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.toggleLoop()
+                            }
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        // ------------------------------------------------
+                        // INLINE VOLUME CONTROL DECK
+                        // ------------------------------------------------
+                        RowLayout {
+                            spacing: 8
+
+                            // Mute/Unmute Icon
+                            Rectangle {
+                                implicitWidth: 28
+                                implicitHeight: 28
+                                radius: 14
+                                color: "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.sinkMuted || root.sinkVolume === 0
+                                        ? "󰝟"
+                                        : root.sinkVolume > 0.5 ? "󰕾" : "󰖀"
+                                    color: root.sinkMuted ? "#ef4444" : Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 15
                                 }
 
-                                property real visualLevel: rawTargetLevel
-
-                                Behavior on visualLevel {
-                                    NumberAnimation { duration: 40; easing.type: Easing.OutQuad }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.toggleSinkMute()
                                 }
+                            }
+
+                            // Volume Drag Capsule
+                            Rectangle {
+                                id: volBarTrack
+                                Layout.preferredWidth: 70
+                                Layout.preferredHeight: 5
+                                radius: 2.5
+                                color: Qt.rgba(255/255, 255/255, 255/255, 0.12)
 
                                 Rectangle {
-                                    anchors.bottom: parent.bottom
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: parent.width
-                                    height: Math.max(2, parent.height * barSlot.visualLevel)
-                                    radius: 1
+                                    width: parent.width * (root.sinkMuted ? 0 : root.sinkVolume)
+                                    height: parent.height
+                                    radius: parent.radius
+                                    color: root.sinkMuted ? "#ef4444" : Nexa.Theme.primary
+                                }
 
-                                    // Luminous Gradient Fill across 64 note bands
-                                    color: {
-                                        const ratio = barSlot.index / 63.0
-                                        return Qt.rgba(
-                                            Nexa.Theme.primary.r + (Nexa.Theme.tertiary.r - Nexa.Theme.primary.r) * ratio,
-                                            Nexa.Theme.primary.g + (Nexa.Theme.tertiary.g - Nexa.Theme.primary.g) * ratio,
-                                            Nexa.Theme.primary.b + (Nexa.Theme.tertiary.b - Nexa.Theme.primary.b) * ratio,
-                                            0.45 + barSlot.visualLevel * 0.55
-                                        )
+                                MouseArea {
+                                    anchors.fill: parent
+                                    anchors.margins: -4
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+
+                                    onPressed: mouse => {
+                                        const ratio = Math.max(0, Math.min(1, mouse.x / width))
+                                        root.setSinkVolume(ratio)
+                                    }
+                                    onPositionChanged: mouse => {
+                                        if (pressed) {
+                                            const ratio = Math.max(0, Math.min(1, mouse.x / width))
+                                            root.setSinkVolume(ratio)
+                                        }
+                                    }
+                                }
+                            }
+
+                            Text {
+                                text: Math.round((root.sinkMuted ? 0 : root.sinkVolume) * 100) + "%"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.monoFontFamily
+                                font.pixelSize: 11
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------------------
+                    // 64-Band Equalizer Spectrum Visualizer
+                    // ----------------------------------------------------
+                    Rectangle {
+                        id: spectrumArea
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 28
+                        radius: Nexa.Theme.radiusSm
+                        color: "transparent"
+                        clip: true
+
+                        Row {
+                            id: spectrumBars
+                            anchors.fill: parent
+                            anchors.leftMargin: 2
+                            anchors.rightMargin: 2
+                            anchors.bottomMargin: 2
+                            spacing: 2
+
+                            Repeater {
+                                model: 48
+                                delegate: Item {
+                                    id: barSlot
+                                    required property int index
+
+                                    width: Math.max(1.5, (spectrumBars.width - spectrumBars.spacing * 47) / 48)
+                                    height: spectrumBars.height
+
+                                    readonly property real rawTargetLevel: {
+                                        if (!root.playing) return 0.0
+                                        if (root.spectrumBins && index < root.spectrumBins.length) {
+                                            return Number(root.spectrumBins[index]) || 0.0
+                                        }
+                                        return 0.0
+                                    }
+
+                                    property real visualLevel: rawTargetLevel
+
+                                    Behavior on visualLevel {
+                                        NumberAnimation { duration: 40; easing.type: Easing.OutQuad }
+                                    }
+
+                                    Rectangle {
+                                        anchors.bottom: parent.bottom
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        width: parent.width
+                                        height: Math.max(2, parent.height * barSlot.visualLevel)
+                                        radius: 1
+
+                                        color: {
+                                            const ratio = barSlot.index / 47.0
+                                            return Qt.rgba(
+                                                Nexa.Theme.primary.r + (Nexa.Theme.tertiary.r - Nexa.Theme.primary.r) * ratio,
+                                                Nexa.Theme.primary.g + (Nexa.Theme.tertiary.g - Nexa.Theme.primary.g) * ratio,
+                                                Nexa.Theme.primary.b + (Nexa.Theme.tertiary.b - Nexa.Theme.primary.b) * ratio,
+                                                0.35 + barSlot.visualLevel * 0.65
+                                            )
+                                        }
                                     }
                                 }
                             }

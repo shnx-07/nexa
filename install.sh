@@ -248,6 +248,8 @@ fi
 # Ensure all scripts are executable
 chmod +x "$HOME"/.config/nexa/scripts/* 2>/dev/null || true
 chmod +x "$HOME"/.config/hypr/scripts/* 2>/dev/null || true
+mkdir -p "$HOME/.local/bin"
+ln -sf "$HOME/.config/nexa/scripts/nexa-avatar.sh" "$HOME/.local/bin/nexa-avatar" 2>/dev/null || true
 
 # Pre-create required runtime directories
 mkdir -p "$HOME/.cache/nexa/theme"

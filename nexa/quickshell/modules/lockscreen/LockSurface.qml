@@ -1,9 +1,13 @@
 import QtQuick
+import QtQuick.Layouts
 import QtQuick.Controls
 import QtMultimedia
+import Qt5Compat.GraphicalEffects
 
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Mpris
+import Quickshell.Services.UPower
 
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
@@ -61,6 +65,71 @@ Item {
 
     property string authMessage: ""
     property bool authFailed: false
+
+    // ============================================================
+    // PROFILE PICTURE / AVATAR AUTO-DETECTION
+    // ============================================================
+
+    property string avatarUrl: ""
+    property bool avatarLoaded: false
+
+    Process {
+        id: avatarFinder
+        command: [
+            "sh", "-c",
+            "for f in \"$HOME/.face\" \"$HOME/.face.icon\" \"$HOME/.config/nexa/avatar.png\" \"$HOME/.config/nexa/avatar.jpg\" \"$HOME/.config/nexa/avatar.svg\" \"$HOME/.config/nexa/avatar.webp\" \"$HOME/.config/nexa/avatar.jpeg\" \"$HOME/.config/nexa/avatars/cyber_neon.svg\"; do "
+            + "if [ -f \"$f\" ]; then echo \"$f\"; exit 0; fi; done"
+        ]
+        running: true
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: path => {
+                const p = path.trim()
+                if (p.length > 0) {
+                    root.avatarUrl = "file://" + p
+                    root.avatarLoaded = true
+                }
+            }
+        }
+    }
+
+    // ============================================================
+    // MPRIS NOW PLAYING ON LOCKSCREEN
+    // ============================================================
+
+    readonly property var lockPlayer: {
+        const list = Mpris.players.values
+        if (!list || list.length === 0) return null
+        for (let i = 0; i < list.length; ++i) {
+            if (list[i] && list[i].playbackState === MprisPlaybackState.Playing) return list[i]
+        }
+        for (let i = 0; i < list.length; ++i) {
+            if (list[i] && list[i].playbackState === MprisPlaybackState.Paused && (list[i].trackTitle || list[i].trackArtist)) return list[i]
+        }
+        return null
+    }
+
+    readonly property bool hasLockMedia:
+        lockPlayer !== null && (lockPlayer.trackTitle !== "" || lockPlayer.trackArtist !== "")
+
+    // ============================================================
+    // SYSTEM TELEMETRY (BATTERY / HOST)
+    // ============================================================
+
+    readonly property var batteryDev: UPower.displayDevice
+    readonly property bool batteryAvailable: batteryDev && batteryDev.isBattery
+    readonly property int batteryPct: batteryDev ? Math.round(batteryDev.percentage * 100) : 100
+    readonly property bool isCharging: batteryDev ? (batteryDev.charging || !UPower.onBattery) : false
+
+    function suspendSystem() {
+        Quickshell.execDetached(["systemctl", "suspend"])
+    }
+    function rebootSystem() {
+        Quickshell.execDetached(["systemctl", "reboot"])
+    }
+    function powerOffSystem() {
+        Quickshell.execDetached(["systemctl", "poweroff"])
+    }
 
 
     // ============================================================
@@ -524,6 +593,121 @@ Item {
         }
     }
 
+    // ============================================================
+    // TOP TELEMETRY BAR (CYBER-MINIMALIST)
+    // ============================================================
+
+    RowLayout {
+        id: topTelemetryBar
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            margins: 32
+        }
+        height: 38
+        z: 25
+
+        // Left Date Pill
+        Rectangle {
+            implicitWidth: dateRow.implicitWidth + 24
+            implicitHeight: 32
+            radius: 16
+            color: Qt.rgba(0.06, 0.08, 0.12, 0.65)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.08)
+
+            Row {
+                id: dateRow
+                anchors.centerIn: parent
+                spacing: 8
+
+                Rectangle {
+                    width: 6; height: 6; radius: 3
+                    color: Nexa.Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Qt.formatDateTime(new Date(), "dddd, d MMMM")
+                    color: Nexa.Theme.text
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 12
+                    font.weight: Nexa.Theme.fontWeightMedium
+                }
+            }
+        }
+
+        Item { Layout.fillWidth: true }
+
+        // Right System Status Pill (Battery + Host)
+        Rectangle {
+            implicitWidth: telemetryRow.implicitWidth + 24
+            implicitHeight: 32
+            radius: 16
+            color: Qt.rgba(0.06, 0.08, 0.12, 0.65)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.08)
+
+            Row {
+                id: telemetryRow
+                anchors.centerIn: parent
+                spacing: 14
+
+                // Battery Badge
+                Row {
+                    spacing: 6
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.isCharging ? "󰂄" : (root.batteryPct > 20 ? "󰁹" : "󰂃")
+                        color: root.isCharging ? "#34d399" : (root.batteryPct <= 20 ? "#ef4444" : Nexa.Theme.text)
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: 15
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.batteryPct + "%"
+                        color: Nexa.Theme.text
+                        font.family: Nexa.Theme.monoFontFamily
+                        font.pixelSize: 12
+                    }
+                }
+
+                Rectangle {
+                    width: 1; height: 12
+                    color: Qt.rgba(1, 1, 1, 0.15)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                // Host OS Badge
+                Row {
+                    spacing: 6
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "󰣇"
+                        color: Nexa.Theme.primary
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: 14
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "cachyos"
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: 12
+                        font.weight: Nexa.Theme.fontWeightMedium
+                    }
+                }
+            }
+        }
+    }
 
     // ============================================================
     // CLOCK
@@ -688,59 +872,87 @@ Item {
 
 
         // ========================================================
-        // ILLUMINATED AVATAR RING
+        // ILLUMINATED AVATAR RING & PROFILE PICTURE
         // ========================================================
 
-        Rectangle {
-            anchors.horizontalCenter:
-                parent.horizontalCenter
+        Item {
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: 104
+            height: 104
 
-            width: 90
-            height: 90
+            // Pulsing Ambient Halo Ring
+            Rectangle {
+                id: outerHaloRing
+                anchors.fill: parent
+                radius: width / 2
+                color: "transparent"
+                border.width: passwordInput.activeFocus ? 2 : 1
+                border.color: passwordInput.activeFocus
+                    ? Nexa.Theme.primary
+                    : Qt.rgba(1, 1, 1, 0.14)
 
-            radius:
-                width / 2
+                Behavior on border.color {
+                    ColorAnimation { duration: 250 }
+                }
 
-            color:
-                Qt.rgba(
-                    Nexa.Theme.surfaceContainerLow.r,
-                    Nexa.Theme.surfaceContainerLow.g,
-                    Nexa.Theme.surfaceContainerLow.b,
-                    0.82
-                )
-
-            border.width: Nexa.Theme.borderThin
-            border.color: passwordInput.activeFocus
-                ? Nexa.Theme.primary
-                : Nexa.Theme.border
-
-            Behavior on border.color {
-                ColorAnimation { duration: Nexa.Theme.animationFast }
+                // Breathing glow animation when focused
+                SequentialAnimation on opacity {
+                    loops: Animation.Infinite
+                    running: passwordInput.activeFocus
+                    NumberAnimation { from: 0.5; to: 1.0; duration: 900; easing.type: Easing.InOutSine }
+                    NumberAnimation { from: 1.0; to: 0.5; duration: 900; easing.type: Easing.InOutSine }
+                }
             }
 
-            Text {
-                anchors.centerIn:
-                    parent
+            // Inner Profile Picture Container
+            Item {
+                id: innerAvatarCard
+                anchors.centerIn: parent
+                width: 92
+                height: 92
 
-                text:
-                    root.username.length > 0
-                    ? root.username
-                        .charAt(0)
-                        .toUpperCase()
-                    : "N"
+                layer.enabled: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle {
+                        width: innerAvatarCard.width
+                        height: innerAvatarCard.height
+                        radius: innerAvatarCard.width / 2
+                    }
+                }
 
-                color:
-                    Nexa.Theme.text
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: "#12131c"
+                }
 
+                Image {
+                    id: avatarImg
+                    anchors.fill: parent
+                    source: root.avatarUrl
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    cache: true
+                    visible: root.avatarLoaded && avatarImg.status === Image.Ready
+                }
 
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
+                // Fallback initial badge if image fails/empty
+                Rectangle {
+                    anchors.fill: parent
+                    visible: !avatarImg.visible
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Nexa.Theme.primary }
+                        GradientStop { position: 1.0; color: Nexa.Theme.tertiary }
+                    }
 
-                    pixelSize: 36
-
-                    weight:
-                        Nexa.Theme.fontWeightDemiBold
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.username.length > 0 ? root.username.charAt(0).toUpperCase() : "N"
+                        color: "#ffffff"
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: 36
+                        font.weight: Nexa.Theme.fontWeightBold
+                    }
                 }
             }
         }
@@ -780,71 +992,57 @@ Item {
         Rectangle {
             id: passwordBox
 
-            width:
-                parent.width
+            width: parent.width
+            height: 50
+            radius: 25
 
-            height: 52
-
-            radius: 14
-
-
-            color:
-                Qt.rgba(
-                    Nexa.Theme.surface.r,
-                    Nexa.Theme.surface.g,
-                    Nexa.Theme.surface.b,
-                    passwordInput.activeFocus
-                    ? 0.90
-                    : 0.70
-                )
-
+            color: Qt.rgba(
+                Nexa.Theme.surface.r,
+                Nexa.Theme.surface.g,
+                Nexa.Theme.surface.b,
+                passwordInput.activeFocus ? 0.90 : 0.70
+            )
 
             border.width: 1
-
-
-            border.color:
-                root.authFailed
+            border.color: root.authFailed
                 ? Nexa.Theme.error
                 : passwordInput.activeFocus
                     ? Nexa.Theme.primary
-                    : Nexa.Theme.border
-
+                    : Qt.rgba(1, 1, 1, 0.12)
 
             Behavior on color {
-                ColorAnimation {
-                    duration: 150
-                }
+                ColorAnimation { duration: 150 }
             }
-
 
             Behavior on border.color {
-                ColorAnimation {
-                    duration: 150
-                }
+                ColorAnimation { duration: 150 }
             }
-
 
             Row {
                 anchors {
                     fill: parent
-
-                    leftMargin: 17
-                    rightMargin: 9
+                    leftMargin: 16
+                    rightMargin: 8
                 }
+                spacing: 10
 
-                spacing: 8
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "󰌾"
+                    color: passwordInput.activeFocus ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: 16
 
+                    Behavior on color {
+                        ColorAnimation { duration: 150 }
+                    }
+                }
 
                 TextInput {
                     id: passwordInput
 
-                    width:
-                        parent.width
-                        - unlockButton.width
-                        - parent.spacing
-
-                    height:
-                        parent.height
+                    width: parent.width - unlockButton.width - 26 - parent.spacing
+                    height: parent.height
 
                     enabled:
                         !root.authenticating
@@ -1041,6 +1239,208 @@ Item {
 
     
 
+
+    // ============================================================
+    // NOW PLAYING MINI CARD (BOTTOM LEFT)
+    // ============================================================
+
+    Rectangle {
+        id: lockMediaCard
+        anchors {
+            left: parent.left
+            bottom: parent.bottom
+            margins: 32
+        }
+        width: 270
+        height: 52
+        radius: 16
+        color: Qt.rgba(0.06, 0.08, 0.12, 0.75)
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, 0.10)
+        visible: root.hasLockMedia
+        z: 25
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 7
+            spacing: 10
+
+            // Album art thumbnail
+            Rectangle {
+                Layout.preferredWidth: 38
+                Layout.preferredHeight: 38
+                radius: 10
+                color: "#161824"
+                clip: true
+
+                Image {
+                    anchors.fill: parent
+                    source: root.lockPlayer ? root.lockPlayer.trackArtUrl : ""
+                    fillMode: Image.PreserveAspectCrop
+                    visible: source !== ""
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    visible: !root.lockPlayer || root.lockPlayer.trackArtUrl === ""
+                    text: "󰎆"
+                    color: Nexa.Theme.primary
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: 18
+                }
+            }
+
+            // Track info
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+
+                Text {
+                    Layout.fillWidth: true
+                    text: root.lockPlayer ? root.lockPlayer.trackTitle : ""
+                    color: Nexa.Theme.text
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 12
+                    font.weight: Nexa.Theme.fontWeightBold
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: root.lockPlayer ? root.lockPlayer.trackArtist : ""
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                }
+            }
+
+            // Play / Pause Quick Button
+            Rectangle {
+                Layout.preferredWidth: 34
+                Layout.preferredHeight: 34
+                radius: 17
+                color: mediaBtnMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(255, 255, 255, 0.08)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: (root.lockPlayer && root.lockPlayer.playbackState === MprisPlaybackState.Playing) ? "󰏤" : "󰐊"
+                    color: Nexa.Theme.text
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: 16
+                }
+
+                MouseArea {
+                    id: mediaBtnMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (root.lockPlayer) root.lockPlayer.togglePlaying()
+                    }
+                }
+            }
+        }
+    }
+
+    // ============================================================
+    // POWER ACTIONS DECK (BOTTOM RIGHT)
+    // ============================================================
+
+    Row {
+        id: powerActionsDeck
+        anchors {
+            right: parent.right
+            bottom: parent.bottom
+            margins: 32
+        }
+        spacing: 12
+        z: 25
+
+        // Sleep / Suspend Button
+        Rectangle {
+            width: 38
+            height: 38
+            radius: 19
+            color: sleepMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0.06, 0.08, 0.12, 0.65)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.10)
+            scale: sleepMouse.pressed ? 0.92 : 1.0
+            Behavior on scale { NumberAnimation { duration: 100 } }
+
+            Text {
+                anchors.centerIn: parent
+                text: "󰤄"
+                color: Nexa.Theme.text
+                font.family: Nexa.Theme.iconFontFamily
+                font.pixelSize: 16
+            }
+
+            MouseArea {
+                id: sleepMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.suspendSystem()
+            }
+        }
+
+        // Reboot Button
+        Rectangle {
+            width: 38
+            height: 38
+            radius: 19
+            color: rebootMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0.06, 0.08, 0.12, 0.65)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.10)
+            scale: rebootMouse.pressed ? 0.92 : 1.0
+            Behavior on scale { NumberAnimation { duration: 100 } }
+
+            Text {
+                anchors.centerIn: parent
+                text: "󰜉"
+                color: Nexa.Theme.text
+                font.family: Nexa.Theme.iconFontFamily
+                font.pixelSize: 16
+            }
+
+            MouseArea {
+                id: rebootMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.rebootSystem()
+            }
+        }
+
+        // Power Off Button
+        Rectangle {
+            width: 38
+            height: 38
+            radius: 19
+            color: powerMouse.containsMouse ? Qt.rgba(239/255, 68/255, 68/255, 0.25) : Qt.rgba(0.06, 0.08, 0.12, 0.65)
+            border.width: 1
+            border.color: powerMouse.containsMouse ? "#ef4444" : Qt.rgba(1, 1, 1, 0.10)
+            scale: powerMouse.pressed ? 0.92 : 1.0
+            Behavior on scale { NumberAnimation { duration: 100 } }
+
+            Text {
+                anchors.centerIn: parent
+                text: "󰐥"
+                color: powerMouse.containsMouse ? "#ef4444" : Nexa.Theme.text
+                font.family: Nexa.Theme.iconFontFamily
+                font.pixelSize: 16
+            }
+
+            MouseArea {
+                id: powerMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.powerOffSystem()
+            }
+        }
+    }
 
     // ============================================================
     // DEVELOPMENT PREVIEW INDICATOR

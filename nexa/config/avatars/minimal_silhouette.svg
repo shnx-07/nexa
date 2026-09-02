@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="silbg" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="50%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" rx="100" fill="url(#silbg)"/>
+  <!-- Head -->
+  <circle cx="100" cy="80" r="36" fill="#f8fafc"/>
+  <!-- Shoulders -->
+  <path d="M35 185 C35 140 65 130 100 130 C135 130 165 140 165 185 Z" fill="#f8fafc"/>
+  <!-- Specular Outer Rim -->
+  <circle cx="100" cy="100" r="97" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
+</svg>

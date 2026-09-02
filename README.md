@@ -121,6 +121,34 @@ If you prefer installing dependencies manually or want a complete breakdown:
 * **0% Idle Polling:** System monitors only query hardware when open, eliminating background CPU spikes.
 * **Smart Process Termination:** `Super + Q` terminates background tray hoarders (Discord, Spotify, etc.) directly with `SIGTERM` so closed apps never linger in RAM.
 
+### 🔒 Cyber-Minimalist Glass Lock Screen & Avatar Customization
+* **Profile Picture & Illuminated Avatar Halo:** Features hardware-accelerated circular `OpacityMask` cropping and an animated glowing halo ring that pulses with theme accents when typing passwords.
+* **Intelligent Auto-Detection:** Automatically checks and loads your profile picture from `~/.face`, `~/.face.icon`, `~/.config/nexa/avatar.png` (or `.jpg`/`.svg`/`.webp`), falling back to a gradient initial badge.
+* **Built-in Curated Presets:** Comes bundled with handcrafted high-res SVG presets (`cyber_neon`, `astro_space`, `mecha_cat`, `crystal_prism`, `minimal_silhouette`).
+* **Instant Avatar Management (`nexa-avatar`):**
+  ```bash
+  # List all available avatar presets
+  nexa-avatar list
+
+  # Set avatar to a curated preset
+  nexa-avatar set astro_space
+  nexa-avatar set mecha_cat
+  nexa-avatar set cyber_neon
+
+  # Set any custom picture or wallpaper from disk as your lock screen avatar
+  nexa-avatar set ~/Pictures/avatar.png
+  ```
+* **Live System Telemetry & Power Actions:**
+  * Top bar displays live Battery percentage / charging beacon and OS host badge (`cachyos`).
+  * Bottom-right quick actions for **Sleep** (`󰤄`), **Reboot** (`󰜉`), and **Power Off** (`󰐥`).
+  * Bottom-left floating glass **Now Playing Card** with direct Play/Pause controls.
+
+### 🎵 Cyber-Luminous Glass Deck (Music Experience)
+* **Spinning Vinyl Disc:** A realistic vinyl record with micro-grooves physically slides out from behind the album artwork and spins continuously during playback.
+* **Ambient Artwork Bloom:** Dynamic blurred album art sampling creates an atmospheric underglow behind the player.
+* **Integrated Controls & Scrubber:** High-precision seekbar with monospace timestamps, hero play/pause button, shuffle/loop toggles, and an **inline system/music volume slider** right on the deck.
+* **48-Band CAVA Spectrum:** Audio-reactive visualizer spectrum across the base.
+
 ### 📱 Modern App Launcher & Workspace Manager
 * **App Launcher:** High-density 2-column grid layout with fluid spring entrance motion and category chips (`Super + A`).
 * **Workspace Manager:** Fullscreen overview with live Wayland window previews and candidate drop targets (`Super + Tab` / `Super + Shift + W`).
