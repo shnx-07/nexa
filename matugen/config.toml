@@ -42,3 +42,7 @@ output_path = "~/.config/htop/htoprc"
 [templates.starship]
 input_path = "~/.config/matugen/templates/starship-preset.toml"
 output_path = "~/.config/starship.toml"
+
+[templates.hypr]
+input_path = "~/.config/matugen/templates/hypr-colors.lua"
+output_path = "~/.config/hypr/scheme/current.lua"

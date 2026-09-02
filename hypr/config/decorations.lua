@@ -9,8 +9,11 @@ colors = {
 }
 
 local function load_dynamic_theme()
-	local cache = (os.getenv("HOME") or "~") .. "/.cache"
+	local home = os.getenv("HOME") or "~"
+	local cache = home .. "/.cache"
+	local config = home .. "/.config/hypr"
 	local paths = {
+		config .. "/scheme/current.lua",
 		cache .. "/hypr/colors.lua",
 		cache .. "/wal/colors.lua",
 		cache .. "/matugen/colors.lua",
