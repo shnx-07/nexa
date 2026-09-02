@@ -670,6 +670,7 @@ impl NetworkService {
                 ],
             );
         } else {
+            let _ = Command::new("rfkill").args(["block", "bluetooth"]).status();
             let _ = run(
                 "bluetoothctl",
                 [

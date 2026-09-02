@@ -255,6 +255,11 @@ mkdir -p "$HOME/.cache/nexa/wallpapers"
 mkdir -p "$HOME/.cache/nexa/wallpapers/video"
 mkdir -p "$HOME/Pictures/Wallpapers"
 
+# Ensure BlueZ respects user Bluetooth power state across reboots
+if [ -f /etc/bluetooth/main.conf ]; then
+    sudo sed -i "s/^#*AutoEnable=true/AutoEnable=false/" /etc/bluetooth/main.conf 2>/dev/null || true
+fi
+
 log_success "Dotfiles deployed successfully."
 
 # ------------------------------------------------------------------------------

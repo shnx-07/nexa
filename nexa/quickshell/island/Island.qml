@@ -406,6 +406,7 @@ PanelWindow {
     readonly property bool batteryReady: batteryDevice && batteryDevice.ready
     readonly property bool onBattery: UPower.onBattery
     property bool batteryInitialized: false
+    property bool lowBatteryWarned: false
 
     function triggerBatteryOsd(charging: bool, pct: int): void {
         if (root.full || root.specialModeActive) return
@@ -415,7 +416,34 @@ PanelWindow {
         root.osdTitle = charging ? "Charging" : "On Battery"
         root.osdSubtitle = pct + "%"
         root.osdActive = true
+        osdDismissTimer.interval = 2600
         osdDismissTimer.restart()
+    }
+
+    function triggerLowBatteryAlert(pct: int): void {
+        if (root.full || root.specialModeActive) return
+        root.osdType = "battery_low"
+        root.osdBatteryCharging = false
+        root.osdValue = Math.max(0.0, Math.min(1.0, pct / 100.0))
+        root.osdTitle = "Low Battery"
+        root.osdSubtitle = pct + "% Remaining"
+        root.osdActive = true
+        osdDismissTimer.interval = 5000
+        osdDismissTimer.restart()
+    }
+
+    function checkBatteryLevel(): void {
+        if (!root.batteryInitialized || !root.batteryReady) return
+        const pct = Math.round(batteryDevice.percentage * 100)
+
+        if (root.onBattery && pct <= 25) {
+            if (!root.lowBatteryWarned) {
+                root.lowBatteryWarned = true
+                root.triggerLowBatteryAlert(pct)
+            }
+        } else if (!root.onBattery || pct > 30) {
+            root.lowBatteryWarned = false
+        }
     }
 
     function applyPowerState(onBat: bool): void {
@@ -436,15 +464,36 @@ PanelWindow {
         onTriggered: {
             root.batteryInitialized = true
             root.applyPowerState(root.onBattery)
+            root.checkBatteryLevel()
+        }
+    }
+
+    Connections {
+        target: root.batteryReady ? root.batteryDevice : null
+
+        function onPercentageChanged() {
+            root.checkBatteryLevel()
         }
     }
 
     onOnBatteryChanged: {
         if (!root.batteryInitialized || !root.batteryReady) return
         const pct = Math.round(batteryDevice.percentage * 100)
-        root.triggerBatteryOsd(!root.onBattery, pct)
         root.applyPowerState(root.onBattery)
+
+        if (root.onBattery && pct <= 25) {
+            if (!root.lowBatteryWarned) {
+                root.lowBatteryWarned = true
+                root.triggerLowBatteryAlert(pct)
+            }
+        } else {
+            if (!root.onBattery) {
+                root.lowBatteryWarned = false
+            }
+            root.triggerBatteryOsd(!root.onBattery, pct)
+        }
     }
+
 
     // ============================================================
     // BLUETOOTH DEVICE CONNECTION WATCHER
@@ -663,6 +712,19 @@ PanelWindow {
     readonly property bool specialModeActive:
         specialMode !== "none"
 
+    function enterSpecialMode(mode: string): void {
+        root.osdActive = false
+        root.osdType = "none"
+        osdDismissTimer.stop()
+        if (islandContent) {
+            islandContent.dismissNotification()
+        }
+        root.specialMode = mode
+        root.full = true
+        root.hovered = false
+        islandFocus.forceActiveFocus()
+    }
+
     IpcHandler {
         target: "nexaIsland"
 
@@ -676,6 +738,10 @@ PanelWindow {
 
         function triggerBatteryOsd(charging: bool, pct: int): void {
             root.triggerBatteryOsd(charging, pct)
+        }
+
+        function triggerLowBatteryAlert(pct: int): void {
+            root.triggerLowBatteryAlert(pct || 22)
         }
 
         function triggerBluetoothOsd(name: string, icon: string): void {
@@ -720,67 +786,41 @@ PanelWindow {
         }
 
         function openSearch(): void {
-            root.specialMode = "search"
-            root.full = true
-            root.hovered = false
-
-            islandFocus.forceActiveFocus()
+            root.enterSpecialMode("search")
         }
 
         function openCommand(): void {
-            root.specialMode = "command"
-            root.full = true
-            root.hovered = false
-
-            islandFocus.forceActiveFocus()
+            root.enterSpecialMode("command")
         }
 
         function openPower(): void {
-            root.specialMode = "power"
-            root.full = true
-            root.hovered = false
-
-            islandFocus.forceActiveFocus()
+            root.enterSpecialMode("power")
         }
 
         function openAppLauncher(): void {
-            root.specialMode = "appLauncher"
-            root.full = true
-            root.hovered = false
-
-            islandFocus.forceActiveFocus()
+            root.enterSpecialMode("appLauncher")
         }
 
         function toggleAppLauncher(): void {
             if (root.specialMode === "appLauncher") {
                 root.closeIsland()
             } else {
-                root.specialMode = "appLauncher"
-                root.full = true
-                root.hovered = false
-
-                islandFocus.forceActiveFocus()
+                root.enterSpecialMode("appLauncher")
             }
         }
 
         function openControlCenter(page: int): void {
-            root.specialMode = "controlCenter"
-            root.full = true
-            root.hovered = false
+            root.enterSpecialMode("controlCenter")
             if (page !== undefined && page >= 0) {
                 islandContent.setControlCenterPage(page)
             }
-            islandFocus.forceActiveFocus()
         }
 
         function toggleControlCenter(): void {
             if (root.specialMode === "controlCenter") {
                 root.closeIsland()
             } else {
-                root.specialMode = "controlCenter"
-                root.full = true
-                root.hovered = false
-                islandFocus.forceActiveFocus()
+                root.enterSpecialMode("controlCenter")
             }
         }
 
@@ -795,6 +835,10 @@ PanelWindow {
 
         function openQuickSettings(): void {
             root.openControlCenter(0)
+        }
+
+        function close(): void {
+            root.closeIsland()
         }
     }
 
@@ -924,7 +968,7 @@ PanelWindow {
                 return root.osdAirplaneWidth
             if (root.osdType === "battery")
                 return root.osdBatteryWidth
-            if (root.osdType === "bluetooth")
+            if (root.osdType === "battery_low")
                 return root.osdBluetoothWidth
             if (root.osdType === "wifi")
                 return root.osdWifiWidth
@@ -971,7 +1015,7 @@ PanelWindow {
                 return root.osdAirplaneHeight
             if (root.osdType === "battery")
                 return root.osdBatteryHeight
-            if (root.osdType === "bluetooth")
+            if (root.osdType === "battery_low")
                 return root.osdBluetoothHeight
             if (root.osdType === "wifi")
                 return root.osdWifiHeight

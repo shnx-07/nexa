@@ -52,12 +52,45 @@ Item {
     // ============================================================
 
     property var notificationData: null
+    property var pendingNotificationData: null
     property bool notificationActive: false
 
     property double lastNotificationSerial: -1
 
     property bool notificationEventInitialized: false
     signal notificationPreviewActivated()
+
+    function dismissNotification(): void {
+        root.notificationActive = false
+        root.pendingNotificationData = null
+        notificationTimer.stop()
+    }
+
+    function showNotification(data) {
+        if (!data || root.full || root.specialModeActive) return
+        root.notificationData = data
+        root.notificationActive = true
+        notificationTimer.interval = Math.max(1, Math.min(data.timeoutMs || 5000, 5000))
+        notificationTimer.restart()
+    }
+
+    onOsdActiveChanged: {
+        if (root.osdActive) {
+            if (root.notificationActive) {
+                root.pendingNotificationData = root.notificationData
+                root.notificationActive = false
+                notificationTimer.stop()
+            }
+        } else {
+            if (root.pendingNotificationData !== null) {
+                const data = root.pendingNotificationData
+                root.pendingNotificationData = null
+                if (!root.specialModeActive && !root.full) {
+                    root.showNotification(data)
+                }
+            }
+        }
+    }
 
     // ============================================================
     // TRANSIENT OSD (VOLUME / MUTE / BRIGHTNESS / AIRPLANE)
@@ -268,6 +301,7 @@ Item {
 
         visible:
             root.notificationActive
+            && !root.osdActive
             && !root.full
             && !root.specialModeActive
 
@@ -427,18 +461,12 @@ Item {
                 return
             }
 
-            root.notificationActive = true
+            if (root.osdActive) {
+                root.pendingNotificationData = data
+                return
+            }
 
-            notificationTimer.interval =
-                Math.max(
-                    1,
-                    Math.min(
-                        data.timeoutMs || 5000,
-                        5000
-                    )
-                )
-
-            notificationTimer.restart()
+            root.showNotification(data)
 
         } catch (error) {
             console.warn(
@@ -491,6 +519,9 @@ Item {
             if (root.full)
                 return root.section === "clock"
 
+            if (root.notificationActive || root.osdActive)
+                return false
+
             if (root.recorderContextActive)
                 return false
 
@@ -501,9 +532,6 @@ Item {
                 return true
 
             if (root.mediaContextActive)
-               return false
-
-            if (root.notificationActive || root.osdActive)
                return false
 
             return true

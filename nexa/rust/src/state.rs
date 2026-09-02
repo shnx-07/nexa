@@ -224,6 +224,7 @@ pub fn restore_all() -> Result<(), String> {
         let _ = Command::new("rfkill").args(["unblock", "bluetooth"]).status();
         let _ = Command::new("bluetoothctl").args(["power", "on"]).status();
     } else {
+        let _ = Command::new("rfkill").args(["block", "bluetooth"]).status();
         let _ = Command::new("bluetoothctl").args(["power", "off"]).status();
     }
 

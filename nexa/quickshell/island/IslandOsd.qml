@@ -337,6 +337,112 @@ Item {
     }
 
     // ============================================================
+    // 4b. UNIQUE LOW BATTERY ALERT FLAG (< 25%)
+    // ============================================================
+
+    RowLayout {
+        id: batteryLowLayout
+        anchors.fill: parent
+        anchors.leftMargin: 16
+        anchors.rightMargin: 16
+        spacing: 12
+        visible: root.osdType === "battery_low"
+
+        // Pulsing Glowing Warning Badge
+        Rectangle {
+            width: 28
+            height: 28
+            radius: 9
+            color: Qt.rgba(239/255, 68/255, 68/255, 0.22)
+            border.width: Nexa.Theme.borderThin
+            border.color: Qt.rgba(239/255, 68/255, 68/255, 0.60)
+            Layout.alignment: Qt.AlignVCenter
+
+            SequentialAnimation on opacity {
+                loops: Animation.Infinite
+                running: root.osdType === "battery_low"
+                NumberAnimation { to: 0.45; duration: 700; easing.type: Easing.InOutQuad }
+                NumberAnimation { to: 1.0; duration: 700; easing.type: Easing.InOutQuad }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                text: "󰂃"
+                color: "#ef4444"
+                font.family: Nexa.Theme.iconFontFamily
+                font.pixelSize: 16
+            }
+        }
+
+        // Warning Title + Subtitle
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
+            spacing: 2
+
+            Text {
+                text: "Low Battery"
+                color: "#ef4444"
+                font.family: Nexa.Theme.fontFamily
+                font.pixelSize: 13
+                font.weight: Nexa.Theme.fontWeightBold
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+            }
+
+            Text {
+                text: "Connect charger now"
+                color: Nexa.Theme.mutedText
+                font.family: Nexa.Theme.fontFamily
+                font.pixelSize: 11
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+            }
+        }
+
+        // Unique Urgent Flag Pill with Flashing Beacon
+        Rectangle {
+            height: 24
+            implicitWidth: lowFlagRow.implicitWidth + 16
+            radius: 12
+            color: Qt.rgba(239/255, 68/255, 68/255, 0.22)
+            border.width: Nexa.Theme.borderThin
+            border.color: Qt.rgba(239/255, 68/255, 68/255, 0.50)
+            Layout.alignment: Qt.AlignVCenter
+
+            RowLayout {
+                id: lowFlagRow
+                anchors.centerIn: parent
+                spacing: 5
+
+                Rectangle {
+                    width: 6
+                    height: 6
+                    radius: 3
+                    color: "#ef4444"
+                    Layout.alignment: Qt.AlignVCenter
+
+                    SequentialAnimation on opacity {
+                        loops: Animation.Infinite
+                        running: root.osdType === "battery_low"
+                        NumberAnimation { to: 0.2; duration: 500 }
+                        NumberAnimation { to: 1.0; duration: 500 }
+                    }
+                }
+
+                Text {
+                    text: Math.round(root.value * 100) + "%"
+                    color: "#f87171"
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 12
+                    font.weight: Nexa.Theme.fontWeightBold
+                    Layout.alignment: Qt.AlignVCenter
+                }
+            }
+        }
+    }
+
+    // ============================================================
     // 5. BLUETOOTH DEVICE CONNECTED LAYOUT
     // ============================================================
 
