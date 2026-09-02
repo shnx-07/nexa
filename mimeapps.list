@@ -1,8 +1,14 @@
 [Added Associations]
+application/pdf=org.kde.okular.desktop;
 image/png=org.kde.gwenview.desktop;
 text/x-shellscript=org.kde.kate.desktop;
 
 [Default Applications]
+application/pdf=org.kde.okular.desktop;
+application/x-pdf=org.kde.okular.desktop;
+application/x-bzpdf=org.kde.okular.desktop;
+application/x-gzpdf=org.kde.okular.desktop;
+application/epub+zip=org.kde.okular.desktop;
 image/png=org.kde.gwenview.desktop
 inode/directory=org.kde.dolphin.desktop;
 text/plain=org.kde.kate.desktop
