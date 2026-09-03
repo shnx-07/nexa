@@ -207,7 +207,7 @@ fn dnd_path() -> PathBuf {
 }
 
 
-fn load_dnd() -> bool {
+pub(crate) fn load_dnd() -> bool {
     let Ok(content) =
         fs::read_to_string(
             dnd_path()
@@ -252,28 +252,30 @@ fn save_dnd(
     if let Some(parent) =
         path.parent()
     {
-        fs::create_dir_all(
-            parent
-        )
-        .map_err(
-            |error|
-                format!(
-                    "Failed to create notification config directory: {error}"
-                )
-        )?;
+        fs::create_dir_all(parent)
+            .map_err(
+                |error|
+                    format!(
+                        "failed to create notification config directory: {error}"
+                    )
+            )?;
     }
 
 
-    fs::write(
-        &path,
+    let content =
         format!(
             "dnd={enabled}\n"
-        ),
+        );
+
+
+    fs::write(
+        path,
+        content,
     )
     .map_err(
         |error|
             format!(
-                "Failed to save DND state: {error}"
+                "failed to write notification config: {error}"
             )
     )
 }
@@ -303,6 +305,7 @@ pub fn dnd_on() {
         true
     ) {
         Ok(()) => {
+            let _ = crate::state::update_state(|s| s.dnd = true);
             print_dnd(
                 true
             );
@@ -322,6 +325,7 @@ pub fn dnd_off() {
         false
     ) {
         Ok(()) => {
+            let _ = crate::state::update_state(|s| s.dnd = false);
             print_dnd(
                 false
             );
@@ -345,6 +349,7 @@ pub fn dnd_toggle() {
         enabled
     ) {
         Ok(()) => {
+            let _ = crate::state::update_state(|s| s.dnd = enabled);
             print_dnd(
                 enabled
             );

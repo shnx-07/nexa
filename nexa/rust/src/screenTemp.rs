@@ -158,7 +158,7 @@ fn reset_temperature() -> Result<(), String> {
     Ok(())
 }
 
-fn load_state() -> ScreenTempState {
+pub(crate) fn load_state() -> ScreenTempState {
     let path = config_path();
 
     let Ok(content) = fs::read_to_string(path) else {
@@ -225,7 +225,7 @@ fn load_state() -> ScreenTempState {
     state
 }
 
-fn save_state(state: &ScreenTempState) -> Result<(), String> {
+pub(crate) fn save_state(state: &ScreenTempState) -> Result<(), String> {
     let path = config_path();
 
     if let Some(parent) = path.parent() {
@@ -604,6 +604,14 @@ pub fn handle(args: &[String]) -> Result<(), String> {
                 )
             );
         }
+    }
+
+    if command != "info" {
+        let _ = crate::state::update_state(|s| {
+            s.nightlight_enabled = state.enabled;
+            s.nightlight_mode = state.mode.clone();
+            s.nightlight_temperature = state.temperature;
+        });
     }
 
     Ok(())

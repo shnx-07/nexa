@@ -226,6 +226,19 @@ PanelWindow {
         onTriggered: brightnessQueryProcess.running = true
     }
 
+    Timer {
+        id: statePersistDebounceTimer
+        interval: 600
+        repeat: false
+        onTriggered: {
+            Quickshell.execDetached([
+                Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+                "state",
+                "sync"
+            ])
+        }
+    }
+
     Process {
         id: volumeQueryProcess
         command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
@@ -239,6 +252,7 @@ PanelWindow {
                     if (!isNaN(val)) {
                         root.osdValue = Math.max(0.0, Math.min(1.0, val))
                         root.osdMuted = isMuted
+                        statePersistDebounceTimer.restart()
                     }
                 }
             }
@@ -257,6 +271,7 @@ PanelWindow {
                         if (root.osdType === "brightness" || !root.osdActive) {
                             root.osdValue = Math.max(0.0, Math.min(1.0, pct / 100.0))
                         }
+                        statePersistDebounceTimer.restart()
                     }
                 }
             }
@@ -372,6 +387,7 @@ PanelWindow {
                             root.osdValue = Math.max(0.0, Math.min(1.0, val))
                         }
                         root.osdMicMuted = isMuted
+                        statePersistDebounceTimer.restart()
                     }
                 }
             }

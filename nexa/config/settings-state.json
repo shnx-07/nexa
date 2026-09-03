@@ -1,0 +1,14 @@
+{
+  "volume": 80,
+  "muted": false,
+  "input_volume": 80,
+  "input_muted": true,
+  "brightness": 100,
+  "bluetooth_enabled": true,
+  "wifi_enabled": true,
+  "nightlight_enabled": false,
+  "nightlight_mode": "manual",
+  "nightlight_temperature": 5000,
+  "screen_filter": "off",
+  "dnd": false
+}

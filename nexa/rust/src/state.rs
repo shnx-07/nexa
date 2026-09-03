@@ -34,6 +34,9 @@ pub struct SettingsState {
     pub wifi_enabled: bool,
 
     #[serde(default)]
+    pub airplane_enabled: bool,
+
+    #[serde(default)]
     pub nightlight_enabled: bool,
 
     #[serde(default = "default_nightlight_mode")]
@@ -67,6 +70,7 @@ impl Default for SettingsState {
             brightness: default_brightness(),
             bluetooth_enabled: true,
             wifi_enabled: true,
+            airplane_enabled: false,
             nightlight_enabled: false,
             nightlight_mode: default_nightlight_mode(),
             nightlight_temperature: default_nightlight_temp(),
@@ -131,35 +135,78 @@ where
 pub fn sync_from_system() -> SettingsState {
     let mut state = load_state();
 
-    // 1. Audio Output
+    // 1. Audio Output Volume & Mute
     if let Ok(info) = crate::audio::info() {
         state.volume = info.volume;
         state.muted = info.muted;
     }
 
-    // 2. Audio Input
+    // 2. Audio Input (Microphone) Volume & Mute
     if let Ok(info) = crate::audio::input_info() {
         state.input_volume = info.volume;
         state.input_muted = info.muted;
     }
 
-    // 3. Brightness
+    // 3. Screen Brightness
     if let Ok(info) = crate::brightness::info() {
         state.brightness = info.brightness;
     }
 
-    // 4. Bluetooth
-    let service = crate::network::NetworkService::new();
-    if let Ok(info) = service.bluetooth_info() {
-        state.bluetooth_enabled = info.enabled;
-    }
+    // 4. Bluetooth State
+    let bt_enabled = Command::new("bluetoothctl")
+        .args(["show"])
+        .output()
+        .map(|out| {
+            let s = String::from_utf8_lossy(&out.stdout);
+            s.contains("Powered: yes")
+        })
+        .unwrap_or_else(|_| {
+            crate::network::NetworkService::new()
+                .bluetooth_info()
+                .map(|i| i.enabled)
+                .unwrap_or(state.bluetooth_enabled)
+        });
+    state.bluetooth_enabled = bt_enabled;
 
-    // 5. Screen Filter
+    // 5. WiFi State
+    let wifi_enabled = Command::new("nmcli")
+        .args(["radio", "wifi"])
+        .output()
+        .map(|out| {
+            let s = String::from_utf8_lossy(&out.stdout);
+            s.trim() == "enabled"
+        })
+        .unwrap_or_else(|_| {
+            Command::new("rfkill")
+                .args(["list", "wifi"])
+                .output()
+                .map(|out| {
+                    let s = String::from_utf8_lossy(&out.stdout);
+                    !s.contains("Soft blocked: yes") && !s.contains("Hard blocked: yes")
+                })
+                .unwrap_or(state.wifi_enabled)
+        });
+    state.wifi_enabled = wifi_enabled;
+
+    // 6. Airplane Mode
+    let airplane_state = crate::system::load_state();
+    state.airplane_enabled = airplane_state.airplane_enabled;
+
+    // 7. Night Light
+    let st = crate::screenTemp::load_state();
+    state.nightlight_enabled = st.enabled;
+    state.nightlight_mode = st.mode;
+    state.nightlight_temperature = st.temperature;
+
+    // 8. Screen Filter
     if let Ok(info) = crate::screenFilter::info() {
         state.screen_filter = info.filter;
     }
 
-    // 6. Save and return
+    // 9. Do Not Disturb
+    state.dnd = crate::notifications::load_dnd();
+
+    // 10. Save and return
     let _ = save_state(&state);
     state
 }
@@ -168,16 +215,41 @@ pub fn sync_from_system() -> SettingsState {
 // RESTORE TO SYSTEM
 // ============================================================
 
-pub fn restore_all() -> Result<(), String> {
+pub fn restore_all(force: bool) -> Result<(), String> {
     let flag_path = PathBuf::from("/tmp/nexa-state-restored");
-    if flag_path.exists() {
+    if !force && flag_path.exists() {
         println!("settings_state=already_restored_this_boot");
         return Ok(());
     }
 
     let state = load_state();
 
-    // 1. Audio Output Volume & Mute
+    // 1. Airplane Mode & Radios (WiFi, Bluetooth)
+    if state.airplane_enabled {
+        let _ = crate::system::airplane_on();
+    } else {
+        let _ = crate::system::airplane_off();
+
+        // Restore WiFi
+        if state.wifi_enabled {
+            let _ = Command::new("rfkill").args(["unblock", "wifi"]).status();
+            let _ = Command::new("nmcli").args(["radio", "wifi", "on"]).status();
+        } else {
+            let _ = Command::new("nmcli").args(["radio", "wifi", "off"]).status();
+            let _ = Command::new("rfkill").args(["block", "wifi"]).status();
+        }
+
+        // Restore Bluetooth
+        if state.bluetooth_enabled {
+            let _ = Command::new("rfkill").args(["unblock", "bluetooth"]).status();
+            let _ = Command::new("bluetoothctl").args(["power", "on"]).status();
+        } else {
+            let _ = Command::new("rfkill").args(["block", "bluetooth"]).status();
+            let _ = Command::new("bluetoothctl").args(["power", "off"]).status();
+        }
+    }
+
+    // 2. Audio Output Volume & Mute
     let _ = Command::new("wpctl")
         .args([
             "set-volume",
@@ -194,7 +266,7 @@ pub fn restore_all() -> Result<(), String> {
         ])
         .status();
 
-    // 2. Audio Input / Microphone Volume & Mute
+    // 3. Audio Input / Microphone Volume & Mute
     let _ = Command::new("wpctl")
         .args([
             "set-volume",
@@ -211,7 +283,7 @@ pub fn restore_all() -> Result<(), String> {
         ])
         .status();
 
-    // 3. Screen Brightness
+    // 4. Screen Brightness
     let _ = Command::new("brightnessctl")
         .args([
             "set",
@@ -219,16 +291,14 @@ pub fn restore_all() -> Result<(), String> {
         ])
         .status();
 
-    // 4. Bluetooth State
-    if state.bluetooth_enabled {
-        let _ = Command::new("rfkill").args(["unblock", "bluetooth"]).status();
-        let _ = Command::new("bluetoothctl").args(["power", "on"]).status();
-    } else {
-        let _ = Command::new("rfkill").args(["block", "bluetooth"]).status();
-        let _ = Command::new("bluetoothctl").args(["power", "off"]).status();
-    }
-
     // 5. Screen Temperature / Night Light
+    let mut st = crate::screenTemp::load_state();
+    st.enabled = state.nightlight_enabled;
+    st.mode = state.nightlight_mode.clone();
+    if state.nightlight_temperature >= 2500 && state.nightlight_temperature <= 6500 {
+        st.manual_temperature = state.nightlight_temperature;
+    }
+    let _ = crate::screenTemp::save_state(&st);
     let _ = crate::screenTemp::handle(&["apply".to_string()]);
 
     // 6. Screen Filter Shader
@@ -255,7 +325,8 @@ pub fn handle(args: &[String]) -> Result<(), String> {
 
     match command {
         "restore" => {
-            restore_all()?;
+            let force = args.iter().any(|a| a == "--force" || a == "-f");
+            restore_all(force)?;
             println!(
                 "{}",
                 serde_json::to_string(&load_state())
@@ -316,6 +387,12 @@ pub fn handle(args: &[String]) -> Result<(), String> {
                 "wifi" => {
                     s.wifi_enabled = val == "true" || val == "1" || val == "on";
                 }
+                "airplane" => {
+                    s.airplane_enabled = val == "true" || val == "1" || val == "on";
+                }
+                "nightlight" => {
+                    s.nightlight_enabled = val == "true" || val == "1" || val == "on";
+                }
                 "dnd" => {
                     s.dnd = val == "true" || val == "1" || val == "on";
                 }
@@ -330,6 +407,6 @@ pub fn handle(args: &[String]) -> Result<(), String> {
             Ok(())
         }
 
-        _ => Err("usage: nexad state <restore|save|sync|info|set <key> <val>>".to_string()),
+        _ => Err("usage: nexad state <restore [--force]|save|sync|info|set <key> <val>>".to_string()),
     }
 }

@@ -293,6 +293,13 @@ impl NetworkService {
             ],
         )?;
 
+        let _ = crate::state::update_state(|s| {
+            s.wifi_enabled = enabled;
+            if enabled {
+                s.airplane_enabled = false;
+            }
+        });
+
         Ok(())
     }
 

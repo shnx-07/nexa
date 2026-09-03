@@ -60,18 +60,18 @@ pub struct VpnInfo {
     Serialize,
     Deserialize,
 )]
-struct SystemState {
+pub(crate) struct SystemState {
     #[serde(default)]
-    airplane_enabled: bool,
+    pub airplane_enabled: bool,
 
     #[serde(default)]
-    wifi_before_airplane: bool,
+    pub wifi_before_airplane: bool,
 
     #[serde(default)]
-    bluetooth_before_airplane: bool,
+    pub bluetooth_before_airplane: bool,
 
     #[serde(default)]
-    last_vpn: String,
+    pub last_vpn: String,
 }
 
 
@@ -113,13 +113,10 @@ fn read_led_state(keyword: &str) -> bool {
 }
 
 pub fn keylock_watch() {
-    let mut last_caps = read_led_state("capslock");
-    let mut last_num = read_led_state("numlock");
-
     // Small startup sleep to let initial compositor state settle
     sleep(Duration::from_millis(600));
-    last_caps = read_led_state("capslock");
-    last_num = read_led_state("numlock");
+    let mut last_caps = read_led_state("capslock");
+    let mut last_num = read_led_state("numlock");
 
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
@@ -383,6 +380,12 @@ pub fn airplane_on()
         &state
     )?;
 
+    let _ = crate::state::update_state(|s| {
+        s.airplane_enabled = true;
+        s.wifi_enabled = false;
+        s.bluetooth_enabled = false;
+    });
+
 
     airplane_info()
 }
@@ -448,6 +451,14 @@ pub fn airplane_off()
     save_state(
         &state
     )?;
+
+    let wifi_restored = state.wifi_before_airplane;
+    let bt_restored = state.bluetooth_before_airplane;
+    let _ = crate::state::update_state(|s| {
+        s.airplane_enabled = false;
+        s.wifi_enabled = wifi_restored;
+        s.bluetooth_enabled = bt_restored;
+    });
 
 
     airplane_info()
@@ -927,7 +938,7 @@ fn state_path()
 // LOAD STATE
 // ============================================================
 
-fn load_state()
+pub(crate) fn load_state()
     -> SystemState
 {
     let path =
@@ -952,7 +963,7 @@ fn load_state()
 // SAVE STATE
 // ============================================================
 
-fn save_state(
+pub(crate) fn save_state(
     state: &SystemState,
 ) -> Result<(), String> {
     let path =
