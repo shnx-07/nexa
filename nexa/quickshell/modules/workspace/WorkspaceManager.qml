@@ -2049,6 +2049,9 @@ PanelWindow {
                         toplevel:
                             modelData
 
+                        livePreview:
+                            manager.visible && overviewWindow.visible
+
 
                         monitorData:
                             lookup

@@ -24,6 +24,7 @@ Item {
     property var windowData: null
     property var toplevel: null
     property var monitorData: null
+    property bool livePreview: false
 
     // ============================================================
     // WORKSPACE GEOMETRY
@@ -161,8 +162,8 @@ Item {
         ScreencopyView {
             id: preview
             anchors.fill: parent
-            captureSource: root.toplevel
-            live: root.toplevel !== null
+            captureSource: (root.livePreview && root.monitorData !== null) ? root.toplevel : null
+            live: root.livePreview && (root.toplevel !== null) && (root.monitorData !== null)
             paintCursor: false
         }
 

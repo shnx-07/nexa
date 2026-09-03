@@ -109,25 +109,25 @@ Item {
         // ONE SURFACE IS CREATED PER MONITOR
         // ========================================================
 
-        WlSessionLockSurface {
-            id: lockWindow
+        surface: Component {
+            WlSessionLockSurface {
+                id: lockWindow
 
-            color: "black"
+                color: "black"
 
+                LockSurface {
+                    id: lockSurface
 
-            LockSurface {
-                id: lockSurface
+                    anchors.fill:
+                        parent
 
-                anchors.fill:
-                    parent
+                    onAuthenticationSucceeded: {
+                        console.log(
+                            "NEXA lockscreen: PAM accepted"
+                        )
 
-
-                onAuthenticationSucceeded: {
-                    console.log(
-                        "NEXA lockscreen: PAM accepted"
-                    )
-
-                    root.unlock()
+                        root.unlock()
+                    }
                 }
             }
         }
