@@ -1770,8 +1770,10 @@ fn launch_with_exec(
 
     let lang = env::var("LANG").unwrap_or_else(|_| "en_US.UTF-8".to_string());
     let lc_all = env::var("LC_ALL").unwrap_or_else(|_| "en_US.UTF-8".to_string());
+    let home = env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
 
     command
+        .current_dir(home)
         .env("LANG", lang)
         .env("LC_ALL", lc_all)
         .stdin(

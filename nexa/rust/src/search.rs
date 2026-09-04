@@ -882,6 +882,7 @@ fn open_application(
     entry: &SearchEntry,
 ) -> Result<(), String> {
     let raw_command = clean_desktop_exec(&entry.exec);
+    let home = home_dir();
 
     let command = if entry.terminal {
         let term = env::var("TERMINAL").unwrap_or_else(|_| "kitty".to_string());
@@ -904,6 +905,7 @@ fn open_application(
         match Command::new("sh")
             .arg("-c")
             .arg(format!("exec {command}"))
+            .current_dir(&home)
             .process_group(0)
             .spawn()
         {
@@ -925,6 +927,7 @@ fn open_application(
 
     Command::new("gtk-launch")
         .arg(desktop_id)
+        .current_dir(&home)
         .process_group(0)
         .spawn()
         .map_err(|error| format!("failed to launch application '{}': {error}", entry.name))?;
@@ -940,8 +943,10 @@ fn open_application(
 fn open_file(
     entry: &SearchEntry,
 ) -> Result<(), String> {
+    let home = home_dir();
     Command::new("xdg-open")
         .arg(&entry.path)
+        .current_dir(&home)
         .process_group(0)
         .spawn()
         .map_err(|error| format!("failed to open '{}': {error}", entry.path))?;

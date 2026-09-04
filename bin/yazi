@@ -4,11 +4,12 @@ if [ -t 0 ] && [ -t 1 ]; then
     exec /usr/bin/yazi "$@"
 else
     # If launched from GUI/Hyprland/runners, launch in terminal with class yazi for Hyprland window rules
+    target="${1:-$HOME}"
     if command -v kitty >/dev/null 2>&1; then
-        exec kitty --class yazi yazi "$@"
+        exec kitty --class yazi --directory "$target" yazi "$target"
     elif command -v alacritty >/dev/null 2>&1; then
-        exec alacritty --class yazi -e yazi "$@"
+        exec alacritty --class yazi --working-directory "$target" -e yazi "$target"
     else
-        exec /usr/bin/yazi "$@"
+        cd "$target" && exec /usr/bin/yazi "$target"
     fi
 fi
