@@ -1,11 +1,13 @@
 -- ============================================================
--- MONITOR CONFIGURATIONS (Auto-switch Single Display)
+-- MONITOR CONFIGURATIONS (Single Source of Truth)
+-- Change display outputs, resolutions, and refresh rates HERE:
 -- ============================================================
 
-local external = MONITOR_EXTERNAL or "HDMI-A-1"
-local laptop   = MONITOR_LAPTOP or "eDP-1"
-local ext_mode = MONITOR_EXTERNAL_MODE or "2560x1440@144"
-local lap_mode = MONITOR_LAPTOP_MODE or "1920x1080@60"
+local external = "HDMI-A-1"
+local ext_mode = "2560x1440@144"
+
+local laptop = "eDP-1"
+local lap_mode = "1920x1080@60"
 
 local function is_hdmi_connected()
 	local p = io.popen("cat /sys/class/drm/*HDMI*/status 2>/dev/null")
@@ -61,7 +63,9 @@ hl.on("monitor.added", function(monitor)
 
 		-- Move any workspaces currently on laptop screen over to external monitor
 		hl.exec_cmd(
-			"hyprctl dispatch focusmonitor " .. laptop .. " && hyprctl dispatch moveworkspacetomonitor $(hyprctl activeworkspace -j | jq -r .id) "
+			"hyprctl dispatch focusmonitor "
+				.. laptop
+				.. " && hyprctl dispatch moveworkspacetomonitor $(hyprctl activeworkspace -j | jq -r .id) "
 				.. name
 		)
 

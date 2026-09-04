@@ -29,7 +29,5 @@ hl.config({
 	cursor = {
 		no_hardware_cursors = false,
 		enable_hyprcursor = true,
-		min_refresh_rate = 144,
-		hotspot_padding = 1,
 	},
 })
