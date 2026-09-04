@@ -7,20 +7,44 @@ local laptop   = MONITOR_LAPTOP or "eDP-1"
 local ext_mode = MONITOR_EXTERNAL_MODE or "2560x1440@144"
 local lap_mode = MONITOR_LAPTOP_MODE or "1920x1080@60"
 
--- ── Static monitor declarations ────────────────────────────────────────────
-hl.monitor({
-	output = external,
-	mode = ext_mode,
-	position = "0x0",
-	scale = 1,
-})
+local function is_hdmi_connected()
+	local p = io.popen("cat /sys/class/drm/*HDMI*/status 2>/dev/null")
+	if p then
+		local out = p:read("*a")
+		p:close()
+		return out:find("connected") ~= nil
+	end
+	return false
+end
 
-hl.monitor({
-	output = laptop,
-	mode = lap_mode,
-	position = "2560x0",
-	scale = 1,
-})
+-- ── Initial monitor declarations (Single display auto-switch) ───────────────
+if is_hdmi_connected() then
+	-- HDMI is connected: External monitor is the ONLY active display
+	hl.monitor({
+		output = external,
+		mode = ext_mode,
+		position = "0x0",
+		scale = 1,
+		disabled = false,
+	})
+	hl.monitor({
+		output = laptop,
+		disabled = true,
+	})
+else
+	-- HDMI is not connected: Laptop display is the ONLY active display
+	hl.monitor({
+		output = laptop,
+		mode = lap_mode,
+		position = "0x0",
+		scale = 1,
+		disabled = false,
+	})
+	hl.monitor({
+		output = external,
+		disabled = true,
+	})
+end
 
 -- ── Hot-plug events ────────────────────────────────────────────────────────
 hl.on("monitor.added", function(monitor)
