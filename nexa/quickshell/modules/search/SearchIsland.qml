@@ -27,75 +27,107 @@ Item {
     
 
 
-  function fileIconName(path) {
-        const lower =
-            String(path || "").toLowerCase()
+    function fileIconName(path) {
+        const lower = String(path || "").toLowerCase()
+        const lastSlash = lower.lastIndexOf("/")
+        const fileName = lastSlash >= 0 ? lower.substring(lastSlash + 1) : lower
+        const lastDot = fileName.lastIndexOf(".")
+        const ext = lastDot >= 0 ? fileName.substring(lastDot + 1) : ""
 
-        if (
-            lower.endsWith(".png")
-            || lower.endsWith(".jpg")
-            || lower.endsWith(".jpeg")
-            || lower.endsWith(".webp")
-            || lower.endsWith(".gif")
-            || lower.endsWith(".svg")
-        )
+        // Folders / Directories (no extension)
+        if (ext === "")
+            return "folder"
+
+        // Images
+        if (/^(png|jpe?g|webp|gif|svg|bmp|ico|tiff?|avif|heic)$/.test(ext))
             return "image-x-generic"
 
-        if (
-            lower.endsWith(".mp3")
-            || lower.endsWith(".flac")
-            || lower.endsWith(".wav")
-            || lower.endsWith(".ogg")
-            || lower.endsWith(".m4a")
-        )
+        // Audio
+        if (/^(mp3|flac|wav|ogg|m4a|aac|opus|wma|mid|midi)$/.test(ext))
             return "audio-x-generic"
 
-        if (
-            lower.endsWith(".mp4")
-            || lower.endsWith(".mkv")
-            || lower.endsWith(".webm")
-            || lower.endsWith(".mov")
-            || lower.endsWith(".avi")
-        )
+        // Video
+        if (/^(mp4|mkv|webm|mov|avi|flv|wmv|m4v|3gp)$/.test(ext))
             return "video-x-generic"
 
-        if (lower.endsWith(".pdf"))
+        // PDF & Office Documents
+        if (ext === "pdf")
             return "application-pdf"
+        if (/^(docx?|odt|rtf|epub)$/.test(ext))
+            return "x-office-document"
+        if (/^(xlsx?|ods|csv|tsv)$/.test(ext))
+            return "x-office-spreadsheet"
+        if (/^(pptx?|odp)$/.test(ext))
+            return "x-office-presentation"
 
-        if (
-            lower.endsWith(".zip")
-            || lower.endsWith(".tar")
-            || lower.endsWith(".gz")
-            || lower.endsWith(".7z")
-            || lower.endsWith(".rar")
-        )
+        // Archives & Disks
+        if (/^(zip|tar|gz|bz2|xz|zst|7z|rar|iso|img|dmg)$/.test(ext))
             return "package-x-generic"
 
-        if (
-            lower.endsWith(".txt")
-            || lower.endsWith(".md")
-            || lower.endsWith(".log")
-        )
-            return "text-x-generic"
-
-        if (
-            lower.endsWith(".qml")
-            || lower.endsWith(".rs")
-            || lower.endsWith(".py")
-            || lower.endsWith(".js")
-            || lower.endsWith(".ts")
-            || lower.endsWith(".cpp")
-            || lower.endsWith(".c")
-            || lower.endsWith(".h")
-            || lower.endsWith(".json")
-            || lower.endsWith(".toml")
-            || lower.endsWith(".yaml")
-            || lower.endsWith(".yml")
-        )
+        // Code & Scripts
+        if (/^(qml|rs|py|js|mjs|cjs|ts|tsx|jsx|cpp|c|h|hpp|sh|bash|zsh|fish|lua|go|java|kt|php|rb|swift|sql)$/.test(ext))
             return "text-x-script"
 
+        // Web & Markup
+        if (/^(html?|css|scss|sass|xml)$/.test(ext))
+            return "text-html"
+
+        // Config & Data
+        if (/^(json|toml|ya?ml|ini|conf|cfg)$/.test(ext))
+            return "text-x-script"
+
+        // Fonts
+        if (/^(ttf|otf|woff2?)$/.test(ext))
+            return "font-ttf"
+
+        // Text & Plain Documents
+        if (/^(txt|md|markdown|log|rst|tex)$/.test(ext))
+            return "text-x-generic"
+
         return "text-x-generic"
-  }
+    }
+
+    function fileIconSource(path) {
+        const iconName = fileIconName(path)
+        if (Quickshell.hasThemeIcon(iconName)) {
+            return Quickshell.iconPath(iconName)
+        }
+        if (Quickshell.hasThemeIcon("text-x-generic")) {
+            return Quickshell.iconPath("text-x-generic")
+        }
+        return "file:///usr/share/icons/breeze/mimetypes/64/text-x-generic.svg"
+    }
+
+    function appIconSource(iconName) {
+        if (!iconName || iconName.length === 0) {
+            return "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg"
+        }
+        if (iconName.startsWith("/") || iconName.startsWith("file://")) {
+            return iconName.startsWith("file://") ? iconName : ("file://" + iconName)
+        }
+        if (Quickshell.hasThemeIcon(iconName)) {
+            return Quickshell.iconPath(iconName)
+        }
+        const lower = iconName.toLowerCase()
+        if (Quickshell.hasThemeIcon(lower)) {
+            return Quickshell.iconPath(lower)
+        }
+        const pixmaps = {
+            "code": "file:///usr/share/pixmaps/vscode.png",
+            "vscode": "file:///usr/share/pixmaps/vscode.png",
+            "alacritty": "file:///usr/share/pixmaps/Alacritty.svg",
+            "kitty": "file:///usr/share/pixmaps/kitty.png",
+            "nvim": "file:///usr/share/pixmaps/nvim.png",
+            "neovim": "file:///usr/share/pixmaps/nvim.png"
+        }
+        if (pixmaps[lower]) {
+            return pixmaps[lower]
+        }
+        if (Quickshell.hasThemeIcon("application-x-executable")) {
+            return Quickshell.iconPath("application-x-executable")
+        }
+        return "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg"
+    }
 
 
 
@@ -821,34 +853,27 @@ Item {
                         // ============================================================
 
                         Image {
-                            anchors.centerIn:
-                                parent
+                            id: appIconImage
+                            anchors.centerIn: parent
 
                             width: 26
                             height: 26
 
-                            visible:
-                                resultRow.modelData.kind === "app"
-                                && resultRow.modelData.icon
-                                && resultRow.modelData.icon.length > 0
+                            visible: resultRow.modelData.kind === "app"
 
-                            source:
-                                Quickshell.iconPath(
-                                    resultRow.modelData.icon || "",
-                                    "application-x-executable"
-                                )
+                            source: root.appIconSource(resultRow.modelData.icon)
 
-                            sourceSize.width:
-                                width
+                            sourceSize.width: width
+                            sourceSize.height: height
 
-                            sourceSize.height:
-                                height
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
 
-                            fillMode:
-                                Image.PreserveAspectFit
-
-                            smooth:
-                                true
+                            onStatusChanged: {
+                                if (status === Image.Error && source !== "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg") {
+                                    source = "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg"
+                                }
+                            }
                         }
 
 
@@ -865,21 +890,19 @@ Item {
                             visible:
                                 resultRow.modelData.kind === "file"
 
-                            source:
-                                Quickshell.iconPath(
-                                    root.fileIconName(
-                                        resultRow.modelData.path
-                                    ),
-                                    "text-x-generic"
-                                )
+                            source: root.fileIconSource(resultRow.modelData.path)
 
                             sourceSize.width: width
                             sourceSize.height: height
 
-                            fillMode:
-                                Image.PreserveAspectFit
-
+                            fillMode: Image.PreserveAspectFit
                             smooth: true
+
+                            onStatusChanged: {
+                                if (status === Image.Error && source !== "file:///usr/share/icons/breeze/mimetypes/64/text-x-generic.svg") {
+                                    source = "file:///usr/share/icons/breeze/mimetypes/64/text-x-generic.svg"
+                                }
+                            }
                         }
                     }
 

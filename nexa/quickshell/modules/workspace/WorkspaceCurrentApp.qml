@@ -65,6 +65,50 @@ NexaUI.NexaCard {
         }
     }
 
+    function appIconSource(id) {
+        if (!id || id.length === 0) return ""
+
+        const lower = id.toLowerCase()
+        const appMap = {
+            "code": "file:///usr/share/pixmaps/vscode.png",
+            "code-url-handler": "file:///usr/share/pixmaps/vscode.png",
+            "visual-studio-code": "file:///usr/share/pixmaps/vscode.png",
+            "vscode": "file:///usr/share/pixmaps/vscode.png",
+            "alacritty": "file:///usr/share/pixmaps/Alacritty.svg",
+            "kitty": "file:///usr/share/pixmaps/kitty.png",
+            "nvim": "file:///usr/share/pixmaps/nvim.png",
+            "neovim": "file:///usr/share/pixmaps/nvim.png",
+            "telegramdesktop": "telegram",
+            "org.telegram.desktop": "telegram",
+            "org.gnome.nautilus": "org.gnome.Nautilus",
+            "dolphin": "system-file-manager"
+        }
+
+        if (appMap[lower]) {
+            const val = appMap[lower]
+            if (val.startsWith("file://") || val.startsWith("/")) {
+                return val.startsWith("file://") ? val : ("file://" + val)
+            }
+            if (Quickshell.hasThemeIcon(val)) {
+                return Quickshell.iconPath(val)
+            }
+        }
+
+        if (Quickshell.hasThemeIcon(id)) {
+            return Quickshell.iconPath(id)
+        }
+
+        if (Quickshell.hasThemeIcon(lower)) {
+            return Quickshell.iconPath(lower)
+        }
+
+        if (Quickshell.hasThemeIcon("application-x-executable")) {
+            return Quickshell.iconPath("application-x-executable")
+        }
+
+        return "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg"
+    }
+
     // ------------------------------------------------------------
     // CONTENT ROW: ( ICON | TICKER TEXT )
     // ------------------------------------------------------------
@@ -88,18 +132,19 @@ NexaUI.NexaCard {
             Layout.preferredHeight: Nexa.Theme.iconSm
             Layout.alignment: Qt.AlignVCenter
 
-            source: root.hasApp
-                ? Quickshell.iconPath(
-                    root.appId,
-                    "application-x-executable"
-                )
-                : ""
+            source: root.hasApp ? root.appIconSource(root.appId) : ""
 
             visible: root.hasApp
 
             fillMode: Image.PreserveAspectFit
             smooth: true
             mipmap: true
+
+            onStatusChanged: {
+                if (status === Image.Error && source !== "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg") {
+                    source = "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg"
+                }
+            }
 
             scale: root.hovered ? 1.08 : 1.0
 

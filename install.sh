@@ -131,8 +131,13 @@ PACMAN_PACKAGES=(
     qt5ct
     qt6ct
     kvantum
+    breeze
+    breeze-icons
+    adwaita-icon-theme
+    adw-gtk-theme
 
     # Terminals & File Managers
+    alacritty
     kitty
     wezterm
     nemo
@@ -173,6 +178,7 @@ AUR_PACKAGES=(
     awww-git
     mpvpaper
     hyprsunset
+    otf-apple-sf-pro
     otf-apple-fonts
     nwg-look
     wlogout
@@ -195,6 +201,10 @@ CONFIG_TARGETS=(
     "hypr"
     "nexa"
     "kitty"
+    "alacritty"
+    "btop"
+    "fastfetch"
+    "fontconfig"
     "matugen"
     "gtk-3.0"
     "gtk-4.0"
@@ -262,6 +272,20 @@ if [ -f /etc/bluetooth/main.conf ]; then
     sudo sed -i "s/^#*AutoEnable=true/AutoEnable=false/" /etc/bluetooth/main.conf 2>/dev/null || true
 fi
 
+# Refresh font cache so SF Pro Display and other fonts are immediately active
+if command -v fc-cache >/dev/null 2>&1; then
+    log_info "Updating system font cache (fc-cache -f)..."
+    fc-cache -f >/dev/null 2>&1 || true
+fi
+
+# Configure GTK interface font and icon theme via gsettings
+if command -v gsettings >/dev/null 2>&1; then
+    log_info "Applying GNOME/GTK desktop font and icon settings..."
+    gsettings set org.gnome.desktop.interface font-name 'SF Pro Display 11' 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface document-font-name 'SF Pro Display 11' 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface icon-theme 'Adwaita' 2>/dev/null || true
+fi
+
 log_success "Dotfiles deployed successfully."
 
 # ------------------------------------------------------------------------------
@@ -277,6 +301,8 @@ if [ -d "$HOME/.config/nexa/rust" ]; then
     )
     if [ -f "$HOME/.config/nexa/rust/target/release/nexad" ]; then
         log_success "nexad binary compiled successfully at ~/.config/nexa/rust/target/release/nexad"
+        log_info "Generating initial NEXA search index..."
+        "$HOME/.config/nexa/rust/target/release/nexad" search refresh >/dev/null 2>&1 || true
     else
         log_error "nexad build completed but binary was not found."
         exit 1

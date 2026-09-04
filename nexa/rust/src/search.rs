@@ -171,7 +171,27 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
 
         if let Some(value) = line.strip_prefix("Icon=") {
             if icon.is_empty() {
-                icon = value.trim().to_string();
+                let raw_icon = value.trim();
+                let icon_str = if !raw_icon.starts_with('/') {
+                    let mut found = None;
+                    for ext in &["", ".png", ".svg", ".xpm"] {
+                        let candidate = PathBuf::from(format!("/usr/share/pixmaps/{raw_icon}{ext}"));
+                        if candidate.is_file() {
+                            found = Some(candidate.to_string_lossy().to_string());
+                            break;
+                        }
+                        let lower = raw_icon.to_lowercase();
+                        let candidate_lower = PathBuf::from(format!("/usr/share/pixmaps/{lower}{ext}"));
+                        if candidate_lower.is_file() {
+                            found = Some(candidate_lower.to_string_lossy().to_string());
+                            break;
+                        }
+                    }
+                    found.unwrap_or_else(|| raw_icon.to_string())
+                } else {
+                    raw_icon.to_string()
+                };
+                icon = icon_str;
             }
             continue;
         }

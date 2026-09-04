@@ -1,7 +1,4 @@
-/*
- * NEXA GTK 4.0 Theme
- */
+@import url('libadwaita.css');
+@import url('libadwaita-tweaks.css');
 
-@import "nexa-colors.css";
-@import "thunar.css";
-
+@import url("noctalia.css");

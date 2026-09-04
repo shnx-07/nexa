@@ -9,6 +9,7 @@ if pgrep -f "quickshell.*$SHELL_PATH" >/dev/null 2>&1; then
     exit 0
 fi
 
+export QS_ICON_THEME="breeze-dark"
 quickshell -d -p "$SHELL_PATH" >/tmp/nexa-quickshell.log 2>&1
 
 echo "NEXA started."

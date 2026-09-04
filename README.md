@@ -63,8 +63,10 @@ If you prefer installing dependencies manually or want a complete breakdown:
 * `xdg-desktop-portal-hyprland` & `xdg-desktop-portal-gtk` — Wayland desktop portals
 * `polkit-kde-agent` — Privilege escalation auth agent
 
-### 2. Theming & Shell (Quickshell & Matugen)
+### 2. Theming, Shell & Icons (Quickshell & Matugen)
 * `quickshell-git` *(AUR)* — The reactive Wayland QML shell engine (provides `qs` and `quickshell`)
+* `breeze` & `breeze-icons` — KDE Breeze icon theme (required for Quickshell native theme icons)
+* `adwaita-icon-theme` — GNOME Adwaita icon theme
 * `matugen-bin` *(AUR)* — Material You dynamic color palette extractor
 * `awww-git` *(AUR)* — High-performance Wayland wallpaper daemon
 * `mpvpaper` *(AUR)* — Video wallpaper engine
@@ -74,7 +76,7 @@ If you prefer installing dependencies manually or want a complete breakdown:
 * `nwg-look` *(AUR)* — GTK theme and icon switcher
 
 ### 3. Terminals, Shell & Utilities
-* `kitty` & `wezterm` — Terminal emulators
+* `alacritty`, `kitty` & `wezterm` — Terminal emulators
 * `nemo`, `dolphin` & `yazi` — Graphical and terminal file managers
 * `zsh` & `starship` — Shell and dynamic Powerline prompt
 * `btop` & `htop` — System monitors
@@ -91,11 +93,12 @@ If you prefer installing dependencies manually or want a complete breakdown:
 ### 5. Build & Development Chain
 * `base-devel`, `git`, `rust`, `cargo`, `gcc`, `pkgconf`, `cmake`, `python`
 
-### 6. Typography & Icons
-* `otf-apple-fonts` *(AUR)* — Apple SF Pro Display & Text
+### 6. Typography & Fontconfig
+* `otf-apple-sf-pro` *(AUR)* / `otf-apple-fonts` *(AUR)* — Apple SF Pro font family (System-wide default UI & sans-serif font)
 * `ttf-jetbrains-mono-nerd` & `ttf-nerd-fonts-symbols` — Nerd Font icons & glyphs
 * `noto-fonts`, `noto-fonts-cjk`, `noto-fonts-emoji` — Universal fallback & emoji support
 * `otf-font-awesome` — Icon glyphs
+* `fontconfig` — XML configuration prioritizing SF Pro Display across UI and applications
 
 ---
 
@@ -115,6 +118,12 @@ If you prefer installing dependencies manually or want a complete breakdown:
   * **Microphone Mute:** `240px` × `44px` status pill with mic input indicator (`F4`)
   * **Display Brightness:** `320px` × `48px` capsule gauge with amber sun indicator (`F5` / `F6`)
   * **Airplane Mode:** `260px` × `46px` quick toggle indicator (`F8`)
+
+### 🔍 Dynamic Island Search & Command Palette
+* **Fuzzy Application & File Search (`Super + Space`):** Sub-millisecond desktop application and filesystem search powered by the `nexad` Rust backend.
+* **Universal App Launching:** Standard Freedesktop desktop activation with automatic terminal emulator embedding for terminal apps (`btop`, `micro`, `htop`, `yazi`, `nvim`).
+* **Complete Icon Resolution:** Native Freedesktop icon theme integration (`breeze-dark`), pixmap resolution, and automatic file extension mime mapping (`.txt`, `.png`, `.pdf`, code, scripts, fonts, archives) with fallback protection.
+* **Apple SF Pro Typography:** System-wide font rendering with `SF Pro Display` across UI components, GTK, Qt, and fontconfig.
 
 ### ⚡ Battery & Performance Optimized
 * **Dynamic Compositor Throttling:** Automatically switches to `power-saver` and disables expensive multi-pass blur and shadows on battery (slashing battery discharge by nearly 80%).
