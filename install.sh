@@ -202,6 +202,7 @@ CONFIG_TARGETS=(
     "nexa"
     "kitty"
     "alacritty"
+    "wezterm"
     "btop"
     "fastfetch"
     "fontconfig"
