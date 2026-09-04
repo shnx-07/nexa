@@ -3,10 +3,10 @@
 local MOD = "SUPER"
 
 -- Applications
-local terminal = "kitty"
-local fileManager = "nemo"
-local browser = "xdg-open https:// || firefox || zen-browser"
-local music = "spotify"
+local terminal = TERMINAL or "kitty"
+local fileManager = FILE_MANAGER or "dolphin"
+local browser = BROWSER or "firefox"
+local music = MUSIC or "spotify"
 
 hl.bind(MOD .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(MOD .. " + E", hl.dsp.exec_cmd(fileManager))

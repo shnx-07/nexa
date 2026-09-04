@@ -13,7 +13,7 @@ local function load_dynamic_theme()
 	local cache = home .. "/.cache"
 	local config = home .. "/.config/hypr"
 	local paths = {
-		config .. "/scheme/current.lua",
+		config .. "/config/colors.lua",
 		cache .. "/hypr/colors.lua",
 		cache .. "/wal/colors.lua",
 		cache .. "/matugen/colors.lua",

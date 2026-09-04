@@ -1,18 +1,23 @@
--- Monitor Configurations
--- eDP-1    : Internal laptop display  (1920x1080 @ 60Hz)
--- HDMI-A-1 : External monitor         (2560x1440 @ 144Hz, primary when connected)
+-- ============================================================
+-- MONITOR CONFIGURATIONS (Auto-switch Single Display)
+-- ============================================================
+
+local external = MONITOR_EXTERNAL or "HDMI-A-1"
+local laptop   = MONITOR_LAPTOP or "eDP-1"
+local ext_mode = MONITOR_EXTERNAL_MODE or "2560x1440@144"
+local lap_mode = MONITOR_LAPTOP_MODE or "1920x1080@60"
 
 -- ── Static monitor declarations ────────────────────────────────────────────
 hl.monitor({
-	output = "HDMI-A-1",
-	mode = "2560x1440@144",
+	output = external,
+	mode = ext_mode,
 	position = "0x0",
 	scale = 1,
 })
 
 hl.monitor({
-	output = "eDP-1",
-	mode = "preferred",
+	output = laptop,
+	mode = lap_mode,
 	position = "2560x0",
 	scale = 1,
 })
@@ -20,29 +25,29 @@ hl.monitor({
 -- ── Hot-plug events ────────────────────────────────────────────────────────
 hl.on("monitor.added", function(monitor)
 	local name = type(monitor) == "table" and (monitor.name or monitor.output) or tostring(monitor or "")
-	if name:find("HDMI") then
+	if name:find("HDMI") or name:find(external) then
 		-- Re-apply external monitor at fixed position with correct mode
 		hl.monitor({
 			output = name,
-			mode = "2560x1440@144",
+			mode = ext_mode,
 			position = "0x0",
 			scale = 1,
+			disabled = false,
 		})
 
-		-- Move any workspaces currently on eDP-1 over to the external monitor
-		-- before disabling it, so nothing gets stranded on a dead output
+		-- Move any workspaces currently on laptop screen over to external monitor
 		hl.exec_cmd(
-			"hyprctl dispatch focusmonitor eDP-1 && hyprctl dispatch moveworkspacetomonitor $(hyprctl activeworkspace -j | jq -r .id) "
+			"hyprctl dispatch focusmonitor " .. laptop .. " && hyprctl dispatch moveworkspacetomonitor $(hyprctl activeworkspace -j | jq -r .id) "
 				.. name
 		)
 
-		-- Fully close/disable the laptop screen
+		-- Disable laptop display (Single display auto-switch)
 		hl.monitor({
-			output = "eDP-1",
+			output = laptop,
 			disabled = true,
 		})
 
-		-- External monitor is now the only display — focus it
+		-- Focus external monitor
 		hl.exec_cmd("hyprctl dispatch focusmonitor " .. name)
 
 		hl.exec_cmd(
@@ -53,17 +58,17 @@ end)
 
 hl.on("monitor.removed", function(monitor)
 	local name = type(monitor) == "table" and (monitor.name or monitor.output) or tostring(monitor or "")
-	if name:find("HDMI") or name == "" then
-		-- Re-enable laptop screen at origin, safely fall back
+	if name:find("HDMI") or name:find(external) or name == "" then
+		-- Re-enable laptop screen as the single active display
 		hl.monitor({
-			output = "eDP-1",
-			mode = "preferred",
+			output = laptop,
+			mode = lap_mode,
 			position = "0x0",
 			scale = 1,
 			disabled = false,
 		})
 
-		hl.exec_cmd("hyprctl dispatch focusmonitor eDP-1")
+		hl.exec_cmd("hyprctl dispatch focusmonitor " .. laptop)
 
 		hl.exec_cmd(
 			"sleep 0.8 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/scripts/restore-wallpaper.sh"

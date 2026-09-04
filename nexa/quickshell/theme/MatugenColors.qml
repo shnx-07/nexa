@@ -3,22 +3,22 @@ import QtQuick
 
 QtObject {
     // Primary
-    readonly property color primary: "#a6c8ff"
-    readonly property color on_primary: "#02315f"
-    readonly property color primaryContainer: "#234776"
-    readonly property color on_primary_container: "#d5e3ff"
+    readonly property color primary: "#ffb599"
+    readonly property color on_primary: "#5a1c00"
+    readonly property color primaryContainer: "#7f2b00"
+    readonly property color on_primary_container: "#ffdbce"
 
     // Secondary
-    readonly property color secondary: "#bdc7dc"
-    readonly property color on_secondary: "#273141"
-    readonly property color secondaryContainer: "#3d4758"
-    readonly property color on_secondary_container: "#d9e3f8"
+    readonly property color secondary: "#f0bc95"
+    readonly property color on_secondary: "#48290d"
+    readonly property color secondaryContainer: "#623f21"
+    readonly property color on_secondary_container: "#ffdcc3"
 
     // Tertiary
-    readonly property color tertiary: "#dabde2"
-    readonly property color on_tertiary: "#3d2846"
-    readonly property color tertiaryContainer: "#553f5d"
-    readonly property color on_tertiary_container: "#f7d8ff"
+    readonly property color tertiary: "#f0be79"
+    readonly property color on_tertiary: "#452b00"
+    readonly property color tertiaryContainer: "#614004"
+    readonly property color on_tertiary_container: "#ffddb2"
 
     // Background
     readonly property color background: "#20181a"
