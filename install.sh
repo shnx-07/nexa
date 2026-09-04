@@ -259,7 +259,23 @@ fi
 chmod +x "$HOME"/.config/nexa/scripts/* 2>/dev/null || true
 chmod +x "$HOME"/.config/hypr/scripts/* 2>/dev/null || true
 mkdir -p "$HOME/.local/bin"
+mkdir -p "$HOME/.local/share/applications"
 ln -sf "$HOME/.config/nexa/scripts/nexa-avatar.sh" "$HOME/.local/bin/nexa-avatar" 2>/dev/null || true
+
+# Deploy custom utilities and desktop entries
+if [ -f "$DOTFILES_DIR/bin/yazi" ]; then
+    log_info "Deploying yazi wrapper -> ~/.local/bin/yazi"
+    cp -a "$DOTFILES_DIR/bin/yazi" "$HOME/.local/bin/yazi"
+    chmod +x "$HOME/.local/bin/yazi"
+fi
+
+if [ -f "$DOTFILES_DIR/applications/yazi.desktop" ]; then
+    log_info "Deploying yazi desktop entry -> ~/.local/share/applications/yazi.desktop"
+    cp -a "$DOTFILES_DIR/applications/yazi.desktop" "$HOME/.local/share/applications/yazi.desktop"
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
+    fi
+fi
 
 # Pre-create required runtime directories
 mkdir -p "$HOME/.cache/nexa/theme"

@@ -25,6 +25,8 @@ pub struct SearchEntry {
     pub exec: String,
     pub icon: String,
     #[serde(default)]
+    pub terminal: bool,
+    #[serde(default)]
     pub generic_name: String,
     #[serde(default)]
     pub keywords: String,
@@ -44,6 +46,8 @@ struct SearchResult {
     exec: String,
     icon: String,
     score: i32,
+    #[serde(default)]
+    terminal: bool,
 }
 
 
@@ -124,6 +128,7 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
     let mut keywords = String::new();
     let mut exec = String::new();
     let mut icon = String::new();
+    let mut terminal = false;
 
     let mut hidden = false;
     let mut no_display = false;
@@ -166,6 +171,11 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
             if exec.is_empty() {
                 exec = value.trim().to_string();
             }
+            continue;
+        }
+
+        if let Some(value) = line.strip_prefix("Terminal=") {
+            terminal = value.trim().eq_ignore_ascii_case("true");
             continue;
         }
 
@@ -218,6 +228,7 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
         path: path.to_string_lossy().to_string(),
         exec,
         icon,
+        terminal,
         generic_name,
         keywords,
     })
@@ -364,6 +375,7 @@ fn index_files(
                 path: path_string,
                 exec: String::new(),
                 icon: String::new(),
+                terminal: false,
                 generic_name: String::new(),
                 keywords: String::new(),
             });
@@ -811,6 +823,7 @@ pub fn query(
                 exec: entry.exec.clone(),
                 icon: entry.icon.clone(),
                 score,
+                terminal: entry.terminal,
             })
         })
         .collect::<Vec<_>>();
@@ -868,7 +881,24 @@ fn clean_desktop_exec(
 fn open_application(
     entry: &SearchEntry,
 ) -> Result<(), String> {
-    let command = clean_desktop_exec(&entry.exec);
+    let raw_command = clean_desktop_exec(&entry.exec);
+
+    let command = if entry.terminal {
+        let term = env::var("TERMINAL").unwrap_or_else(|_| "kitty".to_string());
+        let app_name = Path::new(&entry.path)
+            .file_stem()
+            .and_then(|v| v.to_str())
+            .unwrap_or("app")
+            .to_lowercase();
+
+        if term.contains("alacritty") {
+            format!("{term} --class {app_name} -e {raw_command}")
+        } else {
+            format!("{term} --class {app_name} {raw_command}")
+        }
+    } else {
+        raw_command
+    };
 
     if !command.is_empty() {
         match Command::new("sh")

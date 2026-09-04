@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# If already in an interactive terminal, run CLI directly
+if [ -t 0 ] && [ -t 1 ]; then
+    exec /usr/bin/yazi "$@"
+else
+    # If launched from GUI/Hyprland/runners, launch in terminal with class yazi for Hyprland window rules
+    if command -v kitty >/dev/null 2>&1; then
+        exec kitty --class yazi yazi "$@"
+    elif command -v alacritty >/dev/null 2>&1; then
+        exec alacritty --class yazi -e yazi "$@"
+    else
+        exec /usr/bin/yazi "$@"
+    fi
+fi

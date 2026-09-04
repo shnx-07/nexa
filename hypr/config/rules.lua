@@ -124,7 +124,7 @@ hl.window_rule({ match = { class = "^(org\\.kde\\.ark)$" }, size = { "max(monito
 hl.window_rule({ match = { class = "^(.*satty.*)$", title = "^(Satty)$" }, min_size = { "max(monitor_w, monitor_h)*0.35", "min(monitor_w, monitor_h)*0.35" }, float = true })
 hl.window_rule({ match = { class = "^(dev\\.)?(noctalia\\.Noctalia(\\.Settings)?)$" }, float = true, size = { "monitor_w*0.70", "monitor_h*0.70" } })
 -- File Managers (Dolphin, Nemo, Yazi): Centered horizontally, slightly shifted toward bottom
-local fileManagerApps = "^(org\\.kde\\.dolphin|dolphin|nemo|Nemo|yazi)$"
+local fileManagerApps = "^(org\\.kde\\.dolphin|dolphin|nemo|Nemo|yazi|[Yy]azi)$"
 
 hl.window_rule({
 	match = {
@@ -147,6 +147,15 @@ hl.window_rule({
 hl.window_rule({
 	match = {
 		title = "^(.*[Yy]azi.*)$",
+	},
+	float = true,
+	size = { "monitor_w*0.50", "monitor_h*0.55" },
+	move = "monitor_w*0.25 monitor_h*0.30",
+})
+
+hl.window_rule({
+	match = {
+		initial_title = "^(.*[Yy]azi.*)$",
 	},
 	float = true,
 	size = { "monitor_w*0.50", "monitor_h*0.55" },

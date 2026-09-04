@@ -1739,6 +1739,9 @@ fn launch_with_exec(
                 );
             }
 
+            let app_class = app.app.name.to_lowercase();
+            command.arg("--class").arg(&app_class);
+
             if let Some(flag) =
                 terminal_exec_flag(
                     &terminal[0],
