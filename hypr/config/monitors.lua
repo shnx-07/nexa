@@ -14,7 +14,12 @@ local function is_hdmi_connected()
 	if p then
 		local out = p:read("*a")
 		p:close()
-		return out:find("connected") ~= nil
+		for line in out:gmatch("[^\r\n]+") do
+			-- Strictly match whole word "connected", never "disconnected"
+			if line:match("^%s*connected%s*$") then
+				return true
+			end
+		end
 	end
 	return false
 end
