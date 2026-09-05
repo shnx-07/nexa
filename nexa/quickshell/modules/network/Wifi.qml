@@ -120,6 +120,9 @@ Item {
         anchors.fill:
             parent
 
+        visible:
+            root.visible
+
         radius:
             Nexa.Theme.radiusSm
 
@@ -241,7 +244,8 @@ Item {
             button
 
         visible:
-            mouse.containsMouse
+            root.visible
+            && mouse.containsMouse
             && !popup.visible
 
         title:

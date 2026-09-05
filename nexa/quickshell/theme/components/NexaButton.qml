@@ -40,6 +40,12 @@ Rectangle {
             color: root.selected ? Nexa.Theme.primary : Nexa.Theme.text
             font.family: Nexa.Theme.iconFontFamily
             font.pixelSize: root.iconSize
+            Behavior on color {
+                ColorAnimation {
+                    duration: Nexa.Theme.motionInteraction
+                    easing.type: Easing.OutCubic
+                }
+            }
         }
         Text {
             visible: root.text !== ""
@@ -48,15 +54,37 @@ Rectangle {
             font.family: Nexa.Theme.fontFamily
             font.pixelSize: root.textSize
             font.weight: Nexa.Theme.fontWeightMedium
+            Behavior on color {
+                ColorAnimation {
+                    duration: Nexa.Theme.motionInteraction
+                    easing.type: Easing.OutCubic
+                }
+            }
         }
     }
 
-    Behavior on color { ColorAnimation { duration: Nexa.Theme.motionInteraction } }
-    Behavior on border.color { ColorAnimation { duration: Nexa.Theme.motionInteraction } }
+    Behavior on color {
+        ColorAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on border.color {
+        ColorAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
+        }
+    }
     Behavior on scale {
         NumberAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Nexa.Theme.easingStandard
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
         }
     }
 

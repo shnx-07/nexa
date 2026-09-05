@@ -155,6 +155,8 @@ QtObject {
             ColorAnimation {
                 duration:
                     Nexa.Theme.motionInteraction
+                easing.type:
+                    Easing.OutCubic
             }
         }
 
@@ -163,6 +165,8 @@ QtObject {
             ColorAnimation {
                 duration:
                     Nexa.Theme.motionInteraction
+                easing.type:
+                    Easing.OutCubic
             }
         }
 
@@ -173,7 +177,7 @@ QtObject {
                     Nexa.Theme.motionInteraction
 
                 easing.type:
-                    Nexa.Theme.easingStandard
+                    Easing.OutCubic
             }
         }
 
@@ -293,6 +297,8 @@ QtObject {
             ColorAnimation {
                 duration:
                     Nexa.Theme.motionInteraction
+                easing.type:
+                    Easing.OutCubic
             }
         }
 
@@ -301,6 +307,8 @@ QtObject {
             ColorAnimation {
                 duration:
                     Nexa.Theme.motionInteraction
+                easing.type:
+                    Easing.OutCubic
             }
         }
 
@@ -311,7 +319,7 @@ QtObject {
                     Nexa.Theme.motionInteraction
 
                 easing.type:
-                    Nexa.Theme.easingStandard
+                    Easing.OutCubic
             }
         }
 
@@ -427,6 +435,15 @@ QtObject {
 
             font.pixelSize:
                 iconButton.iconSize
+
+            Behavior on color {
+                ColorAnimation {
+                    duration:
+                        Nexa.Theme.motionInteraction
+                    easing.type:
+                        Easing.OutCubic
+                }
+            }
         }
 
 
@@ -434,6 +451,18 @@ QtObject {
             ColorAnimation {
                 duration:
                     Nexa.Theme.motionInteraction
+                easing.type:
+                    Easing.OutCubic
+            }
+        }
+
+
+        Behavior on border.color {
+            ColorAnimation {
+                duration:
+                    Nexa.Theme.motionInteraction
+                easing.type:
+                    Easing.OutCubic
             }
         }
 
@@ -444,7 +473,7 @@ QtObject {
                     Nexa.Theme.motionInteraction
 
                 easing.type:
-                    Nexa.Theme.easingStandard
+                    Easing.OutCubic
             }
         }
 
@@ -787,7 +816,7 @@ QtObject {
                         Nexa.Theme.motionSelection
 
                     easing.type:
-                        Nexa.Theme.easingEnter
+                        Easing.InOutCubic
                 }
             }
         }
@@ -951,13 +980,23 @@ QtObject {
             Nexa.Theme.primary
 
 
+        Behavior on color {
+            ColorAnimation {
+                duration:
+                    Nexa.Theme.animationNormal
+                easing.type:
+                    Easing.OutCubic
+            }
+        }
+
+
         Behavior on x {
             NumberAnimation {
                 duration:
                     Nexa.Theme.motionSelection
 
                 easing.type:
-                    Nexa.Theme.easingEnter
+                    Easing.InOutCubic
             }
         }
 
@@ -968,7 +1007,7 @@ QtObject {
                     Nexa.Theme.motionSelection
 
                 easing.type:
-                    Nexa.Theme.easingEnter
+                    Easing.InOutCubic
             }
         }
 
@@ -979,7 +1018,7 @@ QtObject {
                     Nexa.Theme.motionSelection
 
                 easing.type:
-                    Nexa.Theme.easingStandard
+                    Easing.OutCubic
             }
         }
     }

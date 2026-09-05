@@ -17,26 +17,52 @@ Rectangle {
     border.color: checked ? Nexa.Theme.selectedBorder : Nexa.Theme.border
 
     Rectangle {
-        width: 18
+        id: thumb
+        width: mouse.pressed ? 21 : 18
         height: 18
-        radius: width / 2
+        radius: height / 2
         anchors.verticalCenter: parent.verticalCenter
         x: root.checked ? root.width - width - 3 : 3
         color: root.checked ? Nexa.Theme.primary : Nexa.Theme.mutedText
-        scale: mouse.pressed ? 0.90 : 1.0
 
+        Behavior on width {
+            NumberAnimation {
+                duration: Nexa.Theme.motionInteraction
+                easing.type: Easing.OutCubic
+            }
+        }
         Behavior on x {
             NumberAnimation {
                 duration: Nexa.Theme.motionSelection
-                easing.type: Nexa.Theme.easingEnter
+                easing.type: Easing.InOutCubic
             }
         }
-        Behavior on color { ColorAnimation { duration: Nexa.Theme.motionInteraction } }
-        Behavior on scale { NumberAnimation { duration: Nexa.Theme.motionInteraction } }
+        Behavior on color {
+            ColorAnimation {
+                duration: Nexa.Theme.motionInteraction
+                easing.type: Easing.OutCubic
+            }
+        }
     }
 
-    Behavior on color { ColorAnimation { duration: Nexa.Theme.motionInteraction } }
-    Behavior on border.color { ColorAnimation { duration: Nexa.Theme.motionInteraction } }
+    Behavior on color {
+        ColorAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on border.color {
+        ColorAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
+        }
+    }
 
     MouseArea {
         id: mouse

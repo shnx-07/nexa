@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 Item {
@@ -852,6 +853,26 @@ Item {
                 ColorAnimation {
                     duration:
                         Nexa.Theme.animationFast
+                    easing.type:
+                        Easing.OutCubic
+                }
+            }
+
+            Behavior on border.color {
+                ColorAnimation {
+                    duration:
+                        Nexa.Theme.animationFast
+                    easing.type:
+                        Easing.OutCubic
+                }
+            }
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration:
+                        Nexa.Theme.animationFast
+                    easing.type:
+                        Easing.OutCubic
                 }
             }
 
@@ -905,20 +926,39 @@ Item {
                         parent.verticalCenter
 
                     text:
-                        dropdown.opened
-                        ? "⌃"
-                        : "⌄"
+                        "󰅀"
 
                     color:
-                        Nexa.Theme.mutedText
+                        dropdown.opened
+                        ? Nexa.Theme.primary
+                        : Nexa.Theme.mutedText
 
                     font {
                         family:
-                            Nexa.Theme.fontFamily
+                            Nexa.Theme.iconFontFamily
                         pixelSize:
-                            Nexa.Theme.fontSizeXs
-                        weight:
-                            Nexa.Theme.fontWeightDemiBold
+                            Nexa.Theme.iconXs
+                    }
+
+                    rotation:
+                        dropdown.opened ? 180 : 0
+
+                    Behavior on rotation {
+                        NumberAnimation {
+                            duration:
+                                Nexa.Theme.motionSelection
+                            easing.type:
+                                Easing.InOutCubic
+                        }
+                    }
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration:
+                                Nexa.Theme.animationFast
+                            easing.type:
+                                Easing.OutCubic
+                        }
                     }
                 }
             }
@@ -1019,8 +1059,10 @@ Item {
                 border.color:
                     Nexa.Theme.borderStrong
 
-                clip:
-                    true
+                NexaUI.NexaShadow {
+                    elevation: 1
+                    cornerRadius: Nexa.Theme.radiusSm
+                }
 
                 ListView {
                     id: popupList
@@ -1041,6 +1083,12 @@ Item {
 
                     boundsBehavior:
                         Flickable.StopAtBounds
+
+                    flickDeceleration:
+                        Nexa.Theme.flickDeceleration
+
+                    maximumFlickVelocity:
+                        Nexa.Theme.flickVelocityMax
 
                     delegate: Rectangle {
                         id: option
@@ -1065,6 +1113,15 @@ Item {
                             : optionMouse.containsMouse
                                 ? Nexa.Theme.hover
                                 : "transparent"
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration:
+                                    Nexa.Theme.animationFast
+                                easing.type:
+                                    Easing.OutCubic
+                            }
+                        }
 
                         Text {
                             anchors.centerIn:
@@ -1097,6 +1154,15 @@ Item {
                                     option.selectedOption
                                     ? Nexa.Theme.fontWeightDemiBold
                                     : Nexa.Theme.fontWeightMedium
+                            }
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration:
+                                        Nexa.Theme.animationFast
+                                    easing.type:
+                                        Easing.OutCubic
+                                }
                             }
                         }
 
@@ -1169,6 +1235,23 @@ Item {
             clip:
                 true
 
+            Behavior on color {
+                ColorAnimation {
+                    duration:
+                        Nexa.Theme.animationNormal
+                    easing.type:
+                        Easing.OutCubic
+                }
+            }
+
+            Behavior on border.color {
+                ColorAnimation {
+                    duration:
+                        Nexa.Theme.animationNormal
+                    easing.type:
+                        Easing.OutCubic
+                }
+            }
 
             Rectangle {
                 anchors {
@@ -1182,6 +1265,14 @@ Item {
                 color:
                     Nexa.Theme.surfaceContainer
 
+                Behavior on color {
+                    ColorAnimation {
+                        duration:
+                            Nexa.Theme.animationNormal
+                        easing.type:
+                            Easing.OutCubic
+                    }
+                }
 
                 Row {
                     anchors {
@@ -1216,6 +1307,15 @@ Item {
 
                             color:
                                 modelData
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration:
+                                        Nexa.Theme.animationNormal
+                                    easing.type:
+                                        Easing.OutCubic
+                                }
+                            }
                         }
                     }
                 }
@@ -1241,6 +1341,15 @@ Item {
 
                         weight:
                             Nexa.Theme.fontWeightMedium
+                    }
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration:
+                                Nexa.Theme.animationNormal
+                            easing.type:
+                                Easing.OutCubic
+                        }
                     }
                 }
             }
@@ -1269,6 +1378,15 @@ Item {
 
                 color:
                     Nexa.Theme.surfaceContainerHigh
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration:
+                            Nexa.Theme.animationNormal
+                        easing.type:
+                            Easing.OutCubic
+                    }
+                }
 
 
                 Column {
@@ -1354,6 +1472,15 @@ Item {
 
                                 color:
                                     modelData
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration:
+                                            Nexa.Theme.animationNormal
+                                        easing.type:
+                                            Easing.OutCubic
+                                    }
+                                }
                             }
                         }
                     }
@@ -1385,6 +1512,14 @@ Item {
                 color:
                     Nexa.Theme.surfaceContainerHigh
 
+                Behavior on color {
+                    ColorAnimation {
+                        duration:
+                            Nexa.Theme.animationNormal
+                        easing.type:
+                            Easing.OutCubic
+                    }
+                }
 
                 Rectangle {
                     anchors {
@@ -1400,6 +1535,15 @@ Item {
 
                     color:
                         Nexa.Theme.primary
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration:
+                                Nexa.Theme.animationNormal
+                            easing.type:
+                                Easing.OutCubic
+                        }
+                    }
                 }
 
 
@@ -1434,6 +1578,15 @@ Item {
                             weight:
                                 Nexa.Theme.fontWeightDemiBold
                         }
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration:
+                                    Nexa.Theme.animationNormal
+                                easing.type:
+                                    Easing.OutCubic
+                            }
+                        }
                     }
 
 
@@ -1461,6 +1614,15 @@ Item {
 
                             pixelSize:
                                 Nexa.Theme.fontSizeXs
+                        }
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration:
+                                    Nexa.Theme.animationNormal
+                                easing.type:
+                                    Easing.OutCubic
+                            }
                         }
                     }
                 }
@@ -1499,6 +1661,15 @@ Item {
 
                             color:
                                 modelData
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration:
+                                        Nexa.Theme.animationNormal
+                                    easing.type:
+                                        Easing.OutCubic
+                                }
+                            }
                         }
                     }
                 }

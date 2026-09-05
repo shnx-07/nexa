@@ -32,13 +32,37 @@ Rectangle {
         color: root.iconColor
         font.family: Nexa.Theme.iconFontFamily
         font.pixelSize: root.iconSize
+
+        Behavior on color {
+            ColorAnimation {
+                duration: Nexa.Theme.motionInteraction
+                easing.type: Easing.OutCubic
+            }
+        }
     }
 
-    Behavior on color { ColorAnimation { duration: Nexa.Theme.motionInteraction } }
+    Behavior on color {
+        ColorAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on border.color {
+        ColorAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
+        }
+    }
     Behavior on scale {
         NumberAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Nexa.Theme.easingStandard
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
         }
     }
 

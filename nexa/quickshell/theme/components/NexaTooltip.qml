@@ -19,6 +19,11 @@ Rectangle {
     border.color: Nexa.Theme.border
     z: Nexa.Theme.zOverlay
 
+    NexaShadow {
+        elevation: 0
+        cornerRadius: Nexa.Theme.radiusSm
+    }
+
     Text {
         id: label
         anchors.centerIn: parent
@@ -28,9 +33,22 @@ Rectangle {
         font.pixelSize: Nexa.Theme.fontSizeXs
     }
 
+    Behavior on color {
+        ColorAnimation {
+            duration: Nexa.Theme.animationFast
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on border.color {
+        ColorAnimation {
+            duration: Nexa.Theme.animationFast
+            easing.type: Easing.OutCubic
+        }
+    }
     Behavior on opacity {
         NumberAnimation {
             duration: root.shown ? Nexa.Theme.popEnterDuration : Nexa.Theme.popExitDuration
+            easing.type: root.shown ? Easing.OutCubic : Easing.InCubic
         }
     }
     Behavior on scale {

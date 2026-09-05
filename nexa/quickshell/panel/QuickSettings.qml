@@ -57,8 +57,8 @@ Item {
 
     AudioModule.Audio { id: audio; visible: root.visible }
     BrightnessModule.Brightness { id: brightness; visible: root.visible }
-    NetworkModule.Wifi { id: wifi; visible: root.visible }
-    NetworkModule.Bluetooth { id: bluetooth; visible: root.visible }
+    NetworkModule.Wifi { id: wifi; visible: false; width: 0; height: 0 }
+    NetworkModule.Bluetooth { id: bluetooth; visible: false; width: 0; height: 0 }
     AirplaneModule.Airplane { id: airplane; visible: root.visible }
     VpnModule.Vpn { id: vpn; visible: root.visible }
     NightLightModule.NightLight { id: nightLight; visible: root.visible }

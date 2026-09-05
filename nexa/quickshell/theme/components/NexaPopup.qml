@@ -17,7 +17,25 @@ Popup {
         radius: root.cornerRadius
         color: root.backgroundColor
         border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.border
+        border.color: Nexa.Theme.borderStrong
+
+        NexaShadow {
+            elevation: 1
+            cornerRadius: root.cornerRadius
+        }
+
+        Behavior on color {
+            ColorAnimation {
+                duration: Nexa.Theme.animationFast
+                easing.type: Easing.OutCubic
+            }
+        }
+        Behavior on border.color {
+            ColorAnimation {
+                duration: Nexa.Theme.animationFast
+                easing.type: Easing.OutCubic
+            }
+        }
     }
 
     enter: Transition {
@@ -27,10 +45,11 @@ Popup {
                 from: 0
                 to: 1
                 duration: Nexa.Theme.popEnterDuration
+                easing.type: Easing.OutCubic
             }
             NumberAnimation {
                 property: "scale"
-                from: 0.98
+                from: 0.94
                 to: 1
                 duration: Nexa.Theme.popEnterDuration
                 easing.type: Nexa.Theme.easingEnter
@@ -45,11 +64,12 @@ Popup {
                 from: 1
                 to: 0
                 duration: Nexa.Theme.popExitDuration
+                easing.type: Easing.InCubic
             }
             NumberAnimation {
                 property: "scale"
                 from: 1
-                to: 0.98
+                to: 0.94
                 duration: Nexa.Theme.popExitDuration
                 easing.type: Nexa.Theme.easingExit
             }

@@ -39,6 +39,13 @@ RowLayout {
         implicitWidth: workspaceRow.implicitWidth + 16
         implicitHeight: Nexa.Theme.controlHeightSm
 
+        Behavior on implicitWidth {
+            NumberAnimation {
+                duration: 280
+                easing.type: Easing.InOutCubic
+            }
+        }
+
         radius: height / 2
         color: Nexa.Theme.surfaceContainer
 
@@ -77,13 +84,14 @@ RowLayout {
                         return false
                     }
 
-                    width: dotIndicator.width + 4
+                    // Symmetrical width: active is 28+4=32px, inactive is 10+4=14px
+                    width: (active ? 28 : 10) + 4
                     height: Nexa.Theme.controlHeightSm
 
                     Behavior on width {
                         NumberAnimation {
-                            duration: 250
-                            easing.type: Easing.OutCubic
+                            duration: 280
+                            easing.type: Easing.InOutCubic
                         }
                     }
 
@@ -92,8 +100,8 @@ RowLayout {
 
                         anchors.centerIn: parent
 
-                        // Inactive: 10px circle. Active: 28px elongated capsule pill.
-                        width: workspaceButton.active ? 28 : 10
+                        // Directly tracks parent width for instant single-curve synchronization
+                        width: parent.width - 4
                         height: 10
                         radius: height / 2
 
@@ -109,16 +117,10 @@ RowLayout {
 
                         scale: mouse.pressed ? 0.88 : (mouse.containsMouse && !workspaceButton.active ? 1.2 : 1.0)
 
-                        Behavior on width {
-                            NumberAnimation {
-                                duration: 250
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-
                         Behavior on color {
                             ColorAnimation {
-                                duration: Nexa.Theme.animationFast
+                                duration: 250
+                                easing.type: Easing.InOutCubic
                             }
                         }
 

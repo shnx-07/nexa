@@ -60,8 +60,18 @@ Item {
             border.width: Nexa.Theme.borderThin
             border.color: mouse.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.border
 
+            Behavior on color {
+                ColorAnimation {
+                    duration: Nexa.Theme.animationNormal
+                    easing.type: Easing.OutCubic
+                }
+            }
+
             Behavior on border.color {
-                ColorAnimation { duration: Nexa.Theme.animationFast }
+                ColorAnimation {
+                    duration: Nexa.Theme.animationFast
+                    easing.type: Easing.OutCubic
+                }
             }
 
             // 1. Progress Fill
@@ -74,10 +84,17 @@ Item {
                 radius: track.radius
                 color: root.accentColor
 
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Nexa.Theme.animationNormal
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
                 Behavior on width {
                     enabled: !mouse.pressed
                     NumberAnimation {
-                        duration: 80
+                        duration: 140
                         easing.type: Easing.OutCubic
                     }
                 }
@@ -93,6 +110,13 @@ Item {
                 radius: track.radius
                 color: Qt.lighter(root.accentColor, 1.25)
                 opacity: root.livePulse * 0.7
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Nexa.Theme.animationNormal
+                        easing.type: Easing.OutCubic
+                    }
+                }
             }
 
             // 2. Trailing Icon (sun / speaker / mic)
@@ -113,7 +137,10 @@ Item {
                     opacity: 0.95
 
                     Behavior on color {
-                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                        ColorAnimation {
+                            duration: Nexa.Theme.animationFast
+                            easing.type: Easing.OutCubic
+                        }
                     }
                 }
 
@@ -142,7 +169,7 @@ Item {
             Behavior on x {
                 enabled: !mouse.pressed
                 NumberAnimation {
-                    duration: 80
+                    duration: 140
                     easing.type: Easing.OutCubic
                 }
             }

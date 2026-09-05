@@ -34,11 +34,22 @@ Rectangle {
         anchors.margins: root.padding
     }
 
-    Behavior on color { ColorAnimation { duration: Nexa.Theme.motionInteraction } }
+    Behavior on color {
+        ColorAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on border.color {
+        ColorAnimation {
+            duration: Nexa.Theme.motionInteraction
+            easing.type: Easing.OutCubic
+        }
+    }
     Behavior on scale {
         NumberAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Nexa.Theme.easingStandard
+            easing.type: Easing.OutCubic
         }
     }
 

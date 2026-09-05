@@ -146,15 +146,27 @@ Item {
         refreshStatus()
 
     // ============================================================
-    // POLLING
+    // POLLING & FILE WATCHER
     //
-    // Rust remains source of truth.
+    // Watches runtime recorder.json for instant start/stop reactions
+    // and continuously polls so Dynamic Island is immediately aware
+    // when recording starts from Quick Settings, scripts, or hotkeys.
     // ============================================================
 
+    FileView {
+        id: recorderStateFile
+        path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/nexa/recorder.json"
+        watchChanges: true
+
+        onFileChanged: {
+            root.refreshStatus()
+        }
+    }
+
     Timer {
-        interval: 1000
+        interval: root.recording ? 1000 : 1500
         repeat: true
-        running: root.visible || root.recording
+        running: true
 
         onTriggered:
             root.refreshStatus()
