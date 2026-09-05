@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ -z "$1" ]; then
+    echo "Usage: jv <Filename[.java]> [args...]"
+    exit 1
+fi
+
+RAW="$1"
+shift
+
+# If argument ends with .java, use it; otherwise append .java
+if [[ "$RAW" == *.java ]]; then
+    FILE="$RAW"
+    CLASSNAME="$(basename "${RAW%.java}")"
+else
+    FILE="${RAW}.java"
+    CLASSNAME="$(basename "$RAW")"
+fi
+
+DIRNAME="$(dirname "$FILE")"
+
+if [ ! -f "$FILE" ]; then
+    echo "Error: File '$FILE' not found." >&2
+    exit 1
+fi
+
+# Compile
+javac "$FILE"
+
+# Run from file's directory if in a subdirectory
+if [ "$DIRNAME" != "." ]; then
+    (cd "$DIRNAME" && java "$CLASSNAME" "$@")
+else
+    java "$CLASSNAME" "$@"
+fi
