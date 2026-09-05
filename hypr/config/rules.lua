@@ -55,8 +55,23 @@ hl.window_rule({
 })
 
 -- ------------------------------------------------------------
--- Common Dialogs & Modals (Auto-Float)
+-- Common Dialogs, Modals & Browser Popups (Auto-Float)
 -- ------------------------------------------------------------
+
+-- Universal modal floating (covers alerts, confirmation prompts, HTTP auth)
+hl.window_rule({
+	match = { modal = true },
+	float = true,
+	center = true,
+})
+
+-- Chromium / Chrome / Brave / Edge popups & web-apps (OAuth, logins, extension popups)
+hl.window_rule({
+	match = { class = "^(chrome-.*|chromium-.*|brave-.*)$" },
+	float = true,
+	center = true,
+	size = { "monitor_w*0.55", "monitor_h*0.65" },
+})
 
 local modalMatches = {
 	{ title = "^(Open|Authentication Required|Add Folder to Workspace|Choose Files|Save As|Confirm to replace files|File Operation Progress)$" },
@@ -66,10 +81,14 @@ local modalMatches = {
 	{ class = "^(.*dialog.*)$" },
 	{ title = "^(.*dialog.*)$" },
 	{ class = "^(hyprland-share-picker)$" },
+	-- Browser popups (Firefox, Zen, Chrome, Brave dialogs, extensions, logins, OAuth)
+	{ class = "^(firefox|zen.*|google-chrome|chromium|Brave-browser)$", title = "^(Extension: .*|Library|Page Info|Password Required|Sign in.*|Log in.*|.*OAuth.*|DevTools.*|Print)$" },
+	{ class = "^(firefox|zen.*)$", title = "^(About Mozilla Firefox|Opening .*)$" },
 }
 for _, m in ipairs(modalMatches) do
-	hl.window_rule({ match = m, float = true })
+	hl.window_rule({ match = m, float = true, center = true })
 end
+
 
 -- ------------------------------------------------------------
 -- Utility Windows (Settings, Audio, Bluetooth, Network)

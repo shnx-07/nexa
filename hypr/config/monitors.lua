@@ -1,6 +1,7 @@
 -- ============================================================
--- MONITOR CONFIGURATIONS (Single Source of Truth)
--- Change display outputs, resolutions, and refresh rates HERE:
+-- MONITOR CONFIGURATIONS (Clean Auto-Switch Single Display)
+-- When HDMI connects -> HDMI is primary at 0x0, laptop disabled
+-- When HDMI disconnects -> Laptop is primary at 0x0, HDMI disabled
 -- ============================================================
 
 local external = "HDMI-A-1"
@@ -24,9 +25,9 @@ local function is_hdmi_connected()
 	return false
 end
 
--- ── Initial monitor declarations (Single display auto-switch) ───────────────
+-- ── Startup / Reload Declarations ───────────────────────────
 if is_hdmi_connected() then
-	-- HDMI is connected: External monitor is the ONLY active display
+	-- HDMI is plugged in: External monitor is primary at 0x0, laptop screen off
 	hl.monitor({
 		output = external,
 		mode = ext_mode,
@@ -39,7 +40,7 @@ if is_hdmi_connected() then
 		disabled = true,
 	})
 else
-	-- HDMI is not connected: Laptop display is the ONLY active display
+	-- HDMI is unplugged: Laptop screen is primary at 0x0, HDMI disabled
 	hl.monitor({
 		output = laptop,
 		mode = lap_mode,
@@ -53,11 +54,11 @@ else
 	})
 end
 
--- ── Hot-plug events ────────────────────────────────────────────────────────
+-- ── Dynamic Hot-Plug Events ─────────────────────────────────
 hl.on("monitor.added", function(monitor)
 	local name = type(monitor) == "table" and (monitor.name or monitor.output) or tostring(monitor or "")
 	if name:find("HDMI") or name:find(external) then
-		-- Re-apply external monitor at fixed position with correct mode
+		-- 1. Enable external monitor as primary display at 0x0
 		hl.monitor({
 			output = name,
 			mode = ext_mode,
@@ -66,25 +67,15 @@ hl.on("monitor.added", function(monitor)
 			disabled = false,
 		})
 
-		-- Move any workspaces currently on laptop screen over to external monitor
-		hl.exec_cmd(
-			"hyprctl dispatch focusmonitor "
-				.. laptop
-				.. " && hyprctl dispatch moveworkspacetomonitor $(hyprctl activeworkspace -j | jq -r .id) "
-				.. name
-		)
-
-		-- Disable laptop display (Single display auto-switch)
+		-- 2. Disable laptop screen (Hyprland natively migrates all workspaces/windows)
 		hl.monitor({
 			output = laptop,
 			disabled = true,
 		})
 
-		-- Focus external monitor
-		hl.exec_cmd("hyprctl dispatch focusmonitor " .. name)
-
+		-- 3. Restart Nexa cleanly and refresh wallpaper on external display
 		hl.exec_cmd(
-			"sleep 0.8 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/scripts/restore-wallpaper.sh"
+			"sleep 0.6 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/scripts/restore-wallpaper.sh"
 		)
 	end
 end)
@@ -92,7 +83,7 @@ end)
 hl.on("monitor.removed", function(monitor)
 	local name = type(monitor) == "table" and (monitor.name or monitor.output) or tostring(monitor or "")
 	if name:find("HDMI") or name:find(external) or name == "" then
-		-- Re-enable laptop screen as the single active display
+		-- 1. Re-enable laptop screen as primary display at 0x0
 		hl.monitor({
 			output = laptop,
 			mode = lap_mode,
@@ -101,10 +92,17 @@ hl.on("monitor.removed", function(monitor)
 			disabled = false,
 		})
 
-		hl.exec_cmd("hyprctl dispatch focusmonitor " .. laptop)
+		-- 2. Explicitly disable external monitor
+		hl.monitor({
+			output = external,
+			disabled = true,
+		})
 
+		-- 3. Restart Nexa cleanly and refresh wallpaper on laptop screen
 		hl.exec_cmd(
-			"sleep 0.8 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/scripts/restore-wallpaper.sh"
+			"sleep 0.6 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/scripts/restore-wallpaper.sh"
 		)
 	end
 end)
+
+
