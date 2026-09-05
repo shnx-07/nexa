@@ -253,6 +253,22 @@ alias c='clear'
 alias h='history'
 alias reload='exec zsh'
 
+
+# CODING ALIASES
+
+jv() {
+    if [ -z "$1" ]; then
+        echo "Usage: jv <Filename.java> [args...]"
+        return 1
+    fi
+    local file="${1%.java}.java"
+    local classname="${1%.java}"
+    shift
+    javac "$file" && java "$classname" "$@"
+}
+
+
+
 # ============================================================
 # ENVIRONMENT
 # ============================================================
