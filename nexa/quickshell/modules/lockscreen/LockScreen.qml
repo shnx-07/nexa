@@ -52,6 +52,7 @@ Item {
             "NEXA lockscreen: lock requested"
         )
 
+        Quickshell.execDetached(["touch", "/tmp/nexa-locked"])
         sessionLock.locked = true
     }
 
@@ -64,8 +65,10 @@ Item {
             "NEXA lockscreen: releasing session"
         )
 
+        Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
         sessionLock.locked = false
     }
+
 
 
     // ============================================================
@@ -142,6 +145,11 @@ Item {
                 "NEXA lockscreen locked:",
                 locked
             )
+            if (locked) {
+                Quickshell.execDetached(["touch", "/tmp/nexa-locked"])
+            } else {
+                Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
+            }
         }
 
 
@@ -151,6 +159,10 @@ Item {
                 secure
             )
         }
+    }
+
+    Component.onCompleted: {
+        Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
     }
 
     // ============================================================
@@ -179,3 +191,4 @@ Item {
         }
     }
 }
+

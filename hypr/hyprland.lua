@@ -11,4 +11,6 @@ require("config.binds")
 require("config.monitors")
 require("config.workspaces")
 require("config.rules")
+require("config.misc")
 require("config.plugins")
+
