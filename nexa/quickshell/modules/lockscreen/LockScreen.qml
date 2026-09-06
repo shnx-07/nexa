@@ -67,6 +67,16 @@ Item {
 
         Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
         sessionLock.locked = false
+
+        // Check if monitor configuration changed while session was locked
+        Quickshell.execDetached([
+            "sh", "-c",
+            "if [ -f /tmp/nexa-restart-pending ]; then "
+            + "rm -f /tmp/nexa-restart-pending; "
+            + "sleep 0.2; "
+            + "$HOME/.config/nexa/scripts/nexa-restart.sh && $HOME/.config/nexa/scripts/restore-wallpaper.sh; "
+            + "fi"
+        ])
     }
 
 
@@ -149,6 +159,14 @@ Item {
                 Quickshell.execDetached(["touch", "/tmp/nexa-locked"])
             } else {
                 Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
+                Quickshell.execDetached([
+                    "sh", "-c",
+                    "if [ -f /tmp/nexa-restart-pending ]; then "
+                    + "rm -f /tmp/nexa-restart-pending; "
+                    + "sleep 0.2; "
+                    + "$HOME/.config/nexa/scripts/nexa-restart.sh && $HOME/.config/nexa/scripts/restore-wallpaper.sh; "
+                    + "fi"
+                ])
             }
         }
 
@@ -162,7 +180,7 @@ Item {
     }
 
     Component.onCompleted: {
-        Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
+        Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked", "/tmp/nexa-restart-pending"])
     }
 
     // ============================================================

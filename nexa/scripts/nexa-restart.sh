@@ -5,7 +5,8 @@ set -e
 # NEVER kill or restart quickshell if the session is locked!
 # Killing quickshell while holding Wayland WlSessionLock crashes the session lock!
 if [ -f /tmp/nexa-locked ]; then
-    echo "Session is currently locked. Skipping NEXA restart to avoid crashing the lockscreen."
+    echo "Session is currently locked. Flagging deferred restart for when session is unlocked."
+    touch /tmp/nexa-restart-pending
     exit 0
 fi
 
