@@ -26,6 +26,11 @@ pub struct ScreenTempState {
     pub manual_temperature: u32,
     pub wallpaper_temperature: u32,
     pub night_temperature: u32,
+
+    pub schedule_mode: String,
+    pub schedule_start: String,
+    pub schedule_end: String,
+    pub schedule_target: String,
 }
 
 impl Default for ScreenTempState {
@@ -39,6 +44,11 @@ impl Default for ScreenTempState {
             manual_temperature: DEFAULT_MANUAL_TEMP,
             wallpaper_temperature: DEFAULT_WALLPAPER_TEMP,
             night_temperature: DEFAULT_NIGHT_TEMP,
+
+            schedule_mode: "off".to_string(),
+            schedule_start: "22:00".to_string(),
+            schedule_end: "06:00".to_string(),
+            schedule_target: "none".to_string(),
         }
     }
 }
@@ -210,6 +220,30 @@ pub(crate) fn load_state() -> ScreenTempState {
                 }
             }
 
+            "schedule_mode" => {
+                if matches!(value, "off" | "sunset" | "custom") {
+                    state.schedule_mode = value.to_string();
+                }
+            }
+
+            "schedule_start" => {
+                if !value.is_empty() {
+                    state.schedule_start = value.to_string();
+                }
+            }
+
+            "schedule_end" => {
+                if !value.is_empty() {
+                    state.schedule_end = value.to_string();
+                }
+            }
+
+            "schedule_target" => {
+                if matches!(value, "on" | "off" | "none") {
+                    state.schedule_target = value.to_string();
+                }
+            }
+
             _ => {}
         }
     }
@@ -243,13 +277,21 @@ pub(crate) fn save_state(state: &ScreenTempState) -> Result<(), String> {
             "mode={}\n",
             "manual_temperature={}\n",
             "wallpaper_temperature={}\n",
-            "night_temperature={}\n"
+            "night_temperature={}\n",
+            "schedule_mode={}\n",
+            "schedule_start={}\n",
+            "schedule_end={}\n",
+            "schedule_target={}\n"
         ),
         state.enabled,
         state.mode,
         state.manual_temperature,
         state.wallpaper_temperature,
         state.night_temperature,
+        state.schedule_mode,
+        state.schedule_start,
+        state.schedule_end,
+        state.schedule_target,
     );
 
     fs::write(path, content)
@@ -284,7 +326,41 @@ fn apply_state(state: &mut ScreenTempState) -> Result<(), String> {
     Ok(())
 }
 
+fn get_sun_times() -> (String, String) {
+    let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
+    let path = PathBuf::from(home)
+        .join(".cache")
+        .join("nexa")
+        .join("weather")
+        .join("weather.json");
+
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let sunrise = json
+                .get("daily")
+                .and_then(|d| d.get(0))
+                .and_then(|d0| d0.get("sunrise"))
+                .and_then(|s| s.as_str())
+                .unwrap_or("06:00")
+                .to_string();
+
+            let sunset = json
+                .get("daily")
+                .and_then(|d| d.get(0))
+                .and_then(|d0| d0.get("sunset"))
+                .and_then(|s| s.as_str())
+                .unwrap_or("18:30")
+                .to_string();
+
+            return (sunrise, sunset);
+        }
+    }
+
+    ("06:00".to_string(), "18:30".to_string())
+}
+
 fn print_json(state: &ScreenTempState) {
+    let (sunrise, sunset) = get_sun_times();
     println!(
         concat!(
             "{{",
@@ -295,7 +371,13 @@ fn print_json(state: &ScreenTempState) {
             "\"wallpaperTemperature\":{},",
             "\"nightTemperature\":{},",
             "\"minTemperature\":{},",
-            "\"maxTemperature\":{}",
+            "\"maxTemperature\":{},",
+            "\"scheduleMode\":\"{}\",",
+            "\"scheduleStart\":\"{}\",",
+            "\"scheduleEnd\":\"{}\",",
+            "\"scheduleTarget\":\"{}\",",
+            "\"sunrise\":\"{}\",",
+            "\"sunset\":\"{}\"",
             "}}"
         ),
         state.enabled,
@@ -306,7 +388,117 @@ fn print_json(state: &ScreenTempState) {
         state.night_temperature,
         MIN_TEMP,
         MAX_TEMP,
+        state.schedule_mode,
+        state.schedule_start,
+        state.schedule_end,
+        state.schedule_target,
+        sunrise,
+        sunset,
     );
+}
+
+pub fn get_current_time_hm() -> (u32, u32) {
+    #[repr(C)]
+    struct Tm {
+        tm_sec: i32,
+        tm_min: i32,
+        tm_hour: i32,
+        tm_mday: i32,
+        tm_mon: i32,
+        tm_year: i32,
+        tm_wday: i32,
+        tm_yday: i32,
+        tm_isdst: i32,
+        tm_gmtoff: i64,
+        tm_zone: *const std::os::raw::c_char,
+    }
+    unsafe extern "C" {
+        fn time(t: *mut i64) -> i64;
+        fn localtime_r(timep: *const i64, result: *mut Tm) -> *mut Tm;
+    }
+    unsafe {
+        let mut t: i64 = 0;
+        time(&mut t);
+        let mut tm: Tm = std::mem::zeroed();
+        localtime_r(&t, &mut tm);
+        (tm.tm_hour.max(0) as u32, tm.tm_min.max(0) as u32)
+    }
+}
+
+fn parse_time_hm(time_str: &str) -> (u32, u32) {
+    if let Some((h, m)) = time_str.split_once(':') {
+        let h = h.trim().parse::<u32>().unwrap_or(0);
+        let m = m.trim().parse::<u32>().unwrap_or(0);
+        (h.min(23), m.min(59))
+    } else {
+        (0, 0)
+    }
+}
+
+pub fn is_in_schedule_window(state: &ScreenTempState) -> bool {
+    let (now_h, now_m) = get_current_time_hm();
+    let current_mins = now_h * 60 + now_m;
+
+    match state.schedule_mode.as_str() {
+        "sunset" => {
+            let (sunrise_str, sunset_str) = get_sun_times();
+            let (sun_h, sun_m) = parse_time_hm(&sunset_str);
+            let (rise_h, rise_m) = parse_time_hm(&sunrise_str);
+            let sunset_mins = sun_h * 60 + sun_m;
+            let sunrise_mins = rise_h * 60 + rise_m;
+
+            if sunset_mins > sunrise_mins {
+                current_mins >= sunset_mins || current_mins < sunrise_mins
+            } else {
+                current_mins >= sunset_mins && current_mins < sunrise_mins
+            }
+        }
+        "custom" => {
+            let (start_h, start_m) = parse_time_hm(&state.schedule_start);
+            let (end_h, end_m) = parse_time_hm(&state.schedule_end);
+            let start_mins = start_h * 60 + start_m;
+            let end_mins = end_h * 60 + end_m;
+
+            if start_mins > end_mins {
+                current_mins >= start_mins || current_mins < end_mins
+            } else {
+                current_mins >= start_mins && current_mins < end_mins
+            }
+        }
+        _ => false,
+    }
+}
+
+pub fn evaluate_schedule(state: &mut ScreenTempState, force: bool) -> Result<bool, String> {
+    if state.schedule_mode == "off" {
+        return Ok(false);
+    }
+
+    let should_be_on = is_in_schedule_window(state);
+    let target_str = if should_be_on { "on" } else { "off" };
+
+    if force {
+        state.schedule_target = target_str.to_string();
+        if state.enabled != should_be_on {
+            state.enabled = should_be_on;
+            apply_state(state)?;
+            save_state(state)?;
+            return Ok(true);
+        }
+        save_state(state)?;
+        return Ok(false);
+    }
+
+    // Periodic transition check: detect crossing the scheduled boundary
+    if state.schedule_target != target_str {
+        state.schedule_target = target_str.to_string();
+        state.enabled = should_be_on;
+        apply_state(state)?;
+        save_state(state)?;
+        return Ok(true);
+    }
+
+    Ok(false)
 }
 
 fn parse_temperature(value: Option<&String>) -> Result<u32, String> {
@@ -594,6 +786,41 @@ pub fn handle(args: &[String]) -> Result<(), String> {
             reset_temperature()?;
             save_state(&state)?;
 
+            print_json(&state);
+        }
+
+        "schedule" => {
+            let mode = args.get(1).map(String::as_str).unwrap_or("off");
+            if !matches!(mode, "off" | "sunset" | "custom") {
+                return Err("schedule mode must be off, sunset, or custom".to_string());
+            }
+
+            state.schedule_mode = mode.to_string();
+            if let Some(start) = args.get(2) {
+                if !start.is_empty() {
+                    state.schedule_start = start.clone();
+                }
+            }
+            if let Some(end) = args.get(3) {
+                if !end.is_empty() {
+                    state.schedule_end = end.clone();
+                }
+            }
+
+            let _ = evaluate_schedule(&mut state, true)?;
+            save_state(&state)?;
+            print_json(&state);
+        }
+
+        "evaluate-schedule" => {
+            let changed = evaluate_schedule(&mut state, false)?;
+            if changed {
+                let _ = crate::state::update_state(|s| {
+                    s.nightlight_enabled = state.enabled;
+                    s.nightlight_mode = state.mode.clone();
+                    s.nightlight_temperature = state.temperature;
+                });
+            }
             print_json(&state);
         }
 

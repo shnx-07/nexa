@@ -7,8 +7,10 @@ import "island"
 import "modules/clipboard" as Clipboard
 import "modules/lockscreen" as LockScreenModule
 import "modules/workspace" as WorkspaceModule
+import "modules/nightlight" as NightLightModule
 
 ShellRoot {
+    NightLightModule.NightLightScheduler {}
 
     Process {
         id: notificationDaemonStartup

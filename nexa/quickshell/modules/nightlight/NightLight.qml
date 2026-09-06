@@ -48,6 +48,32 @@ Item {
         return manualTemperature
     }
 
+    property string scheduleMode: "off"
+    property string scheduleStart: "22:00"
+    property string scheduleEnd: "06:00"
+    property string sunriseTime: "06:00"
+    property string sunsetTime: "18:30"
+
+    readonly property string scheduleLabel: {
+        if (scheduleMode === "sunset")
+            return "Sunset–Sunrise"
+        if (scheduleMode === "custom")
+            return formatTimeDisplay(scheduleStart) + " – " + formatTimeDisplay(scheduleEnd)
+        return "Schedule: Off"
+    }
+
+    function formatTimeDisplay(t) {
+        if (!t) return ""
+        let parts = t.split(":")
+        if (parts.length < 2) return t
+        let h = parseInt(parts[0], 10)
+        let m = parts[1]
+        let ampm = h >= 12 ? "PM" : "AM"
+        let h12 = h % 12
+        if (h12 === 0) h12 = 12
+        return h12 + ":" + m + " " + ampm
+    }
+
 
     readonly property string nexad:
         Quickshell.env("HOME")
@@ -102,6 +128,21 @@ Item {
             Number(
                 data.maxTemperature ?? 6500
             )
+
+        root.scheduleMode =
+            data.scheduleMode ?? "off"
+
+        root.scheduleStart =
+            data.scheduleStart ?? "22:00"
+
+        root.scheduleEnd =
+            data.scheduleEnd ?? "06:00"
+
+        root.sunriseTime =
+            data.sunrise ?? "06:00"
+
+        root.sunsetTime =
+            data.sunset ?? "18:30"
     }
 
 
@@ -523,11 +564,105 @@ Item {
             root.refresh()
     }
 
-    onVisibleChanged: {
-        if (root.visible)
-            root.refresh()
+    // ============================================================
+    // SCHEDULE FUNCTIONS & AUTOMATION
+    // ============================================================
+
+    function adjustTime(timeStr, deltaH, deltaM) {
+        let parts = (timeStr || "00:00").split(":")
+        let h = parseInt(parts[0], 10) || 0
+        let m = parseInt(parts[1], 10) || 0
+
+        let total = (h * 60 + m + deltaH * 60 + deltaM) % 1440
+        if (total < 0) total += 1440
+
+        let newH = Math.floor(total / 60)
+        let newM = total % 60
+
+        let padH = newH < 10 ? "0" + newH : "" + newH
+        let padM = newM < 10 ? "0" + newM : "" + newM
+        return padH + ":" + padM
     }
 
-    Component.onCompleted:
+    function adjustScheduleHour(target, delta) {
+        if (target === "start") {
+            let newStart = adjustTime(scheduleStart, delta, 0)
+            setSchedule("custom", newStart, scheduleEnd)
+        } else if (target === "end") {
+            let newEnd = adjustTime(scheduleEnd, delta, 0)
+            setSchedule("custom", scheduleStart, newEnd)
+        }
+    }
+
+    function adjustScheduleMinute(target, delta) {
+        if (target === "start") {
+            let newStart = adjustTime(scheduleStart, 0, delta)
+            setSchedule("custom", newStart, scheduleEnd)
+        } else if (target === "end") {
+            let newEnd = adjustTime(scheduleEnd, 0, delta)
+            setSchedule("custom", scheduleStart, newEnd)
+        }
+    }
+
+    function setSchedule(newMode, newStart, newEnd) {
+        if (newMode !== "off" && newMode !== "sunset" && newMode !== "custom") return
+
+        scheduleMode = newMode
+        if (newStart !== undefined && newStart !== null && newStart !== "") scheduleStart = newStart
+        if (newEnd !== undefined && newEnd !== null && newEnd !== "") scheduleEnd = newEnd
+
+        scheduleProcess.command = [
+            nexad,
+            "screenTemp",
+            "schedule",
+            scheduleMode,
+            scheduleStart,
+            scheduleEnd
+        ]
+        scheduleProcess.running = true
+    }
+
+    function checkSchedule() {
+        if (scheduleMode === "off") return
+        if (!evalScheduleProcess.running) {
+            evalScheduleProcess.running = true
+        }
+    }
+
+    Timer {
+        id: scheduleCheckTimer
+        interval: 30000
+        repeat: true
+        running: root.scheduleMode !== "off"
+        onTriggered: root.checkSchedule()
+    }
+
+    Process {
+        id: scheduleProcess
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    root.applyData(JSON.parse(text))
+                } catch (e) {}
+                delayedRefresh.restart()
+            }
+        }
+    }
+
+    Process {
+        id: evalScheduleProcess
+        command: [root.nexad, "screenTemp", "evaluate-schedule"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    root.applyData(JSON.parse(text))
+                } catch (e) {}
+            }
+        }
+    }
+
+    Component.onCompleted: {
         root.refresh()
+        root.checkSchedule()
+    }
 }

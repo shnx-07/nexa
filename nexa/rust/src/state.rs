@@ -293,13 +293,17 @@ pub fn restore_all(force: bool) -> Result<(), String> {
 
     // 5. Screen Temperature / Night Light
     let mut st = crate::screenTemp::load_state();
-    st.enabled = state.nightlight_enabled;
     st.mode = state.nightlight_mode.clone();
     if state.nightlight_temperature >= 2500 && state.nightlight_temperature <= 6500 {
         st.manual_temperature = state.nightlight_temperature;
     }
-    let _ = crate::screenTemp::save_state(&st);
-    let _ = crate::screenTemp::handle(&["apply".to_string()]);
+    if st.schedule_mode != "off" {
+        let _ = crate::screenTemp::evaluate_schedule(&mut st, true);
+    } else {
+        st.enabled = state.nightlight_enabled;
+        let _ = crate::screenTemp::save_state(&st);
+        let _ = crate::screenTemp::handle(&["apply".to_string()]);
+    }
 
     // 6. Screen Filter Shader
     let _ = crate::screenFilter::apply();

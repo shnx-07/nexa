@@ -25,6 +25,7 @@ Item {
     property bool appsExpanded: false
     property bool screenFilterDropdownOpen: false
     property bool sinkMenuOpen: false
+    property bool scheduleMenuOpen: false
 
     function takeScreenshot() {
         if (screenshotProcess.running) return
@@ -51,6 +52,7 @@ Item {
         case "high-contrast": return "High Contrast"
         case "invert": return "Invert Colors"
         case "sepia": return "Sepia"
+        case "paper-mode": return "Paper Mode"
         default: return "Off"
         }
     }
@@ -641,6 +643,63 @@ Item {
 
                             Item { Layout.fillWidth: true }
 
+                            // Schedule Dropdown Chip
+                            Rectangle {
+                                id: scheduleChip
+                                implicitHeight: 22
+                                implicitWidth: Math.min(130, scheduleChipRow.implicitWidth + 16)
+                                radius: 11
+                                color: root.scheduleMenuOpen
+                                    ? root.theme.primaryContainer
+                                    : (scheduleChipMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
+                                border.width: root.theme.borderThin
+                                border.color: root.scheduleMenuOpen ? root.theme.primary : (nightLight.scheduleMode !== "off" ? root.theme.primary : root.theme.border)
+
+                                Row {
+                                    id: scheduleChipRow
+                                    anchors.centerIn: parent
+                                    spacing: 4
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: {
+                                            if (nightLight.scheduleMode === "sunset") return "󰖔"
+                                            if (nightLight.scheduleMode === "custom") return "󰥔"
+                                            return "󰔛"
+                                        }
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: root.scheduleMenuOpen ? root.theme.primaryContainerText : (nightLight.scheduleMode !== "off" ? root.theme.primary : root.theme.mutedText)
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: nightLight.scheduleMode === "off" ? "Schedule" : (nightLight.scheduleMode === "sunset" ? "Sunset" : "Custom")
+                                        font.family: root.theme.fontFamily
+                                        font.pixelSize: root.theme.fontSize2Xs
+                                        font.weight: root.theme.fontWeightMedium
+                                        color: root.scheduleMenuOpen ? root.theme.primaryContainerText : (nightLight.scheduleMode !== "off" ? root.theme.primary : root.theme.text)
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: root.scheduleMenuOpen ? "▴" : "▾"
+                                        font.pixelSize: root.theme.fontSize2Xs
+                                        color: root.scheduleMenuOpen ? root.theme.primaryContainerText : root.theme.mutedText
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: scheduleChipMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.scheduleMenuOpen = !root.scheduleMenuOpen
+                                    }
+                                }
+                            }
+
                             Rectangle {
                                 implicitWidth: 32
                                 implicitHeight: 18
@@ -661,6 +720,438 @@ Item {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: nightLight.toggle()
+                                }
+                            }
+                        }
+
+                        // Expandable Schedule Menu
+                        Column {
+                            width: parent.width
+                            visible: root.scheduleMenuOpen
+                            spacing: root.theme.spacingXs
+
+                            // Option 1: Off (Manual Only)
+                            Rectangle {
+                                width: parent.width
+                                height: 32
+                                radius: root.theme.radiusSm
+                                color: nightLight.scheduleMode === "off" ? root.theme.primaryContainer : (offMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
+                                border.width: root.theme.borderThin
+                                border.color: nightLight.scheduleMode === "off" ? root.theme.primary : root.theme.border
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 8
+
+                                    Text {
+                                        text: "󰔛"
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: nightLight.scheduleMode === "off" ? root.theme.primaryContainerText : root.theme.mutedText
+                                    }
+
+                                    Column {
+                                        Layout.fillWidth: true
+                                        spacing: 1
+
+                                        Text {
+                                            text: "Manual Only (Off)"
+                                            font.family: root.theme.fontFamily
+                                            font.pixelSize: root.theme.fontSizeXs
+                                            font.weight: root.theme.fontWeightDemiBold
+                                            color: nightLight.scheduleMode === "off" ? root.theme.primaryContainerText : root.theme.text
+                                        }
+                                    }
+
+                                    Text {
+                                        visible: nightLight.scheduleMode === "off"
+                                        text: "󰄬"
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: root.theme.primaryContainerText
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: offMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        nightLight.setSchedule("off")
+                                        root.scheduleMenuOpen = false
+                                    }
+                                }
+                            }
+
+                            // Option 2: Sunset to Sunrise
+                            Rectangle {
+                                width: parent.width
+                                height: 38
+                                radius: root.theme.radiusSm
+                                color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainer : (sunsetMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
+                                border.width: root.theme.borderThin
+                                border.color: nightLight.scheduleMode === "sunset" ? root.theme.primary : root.theme.border
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 8
+
+                                    Text {
+                                        text: "󰖔"
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainerText : root.theme.mutedText
+                                    }
+
+                                    Column {
+                                        Layout.fillWidth: true
+                                        spacing: 1
+
+                                        Text {
+                                            text: "Sunset to Sunrise"
+                                            font.family: root.theme.fontFamily
+                                            font.pixelSize: root.theme.fontSizeXs
+                                            font.weight: root.theme.fontWeightDemiBold
+                                            color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainerText : root.theme.text
+                                        }
+
+                                        Text {
+                                            text: (nightLight.sunsetTime || "18:30") + " → " + (nightLight.sunriseTime || "06:00")
+                                            font.family: root.theme.monoFontFamily
+                                            font.pixelSize: root.theme.fontSize2Xs
+                                            color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainerText : root.theme.mutedText
+                                            opacity: 0.85
+                                        }
+                                    }
+
+                                    Text {
+                                        visible: nightLight.scheduleMode === "sunset"
+                                        text: "󰄬"
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: root.theme.primaryContainerText
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: sunsetMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        nightLight.setSchedule("sunset")
+                                    }
+                                }
+                            }
+
+                            // Option 3: Custom Schedule
+                            Rectangle {
+                                width: parent.width
+                                height: nightLight.scheduleMode === "custom" ? 92 : 38
+                                radius: root.theme.radiusSm
+                                color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainer : (customMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
+                                border.width: root.theme.borderThin
+                                border.color: nightLight.scheduleMode === "custom" ? root.theme.primary : root.theme.border
+                                clip: true
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 6
+                                    spacing: 4
+
+                                    RowLayout {
+                                        width: parent.width
+                                        spacing: 8
+
+                                        Text {
+                                            text: "󰥔"
+                                            font.family: root.theme.iconFontFamily
+                                            font.pixelSize: root.theme.iconSm
+                                            color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainerText : root.theme.mutedText
+                                        }
+
+                                        Column {
+                                            Layout.fillWidth: true
+                                            spacing: 1
+
+                                            Text {
+                                                text: "Custom Schedule"
+                                                font.family: root.theme.fontFamily
+                                                font.pixelSize: root.theme.fontSizeXs
+                                                font.weight: root.theme.fontWeightDemiBold
+                                                color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainerText : root.theme.text
+                                            }
+
+                                            Text {
+                                                text: nightLight.formatTimeDisplay(nightLight.scheduleStart) + " → " + nightLight.formatTimeDisplay(nightLight.scheduleEnd)
+                                                font.family: root.theme.monoFontFamily
+                                                font.pixelSize: root.theme.fontSize2Xs
+                                                color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainerText : root.theme.mutedText
+                                                opacity: 0.85
+                                            }
+                                        }
+
+                                        Text {
+                                            visible: nightLight.scheduleMode === "custom"
+                                            text: "󰄬"
+                                            font.family: root.theme.iconFontFamily
+                                            font.pixelSize: root.theme.iconSm
+                                            color: root.theme.primaryContainerText
+                                        }
+                                    }
+
+                                    // Time Adjustment Steppers
+                                    RowLayout {
+                                        width: parent.width
+                                        visible: nightLight.scheduleMode === "custom"
+                                        spacing: 6
+
+                                        // Turn On Time Stepper
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 38
+                                            radius: root.theme.radiusSm
+                                            color: root.theme.cardBackground
+                                            border.width: root.theme.borderThin
+                                            border.color: root.theme.border
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 6
+                                                anchors.rightMargin: 6
+                                                spacing: 2
+
+                                                Text {
+                                                    text: "On:"
+                                                    font.family: root.theme.fontFamily
+                                                    font.pixelSize: root.theme.fontSize2Xs
+                                                    font.weight: root.theme.fontWeightBold
+                                                    color: root.theme.mutedText
+                                                }
+
+                                                Item { Layout.fillWidth: true }
+
+                                                // Hour Minus
+                                                Rectangle {
+                                                    width: 16; height: 22; radius: 3
+                                                    color: subStartHMouse.containsMouse ? root.theme.hover : "transparent"
+                                                    Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
+                                                    MouseArea {
+                                                        id: subStartHMouse
+                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                                        onClicked: nightLight.adjustScheduleHour("start", -1)
+                                                    }
+                                                }
+
+                                                // Hour Text
+                                                Text {
+                                                    text: (nightLight.scheduleStart || "00:00").split(":")[0] || "00"
+                                                    font.family: root.theme.monoFontFamily
+                                                    font.pixelSize: root.theme.fontSizeXs
+                                                    font.weight: root.theme.fontWeightDemiBold
+                                                    color: root.theme.text
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onWheel: (wheel) => {
+                                                            if (wheel.angleDelta.y > 0) nightLight.adjustScheduleHour("start", 1)
+                                                            else if (wheel.angleDelta.y < 0) nightLight.adjustScheduleHour("start", -1)
+                                                        }
+                                                    }
+                                                }
+
+                                                // Hour Plus
+                                                Rectangle {
+                                                    width: 16; height: 22; radius: 3
+                                                    color: addStartHMouse.containsMouse ? root.theme.hover : "transparent"
+                                                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
+                                                    MouseArea {
+                                                        id: addStartHMouse
+                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                                        onClicked: nightLight.adjustScheduleHour("start", 1)
+                                                    }
+                                                }
+
+                                                Text {
+                                                    text: ":"
+                                                    font.family: root.theme.monoFontFamily
+                                                    font.pixelSize: root.theme.fontSizeXs
+                                                    font.bold: true
+                                                    color: root.theme.mutedText
+                                                }
+
+                                                // Minute Minus
+                                                Rectangle {
+                                                    width: 16; height: 22; radius: 3
+                                                    color: subStartMMouse.containsMouse ? root.theme.hover : "transparent"
+                                                    Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
+                                                    MouseArea {
+                                                        id: subStartMMouse
+                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                                        onClicked: nightLight.adjustScheduleMinute("start", -5)
+                                                    }
+                                                }
+
+                                                // Minute Text
+                                                Text {
+                                                    text: (nightLight.scheduleStart || "00:00").split(":")[1] || "00"
+                                                    font.family: root.theme.monoFontFamily
+                                                    font.pixelSize: root.theme.fontSizeXs
+                                                    font.weight: root.theme.fontWeightDemiBold
+                                                    color: root.theme.text
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onWheel: (wheel) => {
+                                                            if (wheel.angleDelta.y > 0) nightLight.adjustScheduleMinute("start", 1)
+                                                            else if (wheel.angleDelta.y < 0) nightLight.adjustScheduleMinute("start", -1)
+                                                        }
+                                                    }
+                                                }
+
+                                                // Minute Plus
+                                                Rectangle {
+                                                    width: 16; height: 22; radius: 3
+                                                    color: addStartMMouse.containsMouse ? root.theme.hover : "transparent"
+                                                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
+                                                    MouseArea {
+                                                        id: addStartMMouse
+                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                                        onClicked: nightLight.adjustScheduleMinute("start", 5)
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Turn Off Time Stepper
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 38
+                                            radius: root.theme.radiusSm
+                                            color: root.theme.cardBackground
+                                            border.width: root.theme.borderThin
+                                            border.color: root.theme.border
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 6
+                                                anchors.rightMargin: 6
+                                                spacing: 2
+
+                                                Text {
+                                                    text: "Off:"
+                                                    font.family: root.theme.fontFamily
+                                                    font.pixelSize: root.theme.fontSize2Xs
+                                                    font.weight: root.theme.fontWeightBold
+                                                    color: root.theme.mutedText
+                                                }
+
+                                                Item { Layout.fillWidth: true }
+
+                                                // Hour Minus
+                                                Rectangle {
+                                                    width: 16; height: 22; radius: 3
+                                                    color: subEndHMouse.containsMouse ? root.theme.hover : "transparent"
+                                                    Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
+                                                    MouseArea {
+                                                        id: subEndHMouse
+                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                                        onClicked: nightLight.adjustScheduleHour("end", -1)
+                                                    }
+                                                }
+
+                                                // Hour Text
+                                                Text {
+                                                    text: (nightLight.scheduleEnd || "00:00").split(":")[0] || "00"
+                                                    font.family: root.theme.monoFontFamily
+                                                    font.pixelSize: root.theme.fontSizeXs
+                                                    font.weight: root.theme.fontWeightDemiBold
+                                                    color: root.theme.text
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onWheel: (wheel) => {
+                                                            if (wheel.angleDelta.y > 0) nightLight.adjustScheduleHour("end", 1)
+                                                            else if (wheel.angleDelta.y < 0) nightLight.adjustScheduleHour("end", -1)
+                                                        }
+                                                    }
+                                                }
+
+                                                // Hour Plus
+                                                Rectangle {
+                                                    width: 16; height: 22; radius: 3
+                                                    color: addEndHMouse.containsMouse ? root.theme.hover : "transparent"
+                                                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
+                                                    MouseArea {
+                                                        id: addEndHMouse
+                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                                        onClicked: nightLight.adjustScheduleHour("end", 1)
+                                                    }
+                                                }
+
+                                                Text {
+                                                    text: ":"
+                                                    font.family: root.theme.monoFontFamily
+                                                    font.pixelSize: root.theme.fontSizeXs
+                                                    font.bold: true
+                                                    color: root.theme.mutedText
+                                                }
+
+                                                // Minute Minus
+                                                Rectangle {
+                                                    width: 16; height: 22; radius: 3
+                                                    color: subEndMMouse.containsMouse ? root.theme.hover : "transparent"
+                                                    Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
+                                                    MouseArea {
+                                                        id: subEndMMouse
+                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                                        onClicked: nightLight.adjustScheduleMinute("end", -5)
+                                                    }
+                                                }
+
+                                                // Minute Text
+                                                Text {
+                                                    text: (nightLight.scheduleEnd || "00:00").split(":")[1] || "00"
+                                                    font.family: root.theme.monoFontFamily
+                                                    font.pixelSize: root.theme.fontSizeXs
+                                                    font.weight: root.theme.fontWeightDemiBold
+                                                    color: root.theme.text
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onWheel: (wheel) => {
+                                                            if (wheel.angleDelta.y > 0) nightLight.adjustScheduleMinute("end", 1)
+                                                            else if (wheel.angleDelta.y < 0) nightLight.adjustScheduleMinute("end", -1)
+                                                        }
+                                                    }
+                                                }
+
+                                                // Minute Plus
+                                                Rectangle {
+                                                    width: 16; height: 22; radius: 3
+                                                    color: addEndMMouse.containsMouse ? root.theme.hover : "transparent"
+                                                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
+                                                    MouseArea {
+                                                        id: addEndMMouse
+                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                                        onClicked: nightLight.adjustScheduleMinute("end", 5)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: customMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    z: -1
+                                    onClicked: {
+                                        nightLight.setSchedule("custom")
+                                    }
                                 }
                             }
                         }
@@ -1378,6 +1869,140 @@ Item {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.openClipboard()
+                        }
+                    }
+
+                    // 5. Reading Mode (Study Mode / Paper Texture)
+                    Rectangle {
+                        width: (parent.width - root.theme.spacingSm) / 2
+                        height: 58
+                        radius: root.theme.radiusMd
+                        clip: true
+                        color: screenFilter.filter === "paper-mode" ? root.theme.primaryContainer : (readingMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
+                        border.width: root.theme.borderThin
+                        border.color: screenFilter.filter === "paper-mode" ? root.theme.primary : root.theme.border
+
+                        Column {
+                            anchors {
+                                left: parent.left
+                                right: parent.right
+                                verticalCenter: parent.verticalCenter
+                                leftMargin: 12
+                                rightMargin: 12
+                            }
+                            spacing: 2
+
+                            Item {
+                                width: 18
+                                height: 18
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰈙"
+                                    color: screenFilter.filter === "paper-mode" ? root.theme.primaryContainerText : root.theme.mutedText
+                                    font.family: root.theme.iconFontFamily
+                                    font.pixelSize: root.theme.iconSm
+                                }
+                            }
+
+                            Text {
+                                width: parent.width
+                                text: "Reading Mode"
+                                color: screenFilter.filter === "paper-mode" ? root.theme.primaryContainerText : root.theme.text
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                                font.weight: root.theme.fontWeightDemiBold
+                            }
+
+                            Text {
+                                width: parent.width
+                                text: screenFilter.filter === "paper-mode" ? "Paper Texture" : "Off"
+                                color: screenFilter.filter === "paper-mode" ? root.theme.primaryContainerText : root.theme.mutedText
+                                opacity: 0.8
+                                elide: Text.ElideRight
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSize2Xs
+                            }
+                        }
+
+                        MouseArea {
+                            id: readingMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (screenFilter.filter === "paper-mode") {
+                                    screenFilter.off()
+                                } else {
+                                    screenFilter.setFilter("paper-mode")
+                                }
+                            }
+                        }
+                    }
+
+                    // 6. Monochrome (Focus Mode / Grayscale)
+                    Rectangle {
+                        width: (parent.width - root.theme.spacingSm) / 2
+                        height: 58
+                        radius: root.theme.radiusMd
+                        clip: true
+                        color: screenFilter.filter === "grayscale" ? root.theme.primaryContainer : (focusMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
+                        border.width: root.theme.borderThin
+                        border.color: screenFilter.filter === "grayscale" ? root.theme.primary : root.theme.border
+
+                        Column {
+                            anchors {
+                                left: parent.left
+                                right: parent.right
+                                verticalCenter: parent.verticalCenter
+                                leftMargin: 12
+                                rightMargin: 12
+                            }
+                            spacing: 2
+
+                            Item {
+                                width: 18
+                                height: 18
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰄲"
+                                    color: screenFilter.filter === "grayscale" ? root.theme.primaryContainerText : root.theme.mutedText
+                                    font.family: root.theme.iconFontFamily
+                                    font.pixelSize: root.theme.iconSm
+                                }
+                            }
+
+                            Text {
+                                width: parent.width
+                                text: "Monochrome"
+                                color: screenFilter.filter === "grayscale" ? root.theme.primaryContainerText : root.theme.text
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                                font.weight: root.theme.fontWeightDemiBold
+                            }
+
+                            Text {
+                                width: parent.width
+                                text: screenFilter.filter === "grayscale" ? "Grayscale" : "Off"
+                                color: screenFilter.filter === "grayscale" ? root.theme.primaryContainerText : root.theme.mutedText
+                                opacity: 0.8
+                                elide: Text.ElideRight
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSize2Xs
+                            }
+                        }
+
+                        MouseArea {
+                            id: focusMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (screenFilter.filter === "grayscale") {
+                                    screenFilter.off()
+                                } else {
+                                    screenFilter.setFilter("grayscale")
+                                }
+                            }
                         }
                     }
                 }
