@@ -162,6 +162,10 @@ If you prefer installing dependencies manually or want a complete breakdown:
 * **App Launcher:** High-density 2-column grid layout with fluid spring entrance motion and category chips (`Super + A`).
 * **Workspace Manager:** Fullscreen overview with live Wayland window previews and candidate drop targets (`Super + Tab` / `Super + Shift + W`).
 * **Window Rules:** Automatic Picture-in-Picture sticky pinning, centered lower floating file managers (Dolphin, Nemo, Yazi), and automatic floating of file dialogs/modals.
+* **Universal Terminal & Floating Scratchpad Controls:**
+  * **Tiled Terminal (`Super + Return`):** Spawns a standard tiled terminal window on the active workspace.
+  * **Toggle Floating (`Super + Shift + T`):** Dynamically toggles floating for the currently focused terminal window, automatically centering it with tailored compact popup geometry.
+  * **Persistent Floating Scratchpad (`Super + Shift + Return`):** Quick dropdown floating terminal available on any workspace with full history retention, instant keyboard auto-focus on first launch, draggable via `Super + Left Click`, and seamless focus restoration to your previous workspace window upon minimizing.
 
 ---
 
@@ -175,7 +179,9 @@ If you prefer installing dependencies manually or want a complete breakdown:
 | `Super + W` | NEXA Wallpaper Picker |
 | `Super + N` | Toggle Control Center Island |
 | `Super + V` | Clipboard History (`cliphist`) |
-| `Super + Return` | Open Terminal (`kitty`) |
+| `Super + Return` | Open Tiled Terminal (`kitty`) |
+| `Super + Shift + T` | Toggle Floating for Focused Terminal (centered popup geometry) |
+| `Super + Shift + Return` | Toggle Persistent Floating Scratchpad Terminal |
 | `Super + E` | Open File Manager (`nemo`) |
 | `Super + Q` | Close Active Window (with process termination) |
 | `Super + Shift + Q` | Force-Kill Active Window (`kill -9`) |

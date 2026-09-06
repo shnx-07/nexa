@@ -128,7 +128,30 @@ hl.window_rule({ match = { class = "^(firefox|zen.*)$" }, opacity = "1.0 overrid
 hl.window_rule({ match = { class = terminals }, opacity = "1.0 override" })
 hl.window_rule({ match = { class = "^(mpv|org.kde.haruna|.*plex.*|org\\.kde\\.gwenview|.*vlc.*)$" }, opacity = "1.0 override" })
 
--- ------------------------------------------------------------
+-- ============================================================
+-- Terminal Floating & Scratchpad Rules (Universal Terminal Support)
+-- ============================================================
+-- Compact centered floating size for any floating terminal
+hl.window_rule({
+	name = "terminal-floating-geometry",
+	match = {
+		class = terminals,
+		float = true,
+	},
+	center = true,
+	size = { "monitor_w*0.55", "monitor_h*0.52" },
+})
+
+-- Scratchpad workspace terminal rules (centered compact popup)
+hl.window_rule({
+	name = "terminal-scratchpad-geometry",
+	match = {
+		workspace = "special:terminal",
+	},
+	float = true,
+	center = true,
+	size = { "monitor_w*0.55", "monitor_h*0.52" },
+})
 
 -- ------------------------------------------------------------
 -- Specific Application Floating & Sizing Rules
