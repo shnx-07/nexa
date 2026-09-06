@@ -7,6 +7,7 @@ import "island"
 import "modules/clipboard" as Clipboard
 import "modules/lockscreen" as LockScreenModule
 import "modules/workspace" as WorkspaceModule
+
 ShellRoot {
 
     Process {
