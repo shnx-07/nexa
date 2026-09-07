@@ -26,7 +26,7 @@ chmod +x install.sh uninstall.sh
 2. **AUR Helper Bootstrapping:** Checks for `yay` or `paru`. If missing, automatically clones and builds `yay` from source.
 3. **Full Dependency Installation:** Installs all required official (`pacman`) and AUR (`yay`) packages.
 4. **Safe Automated Backups:** Automatically creates a timestamped backup of your existing configs in `~/.config/nexa_backups/backup_<timestamp>/`.
-5. **Configuration Deployment:** Deploys Hyprland, Quickshell, Kitty, WezTerm, Matugen, GTK, Qt, and Starship configurations.
+5. **Configuration Deployment:** Deploys Hyprland, Quickshell, Kitty, WezTerm, Matugen, GTK, Qt/Qt6ct, Kvantum, KDE Globals, custom color schemes, and Starship configurations.
 6. **Rust Backend Compilation:** Runs `cargo build --release` inside `~/.config/nexa/rust` to compile `nexad`.
 7. **Hyprland Plugins:** Automatically updates `hyprpm`, then installs and enables `hyprglass` and `dynamic-cursors`.
 8. **Runtime Initialization:** Sets up wallpaper cache and runtime directories.
@@ -73,6 +73,7 @@ If you prefer installing dependencies manually or want a complete breakdown:
 * `hyprsunset` *(AUR)* — Color temperature / night light daemon
 * `qt5ct` & `qt6ct` — Qt appearance configuration tools
 * `kvantum` — SVG-based Qt theme engine
+* `kdeglobals` & `color-schemes` — Native KDE color palette integration and universal Kvantum styling across all KDE apps (Dolphin, Gwenview, Kate, Ark)
 * `nwg-look` *(AUR)* — GTK theme and icon switcher
 
 ### 3. Terminals, Shell & Utilities
@@ -108,7 +109,7 @@ If you prefer installing dependencies manually or want a complete breakdown:
 * **Live Workspaces:** Dynamic pill indicator with smooth sliding animation and active window tracking.
 * **Dynamic Island:** Interactive notch supporting Clock, Calendar, Stopwatch, Media player, Theme switcher, System Monitor, Audio visualizer, and Notification banners.
 * **Integrated Control Center:** Sleek widescreen (`760px × 440px`) hub built directly into the Dynamic Island with tabbed navigation:
-  * **Controls (Quick Settings):** Dual-column layout featuring Output sink selector chip, per-app audio volume mixer, sound-reactive Microphone input with click-to-mute, Display Brightness & Night Light (with 3-mode switcher), Screen Filters, and unified 2×2 Connectivity & Actions grids.
+  * **Controls (Quick Settings):** Dual-column layout featuring Output sink selector chip, per-app audio volume mixer, sound-reactive Microphone input with click-to-mute, Display Brightness & Night Light (with 3-mode switcher, debounced 12h AM/PM Custom Schedule steppers, and automated Sunrise/Sunset scheduling via `hyprsunset`), Screen Filters, and unified 2×2 Connectivity & Actions grids.
   * **Alerts:** 2-column notification grid with instant dismissal and history.
   * **Weather:** Dual-card 50/50 layout with current conditions, scrollable atmospheric metrics, and Daily/Hourly forecast views.
   * **Profile:** User account overview with 1:3 profile picture split and cinematic wallpaper backdrop.

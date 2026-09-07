@@ -586,40 +586,64 @@ Item {
 
     function adjustScheduleHour(target, delta) {
         if (target === "start") {
-            let newStart = adjustTime(scheduleStart, delta, 0)
-            setSchedule("custom", newStart, scheduleEnd)
+            scheduleStart = adjustTime(scheduleStart, delta, 0)
+            setSchedule("custom", scheduleStart, scheduleEnd)
         } else if (target === "end") {
-            let newEnd = adjustTime(scheduleEnd, delta, 0)
-            setSchedule("custom", scheduleStart, newEnd)
+            scheduleEnd = adjustTime(scheduleEnd, delta, 0)
+            setSchedule("custom", scheduleStart, scheduleEnd)
         }
     }
 
     function adjustScheduleMinute(target, delta) {
         if (target === "start") {
-            let newStart = adjustTime(scheduleStart, 0, delta)
-            setSchedule("custom", newStart, scheduleEnd)
+            scheduleStart = adjustTime(scheduleStart, 0, delta)
+            setSchedule("custom", scheduleStart, scheduleEnd)
         } else if (target === "end") {
-            let newEnd = adjustTime(scheduleEnd, 0, delta)
-            setSchedule("custom", scheduleStart, newEnd)
+            scheduleEnd = adjustTime(scheduleEnd, 0, delta)
+            setSchedule("custom", scheduleStart, scheduleEnd)
         }
     }
+
+    // Debounced pending schedule args
+    property string _pendingSchedMode: ""
+    property string _pendingSchedStart: ""
+    property string _pendingSchedEnd: ""
 
     function setSchedule(newMode, newStart, newEnd) {
         if (newMode !== "off" && newMode !== "sunset" && newMode !== "custom") return
 
+        // Update local state immediately for responsive UI
         scheduleMode = newMode
         if (newStart !== undefined && newStart !== null && newStart !== "") scheduleStart = newStart
         if (newEnd !== undefined && newEnd !== null && newEnd !== "") scheduleEnd = newEnd
 
-        scheduleProcess.command = [
-            nexad,
-            "screenTemp",
-            "schedule",
-            scheduleMode,
-            scheduleStart,
-            scheduleEnd
-        ]
-        scheduleProcess.running = true
+        // Cache pending args and debounce
+        _pendingSchedMode = scheduleMode
+        _pendingSchedStart = scheduleStart
+        _pendingSchedEnd = scheduleEnd
+        scheduleDebounce.restart()
+    }
+
+    Timer {
+        id: scheduleDebounce
+        interval: 150
+        repeat: false
+        onTriggered: {
+            if (scheduleProcess.running) {
+                // Process still busy — retry shortly
+                scheduleDebounce.restart()
+                return
+            }
+            scheduleProcess.command = [
+                nexad,
+                "screenTemp",
+                "schedule",
+                root._pendingSchedMode,
+                root._pendingSchedStart,
+                root._pendingSchedEnd
+            ]
+            scheduleProcess.running = true
+        }
     }
 
     function checkSchedule() {

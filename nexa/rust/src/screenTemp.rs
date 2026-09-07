@@ -494,6 +494,8 @@ pub fn evaluate_schedule(state: &mut ScreenTempState, force: bool) -> Result<boo
         state.schedule_target = target_str.to_string();
         state.enabled = should_be_on;
         apply_state(state)?;
+        // Reset to "none" so tomorrow's boundary crossing is detected again
+        state.schedule_target = "none".to_string();
         save_state(state)?;
         return Ok(true);
     }

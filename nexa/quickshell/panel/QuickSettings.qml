@@ -621,7 +621,7 @@ Item {
                             Text {
                                 text: "󰖔"
                                 font.family: root.theme.iconFontFamily
-                                font.pixelSize: root.theme.iconSm
+                                font.pixelSize: root.theme.iconMd
                                 color: nightLight.enabled ? root.theme.primary : root.theme.mutedText
                             }
 
@@ -646,9 +646,9 @@ Item {
                             // Schedule Dropdown Chip
                             Rectangle {
                                 id: scheduleChip
-                                implicitHeight: 22
-                                implicitWidth: Math.min(130, scheduleChipRow.implicitWidth + 16)
-                                radius: 11
+                                implicitHeight: 26
+                                implicitWidth: Math.min(140, scheduleChipRow.implicitWidth + 18)
+                                radius: 13
                                 color: root.scheduleMenuOpen
                                     ? root.theme.primaryContainer
                                     : (scheduleChipMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
@@ -701,15 +701,15 @@ Item {
                             }
 
                             Rectangle {
-                                implicitWidth: 32
-                                implicitHeight: 18
-                                radius: 9
+                                implicitWidth: 40
+                                implicitHeight: 22
+                                radius: 11
                                 color: nightLight.enabled ? root.theme.primary : root.theme.surfaceContainerHighest
 
                                 Rectangle {
-                                    width: 14
-                                    height: 14
-                                    radius: 7
+                                    width: 17
+                                    height: 17
+                                    radius: 8
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: nightLight.enabled ? parent.width - width - 2 : 2
                                     color: "#ffffff"
@@ -852,7 +852,7 @@ Item {
                             // Option 3: Custom Schedule
                             Rectangle {
                                 width: parent.width
-                                height: nightLight.scheduleMode === "custom" ? 92 : 38
+                                height: nightLight.scheduleMode === "custom" ? 138 : 38
                                 radius: root.theme.radiusSm
                                 color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainer : (customMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
                                 border.width: root.theme.borderThin
@@ -905,7 +905,7 @@ Item {
                                         }
                                     }
 
-                                    // Time Adjustment Steppers
+                                    // Time Adjustment Steppers — 12h AM/PM format
                                     RowLayout {
                                         width: parent.width
                                         visible: nightLight.scheduleMode === "custom"
@@ -914,113 +914,122 @@ Item {
                                         // Turn On Time Stepper
                                         Rectangle {
                                             Layout.fillWidth: true
-                                            height: 38
+                                            height: 84
                                             radius: root.theme.radiusSm
                                             color: root.theme.cardBackground
                                             border.width: root.theme.borderThin
                                             border.color: root.theme.border
 
-                                            RowLayout {
+                                            Column {
                                                 anchors.fill: parent
-                                                anchors.leftMargin: 6
-                                                anchors.rightMargin: 6
-                                                spacing: 2
+                                                anchors.margins: 6
+                                                spacing: 5
 
                                                 Text {
-                                                    text: "On:"
+                                                    text: "Turn On"
                                                     font.family: root.theme.fontFamily
                                                     font.pixelSize: root.theme.fontSize2Xs
                                                     font.weight: root.theme.fontWeightBold
                                                     color: root.theme.mutedText
                                                 }
 
-                                                Item { Layout.fillWidth: true }
+                                                RowLayout {
+                                                    width: parent.width
+                                                    spacing: 3
 
-                                                // Hour Minus
-                                                Rectangle {
-                                                    width: 16; height: 22; radius: 3
-                                                    color: subStartHMouse.containsMouse ? root.theme.hover : "transparent"
-                                                    Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
-                                                    MouseArea {
-                                                        id: subStartHMouse
-                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                                        onClicked: nightLight.adjustScheduleHour("start", -1)
+                                                    // Hour −
+                                                    Rectangle {
+                                                        width: 16; height: 22; radius: 3
+                                                        color: subStartH2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.border
+                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: root.theme.text }
+                                                        MouseArea { id: subStartH2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleHour("start", -1) }
                                                     }
-                                                }
 
-                                                // Hour Text
-                                                Text {
-                                                    text: (nightLight.scheduleStart || "00:00").split(":")[0] || "00"
-                                                    font.family: root.theme.monoFontFamily
-                                                    font.pixelSize: root.theme.fontSizeXs
-                                                    font.weight: root.theme.fontWeightDemiBold
-                                                    color: root.theme.text
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        onWheel: (wheel) => {
-                                                            if (wheel.angleDelta.y > 0) nightLight.adjustScheduleHour("start", 1)
-                                                            else if (wheel.angleDelta.y < 0) nightLight.adjustScheduleHour("start", -1)
+                                                    // Hour display (12h)
+                                                    Text {
+                                                        Layout.preferredWidth: 20
+                                                        horizontalAlignment: Text.AlignHCenter
+                                                        text: {
+                                                            let h = parseInt((nightLight.scheduleStart || "22:00").split(":")[0], 10) || 0
+                                                            let h12 = h % 12; if (h12 === 0) h12 = 12
+                                                            return h12 < 10 ? "0" + h12 : "" + h12
                                                         }
+                                                        font.family: root.theme.monoFontFamily
+                                                        font.pixelSize: root.theme.fontSizeXs
+                                                        font.weight: root.theme.fontWeightDemiBold
+                                                        color: root.theme.text
+                                                        MouseArea { anchors.fill: parent; onWheel: (w) => { if (w.angleDelta.y > 0) nightLight.adjustScheduleHour("start", 1); else nightLight.adjustScheduleHour("start", -1) } }
+                                                    }
+
+                                                    // Hour +
+                                                    Rectangle {
+                                                        width: 16; height: 22; radius: 3
+                                                        color: addStartH2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.border
+                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: root.theme.text }
+                                                        MouseArea { id: addStartH2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleHour("start", 1) }
+                                                    }
+
+                                                    Text { text: ":"; font.family: root.theme.monoFontFamily; font.pixelSize: root.theme.fontSizeXs; font.bold: true; color: root.theme.mutedText }
+
+                                                    // Minute −
+                                                    Rectangle {
+                                                        width: 16; height: 22; radius: 3
+                                                        color: subStartM2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.border
+                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: root.theme.text }
+                                                        MouseArea { id: subStartM2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleMinute("start", -5) }
+                                                    }
+
+                                                    // Minute display
+                                                    Text {
+                                                        Layout.preferredWidth: 20
+                                                        horizontalAlignment: Text.AlignHCenter
+                                                        text: (nightLight.scheduleStart || "22:00").split(":")[1] || "00"
+                                                        font.family: root.theme.monoFontFamily
+                                                        font.pixelSize: root.theme.fontSizeXs
+                                                        font.weight: root.theme.fontWeightDemiBold
+                                                        color: root.theme.text
+                                                        MouseArea { anchors.fill: parent; onWheel: (w) => { if (w.angleDelta.y > 0) nightLight.adjustScheduleMinute("start", 1); else nightLight.adjustScheduleMinute("start", -1) } }
+                                                    }
+
+                                                    // Minute +
+                                                    Rectangle {
+                                                        width: 16; height: 22; radius: 3
+                                                        color: addStartM2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.border
+                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: root.theme.text }
+                                                        MouseArea { id: addStartM2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleMinute("start", 5) }
                                                     }
                                                 }
 
-                                                // Hour Plus
-                                                Rectangle {
-                                                    width: 16; height: 22; radius: 3
-                                                    color: addStartHMouse.containsMouse ? root.theme.hover : "transparent"
-                                                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
-                                                    MouseArea {
-                                                        id: addStartHMouse
-                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                                        onClicked: nightLight.adjustScheduleHour("start", 1)
+                                                // Extra vertical gap between time row and AM/PM
+                                                Item {
+                                                    width: 1
+                                                    height: 3
+                                                }
+
+                                                // AM / PM pills below
+                                                Row {
+                                                    spacing: 4
+                                                    Rectangle {
+                                                        width: 28; height: 16; radius: 3
+                                                        color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) < 12 ? root.theme.primary : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.primary
+                                                        Text { anchors.centerIn: parent; text: "AM"; font.pixelSize: 9; font.weight: Font.Bold
+                                                            color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) < 12 ? "#ffffff" : root.theme.primary }
+                                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                                            onClicked: { let h=parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10)||0; if(h>=12) nightLight.adjustScheduleHour("start",-12) } }
                                                     }
-                                                }
-
-                                                Text {
-                                                    text: ":"
-                                                    font.family: root.theme.monoFontFamily
-                                                    font.pixelSize: root.theme.fontSizeXs
-                                                    font.bold: true
-                                                    color: root.theme.mutedText
-                                                }
-
-                                                // Minute Minus
-                                                Rectangle {
-                                                    width: 16; height: 22; radius: 3
-                                                    color: subStartMMouse.containsMouse ? root.theme.hover : "transparent"
-                                                    Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
-                                                    MouseArea {
-                                                        id: subStartMMouse
-                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                                        onClicked: nightLight.adjustScheduleMinute("start", -5)
-                                                    }
-                                                }
-
-                                                // Minute Text
-                                                Text {
-                                                    text: (nightLight.scheduleStart || "00:00").split(":")[1] || "00"
-                                                    font.family: root.theme.monoFontFamily
-                                                    font.pixelSize: root.theme.fontSizeXs
-                                                    font.weight: root.theme.fontWeightDemiBold
-                                                    color: root.theme.text
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        onWheel: (wheel) => {
-                                                            if (wheel.angleDelta.y > 0) nightLight.adjustScheduleMinute("start", 1)
-                                                            else if (wheel.angleDelta.y < 0) nightLight.adjustScheduleMinute("start", -1)
-                                                        }
-                                                    }
-                                                }
-
-                                                // Minute Plus
-                                                Rectangle {
-                                                    width: 16; height: 22; radius: 3
-                                                    color: addStartMMouse.containsMouse ? root.theme.hover : "transparent"
-                                                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
-                                                    MouseArea {
-                                                        id: addStartMMouse
-                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                                        onClicked: nightLight.adjustScheduleMinute("start", 5)
+                                                    Rectangle {
+                                                        width: 28; height: 16; radius: 3
+                                                        color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) >= 12 ? root.theme.primary : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.primary
+                                                        Text { anchors.centerIn: parent; text: "PM"; font.pixelSize: 9; font.weight: Font.Bold
+                                                            color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) >= 12 ? "#ffffff" : root.theme.primary }
+                                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                                            onClicked: { let h=parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10)||0; if(h<12) nightLight.adjustScheduleHour("start",12) } }
                                                     }
                                                 }
                                             }
@@ -1029,113 +1038,122 @@ Item {
                                         // Turn Off Time Stepper
                                         Rectangle {
                                             Layout.fillWidth: true
-                                            height: 38
+                                            height: 84
                                             radius: root.theme.radiusSm
                                             color: root.theme.cardBackground
                                             border.width: root.theme.borderThin
                                             border.color: root.theme.border
 
-                                            RowLayout {
+                                            Column {
                                                 anchors.fill: parent
-                                                anchors.leftMargin: 6
-                                                anchors.rightMargin: 6
-                                                spacing: 2
+                                                anchors.margins: 6
+                                                spacing: 5
 
                                                 Text {
-                                                    text: "Off:"
+                                                    text: "Turn Off"
                                                     font.family: root.theme.fontFamily
                                                     font.pixelSize: root.theme.fontSize2Xs
                                                     font.weight: root.theme.fontWeightBold
                                                     color: root.theme.mutedText
                                                 }
 
-                                                Item { Layout.fillWidth: true }
+                                                RowLayout {
+                                                    width: parent.width
+                                                    spacing: 3
 
-                                                // Hour Minus
-                                                Rectangle {
-                                                    width: 16; height: 22; radius: 3
-                                                    color: subEndHMouse.containsMouse ? root.theme.hover : "transparent"
-                                                    Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
-                                                    MouseArea {
-                                                        id: subEndHMouse
-                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                                        onClicked: nightLight.adjustScheduleHour("end", -1)
+                                                    // Hour −
+                                                    Rectangle {
+                                                        width: 16; height: 22; radius: 3
+                                                        color: subEndH2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.border
+                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: root.theme.text }
+                                                        MouseArea { id: subEndH2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleHour("end", -1) }
                                                     }
-                                                }
 
-                                                // Hour Text
-                                                Text {
-                                                    text: (nightLight.scheduleEnd || "00:00").split(":")[0] || "00"
-                                                    font.family: root.theme.monoFontFamily
-                                                    font.pixelSize: root.theme.fontSizeXs
-                                                    font.weight: root.theme.fontWeightDemiBold
-                                                    color: root.theme.text
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        onWheel: (wheel) => {
-                                                            if (wheel.angleDelta.y > 0) nightLight.adjustScheduleHour("end", 1)
-                                                            else if (wheel.angleDelta.y < 0) nightLight.adjustScheduleHour("end", -1)
+                                                    // Hour display (12h)
+                                                    Text {
+                                                        Layout.preferredWidth: 18
+                                                        horizontalAlignment: Text.AlignHCenter
+                                                        text: {
+                                                            let h = parseInt((nightLight.scheduleEnd || "06:00").split(":")[0], 10) || 0
+                                                            let h12 = h % 12; if (h12 === 0) h12 = 12
+                                                            return h12 < 10 ? "0" + h12 : "" + h12
                                                         }
+                                                        font.family: root.theme.monoFontFamily
+                                                        font.pixelSize: root.theme.fontSizeXs
+                                                        font.weight: root.theme.fontWeightDemiBold
+                                                        color: root.theme.text
+                                                        MouseArea { anchors.fill: parent; onWheel: (w) => { if (w.angleDelta.y > 0) nightLight.adjustScheduleHour("end", 1); else nightLight.adjustScheduleHour("end", -1) } }
+                                                    }
+
+                                                    // Hour +
+                                                    Rectangle {
+                                                        width: 16; height: 22; radius: 3
+                                                        color: addEndH2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.border
+                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: root.theme.text }
+                                                        MouseArea { id: addEndH2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleHour("end", 1) }
+                                                    }
+
+                                                    Text { text: ":"; font.family: root.theme.monoFontFamily; font.pixelSize: root.theme.fontSizeXs; font.bold: true; color: root.theme.mutedText }
+
+                                                    // Minute −
+                                                    Rectangle {
+                                                        width: 16; height: 22; radius: 3
+                                                        color: subEndM2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.border
+                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: root.theme.text }
+                                                        MouseArea { id: subEndM2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleMinute("end", -5) }
+                                                    }
+
+                                                    // Minute display
+                                                    Text {
+                                                        Layout.preferredWidth: 18
+                                                        horizontalAlignment: Text.AlignHCenter
+                                                        text: (nightLight.scheduleEnd || "06:00").split(":")[1] || "00"
+                                                        font.family: root.theme.monoFontFamily
+                                                        font.pixelSize: root.theme.fontSizeXs
+                                                        font.weight: root.theme.fontWeightDemiBold
+                                                        color: root.theme.text
+                                                        MouseArea { anchors.fill: parent; onWheel: (w) => { if (w.angleDelta.y > 0) nightLight.adjustScheduleMinute("end", 1); else nightLight.adjustScheduleMinute("end", -1) } }
+                                                    }
+
+                                                    // Minute +
+                                                    Rectangle {
+                                                        width: 16; height: 22; radius: 3
+                                                        color: addEndM2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.border
+                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: root.theme.text }
+                                                        MouseArea { id: addEndM2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleMinute("end", 5) }
                                                     }
                                                 }
 
-                                                // Hour Plus
-                                                Rectangle {
-                                                    width: 16; height: 22; radius: 3
-                                                    color: addEndHMouse.containsMouse ? root.theme.hover : "transparent"
-                                                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
-                                                    MouseArea {
-                                                        id: addEndHMouse
-                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                                        onClicked: nightLight.adjustScheduleHour("end", 1)
+                                                // Extra vertical gap between time row and AM/PM
+                                                Item {
+                                                    width: 1
+                                                    height: 3
+                                                }
+
+                                                // AM / PM pills below
+                                                Row {
+                                                    spacing: 4
+                                                    Rectangle {
+                                                        width: 28; height: 16; radius: 3
+                                                        color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) < 12 ? root.theme.primary : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.primary
+                                                        Text { anchors.centerIn: parent; text: "AM"; font.pixelSize: 9; font.weight: Font.Bold
+                                                            color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) < 12 ? "#ffffff" : root.theme.primary }
+                                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                                            onClicked: { let h=parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10)||0; if(h>=12) nightLight.adjustScheduleHour("end",-12) } }
                                                     }
-                                                }
-
-                                                Text {
-                                                    text: ":"
-                                                    font.family: root.theme.monoFontFamily
-                                                    font.pixelSize: root.theme.fontSizeXs
-                                                    font.bold: true
-                                                    color: root.theme.mutedText
-                                                }
-
-                                                // Minute Minus
-                                                Rectangle {
-                                                    width: 16; height: 22; radius: 3
-                                                    color: subEndMMouse.containsMouse ? root.theme.hover : "transparent"
-                                                    Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
-                                                    MouseArea {
-                                                        id: subEndMMouse
-                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                                        onClicked: nightLight.adjustScheduleMinute("end", -5)
-                                                    }
-                                                }
-
-                                                // Minute Text
-                                                Text {
-                                                    text: (nightLight.scheduleEnd || "00:00").split(":")[1] || "00"
-                                                    font.family: root.theme.monoFontFamily
-                                                    font.pixelSize: root.theme.fontSizeXs
-                                                    font.weight: root.theme.fontWeightDemiBold
-                                                    color: root.theme.text
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        onWheel: (wheel) => {
-                                                            if (wheel.angleDelta.y > 0) nightLight.adjustScheduleMinute("end", 1)
-                                                            else if (wheel.angleDelta.y < 0) nightLight.adjustScheduleMinute("end", -1)
-                                                        }
-                                                    }
-                                                }
-
-                                                // Minute Plus
-                                                Rectangle {
-                                                    width: 16; height: 22; radius: 3
-                                                    color: addEndMMouse.containsMouse ? root.theme.hover : "transparent"
-                                                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; font.bold: true; color: root.theme.text }
-                                                    MouseArea {
-                                                        id: addEndMMouse
-                                                        anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                                        onClicked: nightLight.adjustScheduleMinute("end", 5)
+                                                    Rectangle {
+                                                        width: 28; height: 16; radius: 3
+                                                        color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) >= 12 ? root.theme.primary : root.theme.cardBackgroundElevated
+                                                        border.width: root.theme.borderThin; border.color: root.theme.primary
+                                                        Text { anchors.centerIn: parent; text: "PM"; font.pixelSize: 9; font.weight: Font.Bold
+                                                            color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) >= 12 ? "#ffffff" : root.theme.primary }
+                                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                                            onClicked: { let h=parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10)||0; if(h<12) nightLight.adjustScheduleHour("end",12) } }
                                                     }
                                                 }
                                             }
@@ -1169,7 +1187,7 @@ Item {
                             opacity: enabled ? 1.0 : 0.4
                             icon: ""
                             onMoved: (val) => {
-                                if (nightLight.enabled) nightLight.setManualTemperature(val)
+                                if (nightLight.enabled) nightLight.setTemperature(val)
                             }
                         }
 
@@ -1186,7 +1204,7 @@ Item {
                                 ]
                                 delegate: Rectangle {
                                     width: (parent.width - 8) / 3
-                                    height: 22
+                                    height: 28
                                     radius: root.theme.radiusSm
                                     color: nightLight.mode === modelData.mode ? root.theme.primaryContainer : (mMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
                                     border.width: root.theme.borderThin

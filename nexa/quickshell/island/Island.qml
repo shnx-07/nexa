@@ -741,6 +741,34 @@ PanelWindow {
         islandFocus.forceActiveFocus()
     }
 
+    function openControlCenter(page: int): void {
+        root.enterSpecialMode("controlCenter")
+        if (page !== undefined && page >= 0) {
+            islandContent.setControlCenterPage(page)
+        }
+    }
+
+    function toggleControlCenter(): void {
+        if (root.specialMode === "controlCenter") {
+            root.closeIsland()
+        } else {
+            root.enterSpecialMode("controlCenter")
+        }
+    }
+
+    function openQuickSettings(): void {
+        root.openControlCenter(0)
+    }
+
+    function openNotifications(): void {
+        root.openControlCenter(1)
+        Quickshell.execDetached([
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "notifications",
+            "read-all"
+        ])
+    }
+
     IpcHandler {
         target: "nexaIsland"
 

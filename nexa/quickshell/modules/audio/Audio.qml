@@ -29,7 +29,7 @@ Item {
     property var apps: []
     property var sinks: []
     property real micPeak: 0.0
-    property bool micMonitorActive: true
+    property bool micMonitorActive: false
 
 
     // ============================================================

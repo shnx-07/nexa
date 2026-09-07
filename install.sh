@@ -211,6 +211,8 @@ CONFIG_TARGETS=(
     "gtk-4.0"
     "qt5ct"
     "qt6ct"
+    "Kvantum"
+    "kdeglobals"
     "mimeapps.list"
     "starship.toml"
 )
@@ -223,6 +225,12 @@ for item in "${CONFIG_TARGETS[@]}"; do
         BACKED_UP_COUNT=$((BACKED_UP_COUNT + 1))
     fi
 done
+
+if [ -d "$HOME/.local/share/color-schemes" ]; then
+    log_info "Backing up ~/.local/share/color-schemes -> $BACKUP_DIR/color-schemes"
+    cp -a "$HOME/.local/share/color-schemes" "$BACKUP_DIR/"
+    BACKED_UP_COUNT=$((BACKED_UP_COUNT + 1))
+fi
 
 if [ -f "$HOME/.zshrc" ]; then
     log_info "Backing up ~/.zshrc -> $BACKUP_DIR/.zshrc"
@@ -250,6 +258,12 @@ for item in "${CONFIG_TARGETS[@]}"; do
         cp -a "$DOTFILES_DIR/$item" "$HOME/.config/$item"
     fi
 done
+
+if [ -d "$DOTFILES_DIR/color-schemes" ]; then
+    log_info "Deploying color schemes -> ~/.local/share/color-schemes"
+    mkdir -p "$HOME/.local/share/color-schemes"
+    cp -a "$DOTFILES_DIR/color-schemes/." "$HOME/.local/share/color-schemes/"
+fi
 
 if [ -f "$DOTFILES_DIR/.zshrc" ]; then
     log_info "Deploying .zshrc -> ~/.zshrc"

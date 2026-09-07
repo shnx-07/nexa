@@ -183,6 +183,7 @@ Item {
 
                     PanelModule.QuickSettings {
                         anchors.fill: parent
+                        visible: root.visible && root.currentPage === 0
                     }
                 }
 

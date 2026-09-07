@@ -1,0 +1,149 @@
+[General]
+colorscheme = Nexa
+name = Nexa
+terminalapplication = kitty
+
+[KDE]
+contrast = 4
+widgetstyle = kvantum
+
+[ColorEffects:Disabled]
+color = 20,12,9
+coloramount = 0
+coloreffect = 0
+contrastamount = 0.65
+contrasteffect = 1
+intensityamount = 0.1
+intensityeffect = 2
+
+[ColorEffects:Inactive]
+changeselectioncolor = true
+color = 82,68,61
+coloramount = 0.025
+coloreffect = 2
+contrastamount = 0.1
+contrasteffect = 2
+enable = false
+intensityamount = 0
+intensityeffect = 0
+
+[Colors:Button]
+backgroundalternate = 38,44,32
+backgroundnormal = 28,33,22
+decorationfocus = 127,222,0
+decorationhover = 127,222,0
+foregroundactive = 127,222,0
+foregroundinactive = 195,201,183
+foregroundlink = 127,222,0
+foregroundnegative = 240,117,127
+foregroundneutral = 239,195,108
+foregroundnormal = 223,229,210
+foregroundpositive = 120,226,156
+foregroundvisited = 152,211,178
+
+[Colors:Complementary]
+backgroundalternate = 28,33,22
+backgroundnormal = 16,21,10
+decorationfocus = 127,222,0
+decorationhover = 127,222,0
+foregroundactive = 127,222,0
+foregroundinactive = 195,201,183
+foregroundlink = 127,222,0
+foregroundnegative = 240,117,127
+foregroundneutral = 239,195,108
+foregroundnormal = 223,229,210
+foregroundpositive = 120,226,156
+foregroundvisited = 152,211,178
+
+[Colors:Header]
+backgroundalternate = 38,44,32
+backgroundnormal = 28,33,22
+decorationfocus = 127,222,0
+decorationhover = 127,222,0
+foregroundactive = 127,222,0
+foregroundinactive = 195,201,183
+foregroundlink = 127,222,0
+foregroundnegative = 240,117,127
+foregroundneutral = 239,195,108
+foregroundnormal = 223,229,210
+foregroundpositive = 120,226,156
+foregroundvisited = 152,211,178
+
+[Colors:Header][Inactive]
+backgroundalternate = 28,33,22
+backgroundnormal = 16,21,10
+decorationfocus = 127,222,0
+decorationhover = 127,222,0
+foregroundactive = 127,222,0
+foregroundinactive = 195,201,183
+foregroundlink = 127,222,0
+foregroundnegative = 240,117,127
+foregroundneutral = 239,195,108
+foregroundnormal = 195,201,183
+foregroundpositive = 120,226,156
+foregroundvisited = 152,211,178
+
+[Colors:Selection]
+backgroundalternate = 127,222,0
+backgroundnormal = 127,222,0
+decorationfocus = 127,222,0
+decorationhover = 127,222,0
+foregroundactive = 28,55,0
+foregroundinactive = 28,55,0
+foregroundlink = 28,55,0
+foregroundnegative = 55,6,10
+foregroundneutral = 28,55,0
+foregroundnormal = 28,55,0
+foregroundpositive = 28,55,0
+foregroundvisited = 28,55,0
+
+[Colors:Tooltip]
+backgroundalternate = 28,33,22
+backgroundnormal = 38,44,32
+decorationfocus = 127,222,0
+decorationhover = 127,222,0
+foregroundactive = 127,222,0
+foregroundinactive = 195,201,183
+foregroundlink = 127,222,0
+foregroundnegative = 240,117,127
+foregroundneutral = 239,195,108
+foregroundnormal = 223,229,210
+foregroundpositive = 120,226,156
+foregroundvisited = 152,211,178
+
+[Colors:View]
+backgroundalternate = 28,33,22
+backgroundnormal = 16,21,10
+decorationfocus = 127,222,0
+decorationhover = 127,222,0
+foregroundactive = 127,222,0
+foregroundinactive = 195,201,183
+foregroundlink = 127,222,0
+foregroundnegative = 240,117,127
+foregroundneutral = 239,195,108
+foregroundnormal = 223,229,210
+foregroundpositive = 120,226,156
+foregroundvisited = 152,211,178
+
+[Colors:Window]
+backgroundalternate = 28,33,22
+backgroundnormal = 16,21,10
+decorationfocus = 127,222,0
+decorationhover = 127,222,0
+foregroundactive = 127,222,0
+foregroundinactive = 195,201,183
+foregroundlink = 127,222,0
+foregroundnegative = 240,117,127
+foregroundneutral = 239,195,108
+foregroundnormal = 223,229,210
+foregroundpositive = 120,226,156
+foregroundvisited = 152,211,178
+
+[WM]
+activebackground = 113,54,26
+activeblend = 255,219,205
+activeforeground = 255,219,205
+inactivebackground = 26,17,14
+inactiveblend = 216,194,186
+inactiveforeground = 216,194,186
+

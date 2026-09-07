@@ -58,6 +58,8 @@ CONFIG_TARGETS=(
     "gtk-4.0"
     "qt5ct"
     "qt6ct"
+    "Kvantum"
+    "kdeglobals"
     "mimeapps.list"
     "starship.toml"
 )
