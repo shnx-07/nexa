@@ -1,0 +1,58 @@
+# NEXA generated Alacritty theme
+# Do not edit manually.
+
+[colors.primary]
+background = '#10150a'
+foreground = '#dfe5d2'
+
+[colors.cursor]
+text = '#10150a'
+cursor = '#7fde00'
+
+[colors.vi_mode_cursor]
+text = '#10150a'
+cursor = '#afcfac'
+
+[colors.search.matches]
+foreground = '#b3f0cd'
+background = '#145137'
+
+[colors.search.focused_match]
+foreground = '#92fd00'
+background = '#2b5000'
+
+[colors.footer_bar]
+foreground = '#c3c9b7'
+background = '#1c2116'
+
+[colors.hints.start]
+foreground = '#1c3700'
+background = '#7fde00'
+
+[colors.hints.end]
+foreground = '#1b361d'
+background = '#afcfac'
+
+[colors.selection]
+text = '#92fd00'
+background = '#2b5000'
+
+[colors.normal]
+black   = '#10150a'
+red     = '#f0757f'
+green   = '#78e29c'
+yellow  = '#efc36c'
+blue    = '#7fde00'
+magenta = '#98d3b2'
+cyan    = '#79cfec'
+white   = '#dfe5d2'
+
+[colors.bright]
+black   = '#8d9383'
+red     = '#f0757f'
+green   = '#78e29c'
+yellow  = '#efc36c'
+blue    = '#7fde00'
+magenta = '#98d3b2'
+cyan    = '#79cfec'
+white   = '#dfe5d2'

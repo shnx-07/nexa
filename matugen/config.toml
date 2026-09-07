@@ -46,3 +46,7 @@ output_path = "~/.config/starship.toml"
 [templates.hypr]
 input_path = "~/.config/matugen/templates/hypr-colors.lua"
 output_path = "~/.config/hypr/config/colors.lua"
+
+[templates.alacritty]
+input_path = "~/.config/matugen/templates/alacritty-preset.toml"
+output_path = "~/.config/alacritty/themes/nexa.toml"

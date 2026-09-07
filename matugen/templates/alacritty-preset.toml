@@ -1,0 +1,58 @@
+# NEXA generated Alacritty theme
+# Do not edit manually.
+
+[colors.primary]
+background = '{{colors.background}}'
+foreground = '{{colors.on_surface}}'
+
+[colors.cursor]
+text = '{{colors.background}}'
+cursor = '{{colors.primary}}'
+
+[colors.vi_mode_cursor]
+text = '{{colors.background}}'
+cursor = '{{colors.secondary}}'
+
+[colors.search.matches]
+foreground = '{{colors.on_tertiary_container}}'
+background = '{{colors.tertiary_container}}'
+
+[colors.search.focused_match]
+foreground = '{{colors.on_primary_container}}'
+background = '{{colors.primary_container}}'
+
+[colors.footer_bar]
+foreground = '{{colors.on_surface_variant}}'
+background = '{{colors.surface_container}}'
+
+[colors.hints.start]
+foreground = '{{colors.on_primary}}'
+background = '{{colors.primary}}'
+
+[colors.hints.end]
+foreground = '{{colors.on_secondary}}'
+background = '{{colors.secondary}}'
+
+[colors.selection]
+text = '{{colors.on_primary_container}}'
+background = '{{colors.primary_container}}'
+
+[colors.normal]
+black   = '{{colors.surface}}'
+red     = '{{colors.error}}'
+green   = '{{colors.success}}'
+yellow  = '{{colors.warning}}'
+blue    = '{{colors.primary}}'
+magenta = '{{colors.tertiary}}'
+cyan    = '{{colors.info}}'
+white   = '{{colors.on_surface}}'
+
+[colors.bright]
+black   = '{{colors.outline}}'
+red     = '{{colors.error}}'
+green   = '{{colors.success}}'
+yellow  = '{{colors.warning}}'
+blue    = '{{colors.primary}}'
+magenta = '{{colors.tertiary}}'
+cyan    = '{{colors.info}}'
+white   = '{{colors.on_background}}'
