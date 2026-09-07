@@ -27,6 +27,10 @@ output_path = "~/.config/gtk-4.0/nexa-colors.css"
 input_path = "~/.config/matugen/templates/qt6ct-preset.conf"
 output_path = "~/.config/qt6ct/colors/nexa.conf"
 
+[templates.qt5ct]
+input_path = "~/.config/matugen/templates/qt6ct-preset.conf"
+output_path = "~/.config/qt5ct/colors/nexa.conf"
+
 [templates.kde]
 input_path = "~/.config/matugen/templates/kde-preset.colors"
 output_path = "~/.local/share/color-schemes/Nexa.colors"
