@@ -26,7 +26,7 @@ chmod +x install.sh uninstall.sh
 2. **AUR Helper Bootstrapping:** Checks for `yay` or `paru`. If missing, automatically clones and builds `yay` from source.
 3. **Full Dependency Installation:** Installs all required official (`pacman`) and AUR (`yay`) packages.
 4. **Safe Automated Backups:** Automatically creates a timestamped backup of your existing configs in `~/.config/nexa_backups/backup_<timestamp>/`.
-5. **Configuration Deployment:** Deploys Hyprland, Quickshell, Kitty, WezTerm, Matugen, GTK, Qt/Qt6ct, Kvantum, KDE Globals, custom color schemes, and Starship configurations.
+5. **Configuration Deployment:** Deploys Hyprland, Quickshell, Kitty, WezTerm, Matugen, GTK, Qt/Qt6ct, Kvantum, KDE Globals, and Starship configurations.
 6. **Rust Backend Compilation:** Runs `cargo build --release` inside `~/.config/nexa/rust` to compile `nexad`.
 7. **Hyprland Plugins:** Automatically updates `hyprpm`, then installs and enables `hyprglass` and `dynamic-cursors`.
 8. **Runtime Initialization:** Sets up wallpaper cache and runtime directories.
@@ -73,7 +73,7 @@ If you prefer installing dependencies manually or want a complete breakdown:
 * `hyprsunset` *(AUR)* — Color temperature / night light daemon
 * `qt5ct` & `qt6ct` — Qt appearance configuration tools
 * `kvantum` — SVG-based Qt theme engine
-* `kdeglobals` & `color-schemes` — Native KDE color palette integration and universal Kvantum styling across all KDE apps (Dolphin, Gwenview, Kate, Ark)
+* `kdeglobals` — Native KDE configuration applying universal Kvantum styling and dynamically generated `Nexa.colors` across all KDE apps (Dolphin, Gwenview, Kate, Ark)
 * `nwg-look` *(AUR)* — GTK theme and icon switcher
 
 ### 3. Terminals, Shell & Utilities

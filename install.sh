@@ -226,12 +226,6 @@ for item in "${CONFIG_TARGETS[@]}"; do
     fi
 done
 
-if [ -d "$HOME/.local/share/color-schemes" ]; then
-    log_info "Backing up ~/.local/share/color-schemes -> $BACKUP_DIR/color-schemes"
-    cp -a "$HOME/.local/share/color-schemes" "$BACKUP_DIR/"
-    BACKED_UP_COUNT=$((BACKED_UP_COUNT + 1))
-fi
-
 if [ -f "$HOME/.zshrc" ]; then
     log_info "Backing up ~/.zshrc -> $BACKUP_DIR/.zshrc"
     cp -a "$HOME/.zshrc" "$BACKUP_DIR/.zshrc"
@@ -258,12 +252,6 @@ for item in "${CONFIG_TARGETS[@]}"; do
         cp -a "$DOTFILES_DIR/$item" "$HOME/.config/$item"
     fi
 done
-
-if [ -d "$DOTFILES_DIR/color-schemes" ]; then
-    log_info "Deploying color schemes -> ~/.local/share/color-schemes"
-    mkdir -p "$HOME/.local/share/color-schemes"
-    cp -a "$DOTFILES_DIR/color-schemes/." "$HOME/.local/share/color-schemes/"
-fi
 
 if [ -f "$DOTFILES_DIR/.zshrc" ]; then
     log_info "Deploying .zshrc -> ~/.zshrc"
@@ -297,6 +285,7 @@ mkdir -p "$HOME/.cache/nexa/theme"
 mkdir -p "$HOME/.cache/nexa/wallpapers"
 mkdir -p "$HOME/.cache/nexa/wallpapers/video"
 mkdir -p "$HOME/Pictures/Wallpapers"
+mkdir -p "$HOME/.local/share/color-schemes"
 
 # Ensure BlueZ respects user Bluetooth power state across reboots
 if [ -f /etc/bluetooth/main.conf ]; then
@@ -334,6 +323,12 @@ if [ -d "$HOME/.config/nexa/rust" ]; then
         log_success "nexad binary compiled successfully at ~/.config/nexa/rust/target/release/nexad"
         log_info "Generating initial NEXA search index..."
         "$HOME/.config/nexa/rust/target/release/nexad" search refresh >/dev/null 2>&1 || true
+
+        # Generate initial NEXA color palettes across apps via Matugen
+        if [ -f "$HOME/.config/nexa/scripts/theme.sh" ]; then
+            log_info "Generating initial NEXA color palettes across apps via Matugen..."
+            "$HOME/.config/nexa/scripts/theme.sh" apply >/dev/null 2>&1 || true
+        fi
     else
         log_error "nexad build completed but binary was not found."
         exit 1
