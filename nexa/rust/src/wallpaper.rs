@@ -536,7 +536,9 @@ pub fn apply_desktop(
     let _ = Command::new("pkill").arg("-x").arg("mpvpaper").status();
 
     // 2. Render on display output
-    if kind == "image" {
+    if kind == "image" || kind == "gif" {
+        let _ = Command::new("awww").arg("unpause").status();
+
         let transitions = [
             "wipe", "wave", "grow", "center", "any", "outer", "fade", "left", "right", "top", "bottom"
         ];
@@ -562,8 +564,9 @@ pub fn apply_desktop(
                 "--transition-type", selected_trans,
                 "--transition-angle", selected_angle,
                 "--transition-duration", "1.2",
-                "--transition-fps", "144",
+                "--transition-fps", "60",
                 "--transition-bezier", ".42,0,.58,1",
+                "-f", "Bilinear",
             ]);
 
         let status = cmd.status().map_err(|e| format!("Failed to run awww: {e}"))?;
@@ -571,9 +574,17 @@ pub fn apply_desktop(
             return Err("awww failed to display wallpaper".to_string());
         }
     } else {
+        let _ = Command::new("awww").arg("pause").status();
+
         let target = if monitor_target == "*" { "ALL" } else { monitor_target };
         let _ = Command::new("mpvpaper")
-            .args(["-o", "no-audio loop-file=inf", target])
+            .arg("--fork")
+            .arg("-p")
+            .args([
+                "-o",
+                "no-audio loop-file=inf hwdec=auto-safe profile=fast opengl-pbo=yes framedrop=vo video-sync=desync",
+                target,
+            ])
             .arg(&resolved_path)
             .spawn();
     }

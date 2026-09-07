@@ -127,7 +127,7 @@ stop_mpvpaper() {
 }
 
 # ------------------------------------------------------------
-# Static wallpaper
+# Static wallpaper & GIF
 # ------------------------------------------------------------
 
 apply_static() {
@@ -137,6 +137,17 @@ apply_static() {
   fi
 
   stop_mpvpaper
+  awww unpause 2>/dev/null || true
+
+  # Query monitor refresh rate (default to 60 if unavailable)
+  local fps=60
+  if command -v hyprctl >/dev/null 2>&1; then
+    local detected_fps
+    detected_fps=$(hyprctl monitors 2>/dev/null | awk '/@/ {print int($2)}' | head -n 1)
+    if [[ -n "$detected_fps" && "$detected_fps" -ge 30 && "$detected_fps" -le 360 ]]; then
+      fps="$detected_fps"
+    fi
+  fi
 
   # Multiple dynamic transition animations
   local transitions=("wipe" "wave" "grow" "center" "any" "outer" "fade" "left" "right" "top" "bottom")
@@ -144,7 +155,7 @@ apply_static() {
   local selected_trans="${transitions[$rand_idx]}"
   local rand_angle=$(( (RANDOM % 8) * 45 )) # 0, 45, 90, 135, 180, 225, 270, 315
 
-  log "Applying wallpaper with transition: $selected_trans ($rand_angle deg)"
+  log "Applying wallpaper with transition: $selected_trans ($rand_angle deg) at ${fps}fps"
 
   if [[ "$MONITOR" == "*" || "$MONITOR" == "ALL" ]]; then
 
@@ -152,8 +163,9 @@ apply_static() {
       --transition-type "$selected_trans" \
       --transition-angle "$rand_angle" \
       --transition-duration 1.2 \
-      --transition-fps 144 \
-      --transition-bezier .42,0,.58,1; then
+      --transition-fps "$fps" \
+      --transition-bezier .42,0,.58,1 \
+      -f Bilinear; then
       log "awww failed to apply wallpaper."
       return 1
     fi
@@ -164,8 +176,9 @@ apply_static() {
       --transition-type "$selected_trans" \
       --transition-angle "$rand_angle" \
       --transition-duration 1.2 \
-      --transition-fps 144 \
-      --transition-bezier .42,0,.58,1; then
+      --transition-fps "$fps" \
+      --transition-bezier .42,0,.58,1 \
+      -f Bilinear; then
       log "awww failed to apply wallpaper on $MONITOR."
       return 1
     fi
@@ -186,6 +199,7 @@ apply_animated() {
   fi
 
   stop_mpvpaper
+  awww pause 2>/dev/null || true
 
   local target="$MONITOR"
 
@@ -193,17 +207,12 @@ apply_animated() {
     target="ALL"
   fi
 
-  mpvpaper \
-    -o "no-audio loop-file=inf" \
+  if ! mpvpaper \
+    --fork \
+    -p \
+    -o "no-audio loop-file=inf hwdec=auto-safe profile=fast opengl-pbo=yes framedrop=vo video-sync=desync" \
     "$target" \
-    "$WALLPAPER" \
-    >>"$LOG_FILE" 2>&1 &
-
-  disown
-
-  sleep 0.2
-
-  if ! pgrep -x mpvpaper >/dev/null 2>&1; then
+    "$WALLPAPER"; then
     log "mpvpaper failed to start."
     return 1
   fi
@@ -217,11 +226,11 @@ apply_animated() {
 
 case "$WALLPAPER_TYPE" in
 
-image)
+image | gif)
   apply_static || exit 1
   ;;
 
-gif | video)
+video)
   apply_animated || exit 1
   ;;
 
