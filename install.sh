@@ -214,6 +214,10 @@ CONFIG_TARGETS=(
     "kdeglobals"
     "mimeapps.list"
     "starship.toml"
+    "chrome-flags.conf"
+    "chromium-flags.conf"
+    "brave-flags.conf"
+    "electron-flags.conf"
 )
 
 BACKED_UP_COUNT=0
@@ -303,6 +307,23 @@ if command -v gsettings >/dev/null 2>&1; then
     gsettings set org.gnome.desktop.interface font-name 'SF Pro Display 11' 2>/dev/null || true
     gsettings set org.gnome.desktop.interface document-font-name 'SF Pro Display 11' 2>/dev/null || true
     gsettings set org.gnome.desktop.interface icon-theme 'Adwaita' 2>/dev/null || true
+fi
+
+# Verify or enable ZRAM memory compression (vital for smooth performance on 8GB-16GB machines)
+if ! swapon --show 2>/dev/null | grep -q "zram"; then
+    log_info "Configuring zram real-time RAM compression..."
+    if ! pacman -Qi zram-generator >/dev/null 2>&1; then
+        sudo pacman -S --needed --noconfirm zram-generator 2>/dev/null || true
+    fi
+    if [ ! -f /etc/systemd/zram-generator.conf ]; then
+        sudo tee /etc/systemd/zram-generator.conf >/dev/null <<'ZRAM_CONF'
+[zram0]
+zram-size = ram
+compression-algorithm = zstd
+ZRAM_CONF
+        sudo systemctl daemon-reload 2>/dev/null || true
+        sudo systemctl start /dev/zram0 2>/dev/null || sudo systemctl restart systemd-zram-setup@zram0 2>/dev/null || true
+    fi
 fi
 
 log_success "Dotfiles deployed successfully."

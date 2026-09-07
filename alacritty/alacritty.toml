@@ -20,7 +20,7 @@ class = { instance = "Alacritty", general = "Alacritty" }
 decorations_theme_variant = "Dark"
 
 [scrolling]
-history = 10000
+history = 4000
 multiplier = 3
 
 [font]

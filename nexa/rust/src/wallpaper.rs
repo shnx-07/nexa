@@ -582,7 +582,7 @@ pub fn apply_desktop(
             .arg("-p")
             .args([
                 "-o",
-                "no-audio loop-file=inf hwdec=auto-safe profile=fast opengl-pbo=yes framedrop=vo video-sync=desync",
+                "no-audio loop-file=inf hwdec=auto-safe profile=fast opengl-pbo=yes framedrop=vo video-sync=desync demuxer-max-bytes=20M demuxer-max-back-bytes=5M",
                 target,
             ])
             .arg(&resolved_path)

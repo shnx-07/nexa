@@ -247,21 +247,7 @@ PanelWindow {
     // IPC
     // ============================================================
 
-    IpcHandler {
-        target: "workspaceManager"
-
-        function open(): void {
-            manager.openManager()
-        }
-
-        function close(): void {
-            manager.closeManager()
-        }
-
-        function toggle(): void {
-            manager.toggleManager()
-        }
-    }
+    // IpcHandler moved to shell.qml to allow on-demand lazy loading
 
 
     // ============================================================

@@ -403,7 +403,7 @@ Item {
 
                 SequentialAnimation {
                     id: compactTickerAnim
-                    running: compactMarqueeBox.needsScroll
+                    running: compactMarqueeBox.needsScroll && root.presentation === "compact" && root.visible
                     loops: Animation.Infinite
 
                     PauseAnimation { duration: 1800 }
@@ -512,7 +512,7 @@ Item {
 
                         SequentialAnimation {
                             id: hoverTitleAnim
-                            running: hoverTitleBox.needsScroll
+                            running: hoverTitleBox.needsScroll && root.presentation === "hover" && root.visible
                             loops: Animation.Infinite
 
                             PauseAnimation { duration: 1800 }
@@ -1031,7 +1031,7 @@ Item {
 
                                     SequentialAnimation on opacity {
                                         loops: Animation.Infinite
-                                        running: root.playing
+                                        running: root.playing && root.presentation === "full" && root.visible
                                         NumberAnimation { from: 0.4; to: 1.0; duration: 800 }
                                         NumberAnimation { from: 1.0; to: 0.4; duration: 800 }
                                     }
@@ -1093,7 +1093,7 @@ Item {
 
                         SequentialAnimation {
                             id: fullTitleAnim
-                            running: fullTitleBox.needsScroll
+                            running: fullTitleBox.needsScroll && root.presentation === "full" && root.visible
                             loops: Animation.Infinite
 
                             PauseAnimation { duration: 2200 }

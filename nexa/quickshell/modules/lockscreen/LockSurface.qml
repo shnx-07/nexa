@@ -898,7 +898,7 @@ Item {
                 // Breathing glow animation when focused
                 SequentialAnimation on opacity {
                     loops: Animation.Infinite
-                    running: passwordInput.activeFocus
+                    running: passwordInput.activeFocus && root.visible
                     NumberAnimation { from: 0.5; to: 1.0; duration: 900; easing.type: Easing.InOutSine }
                     NumberAnimation { from: 1.0; to: 0.5; duration: 900; easing.type: Easing.InOutSine }
                 }
@@ -1481,7 +1481,7 @@ Item {
 
         SequentialAnimation on opacity {
             loops: Animation.Infinite
-            running: !root.loginVisible
+            running: !root.loginVisible && root.visible
 
             NumberAnimation {
                 from: 0.65

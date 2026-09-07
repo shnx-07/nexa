@@ -53,6 +53,11 @@ CONFIG_TARGETS=(
     "hypr"
     "nexa"
     "kitty"
+    "alacritty"
+    "wezterm"
+    "btop"
+    "fastfetch"
+    "fontconfig"
     "matugen"
     "gtk-3.0"
     "gtk-4.0"
@@ -61,6 +66,10 @@ CONFIG_TARGETS=(
     "kdeglobals"
     "mimeapps.list"
     "starship.toml"
+    "chrome-flags.conf"
+    "chromium-flags.conf"
+    "brave-flags.conf"
+    "electron-flags.conf"
 )
 
 LATEST_BACKUP=""

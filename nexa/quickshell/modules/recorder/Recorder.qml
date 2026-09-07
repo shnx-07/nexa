@@ -166,7 +166,7 @@ Item {
     Timer {
         interval: root.recording ? 1000 : 1500
         repeat: true
-        running: true
+        running: root.recording
 
         onTriggered:
             root.refreshStatus()

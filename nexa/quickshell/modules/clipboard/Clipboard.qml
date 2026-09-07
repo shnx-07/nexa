@@ -263,21 +263,7 @@ PanelWindow {
     // IPC
     // ============================================================
 
-    IpcHandler {
-        target: "clipboard"
-
-        function open(): void {
-            root.openClipboard()
-        }
-
-        function close(): void {
-            root.closeClipboard()
-        }
-
-        function toggle(): void {
-            root.toggleClipboard()
-        }
-    }
+    // IpcHandler moved to shell.qml to allow on-demand lazy loading
 
     // ============================================================
     // LIST

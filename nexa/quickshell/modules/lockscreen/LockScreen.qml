@@ -201,10 +201,14 @@ Item {
             right: true
         }
 
-        LockSurface {
+        Loader {
             anchors.fill: parent
-            onAuthenticationSucceeded: {
-                root.previewOpen = false
+            active: root.previewOpen
+            sourceComponent: LockSurface {
+                anchors.fill: parent
+                onAuthenticationSucceeded: {
+                    root.previewOpen = false
+                }
             }
         }
     }

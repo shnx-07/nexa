@@ -210,7 +210,7 @@ apply_animated() {
   if ! mpvpaper \
     --fork \
     -p \
-    -o "no-audio loop-file=inf hwdec=auto-safe profile=fast opengl-pbo=yes framedrop=vo video-sync=desync" \
+    -o "no-audio loop-file=inf hwdec=auto-safe profile=fast opengl-pbo=yes framedrop=vo video-sync=desync demuxer-max-bytes=20M demuxer-max-back-bytes=5M" \
     "$target" \
     "$WALLPAPER"; then
     log "mpvpaper failed to start."

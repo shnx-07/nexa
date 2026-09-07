@@ -211,7 +211,7 @@ NexaUI.NexaCard {
 
             SequentialAnimation {
                 id: tickerAnimation
-                running: marqueeContainer.needsScroll
+                running: marqueeContainer.needsScroll && root.hovered
                 loops: Animation.Infinite
 
                 PauseAnimation { duration: 1800 }
@@ -238,20 +238,28 @@ NexaUI.NexaCard {
 
             onWidthChanged: {
                 marqueeText.x = 0
-                if (needsScroll) tickerAnimation.restart()
+                if (needsScroll && root.hovered) tickerAnimation.restart()
                 else tickerAnimation.stop()
             }
 
             Connections {
                 target: root
+                function onHoveredChanged() {
+                    if (!root.hovered) {
+                        tickerAnimation.stop()
+                        marqueeText.x = 0
+                    } else if (marqueeContainer.needsScroll) {
+                        tickerAnimation.restart()
+                    }
+                }
                 function onDisplayTextChanged() {
                     marqueeText.x = 0
-                    if (marqueeContainer.needsScroll) tickerAnimation.restart()
+                    if (marqueeContainer.needsScroll && root.hovered) tickerAnimation.restart()
                     else tickerAnimation.stop()
                 }
                 function onHasAppChanged() {
                     marqueeText.x = 0
-                    if (marqueeContainer.needsScroll) tickerAnimation.restart()
+                    if (marqueeContainer.needsScroll && root.hovered) tickerAnimation.restart()
                     else tickerAnimation.stop()
                 }
             }

@@ -16,18 +16,7 @@ PanelWindow {
     focusable: true
     color: "transparent"
 
-    GlobalShortcut {
-        appid: "nexa"
-        name: "wallpaper"
-        description: "Toggle NEXA wallpaper picker"
-
-        onPressed: {
-            root.visible = !root.visible
-
-            if (root.visible)
-                root.forceActiveFocus()
-        }
-    }
+    // GlobalShortcut moved to shell.qml to allow on-demand lazy loading
 
     exclusionMode: ExclusionMode.Ignore
 
