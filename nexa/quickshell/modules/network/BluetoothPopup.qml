@@ -1027,6 +1027,7 @@ PopupWindow {
                 RotationAnimator on rotation {
                     running:
                         card.pending
+                        && root.visible
 
 
                     from: 0
@@ -2397,6 +2398,7 @@ PopupWindow {
                             RotationAnimator on rotation {
                                 running:
                                     root.scanning
+                                    && root.visible
 
 
                                 from: 0

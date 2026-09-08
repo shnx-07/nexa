@@ -360,7 +360,7 @@ Item {
 
             SequentialAnimation on opacity {
                 loops: Animation.Infinite
-                running: root.osdType === "battery_low"
+                running: root.visible && root.osdType === "battery_low"
                 NumberAnimation { to: 0.45; duration: 700; easing.type: Easing.InOutQuad }
                 NumberAnimation { to: 1.0; duration: 700; easing.type: Easing.InOutQuad }
             }
@@ -424,7 +424,7 @@ Item {
 
                     SequentialAnimation on opacity {
                         loops: Animation.Infinite
-                        running: root.osdType === "battery_low"
+                        running: root.visible && root.osdType === "battery_low"
                         NumberAnimation { to: 0.2; duration: 500 }
                         NumberAnimation { to: 1.0; duration: 500 }
                     }

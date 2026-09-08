@@ -55,6 +55,15 @@ EOF
 
 WALLPAPER="${1:-}"
 MONITOR="${2:-*}"
+OPT_RESTORE=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --no-theme|--restore)
+      OPT_RESTORE=true
+      ;;
+  esac
+done
 
 if [[ -z "$WALLPAPER" ]]; then
   usage
@@ -237,6 +246,11 @@ video)
 esac
 
 log "Wallpaper applied successfully."
+
+if [[ "$OPT_RESTORE" == true ]]; then
+  log "Wallpaper restored (theme extraction and application skipped)."
+  exit 0
+fi
 
 # ------------------------------------------------------------
 # Generate theme source

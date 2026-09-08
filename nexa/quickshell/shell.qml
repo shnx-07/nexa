@@ -3,12 +3,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
-import "wallpaper" as Wallpaper
 import "bar"
 import "island"
-import "modules/clipboard" as Clipboard
 import "modules/lockscreen" as LockScreenModule
-import "modules/workspace" as WorkspaceModule
 import "modules/nightlight" as NightLightModule
 
 ShellRoot {
@@ -98,10 +95,12 @@ ShellRoot {
         onPressed: {
             if (!wallpaperLoader.active) {
                 wallpaperLoader.active = true
-            } else {
-                if (wallpaperLoader.item) {
-                    wallpaperLoader.item.visible = false
+            } else if (wallpaperLoader.item) {
+                wallpaperLoader.item.visible = !wallpaperLoader.item.visible
+                if (!wallpaperLoader.item.visible) {
+                    wallpaperLoader.active = false
                 }
+            } else {
                 wallpaperLoader.active = false
             }
         }
@@ -112,15 +111,22 @@ ShellRoot {
         function toggle(): void {
             if (!wallpaperLoader.active) {
                 wallpaperLoader.active = true
-            } else {
-                if (wallpaperLoader.item) {
-                    wallpaperLoader.item.visible = false
+            } else if (wallpaperLoader.item) {
+                wallpaperLoader.item.visible = !wallpaperLoader.item.visible
+                if (!wallpaperLoader.item.visible) {
+                    wallpaperLoader.active = false
                 }
+            } else {
                 wallpaperLoader.active = false
             }
         }
         function open(): void {
-            wallpaperLoader.active = true
+            if (!wallpaperLoader.active) {
+                wallpaperLoader.active = true
+            } else if (wallpaperLoader.item) {
+                wallpaperLoader.item.visible = true
+                wallpaperLoader.item.forceActiveFocus()
+            }
         }
         function close(): void {
             if (wallpaperLoader.item) {

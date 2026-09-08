@@ -2456,7 +2456,8 @@ PopupWindow {
 
                                     RotationAnimator on rotation {
                                         running:
-                                            root.connectingNetwork
+                                            root.visible
+                                            && root.connectingNetwork
                                             === networkCard.modelData
 
 

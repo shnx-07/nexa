@@ -11,11 +11,39 @@ Item {
     id: root
 
     property string wallpaperPath: ""
+    property string wallpaperType: "image"
+    property string themeSource: ""
     property string lockWallpaperPath: ""
     property string userName: ""
     property string hostName: ""
     property string uptimeText: ""
     property string osInfo: ""
+
+    // Live FileView watcher for dynamic wallpaper changes
+    FileView {
+        id: wallpaperConfigFile
+        path: Quickshell.env("HOME") + "/.config/nexa/config/wallpaper.conf"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const text = wallpaperConfigFile.text()
+                if (text && text.length > 0) {
+                    const lines = text.split("\n")
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim()
+                        if (line.startsWith("WALLPAPER=")) {
+                            root.wallpaperPath = line.substring(10).replace(/^['"]|['"]$/g, "")
+                        } else if (line.startsWith("WALLPAPER_TYPE=")) {
+                            root.wallpaperType = line.substring(15).replace(/^['"]|['"]$/g, "")
+                        } else if (line.startsWith("THEME_SOURCE=")) {
+                            root.themeSource = line.substring(13).replace(/^['"]|['"]$/g, "")
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+    }
 
 
     // ============================================================
@@ -122,9 +150,12 @@ Item {
                 sourceSize.width: 900
                 sourceSize.height: 500
 
-                source: root.wallpaperPath !== ""
-                    ? "file://" + root.wallpaperPath
-                    : ""
+                source: {
+                    if (root.wallpaperType === "video") {
+                        return root.themeSource !== "" ? ("file://" + root.themeSource) : ""
+                    }
+                    return root.wallpaperPath !== "" ? ("file://" + root.wallpaperPath) : ""
+                }
 
                 fillMode: Image.PreserveAspectCrop
                 horizontalAlignment: Image.AlignHCenter
@@ -209,10 +240,16 @@ Item {
                 z: 20
 
                 onClicked: {
-                    if (typeof wallpaperView !== "undefined") {
-                        wallpaperView.visible = true
-                        wallpaperView.forceActiveFocus()
-                    }
+                    // Open the wallpaper picker
+                    Quickshell.execDetached([
+                        "qs",
+                        "-p",
+                        Quickshell.env("HOME") + "/.config/nexa/quickshell",
+                        "ipc",
+                        "call",
+                        "wallpaper",
+                        "open"
+                    ])
 
                     // Close the island control center
                     Quickshell.execDetached([
@@ -257,6 +294,8 @@ Item {
                 "printf 'UPTIME %s\\n' \"$(uptime -p | sed 's/^up //')\"; ",
                 ". \"$HOME/.config/nexa/config/wallpaper.conf\" 2>/dev/null || true; ",
                 "printf 'WALLPAPER %s\\n' \"$WALLPAPER\"; ",
+                "printf 'WALLPAPER_TYPE %s\\n' \"$WALLPAPER_TYPE\"; ",
+                "printf 'THEME_SOURCE %s\\n' \"$THEME_SOURCE\"; ",
                 ". \"$HOME/.config/nexa/config/lockscreen.conf\" 2>/dev/null || true; ",
                 "printf 'LOCK_WALLPAPER %s\\n' \"$WALLPAPER\"; ",
                 "printf 'OS %s\\n' \"$(grep -s '^PRETTY_NAME=' /etc/os-release | cut -d= -f2 | tr -d '\"')\""
@@ -289,6 +328,12 @@ Item {
                         break
                     case "WALLPAPER":
                         root.wallpaperPath = value
+                        break
+                    case "WALLPAPER_TYPE":
+                        root.wallpaperType = value
+                        break
+                    case "THEME_SOURCE":
+                        root.themeSource = value
                         break
                     case "LOCK_WALLPAPER":
                         root.lockWallpaperPath = value

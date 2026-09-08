@@ -40,6 +40,7 @@ Item {
 
     property string diskUsed: "--"
     property string diskTotal: "--"
+    property string diskFree: "--"
 
     property string userName: "--"
     property string hostName: "--"
@@ -170,7 +171,7 @@ Item {
                 "ps -eo pid,comm,rss --sort=-rss --no-headers | head -n 3 | while read -r pid comm rss; do mb=$(( rss / 1024 )); printf \"TOP_MEM %s %s %s\\n\" \"$pid\" \"$comm\" \"$mb\"; done\n"
             ].join("")
         ]
-        running: true
+        running: false
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -273,15 +274,15 @@ Item {
             "sh",
             "-c",
             [
-                "df -B1 / | awk 'NR==2 { gsub(\"%\", \"\", $5); printf \"DISK %s %s %s\\n\", $3, $2, $5 }'; ",
+                "df -B1 / | awk 'NR==2 { gsub(\"%\", \"\", $5); printf \"DISK %s %s %s %s\\n\", $3, $2, $4, $5 }'; ",
                 "printf 'USER %s\\n' \"$(whoami)\"; ",
                 "printf 'HOST %s\\n' \"$(hostname)\"; ",
-                "printf 'UPTIME %s\\n' \"$(uptime -p | sed 's/^up //')\"; ",
+                "printf 'UPTIME %s\\n' \"$(uptime -p | sed 's/^up //; s/ minutes\\?/m/g; s/ hours\\?/h/g; s/ days\\?/d/g; s/,//g')\"; ",
                 "printf 'KERNEL %s\\n' \"$(uname -r)\"; ",
                 "printf 'OS %s\\n' \"$(. /etc/os-release 2>/dev/null; printf '%s' \"${PRETTY_NAME:-Arch Linux}\")\""
             ].join("")
         ]
-        running: true
+        running: false
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -296,7 +297,12 @@ Item {
                     switch (key) {
                     case "DISK": {
                         const disk = value.split(/\s+/)
-                        if (disk.length >= 3) {
+                        if (disk.length >= 4) {
+                            root.diskUsed = root.formatBytes(Number(disk[0]))
+                            root.diskTotal = root.formatBytes(Number(disk[1]))
+                            root.diskFree = root.formatBytes(Number(disk[2]))
+                            root.diskUsage = root.clamp(Number(disk[3]), 0, 100)
+                        } else if (disk.length >= 3) {
                             root.diskUsed = root.formatBytes(Number(disk[0]))
                             root.diskTotal = root.formatBytes(Number(disk[1]))
                             root.diskUsage = root.clamp(Number(disk[2]), 0, 100)
@@ -323,14 +329,26 @@ Item {
         }
     }
 
+    Component.onCompleted: {
+        if (!liveStatsProcess.running) liveStatsProcess.running = true
+        if (!slowStatsProcess.running) slowStatsProcess.running = true
+    }
+
+    onVisibleChanged: {
+        if (root.visible) {
+            if (!liveStatsProcess.running) liveStatsProcess.running = true
+            if (!slowStatsProcess.running) slowStatsProcess.running = true
+        }
+    }
+
     // ============================================================
     // MAIN LAYOUT
     // ============================================================
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: Nexa.Theme.spacingMd
-        spacing: Nexa.Theme.spacingMd
+        anchors.margins: Nexa.Theme.spacingSm
+        spacing: Nexa.Theme.spacingSm
 
         // ========================================================
         // LEFT: 2x2 HARDWARE & PERFORMANCE GRID (56% width)
@@ -338,7 +356,7 @@ Item {
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.preferredWidth: 310
+            Layout.preferredWidth: 320
             Layout.fillHeight: true
             spacing: Nexa.Theme.spacingSm
 
@@ -356,11 +374,11 @@ Item {
                     Layout.fillHeight: true
                     clip: true
                     interactive: true
+                    padding: 10
                     onClicked: root.openMonitor()
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: Nexa.Theme.spacingSm
                         spacing: 2
 
                         // Header: Title & Temp Pill
@@ -483,11 +501,11 @@ Item {
                     Layout.fillHeight: true
                     clip: true
                     interactive: true
+                    padding: 10
                     onClicked: root.openMonitor()
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: Nexa.Theme.spacingSm
                         spacing: 2
 
                         // Header: Title & Used Text
@@ -596,11 +614,11 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
+                    padding: 10
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: Nexa.Theme.spacingSm
-                        spacing: 4
+                        spacing: 0
 
                         RowLayout {
                             Layout.fillWidth: true
@@ -620,13 +638,16 @@ Item {
                             }
                         }
 
+                        Item { Layout.fillHeight: true }
+
                         // GPU Temp & Wattage Row
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 6
 
                             Column {
-                                spacing: 1
+                                Layout.fillWidth: true
+                                spacing: 2
                                 Text {
                                     text: "GPU Temp"
                                     color: Nexa.Theme.mutedText
@@ -644,12 +665,14 @@ Item {
 
                             Rectangle {
                                 width: 1
-                                height: 20
+                                height: 22
                                 color: Nexa.Theme.divider
+                                Layout.alignment: Qt.AlignVCenter
                             }
 
                             Column {
-                                spacing: 1
+                                Layout.fillWidth: true
+                                spacing: 2
                                 Text {
                                     text: "Power"
                                     color: Nexa.Theme.mutedText
@@ -667,12 +690,14 @@ Item {
 
                             Rectangle {
                                 width: 1
-                                height: 20
+                                height: 22
                                 color: Nexa.Theme.divider
+                                Layout.alignment: Qt.AlignVCenter
                             }
 
                             Column {
-                                spacing: 1
+                                Layout.fillWidth: true
+                                spacing: 2
                                 Text {
                                     text: "NVMe"
                                     color: Nexa.Theme.mutedText
@@ -688,6 +713,8 @@ Item {
                                 }
                             }
                         }
+
+                        Item { Layout.fillHeight: true }
                     }
                 }
 
@@ -698,14 +725,16 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
+                    padding: 10
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: Nexa.Theme.spacingSm
-                        spacing: 4
+                        spacing: 5
 
+                        // Header: Title & Disk Icon
                         RowLayout {
                             Layout.fillWidth: true
+
                             Text {
                                 text: "Storage"
                                 color: Nexa.Theme.text
@@ -713,21 +742,42 @@ Item {
                                 font.pixelSize: Nexa.Theme.fontSizeSm
                                 font.weight: Nexa.Theme.fontWeightDemiBold
                             }
+
                             Item { Layout.fillWidth: true }
+
+                            Text {
+                                text: "󰋊"
+                                color: Nexa.Theme.primary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: Nexa.Theme.iconSm
+                            }
+                        }
+
+                        Item { Layout.fillHeight: true }
+
+                        // Usage Percentage & Used/Total Text
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+
                             Text {
                                 text: Math.round(root.diskUsage) + "%"
                                 color: Nexa.Theme.primary
                                 font.family: Nexa.Theme.monoFontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                font.pixelSize: 18
                                 font.weight: Nexa.Theme.fontWeightBold
                             }
-                        }
 
-                        Text {
-                            text: root.diskUsed + " / " + root.diskTotal
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.monoFontFamily
-                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                            Item { Layout.fillWidth: true }
+
+                            Text {
+                                text: root.diskUsed !== "--" && root.diskTotal !== "--"
+                                    ? (root.diskUsed + " / " + root.diskTotal)
+                                    : "--"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.monoFontFamily
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
+                            }
                         }
 
                         // Storage Progress Bar
@@ -739,11 +789,26 @@ Item {
 
                             Rectangle {
                                 height: parent.height
-                                width: Math.max(6, parent.width * (root.diskUsage / 100.0))
+                                width: Math.max(parent.radius * 2, parent.width * (root.diskUsage / 100.0))
                                 radius: parent.radius
                                 color: Nexa.Theme.primary
+
+                                Behavior on width {
+                                    NumberAnimation { duration: 300; easing.type: Easing.OutQuad }
+                                }
                             }
                         }
+
+                        // Free space subtitle
+                        Text {
+                            text: root.diskFree !== "--" ? (root.diskFree + " available") : ""
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                            visible: text !== ""
+                        }
+
+                        Item { Layout.fillHeight: true }
                     }
                 }
             }
@@ -765,10 +830,10 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
+                padding: 10
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: Nexa.Theme.spacingSm
                     spacing: 4
 
                     // Tab Segmented Switcher (CPU vs RAM)
@@ -946,113 +1011,164 @@ Item {
             // ----------------------------------------------------
             NexaUI.NexaCard {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 52
+                Layout.preferredHeight: 82
                 clip: true
+                padding: 10
 
-                RowLayout {
+                ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: Nexa.Theme.spacingSm
-                    spacing: Nexa.Theme.spacingSm
+                    spacing: 6
 
-                    // Monitor Launcher Button
-                    Rectangle {
+                    // Action Buttons Row
+                    RowLayout {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        radius: Nexa.Theme.radiusSm
-                        color: monMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest
+                        Layout.preferredHeight: 32
+                        spacing: Nexa.Theme.spacingSm
 
-                        Row {
-                            anchors.centerIn: parent
-                            spacing: 5
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "󰌌"
-                                color: monMouse.containsMouse ? Nexa.Theme.onPrimary : Nexa.Theme.primary
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: Nexa.Theme.iconSm
+                        // Monitor Launcher Button
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: Nexa.Theme.radiusSm
+                            color: monMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest
+
+                            Behavior on color {
+                                ColorAnimation { duration: 150 }
                             }
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 6
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "󰍹"
+                                    color: monMouse.containsMouse ? Nexa.Theme.onPrimary : Nexa.Theme.primary
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "Monitor"
+                                    color: monMouse.containsMouse ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    font.weight: Nexa.Theme.fontWeightMedium
+                                }
+                            }
+
+                            MouseArea {
+                                id: monMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.openMonitor()
+                            }
+                        }
+
+                        // Trim Memory / Cache Button
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: Nexa.Theme.radiusSm
+                            color: trimFeedbackTimer.running ? Qt.rgba(0.2, 0.8, 0.4, 0.25) : (trimMouse.containsMouse ? Nexa.Theme.secondary : Nexa.Theme.surfaceContainerHighest)
+
+                            Behavior on color {
+                                ColorAnimation { duration: 150 }
+                            }
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 6
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: trimFeedbackTimer.running ? "󰄬" : "󰃢"
+                                    color: trimFeedbackTimer.running ? "#10B981" : (trimMouse.containsMouse ? Nexa.Theme.onSecondary : Nexa.Theme.secondary)
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: trimFeedbackTimer.running ? "Trimmed!" : "Trim RAM"
+                                    color: trimFeedbackTimer.running ? "#10B981" : (trimMouse.containsMouse ? Nexa.Theme.onSecondary : Nexa.Theme.text)
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    font.weight: Nexa.Theme.fontWeightMedium
+                                }
+                            }
+
+                            MouseArea {
+                                id: trimMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.clearCache()
+                            }
+                        }
+                    }
+
+                    // Host & Uptime Meta Row
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 18
+                        spacing: 6
+
+                        // Host Info
+                        Row {
+                            spacing: 4
+                            visible: root.hostName !== "--"
+
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "Monitor"
-                                color: monMouse.containsMouse ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                text: "󰌢"
+                                color: Nexa.Theme.primary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 12
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.hostName
+                                color: Nexa.Theme.mutedText
                                 font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
                                 font.weight: Nexa.Theme.fontWeightMedium
                             }
                         }
 
-                        MouseArea {
-                            id: monMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.openMonitor()
+                        // Bullet Separator
+                        Text {
+                            text: "•"
+                            color: Nexa.Theme.divider
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                            visible: root.hostName !== "--" && root.uptime !== "--"
                         }
-                    }
 
-                    // Trim Memory / Cache Button
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        radius: Nexa.Theme.radiusSm
-                        color: trimFeedbackTimer.running ? Qt.rgba(0.2, 0.8, 0.4, 0.25) : (trimMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest)
-
+                        // Uptime Info
                         Row {
-                            anchors.centerIn: parent
-                            spacing: 5
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: trimFeedbackTimer.running ? "󰄬" : "󰃮"
-                                color: trimFeedbackTimer.running ? "#10B981" : (trimMouse.containsMouse ? Nexa.Theme.onPrimary : Nexa.Theme.secondary)
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: Nexa.Theme.iconSm
-                            }
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: trimFeedbackTimer.running ? "Trimmed!" : "Trim RAM"
-                                color: trimFeedbackTimer.running ? "#10B981" : (trimMouse.containsMouse ? Nexa.Theme.onPrimary : Nexa.Theme.text)
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
-                                font.weight: Nexa.Theme.fontWeightMedium
-                            }
-                        }
+                            Layout.fillWidth: true
+                            spacing: 4
+                            visible: root.uptime !== "--"
 
-                        MouseArea {
-                            id: trimMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.clearCache()
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "󰥔"
+                                color: Nexa.Theme.secondary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 12
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "up " + root.uptime
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
+                                font.weight: Nexa.Theme.fontWeightMedium
+                                elide: Text.ElideRight
+                            }
                         }
                     }
-                }
-            }
-
-            // Host & Uptime Meta Bar
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 6
-
-                Text {
-                    text: "󰌢 " + root.hostName
-                    color: Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSize2Xs
-                }
-
-                Text {
-                    text: "•"
-                    color: Nexa.Theme.divider
-                    font.pixelSize: Nexa.Theme.fontSize2Xs
-                }
-
-                Text {
-                    text: "up " + root.uptime
-                    color: Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSize2Xs
-                    Layout.fillWidth: true
-                    elide: Text.ElideRight
                 }
             }
         }

@@ -11,4 +11,4 @@ source "$CONFIG"
 [[ -n "${WALLPAPER:-}" ]] || exit 0
 [[ -f "$WALLPAPER" ]] || exit 0
 
-"$WALLPAPER_SCRIPT" "$WALLPAPER" "${MONITOR:-*}"
+"$WALLPAPER_SCRIPT" "$WALLPAPER" "${MONITOR:-*}" --restore

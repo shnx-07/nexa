@@ -1141,7 +1141,7 @@ Item {
                             color: Nexa.Theme.primary
                             font.family: Nexa.Theme.fontFamily
                             font.pixelSize: 14
-                            font.weight: Nexa.Theme.fontWeightSemiBold
+                            font.weight: Nexa.Theme.fontWeightDemiBold
                             elide: Text.ElideRight
                         }
 
@@ -1267,39 +1267,15 @@ Item {
                     // ----------------------------------------------------
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 12
+                        spacing: 18
 
-                        // Shuffle Button
-                        Rectangle {
-                            implicitWidth: 36
-                            implicitHeight: 36
-                            radius: 18
-                            color: shufMouse.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.10) : Qt.rgba(255/255, 255/255, 255/255, 0.04)
-                            border.width: 1
-                            border.color: (root.available && root.player.shuffle === true) ? Nexa.Theme.primary : Qt.rgba(255/255, 255/255, 255/255, 0.08)
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰒞"
-                                color: (root.available && root.player.shuffle === true) ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 16
-                            }
-
-                            MouseArea {
-                                id: shufMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleShuffle()
-                            }
-                        }
+                        Item { Layout.fillWidth: true }
 
                         // Previous Track
                         Rectangle {
-                            implicitWidth: 36
-                            implicitHeight: 36
-                            radius: 18
+                            implicitWidth: 38
+                            implicitHeight: 38
+                            radius: 19
                             color: prevMouse.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.10) : Qt.rgba(255/255, 255/255, 255/255, 0.04)
                             border.width: 1
                             border.color: Qt.rgba(255/255, 255/255, 255/255, 0.08)
@@ -1312,7 +1288,7 @@ Item {
                                 text: "󰒮"
                                 color: Nexa.Theme.text
                                 font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 16
+                                font.pixelSize: 17
                             }
 
                             MouseArea {
@@ -1327,12 +1303,12 @@ Item {
                         // HERO Play / Pause Button
                         Rectangle {
                             id: heroPlayBtn
-                            implicitWidth: 48
-                            implicitHeight: 48
-                            radius: 24
+                            implicitWidth: 50
+                            implicitHeight: 50
+                            radius: 25
                             gradient: Gradient {
-                                GradientStop { position: 0.0; color: playMouse.pressed ? Nexa.Theme.primaryDark : Nexa.Theme.primary }
-                                GradientStop { position: 1.0; color: Nexa.Theme.primaryDark }
+                                GradientStop { position: 0.0; color: playMouse.pressed ? Qt.darker(Nexa.Theme.primary, 1.25) : Nexa.Theme.primary }
+                                GradientStop { position: 1.0; color: Qt.darker(Nexa.Theme.primary, 1.25) }
                             }
                             scale: playMouse.pressed ? 0.92 : playMouse.containsMouse ? 1.06 : 1.0
 
@@ -1359,9 +1335,9 @@ Item {
 
                         // Next Track
                         Rectangle {
-                            implicitWidth: 36
-                            implicitHeight: 36
-                            radius: 18
+                            implicitWidth: 38
+                            implicitHeight: 38
+                            radius: 19
                             color: nextMouse.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.10) : Qt.rgba(255/255, 255/255, 255/255, 0.04)
                             border.width: 1
                             border.color: Qt.rgba(255/255, 255/255, 255/255, 0.08)
@@ -1374,7 +1350,7 @@ Item {
                                 text: "󰒭"
                                 color: Nexa.Theme.text
                                 font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 16
+                                font.pixelSize: 17
                             }
 
                             MouseArea {
@@ -1386,105 +1362,7 @@ Item {
                             }
                         }
 
-                        // Loop Button
-                        Rectangle {
-                            implicitWidth: 36
-                            implicitHeight: 36
-                            radius: 18
-                            color: loopMouse.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.10) : Qt.rgba(255/255, 255/255, 255/255, 0.04)
-                            border.width: 1
-                            border.color: (root.available && root.player.loopStatus !== MprisLoopStatus.None) ? Nexa.Theme.primary : Qt.rgba(255/255, 255/255, 255/255, 0.08)
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: root.available && root.player.loopStatus === MprisLoopStatus.Track ? "󰑘" : "󰑖"
-                                color: (root.available && root.player.loopStatus !== MprisLoopStatus.None) ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 16
-                            }
-
-                            MouseArea {
-                                id: loopMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleLoop()
-                            }
-                        }
-
                         Item { Layout.fillWidth: true }
-
-                        // ------------------------------------------------
-                        // INLINE VOLUME CONTROL DECK
-                        // ------------------------------------------------
-                        RowLayout {
-                            spacing: 8
-
-                            // Mute/Unmute Icon
-                            Rectangle {
-                                implicitWidth: 28
-                                implicitHeight: 28
-                                radius: 14
-                                color: "transparent"
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.sinkMuted || root.sinkVolume === 0
-                                        ? "󰝟"
-                                        : root.sinkVolume > 0.5 ? "󰕾" : "󰖀"
-                                    color: root.sinkMuted ? "#ef4444" : Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: 15
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.toggleSinkMute()
-                                }
-                            }
-
-                            // Volume Drag Capsule
-                            Rectangle {
-                                id: volBarTrack
-                                Layout.preferredWidth: 70
-                                Layout.preferredHeight: 5
-                                radius: 2.5
-                                color: Qt.rgba(255/255, 255/255, 255/255, 0.12)
-
-                                Rectangle {
-                                    width: parent.width * (root.sinkMuted ? 0 : root.sinkVolume)
-                                    height: parent.height
-                                    radius: parent.radius
-                                    color: root.sinkMuted ? "#ef4444" : Nexa.Theme.primary
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    anchors.margins: -4
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-
-                                    onPressed: mouse => {
-                                        const ratio = Math.max(0, Math.min(1, mouse.x / width))
-                                        root.setSinkVolume(ratio)
-                                    }
-                                    onPositionChanged: mouse => {
-                                        if (pressed) {
-                                            const ratio = Math.max(0, Math.min(1, mouse.x / width))
-                                            root.setSinkVolume(ratio)
-                                        }
-                                    }
-                                }
-                            }
-
-                            Text {
-                                text: Math.round((root.sinkMuted ? 0 : root.sinkVolume) * 100) + "%"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.monoFontFamily
-                                font.pixelSize: 11
-                            }
-                        }
                     }
 
                     // ----------------------------------------------------

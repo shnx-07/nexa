@@ -202,12 +202,15 @@ Item {
         }
 
         Loader {
+            id: previewLoader
             anchors.fill: parent
             active: root.previewOpen
-            sourceComponent: LockSurface {
-                anchors.fill: parent
-                onAuthenticationSucceeded: {
-                    root.previewOpen = false
+            source: "LockSurface.qml"
+            onLoaded: {
+                if (item) {
+                    item.authenticationSucceeded.connect(() => {
+                        root.previewOpen = false
+                    })
                 }
             }
         }
