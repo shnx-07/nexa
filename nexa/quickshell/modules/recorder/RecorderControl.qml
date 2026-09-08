@@ -165,6 +165,16 @@ Item {
                     )
                 }
 
+                Quickshell.execDetached([
+                    "qs",
+                    "-p",
+                    Quickshell.env("HOME") + "/.config/nexa/quickshell",
+                    "ipc",
+                    "call",
+                    "nexaIsland",
+                    "refreshRecorder"
+                ])
+
                 delayedRefresh.restart()
             }
         }

@@ -15,7 +15,6 @@ Item {
     property string themeSource: ""
     property string lockWallpaperPath: ""
     property string lockWallpaperType: "image"
-    property string lockThemeSource: ""
     property string userName: ""
     property string hostName: ""
     property string uptimeText: ""
@@ -23,10 +22,10 @@ Item {
 
     function getPreviewSource(path, type, themeSource) {
         if (!path || path === "") return ""
-        if (type === "video") {
-            if (themeSource && themeSource !== "") {
-                return "file://" + themeSource
-            }
+        if (themeSource && themeSource !== "") {
+            return "file://" + themeSource
+        }
+        if (type === "video" || type === "gif") {
             const fileName = path.substring(path.lastIndexOf("/") + 1)
             return "file://" + Quickshell.env("HOME") + "/.cache/nexa/wallpapers/thumbs/" + fileName + ".jpg"
         }
@@ -41,6 +40,7 @@ Item {
         onFileChanged: reload()
         onLoaded: {
             try {
+                root.themeSource = ""
                 const text = wallpaperConfigFile.text()
                 if (text && text.length > 0) {
                     const lines = text.split("\n")
@@ -76,8 +76,6 @@ Item {
                             root.lockWallpaperPath = line.substring(10).replace(/^['"]|['"]$/g, "")
                         } else if (line.startsWith("WALLPAPER_TYPE=")) {
                             root.lockWallpaperType = line.substring(15).replace(/^['"]|['"]$/g, "")
-                        } else if (line.startsWith("THEME_SOURCE=")) {
-                            root.lockThemeSource = line.substring(13).replace(/^['"]|['"]$/g, "")
                         }
                     }
                 }
@@ -132,7 +130,7 @@ Item {
                 sourceSize.width: 500
                 sourceSize.height: 600
 
-                source: root.getPreviewSource(root.lockWallpaperPath, root.lockWallpaperType, root.lockThemeSource)
+                source: root.getPreviewSource(root.lockWallpaperPath, root.lockWallpaperType, "")
 
                 fillMode: Image.PreserveAspectCrop
                 horizontalAlignment: Image.AlignHCenter
@@ -326,14 +324,8 @@ Item {
                 "printf 'USER %s\\n' \"$(whoami)\"; ",
                 "printf 'HOST %s\\n' \"$(hostname)\"; ",
                 "printf 'UPTIME %s\\n' \"$(uptime -p | sed 's/^up //')\"; ",
-                ". \"$HOME/.config/nexa/config/wallpaper.conf\" 2>/dev/null || true; ",
-                "printf 'WALLPAPER %s\\n' \"$WALLPAPER\"; ",
-                "printf 'WALLPAPER_TYPE %s\\n' \"$WALLPAPER_TYPE\"; ",
-                "printf 'THEME_SOURCE %s\\n' \"$THEME_SOURCE\"; ",
-                ". \"$HOME/.config/nexa/config/lockscreen.conf\" 2>/dev/null || true; ",
-                "printf 'LOCK_WALLPAPER %s\\n' \"$WALLPAPER\"; ",
-                "printf 'LOCK_WALLPAPER_TYPE %s\\n' \"$WALLPAPER_TYPE\"; ",
-                "printf 'LOCK_THEME_SOURCE %s\\n' \"$THEME_SOURCE\"; ",
+                "( . \"$HOME/.config/nexa/config/wallpaper.conf\" 2>/dev/null; printf 'WALLPAPER %s\\n' \"$WALLPAPER\"; printf 'WALLPAPER_TYPE %s\\n' \"${WALLPAPER_TYPE:-image}\"; printf 'THEME_SOURCE %s\\n' \"${THEME_SOURCE:-}\"; ); ",
+                "( . \"$HOME/.config/nexa/config/lockscreen.conf\" 2>/dev/null; printf 'LOCK_WALLPAPER %s\\n' \"$WALLPAPER\"; printf 'LOCK_WALLPAPER_TYPE %s\\n' \"${WALLPAPER_TYPE:-image}\"; ); ",
                 "printf 'OS %s\\n' \"$(grep -s '^PRETTY_NAME=' /etc/os-release | cut -d= -f2 | tr -d '\"')\""
             ].join("")
         ]
@@ -376,9 +368,6 @@ Item {
                         break
                     case "LOCK_WALLPAPER_TYPE":
                         root.lockWallpaperType = value
-                        break
-                    case "LOCK_THEME_SOURCE":
-                        root.lockThemeSource = value
                         break
                     case "OS":
                         root.osInfo = value

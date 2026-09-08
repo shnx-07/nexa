@@ -888,6 +888,10 @@ PanelWindow {
             islandFocus.forceActiveFocus()
         }
 
+        function refreshRecorder(): void {
+            islandContent.refreshRecorder()
+        }
+
         function close(): void {
             root.closeIsland()
         }

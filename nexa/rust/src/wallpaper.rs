@@ -462,6 +462,11 @@ pub fn set_lock(
     // Save lock-screen state
     // --------------------------------------------------------
 
+    // Ensure thumbnail is generated for video/gif so lockscreen preview is available
+    if kind == "video" || kind == "gif" {
+        let _ = ensure_thumbnail(&path, kind);
+    }
+
     let contents =
         format!(
             "WALLPAPER={}\nWALLPAPER_TYPE={}\n",

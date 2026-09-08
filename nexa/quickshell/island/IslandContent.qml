@@ -364,6 +364,10 @@ Item {
         }
     }
 
+    function refreshRecorder() {
+        recorderModule.refreshStatus()
+    }
+
 
 
     //notifications
