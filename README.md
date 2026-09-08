@@ -6,6 +6,38 @@ NEXA is a modern, high-performance Wayland desktop environment built around **Qu
 
 ---
 
+## 📸 Showcase
+
+<div align="center">
+
+### Dynamic Island & Quick Settings Control Center
+*Fluid interactive notch hub with multi-page navigation, hardware toggles, audio mixer, and system telemetry.*
+
+<img src="assets/control_center.png" alt="NEXA Control Center & Quick Settings" width="100%" />
+
+<br/><br/>
+
+| **3D Wallpaper Carousel** | **Dynamic Island Clock & Calendar** |
+| :---: | :---: |
+| <img src="assets/wallpaper_picker.png" alt="Wallpaper Picker" width="100%" /><br/>*Real-time 3D perspective carousel with Video, GIF & Image filters* | <img src="assets/dynamic_island_clock.png" alt="Dynamic Island Clock" width="100%" /><br/>*Interactive expanded calendar, stopwatch, and focus timer* |
+
+<br/>
+
+| **Spotlight Application Launcher** | **Dynamic Theme Engine (Matugen)** |
+| :---: | :---: |
+| <img src="assets/app_launcher.png" alt="App Launcher" width="100%" /><br/>*Sub-millisecond category-filtered search & Freedesktop app launcher* | <img src="assets/theme_customizer.png" alt="Theme Customizer" width="100%" /><br/>*Dynamic Material You palette customizer, presets, and live color previews* |
+
+<br/>
+
+### Interactive Workspace Manager
+*Visual workspace overview with live Wayland window thumbnails and drag-and-drop workspace migration.*
+
+<img src="assets/workspace_manager.png" alt="NEXA Workspace Manager" width="100%" />
+
+</div>
+
+---
+
 ## ⚡ Quick Start: Automated Installation
 
 NEXA includes a fully automated, production-grade installer and uninstaller for **Arch Linux** and **CachyOS**.
@@ -159,9 +191,15 @@ If you prefer installing dependencies manually or want a complete breakdown:
 * **Integrated Controls & Scrubber:** High-precision seekbar with monospace timestamps, hero play/pause button, shuffle/loop toggles, and an **inline system/music volume slider** right on the deck.
 * **48-Band CAVA Spectrum:** Audio-reactive visualizer spectrum across the base.
 
+### 🖼️ 3D Perspective Wallpaper Picker & Dynamic Theming Engine
+* **3D Perspective Coverflow Carousel (`Super + W`):** Hardware-accelerated 3D carousel effect presenting wallpapers with dynamic rotation, depth scaling, and smooth mouse-wheel/keyboard scrubbing.
+* **Live Format Filters:** One-click filtering tabs for Static Images, Animated GIFs, and MPV Video Wallpapers.
+* **Dynamic Palette Generation:** Powered by Matugen, applying any wallpaper instantly extracts Material You harmonic palettes and updates Quickshell, GTK, Qt, Kvantum, KDE Globals, and terminal themes across the system in real time.
+* **Visual Theme Customizer:** Fine-tune accent tones, toggle light/dark modes, and switch between curated color palettes with real-time live preview.
+
 ### 📱 Modern App Launcher & Workspace Manager
-* **App Launcher:** High-density 2-column grid layout with fluid spring entrance motion and category chips (`Super + A`).
-* **Workspace Manager:** Fullscreen overview with live Wayland window previews and candidate drop targets (`Super + Tab` / `Super + Shift + W`).
+* **App Launcher (`Super + A`):** High-density 2-column grid layout with fluid spring entrance motion, category chips (Development, Media, Office, Utilities), and sub-millisecond search.
+* **Workspace Manager (`Super + Tab` / `Super + Shift + W`):** Fullscreen visual workspace overview with live Wayland window previews and candidate drop targets.
 * **Window Rules:** Automatic Picture-in-Picture sticky pinning, centered lower floating file managers (Dolphin, Nemo, Yazi), and automatic floating of file dialogs/modals.
 * **Universal Terminal & Floating Scratchpad Controls:**
   * **Tiled Terminal (`Super + Return`):** Spawns a standard tiled terminal window on the active workspace.
