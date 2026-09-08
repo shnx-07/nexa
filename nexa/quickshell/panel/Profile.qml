@@ -14,10 +14,24 @@ Item {
     property string wallpaperType: "image"
     property string themeSource: ""
     property string lockWallpaperPath: ""
+    property string lockWallpaperType: "image"
+    property string lockThemeSource: ""
     property string userName: ""
     property string hostName: ""
     property string uptimeText: ""
     property string osInfo: ""
+
+    function getPreviewSource(path, type, themeSource) {
+        if (!path || path === "") return ""
+        if (type === "video") {
+            if (themeSource && themeSource !== "") {
+                return "file://" + themeSource
+            }
+            const fileName = path.substring(path.lastIndexOf("/") + 1)
+            return "file://" + Quickshell.env("HOME") + "/.cache/nexa/wallpapers/thumbs/" + fileName + ".jpg"
+        }
+        return "file://" + path
+    }
 
     // Live FileView watcher for dynamic wallpaper changes
     FileView {
@@ -38,6 +52,32 @@ Item {
                             root.wallpaperType = line.substring(15).replace(/^['"]|['"]$/g, "")
                         } else if (line.startsWith("THEME_SOURCE=")) {
                             root.themeSource = line.substring(13).replace(/^['"]|['"]$/g, "")
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+    }
+
+    // Live FileView watcher for dynamic lockscreen wallpaper changes
+    FileView {
+        id: lockscreenConfigFile
+        path: Quickshell.env("HOME") + "/.config/nexa/config/lockscreen.conf"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const text = lockscreenConfigFile.text()
+                if (text && text.length > 0) {
+                    const lines = text.split("\n")
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim()
+                        if (line.startsWith("WALLPAPER=")) {
+                            root.lockWallpaperPath = line.substring(10).replace(/^['"]|['"]$/g, "")
+                        } else if (line.startsWith("WALLPAPER_TYPE=")) {
+                            root.lockWallpaperType = line.substring(15).replace(/^['"]|['"]$/g, "")
+                        } else if (line.startsWith("THEME_SOURCE=")) {
+                            root.lockThemeSource = line.substring(13).replace(/^['"]|['"]$/g, "")
                         }
                     }
                 }
@@ -84,6 +124,7 @@ Item {
                 }
             }
 
+            // Lockscreen Static Wallpaper Preview (0% CPU - purely static picture for image, gif, and video)
             Image {
                 id: lockImage
                 anchors.fill: parent
@@ -91,20 +132,18 @@ Item {
                 sourceSize.width: 500
                 sourceSize.height: 600
 
-                source: root.lockWallpaperPath !== ""
-                    ? "file://" + root.lockWallpaperPath
-                    : ""
+                source: root.getPreviewSource(root.lockWallpaperPath, root.lockWallpaperType, root.lockThemeSource)
 
                 fillMode: Image.PreserveAspectCrop
                 horizontalAlignment: Image.AlignHCenter
                 verticalAlignment: Image.AlignVCenter
 
                 asynchronous: true
-                cache: false
+                cache: true
                 smooth: true
             }
 
-            // Interactive hover
+            // Interactive hover (unclickable)
             MouseArea {
                 id: lockMouse
                 anchors.fill: parent
@@ -142,7 +181,7 @@ Item {
                 }
             }
 
-            // Desktop Wallpaper Image
+            // Desktop Wallpaper Static Preview (0% CPU - purely static picture for image, gif, and video)
             Image {
                 id: wallpaperImage
                 anchors.fill: parent
@@ -150,19 +189,14 @@ Item {
                 sourceSize.width: 900
                 sourceSize.height: 500
 
-                source: {
-                    if (root.wallpaperType === "video") {
-                        return root.themeSource !== "" ? ("file://" + root.themeSource) : ""
-                    }
-                    return root.wallpaperPath !== "" ? ("file://" + root.wallpaperPath) : ""
-                }
+                source: root.getPreviewSource(root.wallpaperPath, root.wallpaperType, root.themeSource)
 
                 fillMode: Image.PreserveAspectCrop
                 horizontalAlignment: Image.AlignHCenter
                 verticalAlignment: Image.AlignVCenter
 
                 asynchronous: true
-                cache: false
+                cache: true
                 smooth: true
             }
 
@@ -298,6 +332,8 @@ Item {
                 "printf 'THEME_SOURCE %s\\n' \"$THEME_SOURCE\"; ",
                 ". \"$HOME/.config/nexa/config/lockscreen.conf\" 2>/dev/null || true; ",
                 "printf 'LOCK_WALLPAPER %s\\n' \"$WALLPAPER\"; ",
+                "printf 'LOCK_WALLPAPER_TYPE %s\\n' \"$WALLPAPER_TYPE\"; ",
+                "printf 'LOCK_THEME_SOURCE %s\\n' \"$THEME_SOURCE\"; ",
                 "printf 'OS %s\\n' \"$(grep -s '^PRETTY_NAME=' /etc/os-release | cut -d= -f2 | tr -d '\"')\""
             ].join("")
         ]
@@ -337,6 +373,12 @@ Item {
                         break
                     case "LOCK_WALLPAPER":
                         root.lockWallpaperPath = value
+                        break
+                    case "LOCK_WALLPAPER_TYPE":
+                        root.lockWallpaperType = value
+                        break
+                    case "LOCK_THEME_SOURCE":
+                        root.lockThemeSource = value
                         break
                     case "OS":
                         root.osInfo = value
