@@ -476,7 +476,6 @@ pub fn set_lock(
             kind
         );
 
-
     fs::write(
         &config,
         contents
