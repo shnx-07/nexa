@@ -11,8 +11,29 @@ local music = MUSIC or "spotify"
 -- ============================================================
 -- Terminal & Floating Scratchpad Controls (Universal Terminal Support)
 -- ============================================================
--- 1. Normal Tiled Terminal
-hl.bind(MOD .. " + Return", hl.dsp.exec_cmd(terminal))
+
+local function is_special_terminal_open()
+	local active_special = hl.get_active_special_workspace()
+	if active_special then
+		local name = tostring(active_special.name or active_special)
+		if name:find("terminal") ~= nil then
+			return true
+		end
+	end
+	local cur_win = hl.get_active_window()
+	if cur_win and cur_win.workspace and tostring(cur_win.workspace.name or ""):find("special:terminal") ~= nil then
+		return true
+	end
+	return false
+end
+
+-- 1. Normal Tiled Terminal (ignored when special terminal is on screen)
+hl.bind(MOD .. " + Return", function()
+	if is_special_terminal_open() then
+		return
+	end
+	hl.dispatch(hl.dsp.exec_cmd(terminal))
+end)
 
 -- 2. Toggle Float for Active Terminal (Only if focus is on that terminal)
 hl.bind(MOD .. " + SHIFT + T", function()
@@ -34,8 +55,7 @@ end)
 local previous_window_addr = nil
 
 hl.bind(MOD .. " + SHIFT + Return", function()
-	local active_special = hl.get_active_special_workspace()
-	local is_open = active_special and (tostring(active_special.name or active_special):find("terminal") ~= nil)
+	local is_open = is_special_terminal_open()
 
 	if is_open then
 		-- A. Close / Hide the scratchpad terminal
@@ -129,6 +149,9 @@ hl.bind("SUPER + L", hl.dsp.global("nexa:lock"))
 -- Clipboard
 hl.bind(MOD .. " + V", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call clipboard toggle"))
 
+-- File Shelf / Tray
+hl.bind(MOD .. " + SHIFT + F", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call fileShelf toggle"))
+
 -- Window Management
 hl.bind(MOD .. " + Q", hl.dsp.window.close())
 hl.bind(MOD .. " + SHIFT + Q", hl.dsp.window.kill())
@@ -140,25 +163,28 @@ hl.bind(MOD .. " + P", hl.dsp.window.pseudo())
 hl.bind(MOD .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(MOD .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- Focus (Vim HJKL + Arrow keys)
-hl.bind(MOD .. " + h", hl.dsp.focus({ direction = "left" }))
-hl.bind(MOD .. " + j", hl.dsp.focus({ direction = "down" }))
-hl.bind(MOD .. " + k", hl.dsp.focus({ direction = "up" }))
-hl.bind(MOD .. " + l", hl.dsp.focus({ direction = "right" }))
+-- Focus (Arrow keys)
 hl.bind(MOD .. " + left", hl.dsp.focus({ direction = "left" }))
 hl.bind(MOD .. " + right", hl.dsp.focus({ direction = "right" }))
 hl.bind(MOD .. " + up", hl.dsp.focus({ direction = "up" }))
 hl.bind(MOD .. " + down", hl.dsp.focus({ direction = "down" }))
+-- Vim-style focus (uncomment to enable):
+-- hl.bind(MOD .. " + h", hl.dsp.focus({ direction = "left" }))
+-- hl.bind(MOD .. " + j", hl.dsp.focus({ direction = "down" }))
+-- hl.bind(MOD .. " + k", hl.dsp.focus({ direction = "up" }))
+-- hl.bind(MOD .. " + l", hl.dsp.focus({ direction = "right" }))
+-- WARNING: SUPER + L is currently assigned to Lock Screen (nexa:lock). You must remap or change the lock screen shortcut for this to work.
 
--- Move Window (SHIFT + Vim HJKL + Arrow keys)
-hl.bind(MOD .. " + SHIFT + h", hl.dsp.window.move({ direction = "left" }))
-hl.bind(MOD .. " + SHIFT + j", hl.dsp.window.move({ direction = "down" }))
-hl.bind(MOD .. " + SHIFT + k", hl.dsp.window.move({ direction = "up" }))
-hl.bind(MOD .. " + SHIFT + l", hl.dsp.window.move({ direction = "right" }))
+-- Move Window (SHIFT + Arrow keys)
 hl.bind(MOD .. " + SHIFT + left", hl.dsp.window.move({ direction = "left" }))
 hl.bind(MOD .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" }))
 hl.bind(MOD .. " + SHIFT + up", hl.dsp.window.move({ direction = "up" }))
 hl.bind(MOD .. " + SHIFT + down", hl.dsp.window.move({ direction = "down" }))
+-- Vim-style move window (uncomment to enable):
+-- hl.bind(MOD .. " + SHIFT + h", hl.dsp.window.move({ direction = "left" }))
+-- hl.bind(MOD .. " + SHIFT + j", hl.dsp.window.move({ direction = "down" }))
+-- hl.bind(MOD .. " + SHIFT + k", hl.dsp.window.move({ direction = "up" }))
+-- hl.bind(MOD .. " + SHIFT + l", hl.dsp.window.move({ direction = "right" }))
 
 -- Workspace Access (1-10)
 for workspace = 1, 10 do
@@ -258,7 +284,8 @@ hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tru
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 
 -- Session Control
-hl.bind(MOD .. " + Escape", hl.dsp.exec_cmd("wlogout || hyprshutdown"))
+-- hl.bind(MOD .. " + Escape", hl.dsp.exec_cmd("wlogout || hyprshutdown"))
+hl.bind(MOD .. " + Escape", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland togglePower"))
 hl.bind(MOD .. " + SHIFT + M", hl.dsp.exit())
 hl.bind(MOD .. " + SHIFT + P", hl.dsp.exec_cmd("systemctl poweroff"))
 hl.bind(MOD .. " + SHIFT + R", hl.dsp.exec_cmd("systemctl reboot"))

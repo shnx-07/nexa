@@ -74,6 +74,16 @@ Item {
             root.shadowOpacity
         )
         cornerRadius: root.cornerRadius + root.glowRadius
+
+        // The glow is a procedural shader, not a texture sample, so
+        // by default it re-runs on the GPU every frame it's marked
+        // dirty — including every frame of a parent's opacity/scale
+        // fade (popup/tooltip open-close), even though the shadow's
+        // own shape never actually changes during that fade.
+        // `cached: true` rasterizes it once and only re-renders when
+        // its own inputs (size/color/elevation) change, so it just
+        // rides along as a cheap composited layer during motion.
+        cached: true
     }
 }
 

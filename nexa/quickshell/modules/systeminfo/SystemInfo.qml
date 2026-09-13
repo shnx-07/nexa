@@ -400,7 +400,7 @@ Item {
                                 implicitWidth: cpuTempRow.implicitWidth + 10
                                 implicitHeight: 18
                                 radius: 9
-                                color: root.cpuTemp > 75 ? Qt.rgba(0.9, 0.2, 0.2, 0.2) : (root.cpuTemp > 58 ? Qt.rgba(0.9, 0.6, 0.1, 0.2) : Nexa.Theme.surfaceContainerHighest)
+                                color: root.cpuTemp > 75 ? Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.2) : (root.cpuTemp > 58 ? Qt.rgba(Nexa.Theme.warning.r, Nexa.Theme.warning.g, Nexa.Theme.warning.b, 0.2) : Nexa.Theme.surfaceContainerHighest)
 
                                 Row {
                                     id: cpuTempRow
@@ -408,7 +408,7 @@ Item {
                                     spacing: 3
                                     Text {
                                         text: "󰍛"
-                                        color: root.cpuTemp > 75 ? "#EF4444" : (root.cpuTemp > 58 ? "#F59E0B" : Nexa.Theme.primary)
+                                        color: root.cpuTemp > 75 ? Nexa.Theme.error : (root.cpuTemp > 58 ? Nexa.Theme.warning : Nexa.Theme.primary)
                                         font.family: Nexa.Theme.iconFontFamily
                                         font.pixelSize: 11
                                     }
@@ -978,13 +978,13 @@ Item {
                                         implicitWidth: 16
                                         implicitHeight: 16
                                         radius: 8
-                                        color: killMouse.containsMouse ? Qt.rgba(0.9, 0.2, 0.2, 0.35) : "transparent"
+                                        color: killMouse.containsMouse ? Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.35) : "transparent"
                                         visible: hoverHandler.hovered
 
                                         Text {
                                             anchors.centerIn: parent
                                             text: "󰅙"
-                                            color: killMouse.containsMouse ? "#EF4444" : Nexa.Theme.mutedText
+                                            color: killMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
                                             font.family: Nexa.Theme.iconFontFamily
                                             font.pixelSize: 11
                                         }
@@ -1070,7 +1070,7 @@ Item {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             radius: Nexa.Theme.radiusSm
-                            color: trimFeedbackTimer.running ? Qt.rgba(0.2, 0.8, 0.4, 0.25) : (trimMouse.containsMouse ? Nexa.Theme.secondary : Nexa.Theme.surfaceContainerHighest)
+                            color: trimFeedbackTimer.running ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.25) : (trimMouse.containsMouse ? Nexa.Theme.secondary : Nexa.Theme.surfaceContainerHighest)
 
                             Behavior on color {
                                 ColorAnimation { duration: 150 }
@@ -1082,14 +1082,14 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: trimFeedbackTimer.running ? "󰄬" : "󰃢"
-                                    color: trimFeedbackTimer.running ? "#10B981" : (trimMouse.containsMouse ? Nexa.Theme.onSecondary : Nexa.Theme.secondary)
+                                    color: trimFeedbackTimer.running ? Nexa.Theme.success : (trimMouse.containsMouse ? Nexa.Theme.onSecondary : Nexa.Theme.secondary)
                                     font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: Nexa.Theme.iconSm
                                 }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: trimFeedbackTimer.running ? "Trimmed!" : "Trim RAM"
-                                    color: trimFeedbackTimer.running ? "#10B981" : (trimMouse.containsMouse ? Nexa.Theme.onSecondary : Nexa.Theme.text)
+                                    color: trimFeedbackTimer.running ? Nexa.Theme.success : (trimMouse.containsMouse ? Nexa.Theme.onSecondary : Nexa.Theme.text)
                                     font.family: Nexa.Theme.fontFamily
                                     font.pixelSize: Nexa.Theme.fontSizeXs
                                     font.weight: Nexa.Theme.fontWeightMedium

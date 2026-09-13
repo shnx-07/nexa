@@ -60,6 +60,20 @@ PanelWindow {
     property string applyTarget: "Background"
     property bool applyMenuOpen: false
 
+    // Slideshow state
+    readonly property string slideshowConfigFile:
+        homeDir + "/.config/nexa/config/slideshow.json"
+
+    property bool slideshowEnabled: false
+    property bool slideshowPaused: false
+    property string slideshowInterval: "10m"
+    property string slideshowType: "All"
+    property string slideshowTarget: "Background"
+
+    property bool slideshowTimerMenuOpen: false
+    property bool slideshowTypeMenuOpen: false
+    property bool slideshowTargetMenuOpen: false
+
     // ---------------------------------------------------------
     // Carousel geometry
     // ---------------------------------------------------------
@@ -303,6 +317,12 @@ PanelWindow {
       if (applying)
           return
 
+      if (slideshowEnabled && !slideshowPaused) {
+          statusText = "Slideshow is active. Pause slideshow to apply static wallpaper."
+          statusClearTimer.restart()
+          return
+      }
+
       if (
           view.currentIndex < 0 ||
           view.currentIndex >= wallpaperModel.count
@@ -412,7 +432,82 @@ PanelWindow {
         )
     }
 
+    function closeAllSlideshowMenus() {
+        slideshowTimerMenuOpen = false
+        slideshowTypeMenuOpen = false
+        slideshowTargetMenuOpen = false
+    }
+
+    function parseSlideshowConfig(raw) {
+        if (!raw || raw.trim() === "")
+            return
+        try {
+            const data = JSON.parse(raw)
+            root.slideshowEnabled = !!data.enabled
+            root.slideshowPaused = !!data.paused
+            if (data.interval) root.slideshowInterval = data.interval
+            if (data.type_filter) root.slideshowType = data.type_filter
+            if (data.apply_target) root.slideshowTarget = data.apply_target
+        } catch (e) {
+            console.log("[WallpaperView] Error parsing slideshow config:", e)
+        }
+    }
+
+    function saveSlideshowState(enabled, paused, interval, typeFilter, target) {
+        root.slideshowEnabled = enabled
+        root.slideshowPaused = paused
+        root.slideshowInterval = interval
+        root.slideshowType = typeFilter
+        root.slideshowTarget = target
+
+        Quickshell.execDetached([
+            nexad,
+            "wallpaper",
+            "slideshow",
+            "set",
+            "--enabled", enabled ? "true" : "false",
+            "--paused", paused ? "true" : "false",
+            "--interval", interval,
+            "--type", typeFilter,
+            "--target", target
+        ])
+    }
+
+    function toggleSlideshowEnabled() {
+        root.closeAllSlideshowMenus()
+        const newEnabled = !root.slideshowEnabled
+        const newPaused = newEnabled ? false : root.slideshowPaused
+        root.saveSlideshowState(newEnabled, newPaused, root.slideshowInterval, root.slideshowType, root.slideshowTarget)
+        if (newEnabled) {
+            root.triggerSlideshowNext()
+        }
+    }
+
+    function toggleSlideshowPaused() {
+        root.closeAllSlideshowMenus()
+        if (!root.slideshowEnabled)
+            return
+        root.saveSlideshowState(root.slideshowEnabled, !root.slideshowPaused, root.slideshowInterval, root.slideshowType, root.slideshowTarget)
+    }
+
+    function triggerSlideshowNext() {
+        root.closeAllSlideshowMenus()
+        root.statusText = "Switching slideshow wallpaper..."
+        statusClearTimer.restart()
+        Quickshell.execDetached([
+            nexad,
+            "wallpaper",
+            "slideshow",
+            "next"
+        ])
+    }
+
     function handleEscape() {
+        if (slideshowTimerMenuOpen || slideshowTypeMenuOpen || slideshowTargetMenuOpen) {
+            closeAllSlideshowMenus()
+            return
+        }
+
         if (applyMenuOpen) {
             applyMenuOpen = false
             return
@@ -451,6 +546,23 @@ PanelWindow {
         onTriggered: {
             root.applying = false
             root.closeWallpaper()
+        }
+    }
+
+    Timer {
+        id: statusClearTimer
+        interval: 3500
+        repeat: false
+        onTriggered: {
+            root.statusText = ""
+        }
+    }
+
+    FileView {
+        id: slideshowConfigFileView
+        path: root.slideshowConfigFile
+        onLoaded: {
+            root.parseSlideshowConfig(text())
         }
     }
 
@@ -510,7 +622,7 @@ PanelWindow {
         anchors.fill: parent
         z: -100
 
-        color: "#59000000"
+        color: NTheme.Theme.scrim
 
         MouseArea {
             anchors.fill: parent
@@ -800,7 +912,7 @@ PanelWindow {
 
                     Rectangle {
                         anchors.fill: parent
-                        color: "#000000"
+                        color: NTheme.Theme.surfaceContainerLowest
                     }
 
                     // -------------------------------------------------
@@ -1209,7 +1321,7 @@ PanelWindow {
                                 implicitWidth: 6
                                 implicitHeight: 6
                                 radius: 3
-                                color: cardRoot.isVideo ? "#EF4444" : (cardRoot.isGif ? "#F59E0B" : NTheme.Theme.primary)
+                                color: cardRoot.isVideo ? NTheme.Theme.error : (cardRoot.isGif ? NTheme.Theme.warning : NTheme.Theme.primary)
                             }
 
                             Text {
@@ -1256,11 +1368,25 @@ PanelWindow {
     }
 
     // ---------------------------------------------------------
-    // Bottom floating filter bar
+    // Dismiss Menu Backdrop MouseArea
     // ---------------------------------------------------------
 
-    Rectangle {
-        id: filterBar
+    MouseArea {
+        anchors.fill: parent
+        z: 450
+        enabled: root.applyMenuOpen || root.slideshowTimerMenuOpen || root.slideshowTypeMenuOpen || root.slideshowTargetMenuOpen
+        onClicked: {
+            root.applyMenuOpen = false
+            root.closeAllSlideshowMenus()
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Bottom floating controls row
+    // ---------------------------------------------------------
+
+    Row {
+        id: bottomControlsRow
 
         anchors {
             horizontalCenter:
@@ -1273,7 +1399,15 @@ PanelWindow {
                 18
         }
 
-        z: 100
+        spacing: 14
+        z: 500
+
+        // ---------------------------------------------------------
+        // Bottom floating filter bar
+        // ---------------------------------------------------------
+
+        Rectangle {
+            id: filterBar
 
         height: 56
 
@@ -1715,15 +1849,575 @@ PanelWindow {
                             Qt.PointingHandCursor
 
 
-                        onClicked:
+                        onClicked: {
+                            root.closeAllSlideshowMenus()
                             root.applyMenuOpen =
                                 !root.applyMenuOpen
+                        }
                     }
                 }
             }
         }
     }
 
+    // ---------------------------------------------------------
+    // Bottom floating slideshow bar
+    // ---------------------------------------------------------
+
+        Rectangle {
+            id: slideshowBar
+
+            height: 56
+            width: slideshowRow.implicitWidth + 24
+            radius: NTheme.Theme.radiusLg
+
+            color: Qt.rgba(
+                NTheme.Theme.surface.r,
+                NTheme.Theme.surface.g,
+                NTheme.Theme.surface.b,
+                0.92
+            )
+
+            border.width: 1
+            border.color: Qt.rgba(
+                NTheme.Theme.outline.r,
+                NTheme.Theme.outline.g,
+                NTheme.Theme.outline.b,
+                0.55
+            )
+
+            Row {
+                id: slideshowRow
+                anchors.centerIn: parent
+                spacing: 8
+
+                // 1. ON/OFF (APPLY) TOGGLE BUTTON
+                Rectangle {
+                    id: slideshowToggleBtn
+                    height: 40
+                    width: toggleContentRow.implicitWidth + 22
+                    radius: NTheme.Theme.radiusSm
+
+                    color: root.slideshowEnabled
+                        ? NTheme.Theme.selectedOverlay
+                        : (toggleMouse.containsMouse ? NTheme.Theme.hover : "transparent")
+
+                    border.width: root.slideshowEnabled ? 1 : 0
+                    border.color: NTheme.Theme.primary
+
+                    scale: toggleMouse.pressed ? 0.95 : (toggleMouse.containsMouse ? 1.03 : 1.0)
+
+                    Behavior on color {
+                        ColorAnimation { duration: NTheme.Theme.animationFast }
+                    }
+                    Behavior on scale {
+                        NumberAnimation { duration: NTheme.Theme.animationFast; easing.type: NTheme.Theme.easingEmphasized }
+                    }
+
+                    Row {
+                        id: toggleContentRow
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 8
+                            height: 8
+                            radius: 4
+                            color: root.slideshowEnabled
+                                ? (root.slideshowPaused ? NTheme.Theme.warning : NTheme.Theme.success)
+                                : NTheme.Theme.mutedText
+                        }
+
+                        Text {
+                            text: "Slideshow: " + (root.slideshowEnabled ? "ON" : "OFF")
+                            color: root.slideshowEnabled ? NTheme.Theme.primary : NTheme.Theme.mutedText
+                            font.family: NTheme.Theme.uiFont
+                            font.pixelSize: NTheme.Theme.fontSizeSm
+                            font.weight: root.slideshowEnabled ? Font.DemiBold : Font.Normal
+                        }
+                    }
+
+                    MouseArea {
+                        id: toggleMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.toggleSlideshowEnabled()
+                    }
+                }
+
+                // DIVIDER
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 1
+                    height: 24
+                    color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.35)
+                }
+
+                // 2. TIMER DROPDOWN
+                Item {
+                    id: slideshowTimerControl
+                    width: timerBtnRow.implicitWidth + 20
+                    height: 40
+
+                    // DROP-UP MENU
+                    Rectangle {
+                        id: timerMenu
+                        anchors {
+                            horizontalCenter: parent.horizontalCenter
+                            bottom: parent.top
+                            bottomMargin: 8
+                        }
+                        z: 600
+                        width: 108
+                        height: 5 * 34 + 12
+                        visible: root.slideshowTimerMenuOpen
+                        radius: NTheme.Theme.radiusMd
+                        color: Qt.rgba(NTheme.Theme.surface.r, NTheme.Theme.surface.g, NTheme.Theme.surface.b, 0.96)
+                        border.width: 1
+                        border.color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.55)
+
+                        Column {
+                            anchors { fill: parent; margins: 6 }
+                            spacing: 2
+
+                            Repeater {
+                                model: ["5m", "10m", "15m", "30m", "1h"]
+                                delegate: Rectangle {
+                                    required property string modelData
+                                    readonly property bool active: root.slideshowInterval === modelData
+
+                                    width: parent.width
+                                    height: 32
+                                    radius: NTheme.Theme.radiusSm
+                                    color: itemMouse.containsMouse ? NTheme.Theme.hover : (active ? NTheme.Theme.selectedOverlay : "transparent")
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: modelData
+                                        color: parent.active ? NTheme.Theme.primary : NTheme.Theme.text
+                                        font.family: NTheme.Theme.uiFont
+                                        font.pixelSize: NTheme.Theme.fontSizeSm
+                                        font.weight: parent.active ? Font.DemiBold : Font.Normal
+                                    }
+
+                                    MouseArea {
+                                        id: itemMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, modelData, root.slideshowType, root.slideshowTarget)
+                                            root.slideshowTimerMenuOpen = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // TIMER BUTTON
+                    Rectangle {
+                        id: timerBtn
+                        anchors.fill: parent
+                        radius: NTheme.Theme.radiusSm
+                        color: timerBtnMouse.containsMouse || root.slideshowTimerMenuOpen ? NTheme.Theme.hover : "transparent"
+
+                        Row {
+                            id: timerBtnRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: "Timer:"
+                                color: NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeSm
+                            }
+
+                            Text {
+                                text: root.slideshowInterval
+                                color: root.slideshowTimerMenuOpen ? NTheme.Theme.primary : NTheme.Theme.text
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                font.weight: Font.DemiBold
+                            }
+
+                            Text {
+                                text: root.slideshowTimerMenuOpen ? "▾" : "▴"
+                                color: root.slideshowTimerMenuOpen ? NTheme.Theme.primary : NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeXs
+                            }
+                        }
+
+                        MouseArea {
+                            id: timerBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.applyMenuOpen = false
+                                root.slideshowTypeMenuOpen = false
+                                root.slideshowTargetMenuOpen = false
+                                root.slideshowTimerMenuOpen = !root.slideshowTimerMenuOpen
+                            }
+                        }
+                    }
+                }
+
+                // DIVIDER
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 1
+                    height: 24
+                    color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.35)
+                }
+
+                // 3. START/PAUSE & NEXT PLAYBACK CONTROLS
+                Row {
+                    spacing: 4
+                    opacity: root.slideshowEnabled ? 1.0 : 0.45
+
+                    // PLAY / PAUSE BUTTON
+                    Rectangle {
+                        id: playPauseBtn
+                        height: 40
+                        width: playPauseRow.implicitWidth + 18
+                        radius: NTheme.Theme.radiusSm
+                        color: root.slideshowPaused
+                            ? (playPauseMouse.containsMouse ? NTheme.Theme.hover : Qt.rgba(1, 0.8, 0, 0.15))
+                            : (playPauseMouse.containsMouse ? NTheme.Theme.hover : "transparent")
+
+                        Row {
+                            id: playPauseRow
+                            anchors.centerIn: parent
+                            spacing: 5
+
+                            Text {
+                                text: root.slideshowPaused ? "▶" : "⏸"
+                                color: root.slideshowPaused ? NTheme.Theme.warning : NTheme.Theme.primary
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeSm
+                            }
+
+                            Text {
+                                text: root.slideshowPaused ? "Start" : "Pause"
+                                color: root.slideshowPaused ? NTheme.Theme.warning : NTheme.Theme.text
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                font.weight: Font.DemiBold
+                            }
+                        }
+
+                        MouseArea {
+                            id: playPauseMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: root.slideshowEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: {
+                                if (root.slideshowEnabled) {
+                                    root.toggleSlideshowPaused()
+                                }
+                            }
+                        }
+                    }
+
+                    // NEXT BUTTON
+                    Rectangle {
+                        id: nextBtn
+                        height: 40
+                        width: nextRow.implicitWidth + 18
+                        radius: NTheme.Theme.radiusSm
+                        color: nextMouse.containsMouse ? NTheme.Theme.hover : "transparent"
+                        scale: nextMouse.pressed ? 0.95 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation { duration: NTheme.Theme.animationFast; easing.type: NTheme.Theme.easingEmphasized }
+                        }
+
+                        Row {
+                            id: nextRow
+                            anchors.centerIn: parent
+                            spacing: 5
+
+                            Text {
+                                text: "⏭"
+                                color: NTheme.Theme.primary
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeSm
+                            }
+
+                            Text {
+                                text: "Next"
+                                color: NTheme.Theme.text
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                font.weight: Font.DemiBold
+                            }
+                        }
+
+                        MouseArea {
+                            id: nextMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: root.slideshowEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: {
+                                if (root.slideshowEnabled) {
+                                    root.triggerSlideshowNext()
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // DIVIDER
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 1
+                    height: 24
+                    color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.35)
+                }
+
+                // 4. TYPE FILTER DROPDOWN
+                Item {
+                    id: slideshowTypeControl
+                    width: typeBtnRow.implicitWidth + 20
+                    height: 40
+
+                    // DROP-UP MENU
+                    Rectangle {
+                        id: typeMenu
+                        anchors {
+                            horizontalCenter: parent.horizontalCenter
+                            bottom: parent.top
+                            bottomMargin: 8
+                        }
+                        z: 600
+                        width: 120
+                        height: 4 * 34 + 12
+                        visible: root.slideshowTypeMenuOpen
+                        radius: NTheme.Theme.radiusMd
+                        color: Qt.rgba(NTheme.Theme.surface.r, NTheme.Theme.surface.g, NTheme.Theme.surface.b, 0.96)
+                        border.width: 1
+                        border.color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.55)
+
+                        Column {
+                            anchors { fill: parent; margins: 6 }
+                            spacing: 2
+
+                            Repeater {
+                                model: ["All", "Image", "GIF", "Video"]
+                                delegate: Rectangle {
+                                    required property string modelData
+                                    readonly property bool active: root.slideshowType === modelData
+
+                                    width: parent.width
+                                    height: 32
+                                    radius: NTheme.Theme.radiusSm
+                                    color: typeItemMouse.containsMouse ? NTheme.Theme.hover : (active ? NTheme.Theme.selectedOverlay : "transparent")
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: modelData
+                                        color: parent.active ? NTheme.Theme.primary : NTheme.Theme.text
+                                        font.family: NTheme.Theme.uiFont
+                                        font.pixelSize: NTheme.Theme.fontSizeSm
+                                        font.weight: parent.active ? Font.DemiBold : Font.Normal
+                                    }
+
+                                    MouseArea {
+                                        id: typeItemMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, root.slideshowInterval, modelData, root.slideshowTarget)
+                                            root.slideshowTypeMenuOpen = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // TYPE BUTTON
+                    Rectangle {
+                        id: typeBtn
+                        anchors.fill: parent
+                        radius: NTheme.Theme.radiusSm
+                        color: typeBtnMouse.containsMouse || root.slideshowTypeMenuOpen ? NTheme.Theme.hover : "transparent"
+
+                        Row {
+                            id: typeBtnRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: "Type:"
+                                color: NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeSm
+                            }
+
+                            Text {
+                                text: root.slideshowType
+                                color: root.slideshowTypeMenuOpen ? NTheme.Theme.primary : NTheme.Theme.text
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                font.weight: Font.DemiBold
+                            }
+
+                            Text {
+                                text: root.slideshowTypeMenuOpen ? "▾" : "▴"
+                                color: root.slideshowTypeMenuOpen ? NTheme.Theme.primary : NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeXs
+                            }
+                        }
+
+                        MouseArea {
+                            id: typeBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.applyMenuOpen = false
+                                root.slideshowTimerMenuOpen = false
+                                root.slideshowTargetMenuOpen = false
+                                root.slideshowTypeMenuOpen = !root.slideshowTypeMenuOpen
+                            }
+                        }
+                    }
+                }
+
+                // DIVIDER
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 1
+                    height: 24
+                    color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.35)
+                }
+
+                // 5. APPLY TO DROPDOWN
+                Item {
+                    id: slideshowTargetControl
+                    width: targetBtnRow.implicitWidth + 20
+                    height: 40
+
+                    // DROP-UP MENU
+                    Rectangle {
+                        id: targetMenu
+                        anchors {
+                            horizontalCenter: parent.horizontalCenter
+                            bottom: parent.top
+                            bottomMargin: 8
+                        }
+                        z: 600
+                        width: 154
+                        height: 3 * 38 + 12
+                        visible: root.slideshowTargetMenuOpen
+                        radius: NTheme.Theme.radiusMd
+                        color: Qt.rgba(NTheme.Theme.surface.r, NTheme.Theme.surface.g, NTheme.Theme.surface.b, 0.96)
+                        border.width: 1
+                        border.color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.55)
+
+                        Column {
+                            anchors { fill: parent; margins: 6 }
+                            spacing: 2
+
+                            Repeater {
+                                model: ["Background", "Lock Screen", "Both"]
+                                delegate: Rectangle {
+                                    required property string modelData
+                                    readonly property bool active: root.slideshowTarget === modelData
+
+                                    width: parent.width
+                                    height: 36
+                                    radius: NTheme.Theme.radiusSm
+                                    color: targetItemMouse.containsMouse ? NTheme.Theme.hover : (active ? NTheme.Theme.selectedOverlay : "transparent")
+
+                                    Text {
+                                        anchors {
+                                            left: parent.left
+                                            verticalCenter: parent.verticalCenter
+                                            leftMargin: 12
+                                        }
+                                        text: modelData
+                                        color: parent.active ? NTheme.Theme.primary : NTheme.Theme.text
+                                        font.family: NTheme.Theme.uiFont
+                                        font.pixelSize: NTheme.Theme.fontSizeSm
+                                        font.weight: parent.active ? Font.DemiBold : Font.Normal
+                                    }
+
+                                    MouseArea {
+                                        id: targetItemMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, root.slideshowInterval, root.slideshowType, modelData)
+                                            root.slideshowTargetMenuOpen = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // TARGET BUTTON
+                    Rectangle {
+                        id: targetBtn
+                        anchors.fill: parent
+                        radius: NTheme.Theme.radiusSm
+                        color: targetBtnMouse.containsMouse || root.slideshowTargetMenuOpen ? NTheme.Theme.hover : "transparent"
+
+                        Row {
+                            id: targetBtnRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: "Apply to:"
+                                color: NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeSm
+                            }
+
+                            Text {
+                                text: root.slideshowTarget
+                                color: root.slideshowTargetMenuOpen ? NTheme.Theme.primary : NTheme.Theme.text
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                font.weight: Font.DemiBold
+                            }
+
+                            Text {
+                                text: root.slideshowTargetMenuOpen ? "▾" : "▴"
+                                color: root.slideshowTargetMenuOpen ? NTheme.Theme.primary : NTheme.Theme.mutedText
+                                font.family: NTheme.Theme.uiFont
+                                font.pixelSize: NTheme.Theme.fontSizeXs
+                            }
+                        }
+
+                        MouseArea {
+                            id: targetBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.applyMenuOpen = false
+                                root.slideshowTimerMenuOpen = false
+                                root.slideshowTypeMenuOpen = false
+                                root.slideshowTargetMenuOpen = !root.slideshowTargetMenuOpen
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // ---------------------------------------------------------
     // Status / count pill
@@ -1735,7 +2429,7 @@ PanelWindow {
                 parent.horizontalCenter
 
             bottom:
-                filterBar.top
+                bottomControlsRow.top
 
             bottomMargin:
                 10
@@ -1796,8 +2490,15 @@ PanelWindow {
     }
 
     onVisibleChanged: {
-        if (!visible)
+        if (!visible) {
+            root.applyMenuOpen = false
+            root.closeAllSlideshowMenus()
             return
+        }
+
+        if (slideshowConfigFileView.text()) {
+            root.parseSlideshowConfig(slideshowConfigFileView.text())
+        }
 
         reload()
 

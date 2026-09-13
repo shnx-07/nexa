@@ -282,9 +282,9 @@ PopupWindow {
                                 }
                                 spacing: 3
 
-                                Rectangle { width: 5; height: 5; radius: 2.5; color: "#ff5f56" }
-                                Rectangle { width: 5; height: 5; radius: 2.5; color: "#ffbd2e" }
-                                Rectangle { width: 5; height: 5; radius: 2.5; color: "#27c93f" }
+                                Rectangle { width: 5; height: 5; radius: 2.5; color: Nexa.Theme.error }
+                                Rectangle { width: 5; height: 5; radius: 2.5; color: Nexa.Theme.warning }
+                                Rectangle { width: 5; height: 5; radius: 2.5; color: Nexa.Theme.success }
                             }
 
                             // App Icon & Title

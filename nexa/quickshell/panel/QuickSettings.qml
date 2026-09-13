@@ -712,7 +712,7 @@ Item {
                                     radius: 8
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: nightLight.enabled ? parent.width - width - 2 : 2
-                                    color: "#ffffff"
+                                    color: nightLight.enabled ? root.theme.onPrimary : root.theme.text
                                     Behavior on x { NumberAnimation { duration: root.theme.animationFast } }
                                 }
 
@@ -1018,7 +1018,7 @@ Item {
                                                         color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) < 12 ? root.theme.primary : root.theme.cardBackgroundElevated
                                                         border.width: root.theme.borderThin; border.color: root.theme.primary
                                                         Text { anchors.centerIn: parent; text: "AM"; font.pixelSize: 9; font.weight: Font.Bold
-                                                            color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) < 12 ? "#ffffff" : root.theme.primary }
+                                                            color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) < 12 ? root.theme.onPrimary : root.theme.primary }
                                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                             onClicked: { let h=parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10)||0; if(h>=12) nightLight.adjustScheduleHour("start",-12) } }
                                                     }
@@ -1027,7 +1027,7 @@ Item {
                                                         color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) >= 12 ? root.theme.primary : root.theme.cardBackgroundElevated
                                                         border.width: root.theme.borderThin; border.color: root.theme.primary
                                                         Text { anchors.centerIn: parent; text: "PM"; font.pixelSize: 9; font.weight: Font.Bold
-                                                            color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) >= 12 ? "#ffffff" : root.theme.primary }
+                                                            color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) >= 12 ? root.theme.onPrimary : root.theme.primary }
                                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                             onClicked: { let h=parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10)||0; if(h<12) nightLight.adjustScheduleHour("start",12) } }
                                                     }
@@ -1142,7 +1142,7 @@ Item {
                                                         color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) < 12 ? root.theme.primary : root.theme.cardBackgroundElevated
                                                         border.width: root.theme.borderThin; border.color: root.theme.primary
                                                         Text { anchors.centerIn: parent; text: "AM"; font.pixelSize: 9; font.weight: Font.Bold
-                                                            color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) < 12 ? "#ffffff" : root.theme.primary }
+                                                            color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) < 12 ? root.theme.onPrimary : root.theme.primary }
                                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                             onClicked: { let h=parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10)||0; if(h>=12) nightLight.adjustScheduleHour("end",-12) } }
                                                     }
@@ -1151,7 +1151,7 @@ Item {
                                                         color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) >= 12 ? root.theme.primary : root.theme.cardBackgroundElevated
                                                         border.width: root.theme.borderThin; border.color: root.theme.primary
                                                         Text { anchors.centerIn: parent; text: "PM"; font.pixelSize: 9; font.weight: Font.Bold
-                                                            color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) >= 12 ? "#ffffff" : root.theme.primary }
+                                                            color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) >= 12 ? root.theme.onPrimary : root.theme.primary }
                                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                             onClicked: { let h=parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10)||0; if(h<12) nightLight.adjustScheduleHour("end",12) } }
                                                     }

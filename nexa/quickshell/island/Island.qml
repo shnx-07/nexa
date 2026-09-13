@@ -159,6 +159,13 @@ PanelWindow {
     readonly property int controlCenterHeight: 460
 
     // ============================================================
+    // FILE SHELF / TRAY DIMENSIONS
+    // ============================================================
+
+    readonly property int shelfWidth: 580
+    readonly property int shelfHeight: 155
+
+    // ============================================================
     // OSD DIMENSIONS (UNIQUE SIZES PER NOTIFICATION TYPE)
     // ============================================================
 
@@ -756,6 +763,18 @@ PanelWindow {
         }
     }
 
+    function openShelf(): void {
+        root.enterSpecialMode("shelf")
+    }
+
+    function toggleShelf(): void {
+        if (root.specialMode === "shelf") {
+            root.closeIsland()
+        } else {
+            root.enterSpecialMode("shelf")
+        }
+    }
+
     function openQuickSettings(): void {
         root.openControlCenter(0)
     }
@@ -839,6 +858,14 @@ PanelWindow {
 
         function openPower(): void {
             root.enterSpecialMode("power")
+        }
+
+        function togglePower(): void {
+            if (root.specialMode === "power") {
+                root.closeIsland()
+            } else {
+                root.enterSpecialMode("power")
+            }
         }
 
         function openAppLauncher(): void {
@@ -976,6 +1003,23 @@ PanelWindow {
         }
     }
 
+    IpcHandler {
+        target: "fileShelf"
+
+        function open(): void {
+            root.openShelf()
+        }
+
+        function close(): void {
+            if (root.specialMode === "shelf")
+                root.closeIsland()
+        }
+
+        function toggle(): void {
+            root.toggleShelf()
+        }
+    }
+
 
     // ============================================================
     // CONTENT-DERIVED STATE
@@ -1006,6 +1050,9 @@ PanelWindow {
 
         if (root.specialMode === "controlCenter")
             return root.controlCenterWidth
+
+        if (root.specialMode === "shelf")
+            return root.shelfWidth
 
         if (root.full || root.specialModeActive)
             return root.fullWidth
@@ -1053,6 +1100,9 @@ PanelWindow {
 
         if (root.specialMode === "controlCenter")
             return root.controlCenterHeight
+
+        if (root.specialMode === "shelf")
+            return root.shelfHeight
 
         if (root.full || root.specialModeActive)
             return root.fullHeight
@@ -1166,7 +1216,7 @@ PanelWindow {
 
         windows: [root]
 
-        active: root.full || root.specialModeActive
+        active: (root.full || root.specialModeActive) && !islandContent.shelfDragInProgress
         onCleared: {
             // Keep the Island alive while a Theme popup is open.
             // The popup lives in a separate Wayland surface, so
@@ -1353,6 +1403,52 @@ PanelWindow {
             }
         }
 
+        // ========================================================
+        // DROP AREA FOR FILE SHELF (TRAY)
+        // ========================================================
+
+        DropArea {
+            id: islandDropArea
+
+            anchors.fill: parent
+
+            z: 0
+
+            onEntered: drag => {
+                if (drag.hasUrls) {
+                    root.openShelf()
+                    drag.acceptProposedAction()
+                }
+            }
+
+            onDropped: drop => {
+                if (drop.hasUrls) {
+                    root.openShelf()
+
+                    // Pass ALL dropped URLs in a single nexad call to avoid the
+                    // concurrent-write race condition that loses files when each
+                    // URL spawned its own process that overwrote shelf.json.
+                    const nexad = Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
+                    const cmd = [nexad, "shelf", "add"].concat(Array.from(drop.urls))
+                    Quickshell.execDetached(cmd)
+
+                    drop.acceptProposedAction()
+                    // Give nexad time to run gio info for each file before we close
+                    shelfAutoCloseTimer.restart()
+                }
+            }
+        }
+
+        Timer {
+            id: shelfAutoCloseTimer
+            interval: 1200
+            repeat: false
+            onTriggered: {
+                if (root.specialMode === "shelf")
+                    root.closeIsland()
+            }
+        }
+
 
         // ========================================================
         // CONTENT + KEYBOARD FOCUS
@@ -1375,6 +1471,27 @@ PanelWindow {
                 if (root.full || root.specialModeActive) {
                     root.closeIsland()
                     event.accepted = true
+                }
+            }
+
+            Keys.onPressed: event => {
+                if (root.specialMode === "power") {
+                    if (event.key === Qt.Key_1 || event.text === "1") {
+                        islandContent.triggerPowerKey(1)
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_2 || event.text === "2") {
+                        islandContent.triggerPowerKey(2)
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_3 || event.text === "3") {
+                        islandContent.triggerPowerKey(3)
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_4 || event.text === "4") {
+                        islandContent.triggerPowerKey(4)
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_5 || event.text === "5") {
+                        islandContent.triggerPowerKey(5)
+                        event.accepted = true
+                    }
                 }
             }
 

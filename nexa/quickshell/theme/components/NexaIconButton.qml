@@ -16,6 +16,7 @@ Rectangle {
     implicitWidth: Nexa.Theme.controlHeightMd
     implicitHeight: Nexa.Theme.controlHeightMd
     radius: Nexa.Theme.radiusMd
+    antialiasing: true
     opacity: interactive ? Nexa.Theme.opacityFull : Nexa.Theme.opacityDisabled
     color: selected ? Nexa.Theme.selectedSurface
                     : pressedState ? Nexa.Theme.pressed
@@ -25,6 +26,7 @@ Rectangle {
     scale: pressedState ? Nexa.Theme.pressScale
                         : hovered ? Nexa.Theme.hoverScale
                         : Nexa.Theme.normalScale
+    transformOrigin: Item.Center
 
     Text {
         anchors.centerIn: parent
@@ -36,7 +38,8 @@ Rectangle {
         Behavior on color {
             ColorAnimation {
                 duration: Nexa.Theme.motionInteraction
-                easing.type: Easing.OutCubic
+                easing.type: Nexa.Theme.easingStandard
+                easing.bezierCurve: Nexa.Theme.easingFluidCurve
             }
         }
     }
@@ -44,25 +47,33 @@ Rectangle {
     Behavior on color {
         ColorAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
     Behavior on border.color {
         ColorAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
+    // Icon buttons sit densely packed in the bar — many of them can
+    // be near the cursor at once. Scale is the most expensive of
+    // these Behaviors, so it's the one gated by reducedMotion.
     Behavior on scale {
+        enabled: !Nexa.Theme.reducedMotion
         NumberAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
     Behavior on opacity {
         NumberAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
 

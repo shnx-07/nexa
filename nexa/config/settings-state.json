@@ -1,15 +1,15 @@
 {
-  "volume": 85,
+  "volume": 100,
   "muted": false,
   "input_volume": 80,
-  "input_muted": true,
-  "brightness": 80,
-  "bluetooth_enabled": false,
+  "input_muted": false,
+  "brightness": 100,
+  "bluetooth_enabled": true,
   "wifi_enabled": true,
   "airplane_enabled": false,
-  "nightlight_enabled": false,
-  "nightlight_mode": "wallpaper",
-  "nightlight_temperature": 6500,
+  "nightlight_enabled": true,
+  "nightlight_mode": "night",
+  "nightlight_temperature": 3200,
   "screen_filter": "off",
   "dnd": false
 }

@@ -204,9 +204,9 @@ Item {
 
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
-                    GradientStop { position: 0.00; color: Qt.rgba(12/255, 16/255, 14/255, 0.94) }
-                    GradientStop { position: 0.26; color: Qt.rgba(12/255, 16/255, 14/255, 0.86) }
-                    GradientStop { position: 0.48; color: Qt.rgba(12/255, 16/255, 14/255, 0.40) }
+                    GradientStop { position: 0.00; color: Qt.rgba(Nexa.Theme.background.r, Nexa.Theme.background.g, Nexa.Theme.background.b, 0.94) }
+                    GradientStop { position: 0.26; color: Qt.rgba(Nexa.Theme.background.r, Nexa.Theme.background.g, Nexa.Theme.background.b, 0.86) }
+                    GradientStop { position: 0.48; color: Qt.rgba(Nexa.Theme.background.r, Nexa.Theme.background.g, Nexa.Theme.background.b, 0.40) }
                     GradientStop { position: 0.68; color: "transparent" }
                     GradientStop { position: 1.00; color: "transparent" }
                 }
@@ -225,7 +225,7 @@ Item {
                 // Username
                 Text {
                     text: root.userName
-                    color: "#FFFFFF"
+                    color: Nexa.Theme.text
                     font.family: Nexa.Theme.fontFamily
                     font.pixelSize: 22
                     font.weight: Nexa.Theme.fontWeightBold
@@ -236,7 +236,7 @@ Item {
                     text: (root.userName !== "" && root.hostName !== "")
                         ? (root.userName + "@" + root.hostName)
                         : ""
-                    color: "#99B0BE"
+                    color: Nexa.Theme.secondary
                     font.family: Nexa.Theme.fontFamily
                     font.pixelSize: 13
                     font.weight: Nexa.Theme.fontWeightMedium
@@ -247,7 +247,7 @@ Item {
                     text: root.uptimeText !== ""
                         ? ("Uptime ~ " + root.uptimeText)
                         : ""
-                    color: "#8EA6B4"
+                    color: Nexa.Theme.mutedText
                     font.family: Nexa.Theme.fontFamily
                     font.pixelSize: 12
                 }
@@ -257,7 +257,7 @@ Item {
                     text: root.osInfo !== ""
                         ? ("Nexa • " + root.osInfo)
                         : "Nexa Shell"
-                    color: "#6E828E"
+                    color: Nexa.Theme.mutedText
                     font.family: Nexa.Theme.fontFamily
                     font.pixelSize: 11
                 }

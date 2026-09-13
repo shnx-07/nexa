@@ -692,9 +692,9 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius: 75
-                        color: "#14151f"
+                        color: Nexa.Theme.surfaceContainerHighest
                         border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.10)
+                        border.color: Nexa.Theme.border
 
                         // Grooves
                         Repeater {
@@ -706,7 +706,7 @@ Item {
                                 radius: modelData / 2
                                 color: "transparent"
                                 border.width: 1
-                                border.color: Qt.rgba(255/255, 255/255, 255/255, 0.04)
+                                border.color: Nexa.Theme.borderSubtle
                             }
                         }
 
@@ -748,9 +748,9 @@ Item {
                         implicitWidth: idleStatusRow.implicitWidth + 18
                         implicitHeight: 24
                         radius: 12
-                        color: Qt.rgba(255/255, 255/255, 255/255, 0.06)
+                        color: Nexa.Theme.surfaceContainerLow
                         border.width: 1
-                        border.color: Qt.rgba(255/255, 255/255, 255/255, 0.08)
+                        border.color: Nexa.Theme.border
 
                         Row {
                             id: idleStatusRow
@@ -830,9 +830,9 @@ Item {
                         Rectangle {
                             anchors.fill: parent
                             radius: width / 2
-                            color: "#0f1015"
+                            color: Nexa.Theme.surfaceContainerHighest
                             border.width: 1
-                            border.color: "#282a36"
+                            border.color: Nexa.Theme.border
 
                             // Vinyl grooves
                             Repeater {
@@ -844,7 +844,7 @@ Item {
                                     radius: modelData / 2
                                     color: "transparent"
                                     border.width: 1
-                                    border.color: Qt.rgba(1, 1, 1, 0.04)
+                                    border.color: Nexa.Theme.borderSubtle
                                 }
                             }
 
@@ -879,8 +879,8 @@ Item {
                                 Rectangle {
                                     anchors.centerIn: parent
                                     width: 10; height: 10; radius: 5
-                                    color: "#090a0f"
-                                    border.width: 1; border.color: "#3a3b4a"
+                                    color: Nexa.Theme.surfaceDim
+                                    border.width: 1; border.color: Nexa.Theme.border
                                 }
                             }
 
@@ -904,7 +904,7 @@ Item {
                         radius: 18
                         color: Nexa.Theme.surfaceContainerHigh
                         border.width: 1
-                        border.color: Qt.rgba(255, 255, 255, 0.12)
+                        border.color: Nexa.Theme.border
                         clip: true
                         z: 2
                         scale: root.playing ? 1.015 : 1.0
@@ -924,7 +924,7 @@ Item {
                         Rectangle {
                             anchors.fill: parent
                             visible: root.artwork === ""
-                            color: "#14161f"
+                            color: Nexa.Theme.surfaceContainer
 
                             Column {
                                 anchors.centerIn: parent
@@ -1012,12 +1012,12 @@ Item {
                             implicitHeight: 24
                             radius: 12
                             color: root.playing
-                                ? Qt.rgba(16/255, 185/255, 129/255, 0.15)
-                                : Qt.rgba(245/255, 158/255, 11/255, 0.15)
+                                ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.18)
+                                : Qt.rgba(Nexa.Theme.warning.r, Nexa.Theme.warning.g, Nexa.Theme.warning.b, 0.18)
                             border.width: 1
                             border.color: root.playing
-                                ? Qt.rgba(16/255, 185/255, 129/255, 0.35)
-                                : Qt.rgba(245/255, 158/255, 11/255, 0.35)
+                                ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.40)
+                                : Qt.rgba(Nexa.Theme.warning.r, Nexa.Theme.warning.g, Nexa.Theme.warning.b, 0.40)
 
                             Row {
                                 id: statusPillRow
@@ -1027,7 +1027,7 @@ Item {
                                 Rectangle {
                                     width: 6; height: 6; radius: 3
                                     anchors.verticalCenter: parent.verticalCenter
-                                    color: root.playing ? "#10b981" : "#f59e0b"
+                                    color: root.playing ? Nexa.Theme.success : Nexa.Theme.warning
 
                                     SequentialAnimation on opacity {
                                         loops: Animation.Infinite
@@ -1040,7 +1040,7 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.playing ? "PLAYING" : "PAUSED"
-                                    color: root.playing ? "#34d399" : "#fbbf24"
+                                    color: root.playing ? Nexa.Theme.success : Nexa.Theme.warning
                                     font.family: Nexa.Theme.fontFamily
                                     font.pixelSize: 10
                                     font.weight: Nexa.Theme.fontWeightBold
@@ -1056,9 +1056,9 @@ Item {
                             implicitWidth: 70
                             implicitHeight: 22
                             radius: 11
-                            color: Qt.rgba(255/255, 255/255, 255/255, 0.04)
+                            color: Nexa.Theme.surfaceContainerLow
                             border.width: 1
-                            border.color: Qt.rgba(255/255, 255/255, 255/255, 0.07)
+                            border.color: Nexa.Theme.border
 
                             Text {
                                 anchors.centerIn: parent
@@ -1209,7 +1209,7 @@ Item {
                                     radius: width / 2
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: Math.max(0, Math.min(parent.width - width, (parent.width * root.displayedProgress) - width / 2))
-                                    color: "#ffffff"
+                                    color: Nexa.Theme.onPrimary
                                     border.width: 2
                                     border.color: Nexa.Theme.primary
 
@@ -1276,9 +1276,9 @@ Item {
                             implicitWidth: 38
                             implicitHeight: 38
                             radius: 19
-                            color: prevMouse.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.10) : Qt.rgba(255/255, 255/255, 255/255, 0.04)
+                            color: prevMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
                             border.width: 1
-                            border.color: Qt.rgba(255/255, 255/255, 255/255, 0.08)
+                            border.color: Nexa.Theme.border
                             scale: prevMouse.pressed ? 0.92 : 1.0
 
                             Behavior on scale { NumberAnimation { duration: 100 } }
@@ -1338,9 +1338,9 @@ Item {
                             implicitWidth: 38
                             implicitHeight: 38
                             radius: 19
-                            color: nextMouse.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.10) : Qt.rgba(255/255, 255/255, 255/255, 0.04)
+                            color: nextMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
                             border.width: 1
-                            border.color: Qt.rgba(255/255, 255/255, 255/255, 0.08)
+                            border.color: Nexa.Theme.border
                             scale: nextMouse.pressed ? 0.92 : 1.0
 
                             Behavior on scale { NumberAnimation { duration: 100 } }

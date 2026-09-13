@@ -285,10 +285,10 @@ Item {
 
     readonly property color solarColor: {
         switch (solarPhase) {
-            case "morning": return "#F59E0B"
-            case "afternoon": return "#EAB308"
-            case "evening": return "#F97316"
-            default: return "#818CF8"
+            case "morning": return Nexa.Theme.warning
+            case "afternoon": return Nexa.Theme.tertiary
+            case "evening": return Nexa.Theme.secondary
+            default: return Nexa.Theme.primary
         }
     }
 

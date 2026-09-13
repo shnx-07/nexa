@@ -613,9 +613,9 @@ Item {
             implicitWidth: dateRow.implicitWidth + 24
             implicitHeight: 32
             radius: 16
-            color: Qt.rgba(0.06, 0.08, 0.12, 0.65)
+            color: Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.65)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.08)
+            border.color: Nexa.Theme.borderSubtle
 
             Row {
                 id: dateRow
@@ -646,9 +646,9 @@ Item {
             implicitWidth: telemetryRow.implicitWidth + 24
             implicitHeight: 32
             radius: 16
-            color: Qt.rgba(0.06, 0.08, 0.12, 0.65)
+            color: Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.65)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.08)
+            border.color: Nexa.Theme.borderSubtle
 
             Row {
                 id: telemetryRow
@@ -663,7 +663,7 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.isCharging ? "󰂄" : (root.batteryPct > 20 ? "󰁹" : "󰂃")
-                        color: root.isCharging ? "#34d399" : (root.batteryPct <= 20 ? "#ef4444" : Nexa.Theme.text)
+                        color: root.isCharging ? Nexa.Theme.success : (root.batteryPct <= 20 ? Nexa.Theme.error : Nexa.Theme.text)
                         font.family: Nexa.Theme.iconFontFamily
                         font.pixelSize: 15
                     }
@@ -679,7 +679,7 @@ Item {
 
                 Rectangle {
                     width: 1; height: 12
-                    color: Qt.rgba(1, 1, 1, 0.15)
+                    color: Nexa.Theme.borderSubtle
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
@@ -889,7 +889,7 @@ Item {
                 border.width: passwordInput.activeFocus ? 2 : 1
                 border.color: passwordInput.activeFocus
                     ? Nexa.Theme.primary
-                    : Qt.rgba(1, 1, 1, 0.14)
+                    : Nexa.Theme.borderSubtle
 
                 Behavior on border.color {
                     ColorAnimation { duration: 250 }
@@ -923,7 +923,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: width / 2
-                    color: "#12131c"
+                    color: Nexa.Theme.surfaceContainerLowest
                 }
 
                 Image {
@@ -948,7 +948,7 @@ Item {
                     Text {
                         anchors.centerIn: parent
                         text: root.username.length > 0 ? root.username.charAt(0).toUpperCase() : "N"
-                        color: "#ffffff"
+                        color: Nexa.Theme.onPrimary
                         font.family: Nexa.Theme.fontFamily
                         font.pixelSize: 36
                         font.weight: Nexa.Theme.fontWeightBold
@@ -1008,7 +1008,7 @@ Item {
                 ? Nexa.Theme.error
                 : passwordInput.activeFocus
                     ? Nexa.Theme.primary
-                    : Qt.rgba(1, 1, 1, 0.12)
+                    : Nexa.Theme.borderSubtle
 
             Behavior on color {
                 ColorAnimation { duration: 150 }
@@ -1254,9 +1254,9 @@ Item {
         width: 270
         height: 52
         radius: 16
-        color: Qt.rgba(0.06, 0.08, 0.12, 0.75)
+        color: Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.75)
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.10)
+        border.color: Nexa.Theme.borderSubtle
         visible: root.hasLockMedia
         z: 25
 
@@ -1270,7 +1270,7 @@ Item {
                 Layout.preferredWidth: 38
                 Layout.preferredHeight: 38
                 radius: 10
-                color: "#161824"
+                color: Nexa.Theme.surfaceContainerHighest
                 clip: true
 
                 Image {
@@ -1320,7 +1320,7 @@ Item {
                 Layout.preferredWidth: 34
                 Layout.preferredHeight: 34
                 radius: 17
-                color: mediaBtnMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(255, 255, 255, 0.08)
+                color: mediaBtnMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.hover
 
                 Text {
                     anchors.centerIn: parent
@@ -1362,9 +1362,9 @@ Item {
             width: 38
             height: 38
             radius: 19
-            color: sleepMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0.06, 0.08, 0.12, 0.65)
+            color: sleepMouse.containsMouse ? Nexa.Theme.hoverStrong : Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.65)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.10)
+            border.color: Nexa.Theme.borderSubtle
             scale: sleepMouse.pressed ? 0.92 : 1.0
             Behavior on scale { NumberAnimation { duration: 100 } }
 
@@ -1390,9 +1390,9 @@ Item {
             width: 38
             height: 38
             radius: 19
-            color: rebootMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0.06, 0.08, 0.12, 0.65)
+            color: rebootMouse.containsMouse ? Nexa.Theme.hoverStrong : Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.65)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.10)
+            border.color: Nexa.Theme.borderSubtle
             scale: rebootMouse.pressed ? 0.92 : 1.0
             Behavior on scale { NumberAnimation { duration: 100 } }
 
@@ -1418,16 +1418,16 @@ Item {
             width: 38
             height: 38
             radius: 19
-            color: powerMouse.containsMouse ? Qt.rgba(239/255, 68/255, 68/255, 0.25) : Qt.rgba(0.06, 0.08, 0.12, 0.65)
+            color: powerMouse.containsMouse ? Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.25) : Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.65)
             border.width: 1
-            border.color: powerMouse.containsMouse ? "#ef4444" : Qt.rgba(1, 1, 1, 0.10)
+            border.color: powerMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.borderSubtle
             scale: powerMouse.pressed ? 0.92 : 1.0
             Behavior on scale { NumberAnimation { duration: 100 } }
 
             Text {
                 anchors.centerIn: parent
                 text: "󰐥"
-                color: powerMouse.containsMouse ? "#ef4444" : Nexa.Theme.text
+                color: powerMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.text
                 font.family: Nexa.Theme.iconFontFamily
                 font.pixelSize: 16
             }
@@ -1477,7 +1477,7 @@ Item {
             )
 
         border.width: Nexa.Theme.borderThin
-        border.color: Qt.rgba(255/255, 255/255, 255/255, 0.10)
+        border.color: Nexa.Theme.borderSubtle
 
         SequentialAnimation on opacity {
             loops: Animation.Infinite

@@ -28,22 +28,28 @@ ComboBox {
         font.family: Nexa.Theme.iconFontFamily
         font.pixelSize: Nexa.Theme.iconSm
         rotation: root.popup.visible ? 180 : 0
+        // Symmetric fluid rotation — no overshoot, this is a small
+        // glyph, a spring bounce on it would look noisy.
         Behavior on rotation {
+            enabled: !Nexa.Theme.reducedMotion
             NumberAnimation {
                 duration: Nexa.Theme.motionSelection
-                easing.type: Easing.InOutCubic
+                easing.type: Nexa.Theme.easingFluidInOut
+                easing.bezierCurve: Nexa.Theme.easingFluidInOutCurve
             }
         }
         Behavior on color {
             ColorAnimation {
                 duration: Nexa.Theme.animationFast
-                easing.type: Easing.OutCubic
+                easing.type: Nexa.Theme.easingStandard
+                easing.bezierCurve: Nexa.Theme.easingFluidCurve
             }
         }
     }
 
     background: Rectangle {
         radius: Nexa.Theme.radiusMd
+        antialiasing: true
         color: root.down ? Nexa.Theme.buttonBackgroundPressed
                          : root.hovered ? Nexa.Theme.buttonBackgroundHover
                          : Nexa.Theme.buttonBackground
@@ -53,13 +59,15 @@ ComboBox {
         Behavior on color {
             ColorAnimation {
                 duration: Nexa.Theme.motionInteraction
-                easing.type: Easing.OutCubic
+                easing.type: Nexa.Theme.easingStandard
+                easing.bezierCurve: Nexa.Theme.easingFluidCurve
             }
         }
         Behavior on border.color {
             ColorAnimation {
                 duration: Nexa.Theme.motionInteraction
-                easing.type: Easing.OutCubic
+                easing.type: Nexa.Theme.easingStandard
+                easing.bezierCurve: Nexa.Theme.easingFluidCurve
             }
         }
     }
@@ -80,13 +88,15 @@ ComboBox {
             Behavior on color {
                 ColorAnimation {
                     duration: Nexa.Theme.animationFast
-                    easing.type: Easing.OutCubic
+                    easing.type: Nexa.Theme.easingStandard
+                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                 }
             }
         }
 
         background: Rectangle {
             radius: Nexa.Theme.radiusSm
+            antialiasing: true
             color: root.currentIndex === index ? Nexa.Theme.selectedSurface
                                                : highlighted ? Nexa.Theme.hoverStrong
                                                : "transparent"
@@ -94,7 +104,8 @@ ComboBox {
             Behavior on color {
                 ColorAnimation {
                     duration: Nexa.Theme.animationFast
-                    easing.type: Easing.OutCubic
+                    easing.type: Nexa.Theme.easingStandard
+                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                 }
             }
         }
@@ -135,7 +146,8 @@ ComboBox {
                     from: 0
                     to: 1
                     duration: Nexa.Theme.popEnterDuration
-                    easing.type: Easing.OutCubic
+                    easing.type: Nexa.Theme.easingStandard
+                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                 }
                 NumberAnimation {
                     property: "scale"
@@ -143,13 +155,15 @@ ComboBox {
                     to: 1
                     duration: Nexa.Theme.popEnterDuration
                     easing.type: Nexa.Theme.easingEnter
+                    easing.bezierCurve: Nexa.Theme.easingSpringCurve
                 }
                 NumberAnimation {
                     property: "y"
                     from: root.height
                     to: root.height + Nexa.Theme.spacingXs
                     duration: Nexa.Theme.popEnterDuration
-                    easing.type: Easing.OutCubic
+                    easing.type: Nexa.Theme.easingStandard
+                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                 }
             }
         }

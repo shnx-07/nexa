@@ -19,6 +19,7 @@ Rectangle {
     implicitWidth: content.implicitWidth + horizontalPadding * 2
     implicitHeight: Nexa.Theme.controlHeightMd
     radius: Nexa.Theme.radiusMd
+    antialiasing: true
     opacity: interactive ? Nexa.Theme.opacityFull : Nexa.Theme.opacityDisabled
     color: selected ? Nexa.Theme.selectedSurface
                     : pressedState ? Nexa.Theme.buttonBackgroundPressed
@@ -29,6 +30,20 @@ Rectangle {
     scale: pressedState ? Nexa.Theme.pressScale
                         : hovered ? Nexa.Theme.hoverScale
                         : Nexa.Theme.normalScale
+    transformOrigin: Item.Center
+
+    // Static glass highlight — a plain gradient fill, no shader,
+    // no animation. Gives the button a touch of continuous-corner
+    // depth instead of a flat color block.
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: root.border.width
+        radius: Math.max(0, root.radius - root.border.width)
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: root.selected ? Nexa.Theme.edgeHighlightStrong : Nexa.Theme.edgeHighlight }
+            GradientStop { position: 0.6; color: "transparent" }
+        }
+    }
 
     RowLayout {
         id: content
@@ -43,7 +58,8 @@ Rectangle {
             Behavior on color {
                 ColorAnimation {
                     duration: Nexa.Theme.motionInteraction
-                    easing.type: Easing.OutCubic
+                    easing.type: Nexa.Theme.easingStandard
+                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                 }
             }
         }
@@ -57,7 +73,8 @@ Rectangle {
             Behavior on color {
                 ColorAnimation {
                     duration: Nexa.Theme.motionInteraction
-                    easing.type: Easing.OutCubic
+                    easing.type: Nexa.Theme.easingStandard
+                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                 }
             }
         }
@@ -66,25 +83,32 @@ Rectangle {
     Behavior on color {
         ColorAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
     Behavior on border.color {
         ColorAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
+    // Scale is the one transform-based Behavior here — skip it
+    // under reducedMotion since it's the costliest to animate.
     Behavior on scale {
+        enabled: !Nexa.Theme.reducedMotion
         NumberAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
     Behavior on opacity {
         NumberAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
 

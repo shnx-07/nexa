@@ -23,6 +23,8 @@ mod power;
 mod audio;
 mod brightness;
 mod state;
+mod shelf;
+mod slideshow;
 
 use std::env;
 
@@ -51,6 +53,15 @@ fn print_usage() {
 
   nexad island search
   nexad island command
+
+  nexad shelf list
+  nexad shelf add <path-or-uri>
+  nexad shelf remove <id>
+  nexad shelf clear
+  nexad shelf copy-all
+  nexad shelf toggle
+  nexad shelf open
+  nexad shelf close
 
   nexad network wifi info
   nexad network wifi scan
@@ -257,6 +268,30 @@ fn main() {
                     wallpaper::refresh();
                 }
 
+                "slideshow" => {
+                    if args.len() < 4 {
+                        slideshow::print_status();
+                        return;
+                    }
+                    match args[3].as_str() {
+                        "status" => {
+                            slideshow::print_status();
+                        }
+                        "next" => {
+                            if let Err(e) = slideshow::next() {
+                                eprintln!("{e}");
+                            }
+                        }
+                        "set" => {
+                            if let Err(e) = slideshow::handle_set(&args[4..]) {
+                                eprintln!("{e}");
+                            }
+                        }
+                        _ => {
+                            eprintln!("Unknown slideshow command: {}", args[3]);
+                        }
+                    }
+                }
 
                 _ => {
                     print_usage();
@@ -405,6 +440,106 @@ fn main() {
 
                 "command" => {
                     island::open_command();
+                }
+
+                _ => {
+                    print_usage();
+                }
+            }
+        }
+
+        // ========================================================
+        // SHELF / TRAY
+        // ========================================================
+
+        "shelf" | "tray" => {
+            if args.len() < 3 {
+                print_usage();
+                return;
+            }
+
+            match args[2].as_str() {
+                "list" => {
+                    let items = shelf::list();
+                    match serde_json::to_string(&items) {
+                        Ok(json) => println!("{json}"),
+                        Err(e) => eprintln!("Error serializing shelf items: {e}"),
+                    }
+                }
+
+                "add" => {
+                    if args.len() < 4 {
+                        eprintln!("Usage: nexad shelf add <path-or-uri> [path-or-uri ...]");
+                        return;
+                    }
+                    // Accept one or many paths in a single atomic operation
+                    let paths: Vec<&str> = args[3..].iter().map(|s| s.as_str()).collect();
+                    match shelf::add_many(&paths) {
+                        Ok(items) => {
+                            for item in &items {
+                                if let Ok(json) = serde_json::to_string(item) {
+                                    println!("{json}");
+                                }
+                            }
+                        }
+                        Err(e) => eprintln!("Error adding to shelf: {e}"),
+                    }
+                }
+
+                "remove" => {
+                    if args.len() < 4 {
+                        eprintln!("Usage: nexad shelf remove <id>");
+                        return;
+                    }
+                    if let Err(e) = shelf::remove(&args[3]) {
+                        eprintln!("Error removing from shelf: {e}");
+                    } else {
+                        println!("{{\"success\":true}}");
+                    }
+                }
+
+                "clear" => {
+                    if let Err(e) = shelf::clear() {
+                        eprintln!("Error clearing shelf: {e}");
+                    } else {
+                        println!("{{\"success\":true}}");
+                    }
+                }
+
+                "copy-all" | "copy" => {
+                    match shelf::copy_all() {
+                        Ok(msg) => println!("{{\"success\":true,\"message\":\"{msg}\"}}"),
+                        Err(e) => eprintln!("Error copying shelf files: {e}"),
+                    }
+                }
+
+                "copy-item" => {
+                    if args.len() < 4 {
+                        eprintln!("Usage: nexad shelf copy-item <id>");
+                        return;
+                    }
+                    match shelf::copy_item(&args[3]) {
+                        Ok(msg) => println!("{{\"success\":true,\"message\":\"{msg}\"}}"),
+                        Err(e) => eprintln!("Error copying item: {e}"),
+                    }
+                }
+
+                "toggle" => {
+                    if let Err(e) = shelf::call_quickshell("toggle") {
+                        eprintln!("Error toggling file shelf: {e}");
+                    }
+                }
+
+                "open" => {
+                    if let Err(e) = shelf::call_quickshell("open") {
+                        eprintln!("Error opening file shelf: {e}");
+                    }
+                }
+
+                "close" => {
+                    if let Err(e) = shelf::call_quickshell("close") {
+                        eprintln!("Error closing file shelf: {e}");
+                    }
                 }
 
                 _ => {

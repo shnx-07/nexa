@@ -45,18 +45,16 @@ Item {
     readonly property color iconColor: {
         switch (root.osdType) {
         case "volume":
-            return root.muted ? Nexa.Theme.error : Nexa.Theme.primary
         case "mute":
-            return root.muted ? Nexa.Theme.error : Nexa.Theme.primary
         case "mic":
             return root.muted ? Nexa.Theme.error : Nexa.Theme.primary
         case "brightness":
-            return "#f59e0b" // warm amber sun
+            return Nexa.Theme.warning
         case "airplane":
-            return root.airplaneEnabled ? "#38bdf8" : Nexa.Theme.mutedText
+            return root.airplaneEnabled ? Nexa.Theme.info : Nexa.Theme.mutedText
         case "capslock":
         case "numlock":
-            return root.lockEnabled ? "#22c55e" : Nexa.Theme.mutedText
+            return root.lockEnabled ? Nexa.Theme.success : Nexa.Theme.mutedText
         default:
             return Nexa.Theme.primary
         }
@@ -151,8 +149,8 @@ Item {
             height: 28
             radius: 14
             color: root.muted
-                ? Qt.rgba(239/255, 68/255, 68/255, 0.15)
-                : Qt.rgba(59/255, 130/255, 246/255, 0.15)
+                ? Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.18)
+                : Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.18)
             Layout.alignment: Qt.AlignVCenter
 
             Text {
@@ -204,14 +202,14 @@ Item {
             height: 28
             radius: 14
             color: root.airplaneEnabled
-                ? Qt.rgba(56/255, 189/255, 248/255, 0.18)
-                : Nexa.Theme.surface
+                ? Qt.rgba(Nexa.Theme.info.r, Nexa.Theme.info.g, Nexa.Theme.info.b, 0.18)
+                : Nexa.Theme.surfaceContainer
             Layout.alignment: Qt.AlignVCenter
 
             Text {
                 anchors.centerIn: parent
                 text: root.airplaneEnabled ? "󰀝" : "󰀞"
-                color: root.airplaneEnabled ? "#38bdf8" : Nexa.Theme.mutedText
+                color: root.airplaneEnabled ? Nexa.Theme.info : Nexa.Theme.mutedText
                 font.family: Nexa.Theme.iconFontFamily
                 font.pixelSize: 16
             }
@@ -231,13 +229,13 @@ Item {
             height: 22
             width: 36
             radius: 11
-            color: root.airplaneEnabled ? "#38bdf8" : Nexa.Theme.surface
+            color: root.airplaneEnabled ? Nexa.Theme.info : Nexa.Theme.surfaceContainer
             Layout.alignment: Qt.AlignVCenter
 
             Text {
                 anchors.centerIn: parent
                 text: root.airplaneEnabled ? "ON" : "OFF"
-                color: root.airplaneEnabled ? "#0f172a" : Nexa.Theme.mutedText
+                color: root.airplaneEnabled ? Nexa.Theme.surface : Nexa.Theme.mutedText
                 font.family: Nexa.Theme.fontFamily
                 font.pixelSize: 10
                 font.bold: true
@@ -250,31 +248,31 @@ Item {
     // ============================================================
 
     RowLayout {
-        id: batteryLayout
+        id: batteryChargerLayout
         anchors.fill: parent
         anchors.leftMargin: 16
         anchors.rightMargin: 16
         spacing: 12
         visible: root.osdType === "battery"
 
-        // Glowing Apple-style Battery/Bolt Badge
+        // Animated Charging/Battery Icon Badge
         Rectangle {
             width: 28
             height: 28
             radius: 9
             color: root.batteryCharging
-                ? Qt.rgba(34/255, 197/255, 94/255, 0.20)
-                : Qt.rgba(255/255, 255/255, 255/255, 0.10)
+                ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.20)
+                : Nexa.Theme.surfaceContainer
             border.width: Nexa.Theme.borderThin
             border.color: root.batteryCharging
-                ? Qt.rgba(34/255, 197/255, 94/255, 0.40)
+                ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.40)
                 : Nexa.Theme.border
             Layout.alignment: Qt.AlignVCenter
 
             Text {
                 anchors.centerIn: parent
                 text: root.batteryCharging ? "󰂄" : "󰁹"
-                color: root.batteryCharging ? "#22c55e" : Nexa.Theme.text
+                color: root.batteryCharging ? Nexa.Theme.success : Nexa.Theme.text
                 font.family: Nexa.Theme.iconFontFamily
                 font.pixelSize: 16
             }
@@ -298,14 +296,14 @@ Item {
                 Layout.fillWidth: true
                 height: 4
                 radius: 2
-                color: Nexa.Theme.surface
+                color: Nexa.Theme.surfaceContainer
                 clip: true
 
                 Rectangle {
                     height: parent.height
                     width: Math.max(0, Math.min(parent.width, parent.width * Math.min(1.0, Math.max(0.0, root.value))))
                     radius: 2
-                    color: root.batteryCharging ? "#22c55e" : Nexa.Theme.primary
+                    color: root.batteryCharging ? Nexa.Theme.success : Nexa.Theme.primary
                 }
             }
         }
@@ -316,11 +314,11 @@ Item {
             implicitWidth: pctText.implicitWidth + 14
             radius: 12
             color: root.batteryCharging
-                ? Qt.rgba(34/255, 197/255, 94/255, 0.22)
-                : Nexa.Theme.surface
+                ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.22)
+                : Nexa.Theme.surfaceContainer
             border.width: Nexa.Theme.borderThin
             border.color: root.batteryCharging
-                ? Qt.rgba(34/255, 197/255, 94/255, 0.45)
+                ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.45)
                 : Nexa.Theme.border
             Layout.alignment: Qt.AlignVCenter
 
@@ -328,7 +326,7 @@ Item {
                 id: pctText
                 anchors.centerIn: parent
                 text: Math.round(root.value * 100) + "%"
-                color: root.batteryCharging ? "#22c55e" : Nexa.Theme.text
+                color: root.batteryCharging ? Nexa.Theme.success : Nexa.Theme.text
                 font.family: Nexa.Theme.fontFamily
                 font.pixelSize: 12
                 font.weight: Nexa.Theme.fontWeightBold
@@ -353,9 +351,9 @@ Item {
             width: 28
             height: 28
             radius: 9
-            color: Qt.rgba(239/255, 68/255, 68/255, 0.22)
+            color: Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.22)
             border.width: Nexa.Theme.borderThin
-            border.color: Qt.rgba(239/255, 68/255, 68/255, 0.60)
+            border.color: Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.60)
             Layout.alignment: Qt.AlignVCenter
 
             SequentialAnimation on opacity {
@@ -368,7 +366,7 @@ Item {
             Text {
                 anchors.centerIn: parent
                 text: "󰂃"
-                color: "#ef4444"
+                color: Nexa.Theme.error
                 font.family: Nexa.Theme.iconFontFamily
                 font.pixelSize: 16
             }
@@ -382,7 +380,7 @@ Item {
 
             Text {
                 text: "Low Battery"
-                color: "#ef4444"
+                color: Nexa.Theme.error
                 font.family: Nexa.Theme.fontFamily
                 font.pixelSize: 13
                 font.weight: Nexa.Theme.fontWeightBold
@@ -405,9 +403,9 @@ Item {
             height: 24
             implicitWidth: lowFlagRow.implicitWidth + 16
             radius: 12
-            color: Qt.rgba(239/255, 68/255, 68/255, 0.22)
+            color: Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.22)
             border.width: Nexa.Theme.borderThin
-            border.color: Qt.rgba(239/255, 68/255, 68/255, 0.50)
+            border.color: Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.50)
             Layout.alignment: Qt.AlignVCenter
 
             RowLayout {
@@ -419,7 +417,7 @@ Item {
                     width: 6
                     height: 6
                     radius: 3
-                    color: "#ef4444"
+                    color: Nexa.Theme.error
                     Layout.alignment: Qt.AlignVCenter
 
                     SequentialAnimation on opacity {
@@ -432,7 +430,7 @@ Item {
 
                 Text {
                     text: Math.round(root.value * 100) + "%"
-                    color: "#f87171"
+                    color: Nexa.Theme.error
                     font.family: Nexa.Theme.fontFamily
                     font.pixelSize: 12
                     font.weight: Nexa.Theme.fontWeightBold
@@ -459,15 +457,15 @@ Item {
             width: 28
             height: 28
             radius: 9
-            color: Qt.rgba(59/255, 130/255, 246/255, 0.20)
+            color: Qt.rgba(Nexa.Theme.info.r, Nexa.Theme.info.g, Nexa.Theme.info.b, 0.18)
             border.width: Nexa.Theme.borderThin
-            border.color: Qt.rgba(59/255, 130/255, 246/255, 0.40)
+            border.color: Qt.rgba(Nexa.Theme.info.r, Nexa.Theme.info.g, Nexa.Theme.info.b, 0.40)
             Layout.alignment: Qt.AlignVCenter
 
             Text {
                 anchors.centerIn: parent
                 text: root.icon.length > 0 ? root.icon : "󰂯"
-                color: "#3b82f6"
+                color: Nexa.Theme.info
                 font.family: Nexa.Theme.iconFontFamily
                 font.pixelSize: 16
             }
@@ -503,16 +501,16 @@ Item {
             height: 24
             implicitWidth: btSubText.implicitWidth + 14
             radius: 12
-            color: Qt.rgba(59/255, 130/255, 246/255, 0.18)
+            color: Qt.rgba(Nexa.Theme.info.r, Nexa.Theme.info.g, Nexa.Theme.info.b, 0.18)
             border.width: Nexa.Theme.borderThin
-            border.color: Qt.rgba(59/255, 130/255, 246/255, 0.35)
+            border.color: Qt.rgba(Nexa.Theme.info.r, Nexa.Theme.info.g, Nexa.Theme.info.b, 0.35)
             Layout.alignment: Qt.AlignVCenter
 
             Text {
                 id: btSubText
                 anchors.centerIn: parent
                 text: root.value > 0 ? (Math.round(root.value * 100) + "%") : "Connected"
-                color: "#3b82f6"
+                color: Nexa.Theme.info
                 font.family: Nexa.Theme.fontFamily
                 font.pixelSize: 11
                 font.weight: Nexa.Theme.fontWeightBold
@@ -536,24 +534,24 @@ Item {
             anchors.rightMargin: 16
             spacing: 12
 
-            // Wi-Fi Icon Badge (Cyan for OK, Amber/Warning for No Internet)
+            // Wi-Fi Icon Badge
             Rectangle {
                 width: 28
                 height: 28
                 radius: 9
                 color: root.hasInternet
-                    ? Qt.rgba(56/255, 189/255, 248/255, 0.20)
-                    : Qt.rgba(245/255, 158/255, 11/255, 0.22)
+                    ? Qt.rgba(Nexa.Theme.info.r, Nexa.Theme.info.g, Nexa.Theme.info.b, 0.20)
+                    : Qt.rgba(Nexa.Theme.warning.r, Nexa.Theme.warning.g, Nexa.Theme.warning.b, 0.22)
                 border.width: Nexa.Theme.borderThin
                 border.color: root.hasInternet
-                    ? Qt.rgba(56/255, 189/255, 248/255, 0.40)
-                    : Qt.rgba(245/255, 158/255, 11/255, 0.50)
+                    ? Qt.rgba(Nexa.Theme.info.r, Nexa.Theme.info.g, Nexa.Theme.info.b, 0.40)
+                    : Qt.rgba(Nexa.Theme.warning.r, Nexa.Theme.warning.g, Nexa.Theme.warning.b, 0.50)
                 Layout.alignment: Qt.AlignVCenter
 
                 Text {
                     anchors.centerIn: parent
                     text: root.hasInternet ? "󰤨" : "󰤭"
-                    color: root.hasInternet ? "#38bdf8" : "#f59e0b"
+                    color: root.hasInternet ? Nexa.Theme.info : Nexa.Theme.warning
                     font.family: Nexa.Theme.iconFontFamily
                     font.pixelSize: 16
                 }
@@ -578,7 +576,7 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     text: root.hasInternet ? "Connected" : "No Internet"
-                    color: root.hasInternet ? Nexa.Theme.mutedText : "#f59e0b"
+                    color: root.hasInternet ? Nexa.Theme.mutedText : Nexa.Theme.warning
                     font.family: Nexa.Theme.fontFamily
                     font.pixelSize: 11
                     font.weight: root.hasInternet ? Font.Normal : Font.Bold
@@ -592,12 +590,12 @@ Item {
                 implicitWidth: wifiSignalText.implicitWidth + 14
                 radius: 12
                 color: root.hasInternet
-                    ? Qt.rgba(56/255, 189/255, 248/255, 0.18)
-                    : Qt.rgba(245/255, 158/255, 11/255, 0.20)
+                    ? Qt.rgba(Nexa.Theme.info.r, Nexa.Theme.info.g, Nexa.Theme.info.b, 0.18)
+                    : Qt.rgba(Nexa.Theme.warning.r, Nexa.Theme.warning.g, Nexa.Theme.warning.b, 0.20)
                 border.width: Nexa.Theme.borderThin
                 border.color: root.hasInternet
-                    ? Qt.rgba(56/255, 189/255, 248/255, 0.35)
-                    : Qt.rgba(245/255, 158/255, 11/255, 0.45)
+                    ? Qt.rgba(Nexa.Theme.info.r, Nexa.Theme.info.g, Nexa.Theme.info.b, 0.35)
+                    : Qt.rgba(Nexa.Theme.warning.r, Nexa.Theme.warning.g, Nexa.Theme.warning.b, 0.45)
                 Layout.alignment: Qt.AlignVCenter
 
                 Text {
@@ -606,7 +604,7 @@ Item {
                     text: root.hasInternet
                         ? (root.value > 0 ? (Math.round(root.value * 100) + "%") : "Connected")
                         : "No Internet"
-                    color: root.hasInternet ? "#38bdf8" : "#f59e0b"
+                    color: root.hasInternet ? Nexa.Theme.info : Nexa.Theme.warning
                     font.family: Nexa.Theme.fontFamily
                     font.pixelSize: 11
                     font.weight: Font.Bold
@@ -651,18 +649,18 @@ Item {
             height: 32
             radius: 9
             color: root.lockEnabled
-                ? Qt.rgba(34/255, 197/255, 94/255, 0.18)
-                : Qt.rgba(255/255, 255/255, 255/255, 0.08)
+                ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.18)
+                : Nexa.Theme.surfaceContainer
             border.width: Nexa.Theme.borderThin
             border.color: root.lockEnabled
-                ? Qt.rgba(34/255, 197/255, 94/255, 0.38)
-                : Qt.rgba(255/255, 255/255, 255/255, 0.14)
+                ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.38)
+                : Nexa.Theme.border
             Layout.alignment: Qt.AlignVCenter
 
             Text {
                 anchors.centerIn: parent
                 text: root.osdType === "capslock" ? "󰬈" : "󰎤"
-                color: root.lockEnabled ? "#22c55e" : Nexa.Theme.mutedText
+                color: root.lockEnabled ? Nexa.Theme.success : Nexa.Theme.mutedText
                 font.family: Nexa.Theme.iconFontFamily
                 font.pixelSize: 18
             }
@@ -692,13 +690,13 @@ Item {
                     width: 6
                     height: 6
                     radius: 3
-                    color: root.lockEnabled ? "#22c55e" : Nexa.Theme.mutedText
+                    color: root.lockEnabled ? Nexa.Theme.success : Nexa.Theme.mutedText
                     Layout.alignment: Qt.AlignVCenter
                 }
 
                 Text {
                     text: root.lockEnabled ? "On" : "Off"
-                    color: root.lockEnabled ? "#22c55e" : Nexa.Theme.mutedText
+                    color: root.lockEnabled ? Nexa.Theme.success : Nexa.Theme.mutedText
                     font.family: Nexa.Theme.fontFamily
                     font.pixelSize: 11
                     font.weight: Font.Medium
@@ -713,18 +711,18 @@ Item {
             height: 24
             radius: 12
             color: root.lockEnabled
-                ? Qt.rgba(34/255, 197/255, 94/255, 0.18)
-                : Qt.rgba(255/255, 255/255, 255/255, 0.08)
+                ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.18)
+                : Nexa.Theme.surfaceContainer
             border.width: Nexa.Theme.borderThin
             border.color: root.lockEnabled
-                ? Qt.rgba(34/255, 197/255, 94/255, 0.35)
-                : Qt.rgba(255/255, 255/255, 255/255, 0.14)
+                ? Qt.rgba(Nexa.Theme.success.r, Nexa.Theme.success.g, Nexa.Theme.success.b, 0.35)
+                : Nexa.Theme.border
             Layout.alignment: Qt.AlignVCenter
 
             Text {
                 anchors.centerIn: parent
                 text: root.lockEnabled ? "ON" : "OFF"
-                color: root.lockEnabled ? "#22c55e" : Nexa.Theme.mutedText
+                color: root.lockEnabled ? Nexa.Theme.success : Nexa.Theme.mutedText
                 font.family: Nexa.Theme.fontFamily
                 font.pixelSize: 11
                 font.weight: Font.Bold

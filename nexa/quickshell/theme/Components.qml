@@ -156,7 +156,9 @@ QtObject {
                 duration:
                     Nexa.Theme.motionInteraction
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
 
@@ -166,7 +168,9 @@ QtObject {
                 duration:
                     Nexa.Theme.motionInteraction
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
 
@@ -177,7 +181,9 @@ QtObject {
                     Nexa.Theme.motionInteraction
 
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
 
@@ -298,7 +304,9 @@ QtObject {
                 duration:
                     Nexa.Theme.motionInteraction
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
 
@@ -308,7 +316,9 @@ QtObject {
                 duration:
                     Nexa.Theme.motionInteraction
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
 
@@ -319,7 +329,9 @@ QtObject {
                     Nexa.Theme.motionInteraction
 
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
 
@@ -441,7 +453,9 @@ QtObject {
                     duration:
                         Nexa.Theme.motionInteraction
                     easing.type:
-                        Easing.OutCubic
+                        Nexa.Theme.easingStandard
+                    easing.bezierCurve:
+                        Nexa.Theme.easingFluidCurve
                 }
             }
         }
@@ -452,7 +466,9 @@ QtObject {
                 duration:
                     Nexa.Theme.motionInteraction
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
 
@@ -462,7 +478,9 @@ QtObject {
                 duration:
                     Nexa.Theme.motionInteraction
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
 
@@ -473,7 +491,9 @@ QtObject {
                     Nexa.Theme.motionInteraction
 
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
 
@@ -662,6 +682,8 @@ QtObject {
 
                 easing.type:
                     Nexa.Theme.easingEmphasized
+                easing.bezierCurve:
+                    Nexa.Theme.easingSpringCurve
             }
         }
     }
@@ -816,7 +838,9 @@ QtObject {
                         Nexa.Theme.motionSelection
 
                     easing.type:
-                        Easing.InOutCubic
+                        Nexa.Theme.easingEmphasized
+                    easing.bezierCurve:
+                        Nexa.Theme.easingSpringCurve
                 }
             }
         }
@@ -985,7 +1009,9 @@ QtObject {
                 duration:
                     Nexa.Theme.animationNormal
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
 
@@ -996,7 +1022,9 @@ QtObject {
                     Nexa.Theme.motionSelection
 
                 easing.type:
-                    Easing.InOutCubic
+                    Nexa.Theme.easingEmphasized
+                easing.bezierCurve:
+                    Nexa.Theme.easingSpringCurve
             }
         }
 
@@ -1007,7 +1035,9 @@ QtObject {
                     Nexa.Theme.motionSelection
 
                 easing.type:
-                    Easing.InOutCubic
+                    Nexa.Theme.easingEmphasized
+                easing.bezierCurve:
+                    Nexa.Theme.easingSpringCurve
             }
         }
 
@@ -1018,7 +1048,9 @@ QtObject {
                     Nexa.Theme.motionSelection
 
                 easing.type:
-                    Easing.OutCubic
+                    Nexa.Theme.easingStandard
+                easing.bezierCurve:
+                    Nexa.Theme.easingFluidCurve
             }
         }
     }

@@ -63,14 +63,16 @@ Item {
             Behavior on color {
                 ColorAnimation {
                     duration: Nexa.Theme.animationNormal
-                    easing.type: Easing.OutCubic
+                    easing.type: Nexa.Theme.easingStandard
+                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                 }
             }
 
             Behavior on border.color {
                 ColorAnimation {
                     duration: Nexa.Theme.animationFast
-                    easing.type: Easing.OutCubic
+                    easing.type: Nexa.Theme.easingStandard
+                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                 }
             }
 
@@ -87,7 +89,8 @@ Item {
                 Behavior on color {
                     ColorAnimation {
                         duration: Nexa.Theme.animationNormal
-                        easing.type: Easing.OutCubic
+                        easing.type: Nexa.Theme.easingStandard
+                        easing.bezierCurve: Nexa.Theme.easingFluidCurve
                     }
                 }
 
@@ -95,7 +98,8 @@ Item {
                     enabled: !mouse.pressed
                     NumberAnimation {
                         duration: 140
-                        easing.type: Easing.OutCubic
+                        easing.type: Nexa.Theme.easingStandard
+                        easing.bezierCurve: Nexa.Theme.easingFluidCurve
                     }
                 }
             }
@@ -114,7 +118,8 @@ Item {
                 Behavior on color {
                     ColorAnimation {
                         duration: Nexa.Theme.animationNormal
-                        easing.type: Easing.OutCubic
+                        easing.type: Nexa.Theme.easingStandard
+                        easing.bezierCurve: Nexa.Theme.easingFluidCurve
                     }
                 }
             }
@@ -139,7 +144,8 @@ Item {
                     Behavior on color {
                         ColorAnimation {
                             duration: Nexa.Theme.animationFast
-                            easing.type: Easing.OutCubic
+                            easing.type: Nexa.Theme.easingStandard
+                            easing.bezierCurve: Nexa.Theme.easingFluidCurve
                         }
                     }
                 }
@@ -163,14 +169,15 @@ Item {
             anchors.verticalCenter: track.verticalCenter
             x: Math.max(0, Math.min(track.width - width, track.width * root.normalizedValue - width / 2))
             visible: root.normalizedValue > 0.005 && root.normalizedValue < 0.995
-            color: "#ffffff"
+            color: Nexa.Theme.onPrimary
             opacity: mouse.pressed ? 1.0 : (mouse.containsMouse ? 0.95 : 0.9)
 
             Behavior on x {
                 enabled: !mouse.pressed
                 NumberAnimation {
                     duration: 140
-                    easing.type: Easing.OutCubic
+                    easing.type: Nexa.Theme.easingStandard
+                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                 }
             }
         }

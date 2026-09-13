@@ -3,6 +3,7 @@ hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QS_ICON_THEME", "breeze-dark")
+hl.env("QS_NO_RELOAD_POPUP", "1")
 hl.env("QT_STYLE_OVERRIDE", "kvantum")
 
 -- Native Wayland & Memory-Efficient Rendering for Electron, Mozilla & GTK

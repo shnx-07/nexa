@@ -137,6 +137,9 @@ Item {
         return item ? (item.themePopupOpen || false) : false
     }
 
+    readonly property bool shelfDragInProgress:
+        islandShelf ? islandShelf.dragInProgress : false
+
 
     // ============================================================
     // FULL ISLAND SECTION
@@ -222,6 +225,12 @@ Item {
         if (root.specialMode === "appLauncher") {
             Qt.callLater(
                 appLauncherIsland.activate
+            )
+        }
+
+        if (root.specialMode === "shelf") {
+            Qt.callLater(
+                islandShelf.refresh
             )
         }
     }
@@ -1023,8 +1032,27 @@ Item {
             root.requestCloseSpecialMode()
     }
 
+    IslandShelf {
+        id: islandShelf
+
+        anchors.fill: parent
+
+        visible: root.full && root.specialMode === "shelf"
+
+        z: 100
+
+        onRequestClose:
+            root.requestCloseSpecialMode()
+    }
+
     function setControlCenterPage(page) {
         controlCenterIsland.currentPage = page
+    }
+
+    function triggerPowerKey(keyNum) {
+        if (powerIsland) {
+            powerIsland.triggerKeyNumber(keyNum)
+        }
     }
 
     // ============================================================

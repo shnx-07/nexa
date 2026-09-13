@@ -12,6 +12,7 @@ fi
 # Always run quickshell with working directory at $HOME so child processes default to $HOME
 cd "$HOME"
 export QS_ICON_THEME="breeze-dark"
+export QS_NO_RELOAD_POPUP=1
 quickshell -d -p "$SHELL_PATH" >/tmp/nexa-quickshell.log 2>&1
 
 echo "NEXA started."

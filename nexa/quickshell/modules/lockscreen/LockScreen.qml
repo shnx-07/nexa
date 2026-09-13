@@ -190,7 +190,7 @@ Item {
     PanelWindow {
         id: previewWindow
         visible: root.previewOpen
-        color: "#000000"
+        color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         aboveWindows: true
         focusable: true

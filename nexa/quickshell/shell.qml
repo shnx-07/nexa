@@ -7,9 +7,18 @@ import "bar"
 import "island"
 import "modules/lockscreen" as LockScreenModule
 import "modules/nightlight" as NightLightModule
+import "wallpaper" as WallpaperModule
 
 ShellRoot {
+    Connections {
+        target: Quickshell
+        function onReloadCompleted(): void {
+            Quickshell.inhibitReloadPopup()
+        }
+    }
+
     NightLightModule.NightLightScheduler {}
+    WallpaperModule.WallpaperSlideshowScheduler {}
 
     Process {
         id: notificationDaemonStartup

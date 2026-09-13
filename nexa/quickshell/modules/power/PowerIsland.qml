@@ -11,11 +11,49 @@ Item {
     signal requestClose()
 
     // ============================================================
-    // FOCUS
+    // FOCUS & KEYBOARD TRIGGER
     // ============================================================
+
+    focus: true
 
     function activate() {
         forceActiveFocus()
+    }
+
+    function triggerKeyNumber(num) {
+        if (num === 1) {
+            runLockAction()
+        } else if (num === 2) {
+            runPowerAction("suspend")
+        } else if (num === 3) {
+            runPowerAction("logout")
+        } else if (num === 4) {
+            runPowerAction("reboot")
+        } else if (num === 5) {
+            runPowerAction("shutdown")
+        }
+    }
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_1 || event.text === "1") {
+            root.runLockAction()
+            event.accepted = true
+        } else if (event.key === Qt.Key_2 || event.text === "2") {
+            root.runPowerAction("suspend")
+            event.accepted = true
+        } else if (event.key === Qt.Key_3 || event.text === "3") {
+            root.runPowerAction("logout")
+            event.accepted = true
+        } else if (event.key === Qt.Key_4 || event.text === "4") {
+            root.runPowerAction("reboot")
+            event.accepted = true
+        } else if (event.key === Qt.Key_5 || event.text === "5") {
+            root.runPowerAction("shutdown")
+            event.accepted = true
+        } else if (event.key === Qt.Key_Escape) {
+            root.requestClose()
+            event.accepted = true
+        }
     }
 
     onVisibleChanged: {

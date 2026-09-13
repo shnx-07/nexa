@@ -17,6 +17,7 @@ Rectangle {
     implicitHeight: Math.max(Nexa.Theme.controlHeightLg,
                              contentItem.implicitHeight + padding * 2)
     radius: Nexa.Theme.radiusLg
+    antialiasing: true
     color: selected ? Nexa.Theme.selectedSurface
                     : pressedState ? Nexa.Theme.interactiveCardPressed
                     : hovered ? Nexa.Theme.interactiveCardHover
@@ -27,6 +28,19 @@ Rectangle {
     scale: pressedState ? Nexa.Theme.cardPressScale
                         : hovered ? Nexa.Theme.cardHoverScale
                         : Nexa.Theme.normalScale
+    transformOrigin: Item.Center
+
+    // Static glass highlight for depth. Cheap: a plain gradient
+    // fill, computed once by the GPU, no per-frame cost.
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: root.border.width
+        radius: Math.max(0, root.radius - root.border.width)
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlight }
+            GradientStop { position: 0.5; color: "transparent" }
+        }
+    }
 
     Item {
         id: contentItem
@@ -37,19 +51,23 @@ Rectangle {
     Behavior on color {
         ColorAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
     Behavior on border.color {
         ColorAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
     Behavior on scale {
+        enabled: !Nexa.Theme.reducedMotion
         NumberAnimation {
             duration: Nexa.Theme.motionInteraction
-            easing.type: Easing.OutCubic
+            easing.type: Nexa.Theme.easingStandard
+            easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
 

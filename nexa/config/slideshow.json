@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "paused": false,
+  "interval": "5m",
+  "type_filter": "Image",
+  "apply_target": "Background",
+  "last_wallpaper": ""
+}

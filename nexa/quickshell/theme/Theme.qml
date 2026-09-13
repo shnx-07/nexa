@@ -301,6 +301,14 @@ QtObject {
             0.22
         )
 
+    readonly property color borderSubtle:
+        Qt.rgba(
+            outline.r,
+            outline.g,
+            outline.b,
+            0.18
+        )
+
     readonly property color border:
         Qt.rgba(
             outline.r,
@@ -424,6 +432,22 @@ QtObject {
             outline.b,
             0.40
         )
+
+
+    // ------------------------------------------------------------
+    // EDGE HIGHLIGHT
+    //
+    // A faint top-lit gradient used inside buttons/cards/toggles to
+    // give flat surfaces a touch of continuous-corner "glass" depth
+    // instead of a dead flat fill. Purely a static gradient fill —
+    // no shader, no per-frame cost, safe to use liberally.
+    // ------------------------------------------------------------
+
+    readonly property color edgeHighlight:
+        Qt.rgba(1, 1, 1, 0.07)
+
+    readonly property color edgeHighlightStrong:
+        Qt.rgba(1, 1, 1, 0.11)
 
 
     // ============================================================
@@ -584,7 +608,7 @@ QtObject {
     // ============================================================
 
     readonly property int animationInstant: 80
-    readonly property int animationFast: 140
+    readonly property int animationFast: 130
     readonly property int animationNormal: 220
     readonly property int animationSlow: 320
     readonly property int animationVerySlow: 450
@@ -602,8 +626,10 @@ QtObject {
         animationFast
 
     // Toggle, tab and active-indicator movement.
+    // A touch longer than a plain linear move so the spring
+    // overshoot (easingEmphasized) has room to actually read.
     readonly property int motionSelection:
-        180
+        210
 
     // Page/content transition.
     readonly property int motionPage:
@@ -620,25 +646,57 @@ QtObject {
 
     // ============================================================
     // MOTION — EASING
+    //
+    // NEXA uses custom cubic-bezier curves (via Easing.BezierCurve)
+    // instead of the built-in Qt easing curves for interaction and
+    // entrance motion. The stock curves (OutCubic, OutBack, ...)
+    // are fine but generic; a hand-tuned bezier reads as noticeably
+    // smoother/more "native" for very short UI motion, at zero
+    // extra runtime cost (it's still a single evaluated curve).
+    //
+    // Every "easing.type" token below still resolves to a plain
+    // int as before, so `easing.type: Theme.easingX` keeps working
+    // unchanged. Where the token maps to Easing.BezierCurve, pair
+    // it with the matching *Curve array below via
+    // `easing.bezierCurve: Theme.easingXCurve`.
     // ============================================================
 
-    // General UI movement.
+    // General UI movement (hover/press color, scale, borders).
+    // A gentle ease-out-expo: fast start, long buttery settle.
     readonly property int easingStandard:
-        Easing.OutCubic
+        Easing.BezierSpline
+    readonly property var easingFluidCurve:
+        [0.16, 1.0, 0.30, 1.0, 1.0, 1.0]
 
-    // Opening / appearing.
+    // Symmetric fluid motion with no overshoot (rotations, fades
+    // that go both ways — e.g. dropdown chevron).
+    readonly property int easingFluidInOut:
+        Easing.BezierSpline
+    readonly property var easingFluidInOutCurve:
+        [0.65, 0.0, 0.35, 1.0, 1.0, 1.0]
+
+    // Opening / appearing. Soft spring settle — same family used
+    // by easingSpring/easingEmphasized below, kept as one curve so
+    // popups, toggles and pop-ins all feel like the same material.
     readonly property int easingEnter:
-        Easing.OutQuart
+        Easing.BezierSpline
 
-    // Closing / disappearing.
+    // Closing / disappearing. Deliberately a plain (non-bezier)
+    // ease-in: exits are short (~140ms) and should feel instant,
+    // not crafted — spending cycles on a fancy curve here only
+    // costs battery for a transition nobody consciously watches.
     readonly property int easingExit:
         Easing.InCubic
 
-    // Stronger expressive movement.
+    // Stronger expressive movement — toggle thumbs, tab indicators,
+    // status dots. A tuned spring overshoot, gentler than Qt's
+    // default OutBack (which overshoots ~1.70 and can look cheap).
     readonly property int easingEmphasized:
-        Easing.OutBack
+        Easing.BezierSpline
+    readonly property var easingSpringCurve:
+        [0.34, 1.56, 0.64, 1.0, 1.0, 1.0]
 
-    // Smooth deceleration.
+    // Smooth deceleration for larger geometry changes (island/panel resize).
     readonly property int easingDecelerate:
         Easing.OutQuint
 
@@ -648,6 +706,24 @@ QtObject {
 
     readonly property int easingLinear:
         Easing.Linear
+
+
+    // ------------------------------------------------------------
+    // REDUCED MOTION
+    //
+    // When true, components should skip transform-based Behaviors
+    // (scale, x/y springs) — these are the most expensive to
+    // animate since they force a full re-composite of the item
+    // every frame for the animation's duration, vs. a color/opacity
+    // change which is a cheap paint update. Color/opacity feedback
+    // stays on so the UI still feels responsive.
+    //
+    // Wire this to services/Battery.qml (e.g. true when on battery
+    // and below a threshold, or when the user enables a power
+    // saver toggle) once that service exists.
+    // ------------------------------------------------------------
+
+    property bool reducedMotion: false
 
 
     // ============================================================
@@ -746,7 +822,12 @@ QtObject {
     // ============================================================
 
     readonly property int animationSpring: 300
-    readonly property int easingSpring: Easing.OutBack
+    readonly property int easingSpring: Easing.BezierSpline
+    // Same curve as easingEmphasized/easingEnter — one spring feel
+    // shared across the whole shell instead of three slightly
+    // different overshoot personalities.
+    readonly property var easingSpringCurveLong:
+        easingSpringCurve
 
     // PopEnter / PopExit durations (popup open/close)
     readonly property int popEnterDuration: 220

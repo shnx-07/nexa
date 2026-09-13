@@ -15,6 +15,7 @@ Popup {
 
     background: Rectangle {
         radius: root.cornerRadius
+        antialiasing: true
         color: root.backgroundColor
         border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.borderStrong
@@ -24,16 +25,29 @@ Popup {
             cornerRadius: root.cornerRadius
         }
 
+        // Static glass highlight for depth on the popup surface.
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: parent.border.width
+            radius: Math.max(0, parent.radius - parent.border.width)
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlight }
+                GradientStop { position: 0.35; color: "transparent" }
+            }
+        }
+
         Behavior on color {
             ColorAnimation {
                 duration: Nexa.Theme.animationFast
-                easing.type: Easing.OutCubic
+                easing.type: Nexa.Theme.easingStandard
+                easing.bezierCurve: Nexa.Theme.easingFluidCurve
             }
         }
         Behavior on border.color {
             ColorAnimation {
                 duration: Nexa.Theme.animationFast
-                easing.type: Easing.OutCubic
+                easing.type: Nexa.Theme.easingStandard
+                easing.bezierCurve: Nexa.Theme.easingFluidCurve
             }
         }
     }
@@ -45,7 +59,8 @@ Popup {
                 from: 0
                 to: 1
                 duration: Nexa.Theme.popEnterDuration
-                easing.type: Easing.OutCubic
+                easing.type: Nexa.Theme.easingStandard
+                easing.bezierCurve: Nexa.Theme.easingFluidCurve
             }
             NumberAnimation {
                 property: "scale"
@@ -53,6 +68,7 @@ Popup {
                 to: 1
                 duration: Nexa.Theme.popEnterDuration
                 easing.type: Nexa.Theme.easingEnter
+                easing.bezierCurve: Nexa.Theme.easingSpringCurve
             }
         }
     }

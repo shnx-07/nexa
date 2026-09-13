@@ -140,6 +140,12 @@ If you prefer installing dependencies manually or want a complete breakdown:
 ### 🌟 Top Bar & Dynamic Island
 * **Live Workspaces:** Dynamic pill indicator with smooth sliding animation and active window tracking.
 * **Dynamic Island:** Interactive notch supporting Clock, Calendar, Stopwatch, Media player, Theme switcher, System Monitor, Audio visualizer, and Notification banners.
+* **Dynamic Island Shelf & Stash Tray (Wayland Drag & Drop):**
+  * **Interactive Dropzone:** Drag files from any file manager (Nemo, Dolphin, terminal, or browser) and hover over the Dynamic Island notch to automatically expand the Shelf (`580px × 155px`).
+  * **Polaroid Card Deck:** Live image thumbnails, category icons, file names, and badge counts for instant visual recognition.
+  * **Wayland Drag-Out:** Drag any file card directly from the notch into any target application window, text editor, chat, or folder.
+  * **Batch Clipboard Actions:** Quick actions to copy individual paths or all stashed files (`Copy All`) to the clipboard with animated toast feedback.
+  * **Rust CLI & IPC Integration:** Comprehensive backend controls via `nexad shelf` (`open`, `toggle`, `list`, `add <paths>`, `remove <id>`, `clear`).
 * **Integrated Control Center:** Sleek widescreen (`760px × 440px`) hub built directly into the Dynamic Island with tabbed navigation:
   * **Controls (Quick Settings):** Dual-column layout featuring Output sink selector chip, per-app audio volume mixer, sound-reactive Microphone input with click-to-mute, Display Brightness & Night Light (with 3-mode switcher, debounced 12h AM/PM Custom Schedule steppers, and automated Sunrise/Sunset scheduling via `hyprsunset`), Screen Filters, and unified 2×2 Connectivity & Actions grids.
   * **Alerts:** 2-column notification grid with instant dismissal and history.
@@ -193,6 +199,12 @@ If you prefer installing dependencies manually or want a complete breakdown:
 
 ### 🖼️ 3D Perspective Wallpaper Picker & Dynamic Theming Engine
 * **3D Perspective Coverflow Carousel (`Super + W`):** Hardware-accelerated 3D carousel effect presenting wallpapers with dynamic rotation, depth scaling, and smooth mouse-wheel/keyboard scrubbing.
+* **Automated Wallpaper Slideshow Scheduler:**
+  * **Background Rotation Daemon:** Integrated QML scheduler (`WallpaperSlideshowScheduler.qml`) running synchronously with the `nexad` Rust backend.
+  * **Flexible Intervals & Transitions:** Customizable rotation intervals (5m, 15m, 30m, 1h, 2h) paired with smooth transitions (`fade`, `wipe`, `slide`, `random`).
+  * **Interactive Controls:** Toggle slideshow state directly from the 3D Carousel header with a dedicated **Pause / Resume** button (`⏸` / `▶`) and real-time status pill.
+  * **Multi-Format Support:** Automatically cycles across Static Images, Animated GIFs, and MPV Video Wallpapers.
+  * **CLI & IPC Controls:** `nexad slideshow` commands (`toggle`, `pause`, `resume`, `next`, `prev`, `status`) with persistent state maintained in `~/.config/nexa/config/slideshow.json`.
 * **Live Format Filters:** One-click filtering tabs for Static Images, Animated GIFs, and MPV Video Wallpapers.
 * **Dynamic Palette Generation:** Powered by Matugen, applying any wallpaper instantly extracts Material You harmonic palettes and updates Quickshell, GTK, Qt, Kvantum, KDE Globals, and terminal themes across the system in real time.
 * **Visual Theme Customizer:** Fine-tune accent tones, toggle light/dark modes, and switch between curated color palettes with real-time live preview.
@@ -233,6 +245,8 @@ If you prefer installing dependencies manually or want a complete breakdown:
 | `F4` | Microphone Mute Toggle |
 | `F5` / `F6` | Brightness Down / Brightness Up |
 | `F8` | Airplane Mode Toggle |
+| `nexad shelf toggle` | Toggle Dynamic Island Shelf / File Stash Tray |
+| `nexad slideshow toggle` | Toggle Wallpaper Slideshow (Pause / Resume) |
 
 ---
 
@@ -240,16 +254,17 @@ If you prefer installing dependencies manually or want a complete breakdown:
 
 ```text
 ~/.config/nexa/
-├── config/              # User settings, wallpaper.conf, theme.conf
+├── config/              # User settings, wallpaper.conf, theme.conf, slideshow.json, shelf.json
 ├── quickshell/          # QML User Interface
-│   ├── bar/             # Top bar components
-│   ├── island/          # Dynamic Island modules
-│   ├── modules/         # AppLauncher, Workspace, LockScreen, SidePanel, etc.
+│   ├── bar/             # Top bar components (Workspaces, TopBar)
+│   ├── island/          # Dynamic Island modules (IslandShelf, IslandOsd, ControlCenterIsland)
+│   ├── modules/         # AppLauncher, Workspace, LockScreen, Media, SystemInfo, Clock, etc.
 │   ├── panel/           # QuickSettings, Alerts, Weather, Profile
-│   └── theme/           # Material color tokens and reusable UI components
+│   ├── theme/           # Material color tokens and reusable UI components
+│   └── wallpaper/       # 3D Wallpaper Carousel & WallpaperSlideshowScheduler
 ├── rust/                # Rust backend (nexad)
-│   └── src/             # search.rs, workspace.rs, audio.rs, events.rs, etc.
-└── scripts/             # Helper scripts (nexa-restart.sh, theme.sh, wallpaper.sh)
+│   └── src/             # search.rs, shelf.rs, slideshow.rs, state.rs, wallpaper.rs, etc.
+└── scripts/             # Helper scripts (nexa-restart.sh, nexa-start.sh, wallpaper.sh)
 ```
 
 ---
