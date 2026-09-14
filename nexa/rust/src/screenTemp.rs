@@ -77,6 +77,21 @@ fn command_exists(name: &str) -> bool {
         .unwrap_or(false)
 }
 
+fn cleanup_hyprsunset() {
+    let _ = Command::new("pkill").args(["-9", "hyprsunset"]).status();
+    if let Ok(runtime) = env::var("XDG_RUNTIME_DIR") {
+        let hypr_dir = PathBuf::from(runtime).join("hypr");
+        if let Ok(entries) = fs::read_dir(hypr_dir) {
+            for entry in entries.flatten() {
+                let sock = entry.path().join(".hyprsunset.sock");
+                if sock.exists() {
+                    let _ = fs::remove_file(sock);
+                }
+            }
+        }
+    }
+}
+
 fn ensure_hyprsunset_running() -> Result<(), String> {
     if !command_exists("hyprsunset") {
         return Err(
@@ -96,6 +111,8 @@ fn ensure_hyprsunset_running() -> Result<(), String> {
         return Ok(());
     }
 
+    cleanup_hyprsunset();
+
     Command::new("hyprsunset")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -105,7 +122,7 @@ fn ensure_hyprsunset_running() -> Result<(), String> {
         })?;
 
     std::thread::sleep(
-        std::time::Duration::from_millis(200)
+        std::time::Duration::from_millis(250)
     );
 
     Ok(())
@@ -116,25 +133,44 @@ fn apply_temperature(temperature: u32) -> Result<(), String> {
 
     let temperature = clamp_temperature(temperature);
 
-    let output = Command::new("hyprctl")
-        .args([
-            "hyprsunset",
-            "temperature",
-            &temperature.to_string(),
-        ])
-        .output()
-        .map_err(|error| {
-            format!(
-                "failed to execute hyprctl hyprsunset: {error}"
-            )
-        })?;
+    for attempt in 0..3 {
+        let output = Command::new("hyprctl")
+            .args([
+                "hyprsunset",
+                "temperature",
+                &temperature.to_string(),
+            ])
+            .output();
 
-    if !output.status.success() {
-        return Err(
-            String::from_utf8_lossy(&output.stderr)
-                .trim()
-                .to_string()
-        );
+        match output {
+            Ok(out) if out.status.success() => return Ok(()),
+            Ok(out) if out.status.code() == Some(3) && attempt == 0 => {
+                // Daemon socket unreachable or zombie process — clean up and respawn once
+                cleanup_hyprsunset();
+                let _ = Command::new("hyprsunset")
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn();
+                std::thread::sleep(std::time::Duration::from_millis(250));
+            }
+            _ if attempt < 2 => {
+                std::thread::sleep(std::time::Duration::from_millis(150));
+            }
+            Ok(out) => {
+                let err = String::from_utf8_lossy(&out.stderr).trim().to_string();
+                let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                return Err(if !err.is_empty() {
+                    err
+                } else if !stdout.is_empty() {
+                    stdout
+                } else {
+                    "hyprctl hyprsunset failed".to_string()
+                });
+            }
+            Err(e) => {
+                return Err(format!("failed to execute hyprctl hyprsunset: {e}"));
+            }
+        }
     }
 
     Ok(())
@@ -142,6 +178,18 @@ fn apply_temperature(temperature: u32) -> Result<(), String> {
 
 fn reset_temperature() -> Result<(), String> {
     if !command_exists("hyprsunset") {
+        return Ok(());
+    }
+
+    let running = Command::new("pidof")
+        .arg("hyprsunset")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false);
+
+    if !running {
         return Ok(());
     }
 
@@ -158,11 +206,15 @@ fn reset_temperature() -> Result<(), String> {
         })?;
 
     if !output.status.success() {
-        return Err(
-            String::from_utf8_lossy(&output.stderr)
-                .trim()
-                .to_string()
-        );
+        let err = String::from_utf8_lossy(&output.stderr);
+        let out = String::from_utf8_lossy(&output.stdout);
+        if !err.contains("Couldn't connect") && !out.contains("Couldn't connect") && output.status.code() != Some(3) {
+            return Err(if !err.trim().is_empty() {
+                err.trim().to_string()
+            } else {
+                out.trim().to_string()
+            });
+        }
     }
 
     Ok(())
@@ -310,7 +362,7 @@ fn active_temperature(state: &ScreenTempState) -> u32 {
     }
 }
 
-fn apply_state(state: &mut ScreenTempState) -> Result<(), String> {
+pub(crate) fn apply_state(state: &mut ScreenTempState) -> Result<(), String> {
     if !state.enabled {
         reset_temperature()?;
         state.temperature = DEFAULT_TEMP;
@@ -471,6 +523,10 @@ pub fn is_in_schedule_window(state: &ScreenTempState) -> bool {
 
 pub fn evaluate_schedule(state: &mut ScreenTempState, force: bool) -> Result<bool, String> {
     if state.schedule_mode == "off" {
+        if state.schedule_target != "none" {
+            state.schedule_target = "none".to_string();
+            save_state(state)?;
+        }
         return Ok(false);
     }
 
@@ -479,14 +535,10 @@ pub fn evaluate_schedule(state: &mut ScreenTempState, force: bool) -> Result<boo
 
     if force {
         state.schedule_target = target_str.to_string();
-        if state.enabled != should_be_on {
-            state.enabled = should_be_on;
-            apply_state(state)?;
-            save_state(state)?;
-            return Ok(true);
-        }
+        state.enabled = should_be_on;
+        apply_state(state)?;
         save_state(state)?;
-        return Ok(false);
+        return Ok(true);
     }
 
     // Periodic transition check: detect crossing the scheduled boundary
@@ -494,10 +546,24 @@ pub fn evaluate_schedule(state: &mut ScreenTempState, force: bool) -> Result<boo
         state.schedule_target = target_str.to_string();
         state.enabled = should_be_on;
         apply_state(state)?;
-        // Reset to "none" so tomorrow's boundary crossing is detected again
-        state.schedule_target = "none".to_string();
         save_state(state)?;
         return Ok(true);
+    }
+
+    // If scheduled to be ON and state is enabled, ensure hyprsunset is actually running
+    // (recovers after sleep/wake, crash, or session restart)
+    if should_be_on && state.enabled {
+        let is_running = Command::new("pidof")
+            .arg("hyprsunset")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map(|status| status.success())
+            .unwrap_or(false);
+
+        if !is_running {
+            apply_state(state)?;
+        }
     }
 
     Ok(false)
@@ -809,8 +875,12 @@ pub fn handle(args: &[String]) -> Result<(), String> {
                 }
             }
 
-            let _ = evaluate_schedule(&mut state, true)?;
-            save_state(&state)?;
+            if state.schedule_mode == "off" {
+                state.schedule_target = "none".to_string();
+                save_state(&state)?;
+            } else {
+                let _ = evaluate_schedule(&mut state, true)?;
+            }
             print_json(&state);
         }
 
@@ -835,7 +905,7 @@ pub fn handle(args: &[String]) -> Result<(), String> {
         }
     }
 
-    if command != "info" {
+    if command != "info" && command != "evaluate-schedule" {
         let _ = crate::state::update_state(|s| {
             s.nightlight_enabled = state.enabled;
             s.nightlight_mode = state.mode.clone();
