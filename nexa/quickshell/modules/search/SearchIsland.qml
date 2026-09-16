@@ -252,7 +252,7 @@ Item {
             root.nexadPath,
             "search",
             "open",
-            String(result.id)
+            String(result.path && result.path.length > 0 ? result.path : result.id)
         ]
 
         openProcess.running = true
@@ -859,7 +859,7 @@ Item {
                             width: 26
                             height: 26
 
-                            visible: resultRow.modelData.kind === "app"
+                            visible: resultRow.modelData.kind === "app" || resultRow.modelData.kind === "appimage"
 
                             source: root.appIconSource(resultRow.modelData.icon)
 
@@ -944,13 +944,11 @@ Item {
                             Layout.fillWidth: true
 
                             text:
-                                resultRow.modelData.kind
-                                === "app"
-                                ? "Application"
-                                : (
-                                    resultRow.modelData.path
-                                    || ""
-                                )
+                                (resultRow.modelData.description && resultRow.modelData.description.length > 0)
+                                ? resultRow.modelData.description
+                                : (resultRow.modelData.kind === "app" ? "Application" :
+                                   resultRow.modelData.kind === "appimage" ? "AppImage Executable" :
+                                   (resultRow.modelData.path || ""))
 
                             color:
                                 Nexa.Theme.mutedText
@@ -971,10 +969,9 @@ Item {
 
                     Text {
                         text:
-                            resultRow.modelData.kind
-                            === "app"
+                            resultRow.modelData.kind === "app"
                             ? "APP"
-                            : "FILE"
+                            : (resultRow.modelData.kind === "appimage" ? "APPIMAGE" : "FILE")
 
                         color:
                             resultRow.selected

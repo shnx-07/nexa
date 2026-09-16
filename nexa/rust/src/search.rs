@@ -1,27 +1,24 @@
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
-    env,
-    fs,
-    os::unix::process::CommandExt,
+    env, fs,
+    os::unix::{fs::PermissionsExt, process::CommandExt},
     path::{Path, PathBuf},
-    process::Command,
-    time::Duration,
+    process::{Command, Stdio},
+    time::SystemTime,
 };
-
 use walkdir::{DirEntry, WalkDir};
 
-
 // ============================================================
-// SEARCH ENTRY
+// SEARCH ENTRY DEFINITIONS
 // ============================================================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchEntry {
     pub id: usize,
-    pub kind: String,
+    pub kind: String, // "app", "appimage", "file"
     pub name: String,
-    pub path: String,
+    pub path: String, // Canonical absolute path
     pub exec: String,
     pub icon: String,
     #[serde(default)]
@@ -30,29 +27,27 @@ pub struct SearchEntry {
     pub generic_name: String,
     #[serde(default)]
     pub keywords: String,
+    #[serde(default)]
+    pub description: String,
 }
-
-
-// ============================================================
-// SEARCH RESULT
-// ============================================================
 
 #[derive(Debug, Serialize)]
-struct SearchResult {
-    id: usize,
-    kind: String,
-    name: String,
-    path: String,
-    exec: String,
-    icon: String,
-    score: i32,
+pub struct SearchResult {
+    pub id: usize,
+    pub kind: String,
+    pub name: String,
+    pub path: String,
+    pub exec: String,
+    pub icon: String,
+    pub score: i32,
     #[serde(default)]
-    terminal: bool,
+    pub terminal: bool,
+    #[serde(default)]
+    pub description: String,
 }
 
-
 // ============================================================
-// PATHS
+// PATHS & DIRECTORIES
 // ============================================================
 
 fn home_dir() -> PathBuf {
@@ -61,47 +56,83 @@ fn home_dir() -> PathBuf {
         .unwrap_or_else(|_| PathBuf::from("/tmp"))
 }
 
-
 fn cache_dir() -> PathBuf {
-    home_dir()
-        .join(".cache")
-        .join("nexa")
+    home_dir().join(".cache").join("nexa")
 }
-
 
 fn cache_path() -> PathBuf {
-    cache_dir()
-        .join("search-index.json")
+    cache_dir().join("search-index.json")
 }
 
-
-// ============================================================
-// DESKTOP APPLICATION DIRECTORIES
-// ============================================================
-
+/// Discovers all Freedesktop application directories including
+/// standard XDG paths, Flatpak (system + user), and Snap.
 fn application_dirs() -> Vec<PathBuf> {
-    vec![
-        PathBuf::from("/usr/share/applications"),
-        PathBuf::from("/usr/local/share/applications"),
-        home_dir()
-            .join(".local")
-            .join("share")
-            .join("applications"),
-    ]
-}
+    let mut dirs = Vec::new();
+    let mut seen = HashSet::new();
 
+    let mut add_dir = |p: PathBuf| {
+        if p.is_dir() {
+            if let Ok(canonical) = p.canonicalize() {
+                if seen.insert(canonical.clone()) {
+                    dirs.push(canonical);
+                }
+            } else if seen.insert(p.clone()) {
+                dirs.push(p);
+            }
+        }
+    };
 
-// ============================================================
-// FILE SEARCH DIRECTORIES
-//
-// Strictly clean user document/media directories.
-// Hidden folders (like ~/.config) are intentionally omitted.
-// ============================================================
-
-fn file_dirs() -> Vec<PathBuf> {
     let home = home_dir();
 
-    vec![
+    // 1. User local applications
+    add_dir(home.join(".local/share/applications"));
+
+    // 2. User Flatpak exports
+    add_dir(home.join(".local/share/flatpak/exports/share/applications"));
+
+    // 3. System Flatpak exports
+    add_dir(PathBuf::from("/var/lib/flatpak/exports/share/applications"));
+
+    // 4. XDG_DATA_HOME
+    if let Ok(xdg_home) = env::var("XDG_DATA_HOME") {
+        add_dir(PathBuf::from(xdg_home).join("applications"));
+    }
+
+    // 5. XDG_DATA_DIRS
+    if let Ok(xdg_dirs) = env::var("XDG_DATA_DIRS") {
+        for d in xdg_dirs.split(':').filter(|s| !s.is_empty()) {
+            add_dir(PathBuf::from(d).join("applications"));
+        }
+    } else {
+        add_dir(PathBuf::from("/usr/local/share/applications"));
+        add_dir(PathBuf::from("/usr/share/applications"));
+    }
+
+    // 6. Snap applications
+    add_dir(PathBuf::from("/var/lib/snapd/desktop/applications"));
+
+    dirs
+}
+
+/// Discovers directories where AppImages are typically placed.
+fn appimage_dirs() -> Vec<PathBuf> {
+    let home = home_dir();
+    let candidates = [
+        home.join("Applications"),
+        home.join("Apps"),
+        home.join("Apps_img"),
+        home.join("Downloads"),
+        home.join(".local/bin"),
+        home.join("Desktop"),
+    ];
+
+    candidates.into_iter().filter(|p| p.is_dir()).collect()
+}
+
+/// Discovers user document and media directories.
+fn file_dirs() -> Vec<PathBuf> {
+    let home = home_dir();
+    let candidates = [
         home.join("Desktop"),
         home.join("Documents"),
         home.join("Downloads"),
@@ -109,19 +140,96 @@ fn file_dirs() -> Vec<PathBuf> {
         home.join("Pictures"),
         home.join("Videos"),
         home.join("Projects"),
-        home.join("Apps_img"),
-    ]
+    ];
+
+    candidates.into_iter().filter(|p| p.is_dir()).collect()
 }
 
+// ============================================================
+// STRICT DOTFILE & NOISE SHIELD
+// ============================================================
+
+/// Strictly filters out any path that contains hidden folders (starting with '.')
+/// or development cache/build noise directories.
+fn should_skip_entry(entry: &DirEntry) -> bool {
+    let file_name = entry.file_name().to_string_lossy();
+
+    if file_name.starts_with('.') {
+        return true;
+    }
+
+    if entry.file_type().is_dir() {
+        matches!(
+            file_name.as_ref(),
+            "node_modules"
+                | "target"
+                | "dist"
+                | "build"
+                | "venv"
+                | ".venv"
+                | "__pycache__"
+                | "Trash"
+                | ".Trash"
+                | ".git"
+                | ".config"
+                | ".cache"
+                | ".local"
+        )
+    } else {
+        false
+    }
+}
+
+/// Validates whether a file path is clean of any hidden ancestor directory.
+fn is_clean_user_path(path: &Path) -> bool {
+    for comp in path.components() {
+        let s = comp.as_os_str().to_string_lossy();
+        if s.starts_with('.') {
+            return false;
+        }
+        if matches!(
+            s.as_ref(),
+            "node_modules" | "target" | "dist" | "build" | "venv" | "__pycache__" | "Trash"
+        ) {
+            return false;
+        }
+    }
+    true
+}
 
 // ============================================================
 // DESKTOP FILE PARSING
 // ============================================================
 
+fn resolve_desktop_icon(raw_icon: &str) -> String {
+    let trimmed = raw_icon.trim();
+    if trimmed.is_empty() {
+        return "application-x-executable".to_string();
+    }
+
+    if trimmed.starts_with('/') {
+        return trimmed.to_string();
+    }
+
+    // Check /usr/share/pixmaps/ for direct image matches
+    for ext in &["", ".png", ".svg", ".xpm"] {
+        let candidate = PathBuf::from(format!("/usr/share/pixmaps/{trimmed}{ext}"));
+        if candidate.is_file() {
+            return candidate.to_string_lossy().to_string();
+        }
+        let lower = trimmed.to_lowercase();
+        let candidate_lower = PathBuf::from(format!("/usr/share/pixmaps/{lower}{ext}"));
+        if candidate_lower.is_file() {
+            return candidate_lower.to_string_lossy().to_string();
+        }
+    }
+
+    // Return the icon name for Quickshell's icon theme engine
+    trimmed.to_string()
+}
+
 fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
-    let content =
-        fs::read_to_string(path)
-            .ok()?;
+    let content = fs::read_to_string(path).ok()?;
 
     let mut name = String::new();
     let mut generic_name = String::new();
@@ -129,7 +237,6 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
     let mut exec = String::new();
     let mut icon = String::new();
     let mut terminal = false;
-
     let mut hidden = false;
     let mut no_display = false;
     let mut in_desktop_entry = false;
@@ -146,73 +253,53 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
             continue;
         }
 
-        if let Some(value) = line.strip_prefix("Name=") {
+        if let Some(val) = line.strip_prefix("Name=") {
             if name.is_empty() {
-                name = value.trim().to_string();
+                name = val.trim().to_string();
             }
             continue;
         }
 
-        if let Some(value) = line.strip_prefix("GenericName=") {
+        if let Some(val) = line.strip_prefix("GenericName=") {
             if generic_name.is_empty() {
-                generic_name = value.trim().to_string();
+                generic_name = val.trim().to_string();
             }
             continue;
         }
 
-        if let Some(value) = line.strip_prefix("Keywords=") {
+        if let Some(val) = line.strip_prefix("Keywords=") {
             if keywords.is_empty() {
-                keywords = value.trim().to_string();
+                keywords = val.trim().to_string();
             }
             continue;
         }
 
-        if let Some(value) = line.strip_prefix("Exec=") {
+        if let Some(val) = line.strip_prefix("Exec=") {
             if exec.is_empty() {
-                exec = value.trim().to_string();
+                exec = val.trim().to_string();
             }
             continue;
         }
 
-        if let Some(value) = line.strip_prefix("Terminal=") {
-            terminal = value.trim().eq_ignore_ascii_case("true");
+        if let Some(val) = line.strip_prefix("Terminal=") {
+            terminal = val.trim().eq_ignore_ascii_case("true");
             continue;
         }
 
-        if let Some(value) = line.strip_prefix("Icon=") {
+        if let Some(val) = line.strip_prefix("Icon=") {
             if icon.is_empty() {
-                let raw_icon = value.trim();
-                let icon_str = if !raw_icon.starts_with('/') {
-                    let mut found = None;
-                    for ext in &["", ".png", ".svg", ".xpm"] {
-                        let candidate = PathBuf::from(format!("/usr/share/pixmaps/{raw_icon}{ext}"));
-                        if candidate.is_file() {
-                            found = Some(candidate.to_string_lossy().to_string());
-                            break;
-                        }
-                        let lower = raw_icon.to_lowercase();
-                        let candidate_lower = PathBuf::from(format!("/usr/share/pixmaps/{lower}{ext}"));
-                        if candidate_lower.is_file() {
-                            found = Some(candidate_lower.to_string_lossy().to_string());
-                            break;
-                        }
-                    }
-                    found.unwrap_or_else(|| raw_icon.to_string())
-                } else {
-                    raw_icon.to_string()
-                };
-                icon = icon_str;
+                icon = resolve_desktop_icon(val);
             }
             continue;
         }
 
-        if let Some(value) = line.strip_prefix("Hidden=") {
-            hidden = value.trim().eq_ignore_ascii_case("true");
+        if let Some(val) = line.strip_prefix("Hidden=") {
+            hidden = val.trim().eq_ignore_ascii_case("true");
             continue;
         }
 
-        if let Some(value) = line.strip_prefix("NoDisplay=") {
-            no_display = value.trim().eq_ignore_ascii_case("true");
+        if let Some(val) = line.strip_prefix("NoDisplay=") {
+            no_display = val.trim().eq_ignore_ascii_case("true");
             continue;
         }
     }
@@ -220,6 +307,12 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
     if hidden || no_display || name.is_empty() {
         return None;
     }
+
+    let description = if !generic_name.is_empty() {
+        generic_name.clone()
+    } else {
+        "Application".to_string()
+    };
 
     Some(SearchEntry {
         id: 0,
@@ -231,40 +324,108 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
         terminal,
         generic_name,
         keywords,
+        description,
     })
 }
 
-
 // ============================================================
-// APPLICATION INDEXING
-//
-// Follows symlinks so distributions that symlink launchers
-// (e.g. Arch Linux LibreOffice) are properly indexed.
+// APPIMAGE DISCOVERY
 // ============================================================
 
-fn index_applications(
-    entries: &mut Vec<SearchEntry>,
-) {
-    let mut seen = HashSet::<String>::new();
-
-    for directory in application_dirs() {
-        if !directory.exists() {
-            continue;
+fn clean_appimage_name(file_name: &str) -> String {
+    let mut base = file_name;
+    for ext in &[".AppImage", ".appimage"] {
+        if let Some(s) = base.strip_suffix(ext) {
+            base = s;
+            break;
         }
+    }
 
-        for item in WalkDir::new(directory)
-            .max_depth(4)
+    let cleaned = base.replace(['-', '_'], " ");
+    cleaned.trim().to_string()
+}
+
+fn index_appimages(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>) {
+    for directory in appimage_dirs() {
+        let walker = WalkDir::new(&directory)
+            .max_depth(3)
             .follow_links(true)
             .into_iter()
-            .filter_map(Result::ok)
-        {
-            let path = item.path();
+            .filter_entry(|e| !should_skip_entry(e));
 
+        for item in walker.flatten() {
+            let path = item.path();
             if !path.is_file() {
                 continue;
             }
 
-            if path.extension().and_then(|value| value.to_str()) != Some("desktop") {
+            let Some(file_name) = path.file_name().and_then(|f| f.to_str()) else {
+                continue;
+            };
+
+            let lower = file_name.to_lowercase();
+            if !lower.ends_with(".appimage") {
+                continue;
+            }
+
+            let path_string = path.to_string_lossy().to_string();
+            if !seen_paths.insert(path_string.clone()) {
+                continue;
+            }
+
+            let name = clean_appimage_name(file_name);
+
+            // Look for adjacent icon if present
+            let parent = path.parent();
+            let mut icon = "application-x-executable".to_string();
+            if let Some(p) = parent {
+                let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                for ext in &[".png", ".svg"] {
+                    let img_cand = p.join(format!("{stem}{ext}"));
+                    if img_cand.is_file() {
+                        icon = img_cand.to_string_lossy().to_string();
+                        break;
+                    }
+                }
+            }
+
+            entries.push(SearchEntry {
+                id: 0,
+                kind: "appimage".to_string(),
+                name,
+                path: path_string,
+                exec: path.to_string_lossy().to_string(),
+                icon,
+                terminal: false,
+                generic_name: "AppImage Executable".to_string(),
+                keywords: "appimage;portable;application;".to_string(),
+                description: "AppImage".to_string(),
+            });
+        }
+    }
+}
+
+// ============================================================
+// APPLICATION INDEXING
+// ============================================================
+
+fn index_applications(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>) {
+    let mut seen_desktop_keys = HashSet::new();
+
+    for directory in application_dirs() {
+        let walker = WalkDir::new(&directory)
+            .max_depth(4)
+            .follow_links(true)
+            .into_iter()
+            .filter_entry(|e| !should_skip_entry(e));
+
+        for item in walker.flatten() {
+            let path = item.path();
+            if !path.is_file() {
+                continue;
+            }
+
+            if path.extension().and_then(|ext| ext.to_str()) != Some("desktop") {
                 continue;
             }
 
@@ -272,79 +433,37 @@ fn index_applications(
                 continue;
             };
 
-            // Avoid duplicate desktop files by filename.
             let key = path
                 .file_name()
-                .and_then(|value| value.to_str())
+                .and_then(|v| v.to_str())
                 .unwrap_or("")
                 .to_lowercase();
 
-            if key.is_empty() || !seen.insert(key) {
+            if key.is_empty() || !seen_desktop_keys.insert(key) {
                 continue;
             }
 
+            let path_str = path.to_string_lossy().to_string();
+            seen_paths.insert(path_str);
             entries.push(entry);
         }
     }
 }
 
-
-// ============================================================
-// FILE FILTERING
-//
-// Automatically skips any hidden directory (starts with '.')
-// or heavy build/cache directories.
-// ============================================================
-
-fn should_skip_dir(
-    entry: &DirEntry,
-) -> bool {
-    if !entry.file_type().is_dir() {
-        return false;
-    }
-
-    let name = entry.file_name().to_string_lossy();
-
-    name.starts_with('.')
-        || matches!(
-            name.as_ref(),
-            "node_modules"
-                | "target"
-                | "dist"
-                | "build"
-                | "venv"
-                | ".venv"
-                | "__pycache__"
-                | "Trash"
-                | ".Trash"
-        )
-}
-
-
 // ============================================================
 // FILE INDEXING
 // ============================================================
 
-fn index_files(
-    entries: &mut Vec<SearchEntry>,
-) {
-    let mut seen = HashSet::<String>::new();
-
+fn index_files(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>) {
     for directory in file_dirs() {
-        if !directory.exists() {
-            continue;
-        }
-
         let walker = WalkDir::new(&directory)
             .follow_links(false)
-            .max_depth(6)
+            .max_depth(5)
             .into_iter()
-            .filter_entry(|entry| !should_skip_dir(entry));
+            .filter_entry(|e| !should_skip_entry(e));
 
-        for item in walker.filter_map(Result::ok) {
+        for item in walker.flatten() {
             let path = item.path();
-
-            // Do not index search root itself.
             if path == directory {
                 continue;
             }
@@ -353,20 +472,37 @@ fn index_files(
                 continue;
             }
 
-            let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
+            let Some(name) = path.file_name().and_then(|v| v.to_str()) else {
                 continue;
             };
 
-            // Strictly skip any dotfiles or hidden entries.
-            if name.is_empty() || name.starts_with('.') {
+            if name.starts_with('.') {
+                continue;
+            }
+
+            // Verify the path has no hidden components
+            if !is_clean_user_path(path) {
                 continue;
             }
 
             let path_string = path.to_string_lossy().to_string();
-
-            if !seen.insert(path_string.clone()) {
+            if !seen_paths.insert(path_string.clone()) {
                 continue;
             }
+
+            let ext = path
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("")
+                .to_uppercase();
+
+            let description = if path.is_dir() {
+                "Folder".to_string()
+            } else if !ext.is_empty() {
+                format!("{ext} Document")
+            } else {
+                "File".to_string()
+            };
 
             entries.push(SearchEntry {
                 id: 0,
@@ -378,90 +514,106 @@ fn index_files(
                 terminal: false,
                 generic_name: String::new(),
                 keywords: String::new(),
+                description,
             });
         }
     }
 }
 
-
 // ============================================================
-// BUILD INDEX
+// BUILD & CACHE ENGINE
 // ============================================================
 
 fn build_index() -> Vec<SearchEntry> {
-    let mut entries = Vec::<SearchEntry>::new();
+    let mut entries = Vec::new();
+    let mut seen_paths = HashSet::new();
 
-    index_applications(&mut entries);
-    index_files(&mut entries);
+    index_applications(&mut entries, &mut seen_paths);
+    index_appimages(&mut entries, &mut seen_paths);
+    index_files(&mut entries, &mut seen_paths);
 
-    // Stable deterministic order before IDs.
+    // Deterministic sorting: Apps -> AppImages -> Files
     entries.sort_by(|a, b| {
-        let kind_order_a = if a.kind == "app" { 0 } else { 1 };
-        let kind_order_b = if b.kind == "app" { 0 } else { 1 };
+        let rank_a = match a.kind.as_str() {
+            "app" => 0,
+            "appimage" => 1,
+            _ => 2,
+        };
+        let rank_b = match b.kind.as_str() {
+            "app" => 0,
+            "appimage" => 1,
+            _ => 2,
+        };
 
-        kind_order_a
-            .cmp(&kind_order_b)
+        rank_a
+            .cmp(&rank_b)
             .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
     });
 
-    for (index, entry) in entries.iter_mut().enumerate() {
-        entry.id = index;
+    for (idx, entry) in entries.iter_mut().enumerate() {
+        entry.id = idx;
     }
 
     entries
 }
 
-
-// ============================================================
-// SAVE INDEX
-// ============================================================
-
-fn save_index(
-    entries: &[SearchEntry],
-) -> Result<(), String> {
+fn save_index(entries: &[SearchEntry]) -> Result<(), String> {
     fs::create_dir_all(cache_dir())
-        .map_err(|error| format!("failed to create cache directory: {error}"))?;
+        .map_err(|e| format!("failed to create cache dir: {e}"))?;
 
     let json = serde_json::to_string(entries)
-        .map_err(|error| format!("failed to serialize search index: {error}"))?;
+        .map_err(|e| format!("failed to serialize search index: {e}"))?;
 
     fs::write(cache_path(), json)
-        .map_err(|error| format!("failed to write search index: {error}"))?;
+        .map_err(|e| format!("failed to write search index: {e}"))?;
 
     Ok(())
 }
 
-
-// ============================================================
-// LOAD INDEX
-// ============================================================
+fn check_app_dirs_newer_than(cache_mtime: SystemTime) -> bool {
+    for dir in application_dirs() {
+        if let Ok(metadata) = fs::metadata(&dir) {
+            if let Ok(mtime) = metadata.modified() {
+                if mtime > cache_mtime {
+                    return true;
+                }
+            }
+        }
+    }
+    for dir in appimage_dirs() {
+        if let Ok(metadata) = fs::metadata(&dir) {
+            if let Ok(mtime) = metadata.modified() {
+                if mtime > cache_mtime {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
 
 fn load_index() -> Result<Vec<SearchEntry>, String> {
     let path = cache_path();
 
-    if !path.exists() {
+    if !path.is_file() {
         let entries = build_index();
         save_index(&entries)?;
         return Ok(entries);
     }
 
-    // Refresh after 5 seconds of inactivity if files changed.
-    let should_refresh = match fs::metadata(&path).and_then(|m| m.modified()) {
-        Ok(modified) => modified
-            .elapsed()
-            .map(|age| age > Duration::from_secs(5))
-            .unwrap_or(true),
-        Err(_) => true,
-    };
+    let cache_mtime = fs::metadata(&path)
+        .and_then(|m| m.modified())
+        .unwrap_or(SystemTime::UNIX_EPOCH);
 
-    if should_refresh {
+    // If an application directory was modified since the cache was built, re-index immediately!
+    if check_app_dirs_newer_than(cache_mtime) {
         let entries = build_index();
         save_index(&entries)?;
         return Ok(entries);
     }
 
     let content = fs::read_to_string(&path)
-        .map_err(|error| format!("failed to read search index: {error}"))?;
+        .map_err(|e| format!("failed to read search index: {e}"))?;
 
     match serde_json::from_str::<Vec<SearchEntry>>(&content) {
         Ok(entries) => Ok(entries),
@@ -473,20 +625,10 @@ fn load_index() -> Result<Vec<SearchEntry>, String> {
     }
 }
 
-
 // ============================================================
-// STRING & WORD UTILITIES
+// FUZZY SCORING ENGINE
 // ============================================================
 
-fn normalize(value: &str) -> String {
-    value.trim().to_lowercase()
-}
-
-
-/// Splits a string into words by whitespace, punctuation, and CamelCase transitions.
-/// E.g. "Visual Studio Code" -> ["visual", "studio", "code"]
-/// E.g. "LibreOffice Writer" -> ["libre", "office", "writer"]
-/// E.g. "QuickShell"         -> ["quick", "shell"]
 fn extract_words(text: &str) -> Vec<String> {
     let mut words = Vec::new();
     let mut current = String::new();
@@ -518,34 +660,13 @@ fn extract_words(text: &str) -> Vec<String> {
     words
 }
 
-
-/// Computes the initials / acronym of the words.
-/// E.g. ["visual", "studio", "code"] -> "vsc"
 fn compute_acronym(words: &[String]) -> String {
-    words
-        .iter()
-        .filter_map(|w| w.chars().next())
-        .collect()
+    words.iter().filter_map(|w| w.chars().next()).collect()
 }
 
-
-// ============================================================
-// ADVANCED MATCHING & SCORING ENGINE
-//
-// Matches:
-// 1. Exact string match             (1000)
-// 2. Acronym / initials exact match (950)   e.g. "vsc" -> "Visual Studio Code", "lo" -> "LibreOffice", "gimp" -> "GNU Image Manipulation Program"
-// 3. Multi-word prefix match        (920)   e.g. "vs code" -> "Visual Studio Code", "libre calc" -> "LibreOffice Calc"
-// 4. Acronym prefix match           (900)   e.g. "vs" -> "Visual Studio Code"
-// 5. String prefix match            (880)   e.g. "fire" -> "Firefox"
-// 6. Word-boundary prefix match     (840)   e.g. "calc" -> "LibreOffice Calc", "writer" -> "LibreOffice Writer", "studio" -> "Visual Studio Code"
-// 7. Substring contains match       (600)
-// 8. Fuzzy subsequence match        (350..550)
-// ============================================================
-
 fn score_text(target: &str, query: &str) -> Option<i32> {
-    let norm_target = normalize(target);
-    let norm_query = normalize(query);
+    let norm_target = target.trim().to_lowercase();
+    let norm_query = query.trim().to_lowercase();
 
     if norm_query.is_empty() || norm_target.is_empty() {
         return None;
@@ -553,44 +674,33 @@ fn score_text(target: &str, query: &str) -> Option<i32> {
 
     // 1. Exact match
     if norm_target == norm_query {
-        return Some(1000);
+        return Some(1200);
     }
 
     let target_words = extract_words(target);
     let query_words = extract_words(query);
     let acronym = compute_acronym(&target_words);
 
-    // 2. Acronym exact match (e.g. "vsc" == "vsc", "lo" == "lo")
+    // 2. Acronym exact match (e.g. "vsc" -> "Visual Studio Code")
     if !acronym.is_empty() && acronym == norm_query {
-        return Some(950);
+        return Some(1050);
     }
 
-    // 3. Multi-word prefix / acronym query match (e.g. "vs code" on "Visual Studio Code")
+    // 3. Multi-word prefix match (e.g. "vs code" -> "Visual Studio Code")
     if query_words.len() > 1 && !target_words.is_empty() {
         let mut t_idx = 0;
         let mut all_matched = true;
 
         for qw in &query_words {
             let mut matched_word = false;
-
             while t_idx < target_words.len() {
                 let tw = &target_words[t_idx];
                 t_idx += 1;
-
-                // Word prefix match
                 if tw.starts_with(qw) {
                     matched_word = true;
                     break;
                 }
-
-                // Check sub-acronym from current word onward
-                let sub_acronym = compute_acronym(&target_words[(t_idx - 1)..]);
-                if sub_acronym.starts_with(qw) {
-                    matched_word = true;
-                    break;
-                }
             }
-
             if !matched_word {
                 all_matched = false;
                 break;
@@ -598,36 +708,31 @@ fn score_text(target: &str, query: &str) -> Option<i32> {
         }
 
         if all_matched {
-            return Some(920);
+            return Some(950);
         }
     }
 
-    // 4. Acronym prefix match (e.g. "vs" on "vsc")
-    if !acronym.is_empty() && norm_query.len() >= 2 && acronym.starts_with(&norm_query) {
-        return Some(900);
-    }
-
-    // 5. String prefix match (e.g. "fire" on "firefox")
+    // 4. String prefix match (e.g. "fire" -> "Firefox")
     if norm_target.starts_with(&norm_query) {
-        let length_penalty = (norm_target.len().saturating_sub(norm_query.len()) as i32).min(50);
-        return Some(880 - length_penalty);
+        let penalty = (norm_target.len().saturating_sub(norm_query.len()) as i32).min(50);
+        return Some(900 - penalty);
     }
 
-    // 6. Word-boundary prefix match (e.g. "calc" on "LibreOffice Calc")
+    // 5. Word-boundary prefix match (e.g. "calc" -> "LibreOffice Calc")
     for tw in &target_words {
         if tw.starts_with(&norm_query) {
-            let length_penalty = (tw.len().saturating_sub(norm_query.len()) as i32).min(40);
-            return Some(840 - length_penalty);
+            let penalty = (tw.len().saturating_sub(norm_query.len()) as i32).min(40);
+            return Some(850 - penalty);
         }
     }
 
-    // 7. Substring contains match
+    // 6. Substring match
     if norm_target.contains(&norm_query) {
-        let length_penalty = (norm_target.len().saturating_sub(norm_query.len()) as i32).min(80);
-        return Some(600 - length_penalty);
+        let penalty = (norm_target.len().saturating_sub(norm_query.len()) as i32).min(80);
+        return Some(650 - penalty);
     }
 
-    // 8. Strict Compact Fuzzy Subsequence
+    // 7. Compact Fuzzy Subsequence
     let target_chars: Vec<char> = norm_target.chars().collect();
     let query_chars: Vec<char> = norm_query.chars().collect();
 
@@ -655,7 +760,6 @@ fn score_text(target: &str, query: &str) -> Option<i32> {
             if first_match.is_none() {
                 first_match = Some(idx);
             }
-
             if let Some(prev) = last_match {
                 if idx == prev + 1 {
                     consecutive += 1;
@@ -665,7 +769,6 @@ fn score_text(target: &str, query: &str) -> Option<i32> {
             } else {
                 consecutive = 1;
             }
-
             best_consecutive = best_consecutive.max(consecutive);
             last_match = Some(idx);
             q_idx += 1;
@@ -685,7 +788,7 @@ fn score_text(target: &str, query: &str) -> Option<i32> {
         return None;
     }
 
-    let mut score = 300;
+    let mut score = 350;
     score += (max_span.saturating_sub(span) as i32) * 12;
     score += best_consecutive * 18;
     score -= (first as i32) * 5;
@@ -698,41 +801,25 @@ fn score_text(target: &str, query: &str) -> Option<i32> {
     Some(score)
 }
 
-
-// ============================================================
-// ENTRY SCORING
-// ============================================================
-
-fn score_entry(
-    entry: &SearchEntry,
-    query: &str,
-) -> Option<i32> {
+fn score_entry(entry: &SearchEntry, query: &str) -> Option<i32> {
     let mut best_score: Option<i32> = None;
 
-    let update_best = |current: &mut Option<i32>, new_score: Option<i32>| {
+    let mut update_best = |new_score: Option<i32>| {
         if let Some(ns) = new_score {
-            *current = Some(current.map_or(ns, |c| c.max(ns)));
+            best_score = Some(best_score.map_or(ns, |c| c.max(ns)));
         }
     };
 
-    // 1. Primary Name Match
-    update_best(&mut best_score, score_text(&entry.name, query));
+    update_best(score_text(&entry.name, query));
 
-    // 2. Extra metadata scoring for Applications
-    if entry.kind == "app" {
-        // GenericName match (e.g. "Spreadsheet", "Text Editor", "Word Processor")
+    if entry.kind == "app" || entry.kind == "appimage" {
         if !entry.generic_name.is_empty() {
-            let gen_score = score_text(&entry.generic_name, query).map(|s| s - 20);
-            update_best(&mut best_score, gen_score);
+            update_best(score_text(&entry.generic_name, query).map(|s| s - 30));
         }
-
-        // Keywords match (e.g. "calc;excel;sheets;" or "word;document;")
         if !entry.keywords.is_empty() {
-            let kw_score = score_text(&entry.keywords, query).map(|s| s - 40);
-            update_best(&mut best_score, kw_score);
+            update_best(score_text(&entry.keywords, query).map(|s| s - 50));
         }
 
-        // Exec binary name (e.g. "code", "libreoffice", "gimp")
         let exec_bin = entry
             .exec
             .split_whitespace()
@@ -742,38 +829,35 @@ fn score_entry(
             .unwrap_or("");
 
         if !exec_bin.is_empty() {
-            let exec_score = score_text(exec_bin, query);
-            update_best(&mut best_score, exec_score);
+            update_best(score_text(exec_bin, query).map(|s| s - 20));
         }
 
-        // Desktop path stem (e.g. "libreoffice-writer", "code", "org.kde.kate")
         let path_stem = Path::new(&entry.path)
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("");
 
         if !path_stem.is_empty() {
-            let stem_score = score_text(path_stem, query);
-            update_best(&mut best_score, stem_score);
+            update_best(score_text(path_stem, query).map(|s| s - 20));
         }
     }
 
     let score = best_score?;
-
-    // Applications receive a +200 ranking bonus so they appear before files.
-    let bonus = if entry.kind == "app" { 200 } else { 0 };
+    let bonus = match entry.kind.as_str() {
+        "app" => 250,
+        "appimage" => 220,
+        _ => 0,
+    };
 
     Some(score + bonus)
 }
 
-
 // ============================================================
-// REFRESH PUBLIC COMMAND
+// PUBLIC COMMANDS: REFRESH & QUERY
 // ============================================================
 
 pub fn refresh() {
     let entries = build_index();
-
     if let Err(error) = save_index(&entries) {
         eprintln!("NEXA search refresh error: {error}");
         std::process::exit(2);
@@ -787,17 +871,9 @@ pub fn refresh() {
     println!("{output}");
 }
 
-
-// ============================================================
-// QUERY PUBLIC COMMAND
-// ============================================================
-
-pub fn query(
-    query: &str,
-) {
-    let query = query.trim();
-
-    if query.is_empty() {
+pub fn query(query_str: &str) {
+    let query_str = query_str.trim();
+    if query_str.is_empty() {
         println!("[]");
         return;
     }
@@ -810,11 +886,10 @@ pub fn query(
         }
     };
 
-    let mut results = entries
+    let mut results: Vec<SearchResult> = entries
         .iter()
         .filter_map(|entry| {
-            let score = score_entry(entry, query)?;
-
+            let score = score_entry(entry, query_str)?;
             Some(SearchResult {
                 id: entry.id,
                 kind: entry.kind.clone(),
@@ -824,21 +899,22 @@ pub fn query(
                 icon: entry.icon.clone(),
                 score,
                 terminal: entry.terminal,
+                description: entry.description.clone(),
             })
         })
-        .collect::<Vec<_>>();
+        .collect();
 
     results.sort_by(|a, b| {
-        let app_a = a.kind == "app";
-        let app_b = b.kind == "app";
+        let rank_a = if a.kind == "app" || a.kind == "appimage" { 0 } else { 1 };
+        let rank_b = if b.kind == "app" || b.kind == "appimage" { 0 } else { 1 };
 
-        app_b
-            .cmp(&app_a)
+        rank_a
+            .cmp(&rank_b)
             .then_with(|| b.score.cmp(&a.score))
             .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
     });
 
-    results.truncate(20);
+    results.truncate(25);
 
     match serde_json::to_string(&results) {
         Ok(json) => println!("{json}"),
@@ -849,140 +925,216 @@ pub fn query(
     }
 }
 
-
 // ============================================================
-// DESKTOP EXEC CLEANUP
+// RELIABLE LAUNCH ENGINE
 // ============================================================
 
-fn clean_desktop_exec(
-    exec: &str,
-) -> String {
+fn clean_desktop_exec(exec: &str) -> String {
     let mut cleaned = exec.to_string();
-
     for code in [
         "%f", "%F", "%u", "%U", "%i", "%c", "%k", "%d", "%D", "%n", "%N", "%v", "%m",
     ] {
         cleaned = cleaned.replace(code, "");
     }
-
     cleaned = cleaned.replace("%%", "%");
-
-    cleaned
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ")
+    cleaned.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-
-// ============================================================
-// OPEN APPLICATION
-// ============================================================
-
-fn open_application(
-    entry: &SearchEntry,
-) -> Result<(), String> {
-    let raw_command = clean_desktop_exec(&entry.exec);
-    let home = home_dir();
-
-    let command = if entry.terminal {
-        let term = env::var("TERMINAL").unwrap_or_else(|_| "kitty".to_string());
-        let app_name = Path::new(&entry.path)
-            .file_stem()
-            .and_then(|v| v.to_str())
-            .unwrap_or("app")
-            .to_lowercase();
-
-        if term.contains("alacritty") {
-            format!("{term} --class {app_name} -e {raw_command}")
-        } else {
-            format!("{term} --class {app_name} {raw_command}")
+fn command_exists(name: &str) -> bool {
+    if let Ok(path_var) = env::var("PATH") {
+        for p in path_var.split(':') {
+            if Path::new(p).join(name).is_file() {
+                return true;
+            }
         }
-    } else {
-        raw_command
-    };
+    }
+    false
+}
 
-    if !command.is_empty() {
-        match Command::new("sh")
-            .arg("-c")
-            .arg(format!("exec {command}"))
-            .current_dir(&home)
+fn launch_desktop_file(path_str: &str) -> Result<(), String> {
+    let desktop_path = Path::new(path_str);
+    if !desktop_path.is_file() {
+        return Err(format!("desktop file not found: {path_str}"));
+    }
+
+    // 1. Primary launcher: gio launch
+    if command_exists("gio") {
+        let status = Command::new("gio")
+            .arg("launch")
+            .arg(desktop_path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .process_group(0)
-            .spawn()
-        {
-            Ok(_) => return Ok(()),
-            Err(error) => {
-                eprintln!(
-                    "NEXA search: Exec launch failed for '{}': {error}; falling back to gtk-launch",
-                    entry.name
-                );
+            .status();
+
+        if let Ok(st) = status {
+            if st.success() {
+                return Ok(());
             }
         }
     }
 
-    let desktop_path = Path::new(&entry.path);
-    let desktop_id = desktop_path
-        .file_stem()
-        .and_then(|v| v.to_str())
-        .ok_or_else(|| format!("invalid desktop file: {}", entry.path))?;
+    // 2. Fallback: Parse Exec line and run directly
+    let content = fs::read_to_string(desktop_path)
+        .map_err(|e| format!("cannot read desktop file: {e}"))?;
 
-    Command::new("gtk-launch")
-        .arg(desktop_id)
-        .current_dir(&home)
+    let mut exec = String::new();
+    let mut terminal = false;
+    let mut workdir = home_dir();
+
+    for line in content.lines() {
+        let l = line.trim();
+        if let Some(v) = l.strip_prefix("Exec=") {
+            if exec.is_empty() {
+                exec = v.trim().to_string();
+            }
+        } else if let Some(v) = l.strip_prefix("Terminal=") {
+            terminal = v.trim().eq_ignore_ascii_case("true");
+        } else if let Some(v) = l.strip_prefix("Path=") {
+            let wd = PathBuf::from(v.trim());
+            if wd.is_dir() {
+                workdir = wd;
+            }
+        }
+    }
+
+    let cleaned_exec = clean_desktop_exec(&exec);
+    if cleaned_exec.is_empty() {
+        return Err(format!("no Exec line found in {path_str}"));
+    }
+
+    let final_command = if terminal {
+        let term = env::var("TERMINAL").unwrap_or_else(|_| "kitty".to_string());
+        let app_name = desktop_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("app")
+            .to_lowercase();
+
+        if term.contains("alacritty") {
+            format!("{term} --class {app_name} -e {cleaned_exec}")
+        } else {
+            format!("{term} --class {app_name} {cleaned_exec}")
+        }
+    } else {
+        cleaned_exec
+    };
+
+    Command::new("sh")
+        .arg("-c")
+        .arg(format!("exec {final_command}"))
+        .current_dir(workdir)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .process_group(0)
         .spawn()
-        .map_err(|error| format!("failed to launch application '{}': {error}", entry.name))?;
-
-    Ok(())
+        .map(|_| ())
+        .map_err(|e| format!("failed to spawn exec command: {e}"))
 }
 
+fn launch_appimage(path_str: &str) -> Result<(), String> {
+    let path = Path::new(path_str);
+    if !path.is_file() {
+        return Err(format!("AppImage not found: {path_str}"));
+    }
 
-// ============================================================
-// OPEN FILE
-// ============================================================
+    // Ensure executable permissions (chmod +x)
+    if let Ok(metadata) = fs::metadata(path) {
+        let mut perms = metadata.permissions();
+        let mode = perms.mode();
+        if mode & 0o111 == 0 {
+            perms.set_mode(mode | 0o755);
+            let _ = fs::set_permissions(path, perms);
+        }
+    }
 
-fn open_file(
-    entry: &SearchEntry,
-) -> Result<(), String> {
-    let home = home_dir();
+    let parent_dir = path.parent().unwrap_or(&home_dir()).to_path_buf();
+
+    Command::new(path)
+        .current_dir(parent_dir)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .process_group(0)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("failed to launch AppImage: {e}"))
+}
+
+fn launch_file(path_str: &str) -> Result<(), String> {
+    let path = Path::new(path_str);
+    if !path.exists() {
+        return Err(format!("file not found: {path_str}"));
+    }
+
     Command::new("xdg-open")
-        .arg(&entry.path)
-        .current_dir(&home)
+        .arg(path)
+        .current_dir(home_dir())
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .process_group(0)
         .spawn()
-        .map_err(|error| format!("failed to open '{}': {error}", entry.path))?;
-
-    Ok(())
+        .map(|_| ())
+        .map_err(|e| format!("failed to open file via xdg-open: {e}"))
 }
 
+pub fn open(target: &str) {
+    let target = target.trim();
+    if target.is_empty() {
+        eprintln!("NEXA search open error: empty target");
+        std::process::exit(2);
+    }
 
-// ============================================================
-// OPEN PUBLIC COMMAND
-// ============================================================
+    // If target is directly an existing path
+    let target_path = Path::new(target);
+    if target_path.exists() {
+        let result = if target.ends_with(".desktop") {
+            launch_desktop_file(target)
+        } else if target.to_lowercase().ends_with(".appimage") {
+            launch_appimage(target)
+        } else {
+            launch_file(target)
+        };
 
-pub fn open(
-    id: usize,
-) {
-    let entries = match load_index() {
-        Ok(entries) => entries,
-        Err(error) => {
+        if let Err(error) = result {
             eprintln!("NEXA search open error: {error}");
             std::process::exit(2);
         }
-    };
-
-    let Some(entry) = entries.iter().find(|entry| entry.id == id) else {
-        eprintln!("NEXA search open error: result id {id} not found");
-        std::process::exit(2);
-    };
-
-    let result = match entry.kind.as_str() {
-        "app" => open_application(entry),
-        "file" => open_file(entry),
-        other => Err(format!("unsupported search result type: {other}")),
-    };
-
-    if let Err(error) = result {
-        eprintln!("NEXA search open error: {error}");
-        std::process::exit(2);
+        return;
     }
+
+    // Fallback: target is a numeric ID
+    if let Ok(id) = target.parse::<usize>() {
+        let entries = match load_index() {
+            Ok(entries) => entries,
+            Err(error) => {
+                eprintln!("NEXA search open error: {error}");
+                std::process::exit(2);
+            }
+        };
+
+        let Some(entry) = entries.iter().find(|e| e.id == id) else {
+            eprintln!("NEXA search open error: result id {id} not found");
+            std::process::exit(2);
+        };
+
+        let result = match entry.kind.as_str() {
+            "app" => launch_desktop_file(&entry.path),
+            "appimage" => launch_appimage(&entry.path),
+            "file" => launch_file(&entry.path),
+            other => Err(format!("unsupported search result type: {other}")),
+        };
+
+        if let Err(error) = result {
+            eprintln!("NEXA search open error: {error}");
+            std::process::exit(2);
+        }
+        return;
+    }
+
+    eprintln!("NEXA search open error: invalid path or ID '{target}'");
+    std::process::exit(2);
 }

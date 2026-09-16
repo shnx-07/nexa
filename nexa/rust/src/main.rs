@@ -7,7 +7,8 @@ mod screenTemp;
 mod screenFilter;
 mod weather;
 mod workspace;
-mod command;
+#[allow(non_snake_case)]
+mod commandSearch;
 mod island;
 mod network;
 mod system;
@@ -341,29 +342,14 @@ fn main() {
                 "open" => {
                     if args.len() < 4 {
                         eprintln!(
-                            "Missing search result id"
+                            "Missing search result target"
                         );
 
                         return;
                     }
 
-
-                    let id =
-                        match args[3].parse::<usize>() {
-
-                            Ok(id) => id,
-
-                            Err(_) => {
-                                eprintln!(
-                                    "Invalid search result id"
-                                );
-
-                                return;
-                            }
-                        };
-
-
-                    search::open(id);
+                    let target = args[3..].join(" ");
+                    search::open(&target);
                 }
 
 
@@ -822,28 +808,51 @@ fn main() {
         // ========================================================
 
         "command" => {
-            if args.len() < 4 {
+            if args.len() < 3 {
                 print_usage();
                 return;
             }
 
-
             match args[2].as_str() {
-
                 "run" => {
-                    let command =
-                        args[3..].join(" ");
-
-
-                    command::run(
-                        &command
-                    );
+                    if args.len() < 4 {
+                        eprintln!("Missing command to run");
+                        return;
+                    }
+                    let command = args[3..].join(" ");
+                    commandSearch::run(&command);
                 }
 
+                "query" | "search" => {
+                    if args.len() < 4 {
+                        eprintln!("Missing command search query");
+                        return;
+                    }
+                    let query = args[3..].join(" ");
+                    commandSearch::query(&query);
+                }
 
                 _ => {
                     print_usage();
                 }
+            }
+        }
+
+        "commandSearch" => {
+            if args.len() < 3 {
+                print_usage();
+                return;
+            }
+            match args[2].as_str() {
+                "query" | "search" => {
+                    let query = args[3..].join(" ");
+                    commandSearch::query(&query);
+                }
+                "run" => {
+                    let command = args[3..].join(" ");
+                    commandSearch::run(&command);
+                }
+                _ => print_usage(),
             }
         }
 
