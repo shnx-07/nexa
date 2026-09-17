@@ -11,42 +11,38 @@ import "../../theme/components" as NexaUI
 Item {
     id: root
 
-
     // ============================================================
     // STATE
     // ============================================================
 
-    property string selectedStyle: "preset"
+    property string selectedStyle: ""
     property string selectedPreset: ""
     property string selectedMode: "dark"
+    property string wallpaperSource: ""
+
+    // Local preview / staging (0ms lag, zero auto-apply until Apply is clicked)
+    property string stagedStyle: ""
+    property string stagedPreset: ""
+    property string stagedMode: "dark"
 
     property bool warmthEnabled: false
-
     property bool applying: false
     property bool presetsLoaded: false
 
     property var presets: []
+    property var categories: ["All"]
+    property string selectedCategory: "All"
+    property string searchQuery: ""
 
-    // Dynamic Matugen browser state.
-    property var folderOptions: []
-    property var subfolderOptions: []
-    property var presetOptions: []
+    // Refresh status whenever Theme island becomes visible
+    onVisibleChanged: {
+        if (visible) {
+            statusProcess.running = true
+        }
+    }
 
-    property string selectedFolder: ""
-    property string selectedSubfolder: ""
-    property string browserPreset: ""
-
-    // True when any dropdown popup is open.
-    // Forwarded to Island.qml to keep the Island alive
-    // while the user browses presets.
-    readonly property bool themePopupOpen:
-        modeDropdown.opened
-        || styleDropdown.opened
-        || warmthDropdown.opened
-        || folderDropdown.opened
-        || subfolderDropdown.opened
-        || presetDropdown.opened
-
+    // Backward compatibility for IslandContent.qml
+    readonly property bool themePopupOpen: false
 
     readonly property string themeScript:
         "$HOME/.config/nexa/scripts/theme.sh"
@@ -54,92 +50,109 @@ Item {
     readonly property string nexad:
         "$HOME/.config/nexa/rust/target/release/nexad"
 
-
     // ============================================================
-    // DROPDOWN DATA
+    // DYNAMIC DERIVED STAGED COLORS
     // ============================================================
 
-    readonly property var appearanceModes: [
-        {
-            id: "dark",
-            label: "Dark"
-        },
-        {
-            id: "light",
-            label: "Light"
+    readonly property color stagedPrimary: {
+        if (root.stagedStyle === "preset")
+            return root.colorForPreset(root.stagedPreset, 0, root.stagedMode)
+        return Nexa.Theme.primary
+    }
+
+    readonly property color stagedSecondary: {
+        if (root.stagedStyle === "preset")
+            return root.colorForPreset(root.stagedPreset, 1, root.stagedMode)
+        return Nexa.Theme.secondary
+    }
+
+    readonly property color stagedTertiary: {
+        if (root.stagedStyle === "preset")
+            return root.colorForPreset(root.stagedPreset, 2, root.stagedMode)
+        return Nexa.Theme.tertiary
+    }
+
+    readonly property string stagedPresetName: {
+        if (root.stagedStyle === "wallpaperFull")
+            return "Full Wallpaper"
+        if (root.stagedStyle === "wallpaperAccents")
+            return "Wallpaper Accents"
+        const p = root.presetById(root.stagedPreset)
+        return p ? p.name : (root.stagedPreset || "Select Preset")
+    }
+
+    readonly property string stagedPresetCategory: {
+        const p = root.presetById(root.stagedPreset)
+        return p ? p.category : ""
+    }
+
+    readonly property bool isCurrentThemeActive: {
+        if (!root.selectedStyle)
+            return true
+        if (root.stagedStyle !== root.selectedStyle)
+            return false
+        if (root.stagedMode !== root.selectedMode)
+            return false
+        if (root.stagedStyle === "preset") {
+            return root.stagedPreset.length > 0
+                && root.stagedPreset === root.selectedPreset
         }
-    ]
+        return true
+    }
 
+    // Filtered presets based on search query and selected category
+    readonly property var filteredPresets: {
+        if (!root.presets || root.presets.length === 0)
+            return []
 
-    readonly property var styles: [
-        {
-            id: "preset",
-            label: "Preset"
-        },
-        {
-            id: "wallpaperAccents",
-            label: "Accents"
-        },
-        {
-            id: "wallpaperFull",
-            label: "Full"
+        const q = root.searchQuery.trim().toLowerCase()
+        const cat = root.selectedCategory
+
+        const result = []
+        for (let i = 0; i < root.presets.length; ++i) {
+            const p = root.presets[i]
+            if (cat !== "All" && p.category !== cat)
+                continue
+
+            if (q.length > 0) {
+                const matchName = p.name && p.name.toLowerCase().indexOf(q) >= 0
+                const matchCat = p.category && p.category.toLowerCase().indexOf(q) >= 0
+                const matchId = p.id && p.id.toLowerCase().indexOf(q) >= 0
+                if (!matchName && !matchCat && !matchId)
+                    continue
+            }
+
+            result.push(p)
         }
-    ]
-
-
-    readonly property var warmthModes: [
-        {
-            id: "off",
-            label: "Off"
-        },
-        {
-            id: "on",
-            label: "On"
-        }
-    ]
-
-
-    // ============================================================
-    // PRESETS
-    // ============================================================
-    //
-    // Presets are discovered dynamically from the Matugen-backed
-    // theme engine. NEXA does not own a preset registry anymore.
-    //
-    // theme.sh presets-json is the only preset catalog API used here.
-    // Adding/removing presets under Matugen therefore needs no QML
-    // changes.
-    // ============================================================
-
+        return result
+    }
 
     // ============================================================
     // HELPERS
     // ============================================================
 
     function presetById(id) {
+        if (!id)
+            return null
         for (let i = 0; i < root.presets.length; ++i) {
             if (root.presets[i].id === id)
                 return root.presets[i]
         }
-
         return null
     }
 
-
-    function colorForPreset(id, slot) {
-        const preset =
-            root.presetById(id)
+    function colorForPreset(id, slot, mode) {
+        const preset = root.presetById(id)
+        const targetMode = mode || root.selectedMode
 
         if (preset && preset.previews) {
-            let colors =
-                preset.previews[root.selectedMode]
+            let colors = preset.previews[targetMode]
 
             if (!colors || colors.length < 3)
                 colors = preset.previews["default"]
 
             if (!colors || colors.length < 3) {
                 const keys = Object.keys(preset.previews)
-
                 if (keys.length > 0)
                     colors = preset.previews[keys[0]]
             }
@@ -155,390 +168,107 @@ Item {
                 : Nexa.Theme.tertiary
     }
 
-
-    function labelFor(list, id) {
-        for (let i = 0; i < list.length; ++i) {
-            if (list[i].id === id)
-                return list[i].label
-        }
-
-        return id
+    function hexForPreset(id, slot, mode) {
+        const col = root.colorForPreset(id, slot, mode)
+        return String(col).toUpperCase()
     }
 
-
-    function titleCase(value) {
-        if (!value || value.length === 0)
-            return ""
-
-        return value.charAt(0).toUpperCase()
-            + value.slice(1)
+    function hexForStaged(slot) {
+        if (root.stagedStyle === "preset")
+            return root.hexForPreset(root.stagedPreset, slot, root.stagedMode)
+        const col = slot === 0 ? Nexa.Theme.primary : slot === 1 ? Nexa.Theme.secondary : Nexa.Theme.tertiary
+        return String(col).toUpperCase()
     }
 
-
-    function categoryHasSubfolders(category) {
-        let count = 0
-
-        for (let i = 0; i < root.presets.length; ++i) {
-            const preset = root.presets[i]
-
-            if (preset.category !== category)
-                continue
-
-            ++count
-
-            // Categorized Matugen themes expose paired variants.
-            // Direct leaf folders such as extras expose standalone
-            // JSON presets instead.
-            if (
-                preset.variants
-                && preset.variants.indexOf("dark") >= 0
-                && preset.variants.indexOf("light") >= 0
-            )
-                return true
-        }
-
-        return false
+    function syncStagedToActive() {
+        root.stagedStyle = root.selectedStyle || "preset"
+        root.stagedPreset = root.selectedPreset || (root.presets.length > 0 ? root.presets[0].id : "")
+        root.stagedMode = root.selectedMode || "dark"
     }
 
-
-    function rebuildFolderOptions() {
+    function rebuildCategories() {
         const seen = {}
-        const result = []
-
+        const list = ["All"]
         for (let i = 0; i < root.presets.length; ++i) {
-            const category = root.presets[i].category
-
-            if (!category || seen[category])
-                continue
-
-            seen[category] = true
-
-            result.push({
-                id: category,
-                label: category
-            })
-        }
-
-        root.folderOptions = result
-    }
-
-
-    function rebuildSubfolderOptions() {
-        const result = []
-
-        if (
-            !root.selectedFolder
-            || !root.categoryHasSubfolders(root.selectedFolder)
-        ) {
-            root.subfolderOptions = []
-            root.selectedSubfolder = ""
-            rebuildPresetOptions()
-            return
-        }
-
-        for (let i = 0; i < root.presets.length; ++i) {
-            const preset = root.presets[i]
-
-            if (preset.category !== root.selectedFolder)
-                continue
-
-            result.push({
-                id: preset.name,
-                label: preset.name
-            })
-        }
-
-        root.subfolderOptions = result
-
-        let valid = false
-
-        for (let i = 0; i < result.length; ++i) {
-            if (result[i].id === root.selectedSubfolder) {
-                valid = true
-                break
+            const cat = root.presets[i].category
+            if (cat && !seen[cat]) {
+                seen[cat] = true
+                list.push(cat)
             }
         }
-
-        if (!valid)
-            root.selectedSubfolder =
-                result.length > 0 ? result[0].id : ""
-
-        rebuildPresetOptions()
+        root.categories = list
     }
 
+    // ============================================================
+    // USER ACTIONS
+    // ============================================================
 
-    function rebuildPresetOptions() {
-        const result = []
-
-        if (!root.selectedFolder) {
-            root.presetOptions = []
+    // Instant local preview stage (Zero lag, no process spawned)
+    function stagePreset(presetId) {
+        if (!presetId)
             return
-        }
+        root.stagedPreset = presetId
+    }
 
-        if (root.categoryHasSubfolders(root.selectedFolder)) {
-            // The global Theme Mode dropdown already chooses Dark/Light.
-            // Therefore the final dropdown represents the resolved leaf
-            // of the selected folder/subfolder for the current mode.
-            for (let i = 0; i < root.presets.length; ++i) {
-                const preset = root.presets[i]
+    function stageStyle(style) {
+        if (!style)
+            return
+        root.stagedStyle = style
+    }
 
-                if (
-                    preset.category === root.selectedFolder
-                    && preset.name === root.selectedSubfolder
-                ) {
-                    result.push({
-                        id: preset.id,
-                        label:
-                            root.titleCase(root.selectedMode)
-                            + " · "
-                            + preset.name
-                    })
-                    break
-                }
-            }
+    function stageMode(mode) {
+        if (!mode)
+            return
+        root.stagedMode = mode
+    }
+
+    // Apply staged configuration when user clicks the Apply button
+    function applyCurrentConfiguration() {
+        if (root.applying || root.isCurrentThemeActive)
+            return
+
+        root.applying = true
+
+        let cmd = ""
+        if (root.stagedStyle === "preset") {
+            cmd = root.themeScript + " apply-preset '" + root.stagedPreset + "' " + root.stagedMode
         } else {
-            // Direct-leaf categories (currently extras) have no
-            // subfolder. Every JSON file is itself a selectable preset.
-            for (let i = 0; i < root.presets.length; ++i) {
-                const preset = root.presets[i]
-
-                if (preset.category !== root.selectedFolder)
-                    continue
-
-                result.push({
-                    id: preset.id,
-                    label: preset.name
-                })
-            }
+            cmd = root.themeScript + " mode " + root.stagedMode + " && " + root.themeScript + " apply-style " + root.stagedStyle
         }
-
-        root.presetOptions = result
-
-        let validBrowserPreset = false
-
-        for (let i = 0; i < result.length; ++i) {
-            if (result[i].id === root.browserPreset) {
-                validBrowserPreset = true
-                break
-            }
-        }
-
-        if (!validBrowserPreset)
-            root.browserPreset =
-                result.length > 0 ? result[0].id : ""
-    }
-
-
-    function syncBrowserFromPreset() {
-        // Always rebuild the folder list first so folderOptions
-        // is populated before any index/validation logic runs.
-        rebuildFolderOptions()
-
-        const preset =
-            root.presetById(root.selectedPreset)
-
-        if (preset) {
-            root.selectedFolder =
-                preset.category
-
-            root.selectedSubfolder =
-                root.categoryHasSubfolders(preset.category)
-                ? preset.name
-                : ""
-
-            root.browserPreset =
-                preset.id
-        } else if (root.folderOptions.length > 0) {
-            root.selectedFolder =
-                root.folderOptions[0].id
-
-            root.selectedSubfolder = ""
-        }
-
-        rebuildSubfolderOptions()
-        rebuildPresetOptions()
-    }
-
-
-    function selectFolder(folder) {
-        if (
-            root.applying
-            || !root.presetsLoaded
-            || root.selectedFolder === folder
-        )
-            return
-
-        root.selectedFolder = folder
-        root.selectedSubfolder = ""
-
-        rebuildSubfolderOptions()
-    }
-
-
-    function selectSubfolder(subfolder) {
-        if (
-            root.applying
-            || !root.presetsLoaded
-            || !root.categoryHasSubfolders(root.selectedFolder)
-            || root.selectedSubfolder === subfolder
-        )
-            return
-
-        root.selectedSubfolder = subfolder
-
-        rebuildPresetOptions()
-    }
-
-
-
-    // ============================================================
-    // PRESET
-    // ============================================================
-
-    function selectPreset(presetId) {
-        if (
-            root.applying
-            || !root.presetsLoaded
-            || !presetId
-        )
-            return
-
-        if (root.selectedPreset === presetId)
-            return
-
-        root.browserPreset =
-            presetId
-
-        root.selectedPreset =
-            presetId
-
 
         applyProcess.command = [
             "sh",
             "-c",
-            root.themeScript
-            + " preset "
-            + "'" + presetId + "'"
-            + " && "
-            + root.themeScript
-            + " apply"
+            cmd
         ]
-
         applyProcess.running = true
     }
 
-
-
-    // ============================================================
-    // STYLE
-    // ============================================================
-
-    function selectStyle(style) {
-        if (root.selectedStyle === style)
-            return
-
-        if (root.applying)
-            return
-
-
-        // Update frontend immediately.
-        root.selectedStyle =
-            style
-
-
-        applyProcess.command = [
-            "sh",
-            "-c",
-            root.themeScript
-            + " style "
-            + style
-            + " && "
-            + root.themeScript
-            + " apply"
-        ]
-
-        applyProcess.running = true
-    }
-
-
-    // ============================================================
-    // APPEARANCE
-    // ============================================================
-
-    function selectMode(mode) {
-        if (root.selectedMode === mode)
-            return
-
-        if (root.applying)
-            return
-
-
-        // Update frontend immediately.
-        root.selectedMode =
-            mode
-
-        // Refresh the final Matugen leaf shown by the preset browser.
-        rebuildPresetOptions()
-
-
-        applyProcess.command = [
-            "sh",
-            "-c",
-            root.themeScript
-            + " mode "
-            + mode
-            + " && "
-            + root.themeScript
-            + " apply"
-        ]
-
-        applyProcess.running = true
-    }
-
-
-    // ============================================================
-    // WALLPAPER WARMTH
-    // ============================================================
-
+    // Toggle screen temperature
     function setWarmth(enabled) {
-        if (root.warmthEnabled === enabled)
+        if (root.warmthEnabled === enabled || root.applying)
             return
 
-        if (root.applying)
-            return
-
-
-        // Update frontend immediately.
-        root.warmthEnabled =
-            enabled
-
+        root.warmthEnabled = enabled
 
         if (enabled) {
             warmthProcess.command = [
                 "sh",
                 "-c",
-                root.nexad
-                + " screenTemp mode wallpaper"
-                + " && "
-                + root.nexad
-                + " screenTemp enable"
+                root.nexad + " screenTemp mode wallpaper && " + root.nexad + " screenTemp enable"
             ]
         } else {
             warmthProcess.command = [
                 "sh",
                 "-c",
-                root.nexad
-                + " screenTemp disable"
+                root.nexad + " screenTemp disable"
             ]
         }
-
-
         warmthProcess.running = true
     }
 
-
     // ============================================================
-    // THEME BACKEND STATUS
+    // PROCESSES
     // ============================================================
 
     Process {
@@ -550,111 +280,47 @@ Item {
             root.themeScript + " status"
         ]
 
-
         stdout: StdioCollector {
             onStreamFinished: {
-                const lines =
-                    text.split("\n")
-
+                const lines = text.split("\n")
+                let loadedStyle = ""
+                let loadedPreset = ""
+                let loadedMode = ""
+                let loadedWallpaper = ""
 
                 for (let i = 0; i < lines.length; ++i) {
-                    const line =
-                        lines[i].trim()
-
-
+                    const line = lines[i].trim()
                     if (line.startsWith("Style")) {
-                        const separator =
-                            line.indexOf(":")
-
-                        if (separator >= 0) {
-                            root.selectedStyle =
-                                line
-                                .substring(separator + 1)
-                                .trim()
-                        }
+                        const sep = line.indexOf(":")
+                        if (sep >= 0)
+                            loadedStyle = line.substring(sep + 1).trim()
                     }
-
-
                     if (line.startsWith("Preset")) {
-                        const separator =
-                            line.indexOf(":")
-
-                        if (separator >= 0) {
-                            root.selectedPreset =
-                                line
-                                .substring(separator + 1)
-                                .trim()
-                        }
+                        const sep = line.indexOf(":")
+                        if (sep >= 0)
+                            loadedPreset = line.substring(sep + 1).trim()
                     }
-
-
                     if (line.startsWith("Mode")) {
-                        const separator =
-                            line.indexOf(":")
-
-                        if (separator >= 0) {
-                            root.selectedMode =
-                                line
-                                .substring(separator + 1)
-                                .trim()
-                        }
+                        const sep = line.indexOf(":")
+                        if (sep >= 0)
+                            loadedMode = line.substring(sep + 1).trim()
+                    }
+                    if (line.startsWith("Wallpaper")) {
+                        const sep = line.indexOf(":")
+                        if (sep >= 0)
+                            loadedWallpaper = line.substring(sep + 1).trim()
                     }
                 }
 
+                if (loadedStyle) root.selectedStyle = loadedStyle
+                if (loadedPreset) root.selectedPreset = loadedPreset
+                if (loadedMode) root.selectedMode = loadedMode
+                if (loadedWallpaper) root.wallpaperSource = loadedWallpaper
 
-                Qt.callLater(
-                    root.syncBrowserFromPreset
-                )
+                root.syncStagedToActive()
             }
         }
     }
-
-
-    // ============================================================
-    // SCREEN TEMPERATURE STATUS
-    // ============================================================
-
-    Process {
-        id: warmthStatusProcess
-
-        command: [
-            "sh",
-            "-c",
-            root.nexad + " screenTemp info"
-        ]
-
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const output =
-                    text.trim()
-
-                if (output.length === 0)
-                    return
-
-
-                try {
-                    const state =
-                        JSON.parse(output)
-
-                    root.warmthEnabled =
-                        state.enabled === true
-                        && state.mode === "wallpaper"
-
-                } catch (error) {
-                    console.warn(
-                        "ThemeIsland: failed to parse screenTemp status:",
-                        error
-                    )
-                }
-            }
-        }
-    }
-
-
-    // ============================================================
-    // MATUGEN PRESET CATALOG
-    // ============================================================
 
     Process {
         id: presetCatalogProcess
@@ -665,64 +331,59 @@ Item {
             root.themeScript + " presets-json"
         ]
 
-
         stdout: StdioCollector {
             onStreamFinished: {
-                const output =
-                    text.trim()
-
+                const output = text.trim()
                 if (output.length === 0) {
-                    console.warn(
-                        "ThemeIsland: empty preset catalog"
-                    )
-
                     root.presets = []
                     root.presetsLoaded = true
                     statusProcess.running = true
                     return
                 }
 
-
                 try {
-                    const catalog =
-                        JSON.parse(output)
-
-                    root.presets =
-                        Array.isArray(catalog)
-                        ? catalog
-                        : []
-
+                    const catalog = JSON.parse(output)
+                    root.presets = Array.isArray(catalog) ? catalog : []
+                    root.rebuildCategories()
                     root.presetsLoaded = true
-
-                } catch (error) {
-                    console.warn(
-                        "ThemeIsland: failed to parse Matugen preset catalog:",
-                        error
-                    )
-
+                } catch (e) {
+                    console.warn("ThemeIsland: failed to parse presets catalog:", e)
                     root.presets = []
                     root.presetsLoaded = true
                 }
 
-
-                // Load persisted theme state only after the dynamic
-                // catalog exists so selectedIndex can resolve safely.
                 statusProcess.running = true
             }
         }
     }
 
+    Process {
+        id: warmthStatusProcess
 
-    // ============================================================
-    // APPLY PROCESS
-    // ============================================================
+        command: [
+            "sh",
+            "-c",
+            root.nexad + " screenTemp info"
+        ]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const output = text.trim()
+                if (output.length === 0)
+                    return
+                try {
+                    const state = JSON.parse(output)
+                    root.warmthEnabled = state.enabled === true && state.mode === "wallpaper"
+                } catch (e) {}
+            }
+        }
+    }
 
     Process {
         id: applyProcess
 
         property bool wasRunning: false
 
-
         onRunningChanged: {
             if (running) {
                 root.applying = true
@@ -730,27 +391,19 @@ Item {
                 return
             }
 
-
             if (wasRunning) {
                 root.applying = false
                 wasRunning = false
-
                 statusProcess.running = true
             }
         }
     }
-
-
-    // ============================================================
-    // WARMTH PROCESS
-    // ============================================================
 
     Process {
         id: warmthProcess
 
         property bool wasRunning: false
 
-
         onRunningChanged: {
             if (running) {
                 root.applying = true
@@ -758,1421 +411,1061 @@ Item {
                 return
             }
 
-
             if (wasRunning) {
                 root.applying = false
                 wasRunning = false
-
                 warmthStatusProcess.running = true
             }
         }
     }
-
-
-    // ============================================================
-    // INITIAL LOAD
-    // ============================================================
 
     Component.onCompleted: {
         presetCatalogProcess.running = true
         warmthStatusProcess.running = true
     }
 
-
     // ============================================================
-    // REUSABLE DROPDOWN
-    // ============================================================
-
-    component NexaDropdown: Item {
-        id: dropdown
-
-        property var model: []
-        property string currentValue: ""
-
-        property bool enabled: true
-        property bool opened: false
-
-        property string disabledText: ""
-
-        // "below" | "left" | "right"
-        // Controls which side the floating popup opens on.
-        property string popupSide: "below"
-
-        signal selected(string value)
-
-
-        readonly property string currentLabel:
-            !dropdown.enabled
-            && dropdown.disabledText.length > 0
-            ? dropdown.disabledText
-            : root.labelFor(
-                dropdown.model,
-                dropdown.currentValue
-            )
-
-
-        Rectangle {
-            id: button
-
-            anchors.fill:
-                parent
-
-            radius:
-                Nexa.Theme.radiusSm
-
-            color: {
-                if (!dropdown.enabled)
-                    return Nexa.Theme.cardBackground
-
-                if (buttonMouse.pressed)
-                    return Nexa.Theme.pressed
-
-                if (buttonMouse.containsMouse)
-                    return Nexa.Theme.hover
-
-                return Nexa.Theme.cardBackground
-            }
-
-            border.width:
-                Nexa.Theme.borderThin
-
-            border.color:
-                dropdown.opened
-                ? Nexa.Theme.primary
-                : buttonMouse.containsMouse
-                    && dropdown.enabled
-                    ? Nexa.Theme.borderStrong
-                    : Nexa.Theme.border
-
-            opacity:
-                dropdown.enabled
-                ? 1.0
-                : Nexa.Theme.opacityDisabled
-
-            Behavior on color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationFast
-                    easing.type:
-                        Easing.OutCubic
-                }
-            }
-
-            Behavior on border.color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationFast
-                    easing.type:
-                        Easing.OutCubic
-                }
-            }
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration:
-                        Nexa.Theme.animationFast
-                    easing.type:
-                        Easing.OutCubic
-                }
-            }
-
-            Row {
-                anchors {
-                    fill: parent
-                    leftMargin:
-                        Nexa.Theme.spacingSm
-                    rightMargin:
-                        Nexa.Theme.spacingSm
-                }
-
-                spacing:
-                    Nexa.Theme.spacingXs
-
-                Text {
-                    anchors.verticalCenter:
-                        parent.verticalCenter
-
-                    width:
-                        parent.width
-                        - arrowText.width
-                        - parent.spacing
-
-                    text:
-                        dropdown.currentLabel
-
-                    elide:
-                        Text.ElideRight
-
-                    horizontalAlignment:
-                        Text.AlignHCenter
-
-                    color:
-                        Nexa.Theme.text
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-                        pixelSize:
-                            Nexa.Theme.fontSizeSm
-                        weight:
-                            Nexa.Theme.fontWeightMedium
-                    }
-                }
-
-                Text {
-                    id: arrowText
-
-                    anchors.verticalCenter:
-                        parent.verticalCenter
-
-                    text:
-                        "󰅀"
-
-                    color:
-                        dropdown.opened
-                        ? Nexa.Theme.primary
-                        : Nexa.Theme.mutedText
-
-                    font {
-                        family:
-                            Nexa.Theme.iconFontFamily
-                        pixelSize:
-                            Nexa.Theme.iconXs
-                    }
-
-                    rotation:
-                        dropdown.opened ? 180 : 0
-
-                    Behavior on rotation {
-                        NumberAnimation {
-                            duration:
-                                Nexa.Theme.motionSelection
-                            easing.type:
-                                Easing.InOutCubic
-                        }
-                    }
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration:
-                                Nexa.Theme.animationFast
-                            easing.type:
-                                Easing.OutCubic
-                        }
-                    }
-                }
-            }
-
-            MouseArea {
-                id: buttonMouse
-
-                anchors.fill:
-                    parent
-
-                enabled:
-                    dropdown.enabled
-
-                hoverEnabled:
-                    true
-
-                cursorShape:
-                    dropdown.enabled
-                    ? Qt.PointingHandCursor
-                    : Qt.ArrowCursor
-
-                onClicked: {
-                    dropdown.opened =
-                        !dropdown.opened
-
-                    if (dropdown.opened)
-                        dropdownPopup.anchor.updateAnchor()
-                }
-            }
-        }
-
-
-        // A real Quickshell popup surface instead of an Item child.
-        // This lets the menu extend outside the Dynamic Island bounds.
-        PopupWindow {
-            id: dropdownPopup
-
-            anchor.item:
-                button
-
-            anchor.rect.x: {
-                if (dropdown.popupSide === "left")
-                    return -(Math.max(dropdown.width, 150) + 4)
-
-                if (dropdown.popupSide === "right")
-                    return dropdown.width + 4
-
-                return 0
-            }
-
-            anchor.rect.y: {
-                if (dropdown.popupSide === "left"
-                    || dropdown.popupSide === "right")
-                    return 0
-
-                return button.height + 4
-            }
-
-            implicitWidth:
-                Math.max(dropdown.width, 150)
-
-            implicitHeight:
-                Math.min(
-                    dropdown.model.length * 30
-                    + Nexa.Theme.spacingXs * 2,
-                    260
-                )
-
-            visible:
-                dropdown.opened
-                && dropdown.enabled
-                && dropdown.model.length > 0
-
-            grabFocus:
-                true
-
-            color:
-                "transparent"
-
-            onVisibleChanged: {
-                if (!visible && dropdown.opened)
-                    dropdown.opened = false
-            }
-
-            Rectangle {
-                anchors.fill:
-                    parent
-
-                radius:
-                    Nexa.Theme.radiusSm
-
-                color:
-                    Nexa.Theme.popupBackground
-
-                border.width:
-                    Nexa.Theme.borderThin
-
-                border.color:
-                    Nexa.Theme.borderStrong
-
-                NexaUI.NexaShadow {
-                    elevation: 1
-                    cornerRadius: Nexa.Theme.radiusSm
-                }
-
-                ListView {
-                    id: popupList
-
-                    anchors {
-                        fill: parent
-                        margins:
-                            Nexa.Theme.spacingXs
-                    }
-
-                    model:
-                        dropdown.model
-
-                    spacing: 0
-
-                    clip:
-                        true
-
-                    boundsBehavior:
-                        Flickable.StopAtBounds
-
-                    flickDeceleration:
-                        Nexa.Theme.flickDeceleration
-
-                    maximumFlickVelocity:
-                        Nexa.Theme.flickVelocityMax
-
-                    delegate: Rectangle {
-                        id: option
-
-                        required property var modelData
-
-                        width:
-                            popupList.width
-
-                        height: 30
-
-                        radius:
-                            Nexa.Theme.radiusXs
-
-                        readonly property bool selectedOption:
-                            dropdown.currentValue
-                            === modelData.id
-
-                        color:
-                            selectedOption
-                            ? Nexa.Theme.hoverStrong
-                            : optionMouse.containsMouse
-                                ? Nexa.Theme.hover
-                                : "transparent"
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration:
-                                    Nexa.Theme.animationFast
-                                easing.type:
-                                    Easing.OutCubic
-                            }
-                        }
-
-                        Text {
-                            anchors.centerIn:
-                                parent
-
-                            width:
-                                parent.width
-                                - Nexa.Theme.spacingSm * 2
-
-                            text:
-                                option.modelData.label
-
-                            elide:
-                                Text.ElideRight
-
-                            horizontalAlignment:
-                                Text.AlignHCenter
-
-                            color:
-                                option.selectedOption
-                                ? Nexa.Theme.primary
-                                : Nexa.Theme.text
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-                                pixelSize:
-                                    Nexa.Theme.fontSizeXs
-                                weight:
-                                    option.selectedOption
-                                    ? Nexa.Theme.fontWeightDemiBold
-                                    : Nexa.Theme.fontWeightMedium
-                            }
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                    easing.type:
-                                        Easing.OutCubic
-                                }
-                            }
-                        }
-
-                        MouseArea {
-                            id: optionMouse
-
-                            anchors.fill:
-                                parent
-
-                            hoverEnabled:
-                                true
-
-                            cursorShape:
-                                Qt.PointingHandCursor
-
-                            onClicked: {
-                                dropdown.opened = false
-                                dropdown.selected(
-                                    option.modelData.id
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
-    // ============================================================
-    // PAGE
+    // UI LAYOUT
     // ============================================================
 
     ColumnLayout {
-        anchors.fill:
-            parent
+        anchors.fill: parent
+        spacing: Nexa.Theme.spacingSm
 
-        spacing:
-            Nexa.Theme.spacingSm
+        // --------------------------------------------------------
+        // TOP CONTROL HEADER (Style, Warmth, Mode)
+        // --------------------------------------------------------
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 32
+            spacing: Nexa.Theme.spacingSm
 
-
-        // ========================================================
-        // LIVE THEME PREVIEW
-        // ========================================================
-
-        Rectangle {
-            id: preview
-
-            Layout.fillWidth:
-                true
-
-            Layout.preferredHeight:
-                118
-
-            Layout.maximumHeight:
-                118
-
-            radius:
-                Nexa.Theme.radiusMd
-
-            color:
-                Nexa.Theme.background
-
-            border.width:
-                Nexa.Theme.borderThin
-
-            border.color:
-                Nexa.Theme.border
-
-            clip:
-                true
-
-            Behavior on color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationNormal
-                    easing.type:
-                        Easing.OutCubic
-                }
-            }
-
-            Behavior on border.color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationNormal
-                    easing.type:
-                        Easing.OutCubic
-                }
-            }
-
+            // Style Segmented Switch (Presets / Wallpaper Accents / Full)
             Rectangle {
-                anchors {
-                    top: parent.top
-                    left: parent.left
-                    right: parent.right
-                }
+                Layout.preferredHeight: 32
+                Layout.preferredWidth: 310
+                radius: Nexa.Theme.radiusSm
+                color: Nexa.Theme.cardBackground
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.border
 
-                height: 30
-
-                color:
-                    Nexa.Theme.surfaceContainer
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration:
-                            Nexa.Theme.animationNormal
-                        easing.type:
-                            Easing.OutCubic
-                    }
-                }
-
-                Row {
-                    anchors {
-                        left: parent.left
-                        verticalCenter:
-                            parent.verticalCenter
-
-                        leftMargin:
-                            Nexa.Theme.spacingMd
-                    }
-
-                    spacing:
-                        Nexa.Theme.spacingXs
-
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 2
+                    spacing: 2
 
                     Repeater {
                         model: [
-                            Nexa.Theme.error,
-                            Nexa.Theme.warning,
-                            Nexa.Theme.success
+                            { id: "preset", label: "Presets", icon: "󰏘" },
+                            { id: "wallpaperAccents", label: "Accents", icon: "󰸉" },
+                            { id: "wallpaperFull", label: "Full Wall", icon: "󰸉" }
                         ]
 
-
                         Rectangle {
+                            id: stylePill
                             required property var modelData
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: Nexa.Theme.radiusXs
 
-                            width: 7
-                            height: 7
+                            readonly property bool isSelected:
+                                root.stagedStyle === modelData.id
 
-                            radius:
-                                width / 2
-
-                            color:
-                                modelData
+                            color: isSelected
+                                ? Nexa.Theme.primary
+                                : styleMouse.containsMouse
+                                    ? Nexa.Theme.hover
+                                    : "transparent"
 
                             Behavior on color {
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationNormal
-                                    easing.type:
-                                        Easing.OutCubic
+                                ColorAnimation { duration: Nexa.Theme.animationFast }
+                            }
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 4
+
+                                Text {
+                                    text: stylePill.modelData.icon
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: stylePill.isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.mutedText
                                 }
+
+                                Text {
+                                    text: stylePill.modelData.label
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    font.weight: stylePill.isSelected ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightRegular
+                                    color: stylePill.isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                }
+                            }
+
+                            MouseArea {
+                                id: styleMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.stageStyle(stylePill.modelData.id)
                             }
                         }
                     }
                 }
+            }
 
+            Item {
+                Layout.fillWidth: true
+            }
 
-                Text {
-                    anchors.centerIn:
-                        parent
+            // Night Warmth Toggle Chip
+            Rectangle {
+                Layout.preferredHeight: 32
+                Layout.preferredWidth: 92
+                radius: Nexa.Theme.radiusSm
+                color: root.warmthEnabled
+                    ? Nexa.Theme.hoverStrong
+                    : warmthMouse.containsMouse
+                        ? Nexa.Theme.hover
+                        : Nexa.Theme.cardBackground
+                border.width: Nexa.Theme.borderThin
+                border.color: root.warmthEnabled ? Nexa.Theme.primary : Nexa.Theme.border
 
-                    text:
-                        String(root.selectedPreset)
-                            .replace(/-/g, " ")
+                Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                Behavior on border.color { ColorAnimation { duration: Nexa.Theme.animationFast } }
 
-                    color:
-                        Nexa.Theme.mutedText
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 4
 
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSizeXs
-
-                        weight:
-                            Nexa.Theme.fontWeightMedium
+                    Text {
+                        text: "󰖨"
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: Nexa.Theme.iconSm
+                        color: root.warmthEnabled ? Nexa.Theme.primary : Nexa.Theme.mutedText
                     }
 
-                    Behavior on color {
-                        ColorAnimation {
-                            duration:
-                                Nexa.Theme.animationNormal
-                            easing.type:
-                                Easing.OutCubic
+                    Text {
+                        text: root.warmthEnabled ? "Warm" : "Cool"
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeXs
+                        font.weight: Nexa.Theme.fontWeightMedium
+                        color: root.warmthEnabled ? Nexa.Theme.primary : Nexa.Theme.text
+                    }
+                }
+
+                MouseArea {
+                    id: warmthMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.setWarmth(!root.warmthEnabled)
+                }
+            }
+
+            // Appearance Mode Switch (Dark / Light)
+            Rectangle {
+                Layout.preferredHeight: 32
+                Layout.preferredWidth: 140
+                radius: Nexa.Theme.radiusSm
+                color: Nexa.Theme.cardBackground
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.border
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 2
+                    spacing: 2
+
+                    Repeater {
+                        model: [
+                            { id: "dark", label: "Dark", icon: "󰔎" },
+                            { id: "light", label: "Light", icon: "󰖨" }
+                        ]
+
+                        Rectangle {
+                            id: modePill
+                            required property var modelData
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: Nexa.Theme.radiusXs
+
+                            readonly property bool isSelected:
+                                root.stagedMode === modelData.id
+
+                            color: isSelected
+                                ? Nexa.Theme.primary
+                                : modeMouse.containsMouse
+                                    ? Nexa.Theme.hover
+                                    : "transparent"
+
+                            Behavior on color {
+                                ColorAnimation { duration: Nexa.Theme.animationFast }
+                            }
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 4
+
+                                Text {
+                                    text: modePill.modelData.icon
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: modePill.isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.mutedText
+                                }
+
+                                Text {
+                                    text: modePill.modelData.label
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    font.weight: modePill.isSelected ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightRegular
+                                    color: modePill.isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                }
+                            }
+
+                            MouseArea {
+                                id: modeMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.stageMode(modePill.modelData.id)
+                            }
                         }
                     }
                 }
             }
+        }
 
+        // --------------------------------------------------------
+        // MAIN CONTENT AREA (Left: Explorer / Cards, Right: Preview Hub)
+        // --------------------------------------------------------
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: Nexa.Theme.spacingSm
 
+            // ====================================================
+            // LEFT COLUMN: PRESET EXPLORER / CARDS (or Wallpaper Info)
+            // ====================================================
             Rectangle {
-                anchors {
-                    left: parent.left
-                    top: parent.top
-                    bottom: parent.bottom
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                radius: Nexa.Theme.radiusMd
+                color: Nexa.Theme.cardBackground
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.border
+                clip: true
 
-                    leftMargin:
-                        Nexa.Theme.spacingMd
+                // Preset Explorer View
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 8
+                    visible: root.stagedStyle === "preset"
 
-                    topMargin: 42
+                    // Search Input & Count Badge
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 30
+                        Layout.maximumHeight: 30
+                        Layout.minimumHeight: 30
+                        Layout.fillHeight: false
+                        spacing: 6
 
-                    bottomMargin:
-                        Nexa.Theme.spacingMd
-                }
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: Nexa.Theme.radiusSm
+                            color: Nexa.Theme.surfaceContainer
+                            border.width: Nexa.Theme.borderThin
+                            border.color: searchInput.activeFocus ? Nexa.Theme.primary : Nexa.Theme.border
 
-                width:
-                    parent.width * 0.30
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 8
+                                spacing: 6
 
-                radius:
-                    Nexa.Theme.radiusSm
+                                Text {
+                                    text: "󰍉"
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: Nexa.Theme.mutedText
+                                }
 
-                color:
-                    Nexa.Theme.surfaceContainerHigh
+                                TextInput {
+                                    id: searchInput
+                                    Layout.fillWidth: true
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    color: Nexa.Theme.text
+                                    clip: true
+                                    text: root.searchQuery
+                                    onTextChanged: root.searchQuery = text
 
-                Behavior on color {
-                    ColorAnimation {
-                        duration:
-                            Nexa.Theme.animationNormal
-                        easing.type:
-                            Easing.OutCubic
+                                    Text {
+                                        anchors.fill: parent
+                                        visible: !searchInput.text && !searchInput.activeFocus
+                                        text: "Search " + root.presets.length + " presets..."
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        color: Nexa.Theme.mutedText
+                                    }
+                                }
+
+                                Text {
+                                    visible: searchInput.text.length > 0
+                                    text: "󰅖"
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: Nexa.Theme.mutedText
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            searchInput.text = ""
+                                            root.searchQuery = ""
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Presets Count Badge
+                        Rectangle {
+                            Layout.preferredWidth: 64
+                            Layout.fillHeight: true
+                            radius: Nexa.Theme.radiusSm
+                            color: Nexa.Theme.surfaceContainer
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.border
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: root.filteredPresets.length + " / " + root.presets.length
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
+                                color: Nexa.Theme.mutedText
+                            }
+                        }
                     }
-                }
 
+                    // Category Filter Pills (Horizontal Scroll)
+                    Flickable {
+                        id: categoryFlickable
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 28
+                        Layout.maximumHeight: 28
+                        Layout.minimumHeight: 28
+                        Layout.fillHeight: false
+                        contentWidth: categoryRow.width
+                        contentHeight: 28
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
 
-                Column {
-                    anchors {
-                        fill: parent
+                        WheelHandler {
+                            onWheel: event => {
+                                categoryFlickable.contentX = Math.max(
+                                    0,
+                                    Math.min(
+                                        categoryFlickable.contentWidth - categoryFlickable.width,
+                                        categoryFlickable.contentX - event.angleDelta.y
+                                    )
+                                )
+                            }
+                        }
 
-                        margins:
-                            Nexa.Theme.spacingSm
-                    }
+                        Row {
+                            id: categoryRow
+                            spacing: 4
+                            height: 28
 
-                    spacing: 6
+                            Repeater {
+                                model: root.categories
 
+                                Rectangle {
+                                    id: catChip
+                                    required property var modelData
+                                    height: 24
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: catText.width + 16
+                                    radius: Nexa.Theme.radiusPill
 
-                    Rectangle {
-                        width:
-                            parent.width * 0.76
+                                    readonly property bool isSelected:
+                                        root.selectedCategory === modelData
 
-                        height: 6
+                                    color: isSelected
+                                        ? Nexa.Theme.primary
+                                        : catMouse.containsMouse
+                                            ? Nexa.Theme.hover
+                                            : Nexa.Theme.surfaceContainer
 
-                        radius:
-                            Nexa.Theme.radiusPill
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
 
-                        color:
-                            Nexa.Theme.primary
-                    }
+                                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
 
+                                    Text {
+                                        id: catText
+                                        anchors.centerIn: parent
+                                        text: catChip.modelData
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                        font.weight: catChip.isSelected ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightRegular
+                                        color: catChip.isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                    }
 
-                    Rectangle {
-                        width:
-                            parent.width
-
-                        height: 4
-
-                        radius:
-                            Nexa.Theme.radiusPill
-
-                        color:
-                            Nexa.Theme.outlineVariant
-                    }
-
-
-                    Rectangle {
-                        width:
-                            parent.width * 0.72
-
-                        height: 4
-
-                        radius:
-                            Nexa.Theme.radiusPill
-
-                        color:
-                            Nexa.Theme.outlineVariant
-                    }
-
-
-                    Item {
-                        width: 1
-                        height: 1
-                    }
-
-
-                    Row {
-                        spacing:
-                            Nexa.Theme.spacingXs
-
-
-                        Repeater {
-                            model: [
-                                Nexa.Theme.primary,
-                                Nexa.Theme.secondary,
-                                Nexa.Theme.tertiary
-                            ]
-
-
-                            Rectangle {
-                                required property var modelData
-
-                                width: 18
-                                height: 18
-
-                                radius:
-                                    Nexa.Theme.radiusXs
-
-                                color:
-                                    modelData
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration:
-                                            Nexa.Theme.animationNormal
-                                        easing.type:
-                                            Easing.OutCubic
+                                    MouseArea {
+                                        id: catMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.selectedCategory = catChip.modelData
                                     }
                                 }
                             }
                         }
                     }
-                }
-            }
 
+                    // Presets Grid Area (2-column layout with instant local preview and scroll thumb)
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
 
-            Rectangle {
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    bottom: parent.bottom
+                        GridView {
+                            id: presetGrid
+                            anchors.fill: parent
+                            clip: true
+                            cellWidth: Math.floor(width / 2)
+                            cellHeight: 56
+                            model: root.filteredPresets
+                            boundsBehavior: Flickable.StopAtBounds
 
-                    leftMargin:
-                        parent.width * 0.34
-
-                    rightMargin:
-                        Nexa.Theme.spacingMd
-
-                    bottomMargin:
-                        Nexa.Theme.spacingMd
-                }
-
-                height: 64
-
-                radius:
-                    Nexa.Theme.radiusSm
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration:
-                            Nexa.Theme.animationNormal
-                        easing.type:
-                            Easing.OutCubic
-                    }
-                }
-
-                Rectangle {
-                    anchors {
-                        left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                    }
-
-                    width: 5
-
-                    radius:
-                        Nexa.Theme.radiusPill
-
-                    color:
-                        Nexa.Theme.primary
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration:
-                                Nexa.Theme.animationNormal
-                            easing.type:
-                                Easing.OutCubic
-                        }
-                    }
-                }
-
-
-                Column {
-                    anchors {
-                        left: parent.left
-                        verticalCenter:
-                            parent.verticalCenter
-
-                        leftMargin:
-                            Nexa.Theme.spacingLg
-                    }
-
-                    spacing:
-                        Nexa.Theme.spacingXs
-
-
-                    Text {
-                        text:
-                            "NEXA"
-
-                        color:
-                            Nexa.Theme.text
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSizeMd
-
-                            weight:
-                                Nexa.Theme.fontWeightDemiBold
-                        }
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration:
-                                    Nexa.Theme.animationNormal
-                                easing.type:
-                                    Easing.OutCubic
-                            }
-                        }
-                    }
-
-
-                    Text {
-                        text: {
-                            if (root.selectedStyle === "preset")
-                                return "Preset theme"
-
-                            if (root.selectedStyle === "wallpaperAccents")
-                                return "Wallpaper accents"
-
-                            return "Full wallpaper · "
-                                + root.labelFor(
-                                    root.appearanceModes,
-                                    root.selectedMode
-                                )
-                        }
-
-                        color:
-                            Nexa.Theme.mutedText
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSizeXs
-                        }
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration:
-                                    Nexa.Theme.animationNormal
-                                easing.type:
-                                    Easing.OutCubic
-                            }
-                        }
-                    }
-                }
-
-
-                Row {
-                    anchors {
-                        right: parent.right
-                        verticalCenter:
-                            parent.verticalCenter
-
-                        rightMargin:
-                            Nexa.Theme.spacingMd
-                    }
-
-                    spacing:
-                        Nexa.Theme.spacingXs
-
-
-                    Repeater {
-                        model: [
-                            Nexa.Theme.primary,
-                            Nexa.Theme.secondary,
-                            Nexa.Theme.tertiary
-                        ]
-
-
-                        Rectangle {
+                        delegate: Item {
+                            id: delegateRoot
                             required property var modelData
 
-                            width: 22
-                            height: 22
+                            width: presetGrid.cellWidth
+                            height: presetGrid.cellHeight
 
-                            radius:
-                                Nexa.Theme.radiusXs
+                            readonly property bool isStaged:
+                                root.stagedPreset === modelData.id
 
-                            color:
-                                modelData
+                            readonly property bool isActive:
+                                root.selectedPreset === modelData.id
 
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationNormal
-                                    easing.type:
-                                        Easing.OutCubic
+                            Rectangle {
+                                id: presetCard
+                                anchors.fill: parent
+                                anchors.margins: 3
+                                radius: Nexa.Theme.radiusSm
+
+                                color: delegateRoot.isStaged
+                                    ? Nexa.Theme.surfaceContainerHigh
+                                    : cardMouse.containsMouse
+                                        ? Nexa.Theme.hover
+                                        : Nexa.Theme.surfaceContainer
+
+                                border.width: delegateRoot.isStaged ? 1.5 : Nexa.Theme.borderThin
+                                border.color: delegateRoot.isStaged
+                                    ? Nexa.Theme.primary
+                                    : delegateRoot.isActive
+                                        ? Nexa.Theme.success
+                                        : cardMouse.containsMouse
+                                            ? Nexa.Theme.borderStrong
+                                            : Nexa.Theme.border
+
+                                Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                                Behavior on border.color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 8
+                                    anchors.rightMargin: 8
+                                    spacing: 6
+
+                                    // Theme Name & Category Label
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 1
+
+                                        Row {
+                                            spacing: 4
+                                            Layout.fillWidth: true
+
+                                            Text {
+                                                text: delegateRoot.modelData.name
+                                                font.family: Nexa.Theme.fontFamily
+                                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                                font.weight: delegateRoot.isStaged ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightMedium
+                                                color: delegateRoot.isStaged ? Nexa.Theme.primary : Nexa.Theme.text
+                                                elide: Text.ElideRight
+                                                width: Math.min(implicitWidth, presetCard.width - 80)
+                                            }
+
+                                            // Small green dot for currently active system preset
+                                            Rectangle {
+                                                visible: delegateRoot.isActive
+                                                width: 6
+                                                height: 6
+                                                radius: 3
+                                                color: Nexa.Theme.success
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+                                        }
+
+                                        Text {
+                                            text: delegateRoot.modelData.category
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                                            color: Nexa.Theme.mutedText
+                                            elide: Text.ElideRight
+                                            Layout.fillWidth: true
+                                        }
+                                    }
+
+                                    // 3 Swatch Dots for this preset in the current mode
+                                    Row {
+                                        spacing: 3
+                                        Layout.alignment: Qt.AlignVCenter
+
+                                        Repeater {
+                                            model: 3
+
+                                            Rectangle {
+                                                required property int index
+                                                width: 12
+                                                height: 12
+                                                radius: 6
+                                                color: root.colorForPreset(delegateRoot.modelData.id, index, root.selectedMode)
+                                                border.width: Nexa.Theme.borderThin
+                                                border.color: Nexa.Theme.border
+                                            }
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: cardMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.stagePreset(delegateRoot.modelData.id)
                                 }
                             }
                         }
                     }
-                }
-            }
-        }
 
+                    // Vertical Scroll Indicator
+                    Rectangle {
+                        id: scrollTrack
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        anchors.margins: 2
+                        width: 4
+                        radius: 2
+                        color: "transparent"
+                        visible: presetGrid.contentHeight > presetGrid.height
 
-        // ========================================================
-        // MODE / SOURCE / WARMTH
-        // ========================================================
-
-        RowLayout {
-            id: controlRow
-
-            Layout.fillWidth:
-                true
-
-            Layout.preferredHeight:
-                34
-
-            spacing:
-                Nexa.Theme.spacingSm
-
-            z: 1000
-
-
-            // ----------------------------------------------------
-            // APPEARANCE
-            // ----------------------------------------------------
-
-            NexaDropdown {
-                id: modeDropdown
-
-                Layout.fillWidth:
-                    true
-
-                Layout.fillHeight:
-                    true
-
-                model:
-                    root.appearanceModes
-
-                currentValue:
-                    root.selectedMode
-
-                enabled:
-                    !root.applying
-                    && root.presetsLoaded
-
-
-                onSelected: value => {
-                    root.selectMode(value)
+                        Rectangle {
+                            id: scrollThumb
+                            width: parent.width
+                            radius: parent.radius
+                            color: Nexa.Theme.primary
+                            opacity: 0.5
+                            height: Math.max(16, presetGrid.height * (presetGrid.height / Math.max(1, presetGrid.contentHeight)))
+                            y: (presetGrid.contentHeight > presetGrid.height)
+                                ? (presetGrid.contentY / (presetGrid.contentHeight - presetGrid.height)) * (presetGrid.height - height)
+                                : 0
+                        }
+                    }
                 }
             }
 
+                // Wallpaper Full / Accents View
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 12
+                    visible: root.stagedStyle !== "preset"
 
-            // ----------------------------------------------------
-            // THEME SOURCE
-            // ----------------------------------------------------
+                    RowLayout {
+                        spacing: 10
 
-            NexaDropdown {
-                id: styleDropdown
+                        Rectangle {
+                            Layout.preferredWidth: 42
+                            Layout.preferredHeight: 42
+                            radius: Nexa.Theme.radiusSm
+                            color: Nexa.Theme.surfaceContainer
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.border
 
-                Layout.fillWidth:
-                    true
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰸉"
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: Nexa.Theme.iconMd
+                                color: Nexa.Theme.primary
+                            }
+                        }
 
-                Layout.fillHeight:
-                    true
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
 
-                model:
-                    root.styles
+                            Text {
+                                text: root.stagedStyle === "wallpaperFull"
+                                    ? "Full Wallpaper Palette"
+                                    : "Wallpaper Accents"
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeMd
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                color: Nexa.Theme.text
+                            }
 
-                currentValue:
-                    root.selectedStyle
+                            Text {
+                                text: root.stagedStyle === "wallpaperFull"
+                                    ? "Extracts dynamic Material You palette from your active wallpaper."
+                                    : "Extracts accents from wallpaper while preserving preset surface tones."
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                color: Nexa.Theme.mutedText
+                            }
+                        }
+                    }
 
-                enabled:
-                    !root.applying
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 64
+                        radius: Nexa.Theme.radiusSm
+                        color: Nexa.Theme.surfaceContainer
+                        border.width: Nexa.Theme.borderThin
+                        border.color: Nexa.Theme.border
 
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 10
 
-                onSelected: value => {
-                    root.selectStyle(value)
+                            Text {
+                                text: "󰋩"
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: Nexa.Theme.iconSm
+                                color: Nexa.Theme.mutedText
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+
+                                Text {
+                                    text: "Current Wallpaper Source"
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSize2Xs
+                                    color: Nexa.Theme.mutedText
+                                }
+
+                                Text {
+                                    text: root.wallpaperSource.length > 0
+                                        ? root.wallpaperSource.split("/").pop()
+                                        : "No active wallpaper"
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    font.weight: Nexa.Theme.fontWeightMedium
+                                    color: Nexa.Theme.text
+                                    elide: Text.ElideMiddle
+                                    Layout.fillWidth: true
+                                }
+                            }
+                        }
+                    }
+
+                    Item { Layout.fillHeight: true }
                 }
             }
 
+            // ====================================================
+            // RIGHT COLUMN: LIVE INTERACTIVE PREVIEW & ACTION HUB
+            // ====================================================
+            Rectangle {
+                Layout.preferredWidth: 260
+                Layout.fillHeight: true
+                radius: Nexa.Theme.radiusMd
+                color: Nexa.Theme.cardBackground
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.border
+                clip: true
 
-            // ----------------------------------------------------
-            // WALLPAPER WARMTH
-            // ----------------------------------------------------
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 8
 
-            NexaDropdown {
-                id: warmthDropdown
-
-                Layout.fillWidth:
-                    true
-
-                Layout.fillHeight:
-                    true
-
-                model:
-                    root.warmthModes
-
-                currentValue:
-                    root.warmthEnabled
-                    ? "on"
-                    : "off"
-
-                enabled:
-                    !root.applying
-
-
-                onSelected: value => {
-                    root.setWarmth(
-                        value === "on"
-                    )
-                }
-            }
-        }
-
-
-        // ========================================================
-        // MATUGEN PRESET BROWSER
-        // ========================================================
-
-        Rectangle {
-            id: selector
-
-            Layout.fillWidth:
-                true
-
-            Layout.fillHeight:
-                true
-
-            Layout.minimumHeight:
-                105
-
-            radius:
-                Nexa.Theme.radiusMd
-
-            color:
-                Nexa.Theme.cardBackground
-
-            border.width:
-                Nexa.Theme.borderThin
-
-            border.color:
-                Nexa.Theme.border
-
-            clip:
-                false
-
-            opacity:
-                root.selectedStyle !== "wallpaperFull"
-                ? 1.0
-                : Nexa.Theme.opacityDisabled
-
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration:
-                        Nexa.Theme.animationFast
-                }
-            }
-
-
-            ColumnLayout {
-                anchors {
-                    fill: parent
-
-                    margins:
-                        Nexa.Theme.spacingMd
-                }
-
-                spacing:
-                    Nexa.Theme.spacingSm
-
-
-                RowLayout {
-                    Layout.fillWidth:
-                        true
-
-                    spacing:
-                        Nexa.Theme.spacingSm
-
-
-                    // ------------------------------------------------
-                    // FOLDER / CATEGORY
-                    // ------------------------------------------------
-
-                    ColumnLayout {
-                        Layout.fillWidth:
-                            true
-
-                        spacing: 4
-
+                    // Header row: Title & Mode Badge
+                    RowLayout {
+                        Layout.fillWidth: true
 
                         Text {
-                            Layout.fillWidth:
-                                true
-
-                            text:
-                                "Folder"
-
-                            color:
-                                Nexa.Theme.mutedText
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSize2Xs
-
-                                weight:
-                                    Nexa.Theme.fontWeightMedium
-                            }
+                            text: "Live Preview"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            font.weight: Nexa.Theme.fontWeightDemiBold
+                            color: Nexa.Theme.text
                         }
 
+                        Item { Layout.fillWidth: true }
 
-                        NexaDropdown {
-                            id: folderDropdown
+                        Rectangle {
+                            height: 18
+                            width: modeBadgeText.width + 10
+                            radius: Nexa.Theme.radiusPill
+                            color: Nexa.Theme.surfaceContainer
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.border
 
-                            Layout.fillWidth:
-                                true
-
-                            Layout.preferredHeight:
-                                34
-
-                            model:
-                                root.folderOptions
-
-                            currentValue:
-                                root.selectedFolder
-
-                            popupSide: "left"
-
-                            enabled:
-                                root.selectedStyle !== "wallpaperFull"
-                                && root.presetsLoaded
-                                && !root.applying
-
-
-                            onSelected: value => {
-                                root.selectFolder(value)
+                            Text {
+                                id: modeBadgeText
+                                anchors.centerIn: parent
+                                text: root.stagedMode.toUpperCase()
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 8
+                                font.weight: Nexa.Theme.fontWeightBold
+                                color: Nexa.Theme.mutedText
                             }
                         }
                     }
 
+                    // Mini UI Mockup Card themed with staged colors
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 96
+                        radius: Nexa.Theme.radiusSm
+                        color: Nexa.Theme.surfaceContainer
+                        border.width: Nexa.Theme.borderThin
+                        border.color: Nexa.Theme.border
+                        clip: true
 
-                    // ------------------------------------------------
-                    // SUBFOLDER / FAMILY
-                    // ------------------------------------------------
+                        // Window Mockup Header
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 22
+                            color: Nexa.Theme.surfaceContainerHigh
 
-                    ColumnLayout {
-                        Layout.fillWidth:
-                            true
+                            Row {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 6
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 4
 
-                        spacing: 4
+                                Rectangle { width: 6; height: 6; radius: 3; color: Nexa.Theme.error }
+                                Rectangle { width: 6; height: 6; radius: 3; color: Nexa.Theme.warning }
+                                Rectangle { width: 6; height: 6; radius: 3; color: Nexa.Theme.success }
+                            }
 
-
-                        Text {
-                            Layout.fillWidth:
-                                true
-
-                            text:
-                                "Subfolder"
-
-                            color:
-                                Nexa.Theme.mutedText
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSize2Xs
-
-                                weight:
-                                    Nexa.Theme.fontWeightMedium
+                            Text {
+                                anchors.centerIn: parent
+                                text: root.stagedPresetName
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
+                                font.weight: Nexa.Theme.fontWeightMedium
+                                color: Nexa.Theme.mutedText
+                                elide: Text.ElideRight
+                                width: parent.width - 50
+                                horizontalAlignment: Text.AlignHCenter
                             }
                         }
 
+                        // Window Mockup Body
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.topMargin: 26
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            anchors.bottomMargin: 6
+                            spacing: 5
 
-                        NexaDropdown {
-                            id: subfolderDropdown
-
-                            Layout.fillWidth:
-                                true
-
-                            Layout.preferredHeight:
-                                34
-
-                            model:
-                                root.subfolderOptions
-
-                            currentValue:
-                                root.selectedSubfolder
-
-                            disabledText:
-                                "Direct presets"
-
-                            popupSide: "left"
-
-                            enabled:
-                                root.selectedStyle !== "wallpaperFull"
-                                && root.presetsLoaded
-                                && !root.applying
-                                && root.categoryHasSubfolders(
-                                    root.selectedFolder
-                                )
-                                && root.subfolderOptions.length > 0
-
-
-                            onSelected: value => {
-                                root.selectSubfolder(value)
-                            }
-                        }
-                    }
-
-
-                    // ------------------------------------------------
-                    // FINAL PRESET
-                    // ------------------------------------------------
-
-                    ColumnLayout {
-                        Layout.fillWidth:
-                            true
-
-                        spacing: 4
-
-
-                        Text {
-                            Layout.fillWidth:
-                                true
-
-                            text:
-                                "Preset"
-
-                            color:
-                                Nexa.Theme.mutedText
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSize2Xs
-
-                                weight:
-                                    Nexa.Theme.fontWeightMedium
-                            }
-                        }
-
-
-                        NexaDropdown {
-                            id: presetDropdown
-
-                            Layout.fillWidth:
-                                true
-
-                            Layout.preferredHeight:
-                                34
-
-                            model:
-                                root.presetOptions
-
-                            currentValue:
-                                root.browserPreset
-
-                            popupSide: "right"
-
-                            enabled:
-                                root.selectedStyle !== "wallpaperFull"
-                                && root.presetsLoaded
-                                && !root.applying
-                                && root.presetOptions.length > 0
-
-
-                            onSelected: value => {
-                                root.browserPreset = value
-                                root.selectPreset(value)
-                            }
-                        }
-                    }
-                }
-
-
-                RowLayout {
-                    Layout.fillWidth:
-                        true
-
-                    spacing:
-                        Nexa.Theme.spacingSm
-
-
-                    Text {
-                        Layout.fillWidth:
-                            true
-
-                        text: {
-                            if (!root.presetsLoaded)
-                                return "Loading Matugen presets…"
-
-                            if (!root.selectedFolder)
-                                return "No Matugen presets found"
-
-                            if (
-                                root.categoryHasSubfolders(
-                                    root.selectedFolder
-                                )
-                            ) {
-                                return root.selectedFolder
-                                    + " / "
-                                    + root.selectedSubfolder
-                                    + " / "
-                                    + root.titleCase(
-                                        root.selectedMode
-                                    )
-                            }
-
-                            const preset =
-                                root.presetById(
-                                    root.browserPreset
-                                )
-
-                            return root.selectedFolder
-                                + " / "
-                                + (
-                                    preset
-                                    ? preset.name
-                                    : "Select preset"
-                                )
-                        }
-
-                        color:
-                            Nexa.Theme.mutedText
-
-                        elide:
-                            Text.ElideRight
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSize2Xs
-                        }
-                    }
-
-
-                    Row {
-                        spacing: 5
-
-                        visible:
-                            root.browserPreset.length > 0
-
-
-                        Repeater {
-                            model: 3
-
-
+                            // Accent bar in staged primary
                             Rectangle {
-                                required property int index
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 4
+                                radius: Nexa.Theme.radiusPill
+                                color: root.stagedPrimary
 
-                                width: 18
-                                height: 18
+                                Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                            }
 
-                                radius:
-                                    Nexa.Theme.radiusXs
+                            // Sample Mini Controls Row
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
 
-                                color:
-                                    root.colorForPreset(
-                                        root.browserPreset,
-                                        index
-                                    )
+                                // Mini Action Pill
+                                Rectangle {
+                                    Layout.preferredHeight: 18
+                                    Layout.preferredWidth: 62
+                                    radius: 4
+                                    color: root.stagedPrimary
 
-                                border.width:
-                                    Nexa.Theme.borderThin
+                                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
 
-                                border.color:
-                                    Nexa.Theme.border
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "Button"
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: 9
+                                        font.weight: Nexa.Theme.fontWeightBold
+                                        color: Nexa.Theme.onPrimary
+                                    }
+                                }
+
+                                // Mini Secondary Pill
+                                Rectangle {
+                                    Layout.preferredHeight: 18
+                                    Layout.preferredWidth: 52
+                                    radius: 4
+                                    color: root.stagedSecondary
+
+                                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "Chip"
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: 9
+                                        color: Nexa.Theme.onPrimary
+                                    }
+                                }
+
+                                // Mini Tertiary Tag
+                                Rectangle {
+                                    Layout.preferredHeight: 18
+                                    Layout.fillWidth: true
+                                    radius: 4
+                                    color: root.stagedTertiary
+
+                                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "Tag"
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: 9
+                                        color: Nexa.Theme.onPrimary
+                                    }
+                                }
+                            }
+
+                            // Secondary accent line
+                            Rectangle {
+                                Layout.preferredWidth: parent.width * 0.65
+                                Layout.preferredHeight: 3
+                                radius: Nexa.Theme.radiusPill
+                                color: root.stagedSecondary
+
+                                Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
                             }
                         }
                     }
 
+                    // Hex Swatches Row
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
 
+                        // Primary Swatch
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 44
+                            radius: Nexa.Theme.radiusSm
+                            color: Nexa.Theme.surfaceContainer
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.border
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 2
+
+                                Rectangle {
+                                    width: 14
+                                    height: 14
+                                    radius: 7
+                                    color: root.stagedPrimary
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: Nexa.Theme.border
+                                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                                }
+
+                                Text {
+                                    text: root.hexForStaged(0)
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 8
+                                    font.weight: Nexa.Theme.fontWeightMedium
+                                    color: Nexa.Theme.mutedText
+                                }
+                            }
+                        }
+
+                        // Secondary Swatch
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 44
+                            radius: Nexa.Theme.radiusSm
+                            color: Nexa.Theme.surfaceContainer
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.border
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 2
+
+                                Rectangle {
+                                    width: 14
+                                    height: 14
+                                    radius: 7
+                                    color: root.stagedSecondary
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: Nexa.Theme.border
+                                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                                }
+
+                                Text {
+                                    text: root.hexForStaged(1)
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 8
+                                    font.weight: Nexa.Theme.fontWeightMedium
+                                    color: Nexa.Theme.mutedText
+                                }
+                            }
+                        }
+
+                        // Tertiary Swatch
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 44
+                            radius: Nexa.Theme.radiusSm
+                            color: Nexa.Theme.surfaceContainer
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.border
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 2
+
+                                Rectangle {
+                                    width: 14
+                                    height: 14
+                                    radius: 7
+                                    color: root.stagedTertiary
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: Nexa.Theme.border
+                                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                                }
+
+                                Text {
+                                    text: root.hexForStaged(2)
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 8
+                                    font.weight: Nexa.Theme.fontWeightMedium
+                                    color: Nexa.Theme.mutedText
+                                }
+                            }
+                        }
+                    }
+
+                    Item { Layout.fillHeight: true }
+
+                    // Selected Preset Info Label
                     Text {
-                        text:
-                            root.applying
-                            ? "Applying…"
-                            : ""
+                        text: root.stagedStyle === "preset"
+                            ? (root.stagedPresetCategory.length > 0 ? (root.stagedPresetCategory + " · " + root.stagedPresetName) : root.stagedPresetName)
+                            : (root.stagedStyle === "wallpaperFull" ? "Full Wallpaper Theme" : "Wallpaper Accents Theme")
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeXs
+                        color: Nexa.Theme.mutedText
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                    }
 
-                        color:
-                            Nexa.Theme.primary
+                    // HERO ACTION BUTTON: Apply Theme
+                    Rectangle {
+                        id: applyButton
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 36
+                        radius: Nexa.Theme.radiusSm
 
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
+                        readonly property bool canApply:
+                            !root.applying && !root.isCurrentThemeActive
 
-                            pixelSize:
-                                Nexa.Theme.fontSize2Xs
+                        color: {
+                            if (root.applying)
+                                return Nexa.Theme.hoverStrong
+                            if (root.isCurrentThemeActive)
+                                return Nexa.Theme.surfaceContainerHigh
+                            if (applyMouse.pressed)
+                                return Nexa.Theme.pressed
+                            if (applyMouse.containsMouse)
+                                return Nexa.Theme.hoverStrong
+                            return Nexa.Theme.primary
+                        }
 
-                            weight:
-                                Nexa.Theme.fontWeightMedium
+                        border.width: Nexa.Theme.borderThin
+                        border.color: root.isCurrentThemeActive
+                            ? Nexa.Theme.success
+                            : Nexa.Theme.primary
+
+                        Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: {
+                                    if (root.applying)
+                                        return "󰑐"
+                                    if (root.isCurrentThemeActive)
+                                        return "󰄬"
+                                    return "󰄬"
+                                }
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: Nexa.Theme.iconSm
+                                color: root.isCurrentThemeActive ? Nexa.Theme.success : Nexa.Theme.onPrimary
+                            }
+
+                            Text {
+                                text: {
+                                    if (root.applying)
+                                        return "Applying..."
+                                    if (root.isCurrentThemeActive)
+                                        return "Active Theme"
+                                    if (root.stagedStyle === "preset")
+                                        return "Apply Preset"
+                                    if (root.stagedStyle === "wallpaperAccents")
+                                        return "Apply Accents"
+                                    return "Apply Wallpaper"
+                                }
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                color: root.isCurrentThemeActive ? Nexa.Theme.success : Nexa.Theme.onPrimary
+                            }
+                        }
+
+                        MouseArea {
+                            id: applyMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: applyButton.canApply ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            enabled: applyButton.canApply
+                            onClicked: root.applyCurrentConfiguration()
                         }
                     }
                 }

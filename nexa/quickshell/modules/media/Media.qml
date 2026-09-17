@@ -1,9 +1,11 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import Qt5Compat.GraphicalEffects
 
 import Quickshell.Services.Mpris
 import Quickshell.Io
+import Quickshell
 
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
@@ -15,10 +17,12 @@ Item {
     // ============================================================
     // RESPONSIBILITY
     //
-    // Modern NEXA Media Player frontend:
-    // - Reliable horizontal sliding marquee ticker for overflowing titles
-    // - Slender, highly-reactive bottom-anchored audio spectrum (CAVA)
-    // - Glass album art, hero controls, shuffle/loop & volume
+    // Apple-Minimal Dynamic Island Media Deck:
+    // - High-DPI crystal-clear album art rendering (mipmap + explicit sourceSize)
+    // - Zero lag: No CAVA processes, no heavy FBO re-rasterization during resize
+    // - 100% true circular masked thumbnail in compact notch
+    // - Spacious Apple Music aesthetic with smooth fade transitions
+    // - Zero duplicate waveforms (handled by dedicated TopBar WaveformPill)
     // ============================================================
 
     property string presentation: "full"
@@ -142,6 +146,17 @@ Item {
         return "󰎆"
     }
 
+    function playerBrandColor(idName) {
+        const id = String(idName || "").toLowerCase()
+        if (id.includes("spotify")) return "#1DB954"
+        if (id.includes("firefox")) return "#FF7139"
+        if (id.includes("chrome") || id.includes("chromium")) return "#4285F4"
+        if (id.includes("brave")) return "#FB542B"
+        if (id.includes("vlc")) return "#FF8800"
+        if (id.includes("mpv")) return "#9C27B0"
+        return Nexa.Theme.primary
+    }
+
     // ============================================================
     // POSITION & DURATION
     // ============================================================
@@ -172,50 +187,6 @@ Item {
         ? Math.max(0, Math.min(1, displayedPosition / duration))
         : 0
 
-    // ============================================================
-    // CAVA SPECTRUM DATA
-    // ============================================================
-
-    property var spectrumBins: []
-
-    readonly property bool spectrumAvailable:
-        spectrumBins && spectrumBins.length > 0
-
-    Process {
-        id: cavaProcess
-        running: root.playing && root.presentation === "full"
-        command: [
-            "cava",
-            "-p",
-            "/home/shnx/.config/nexa/config/cava.conf"
-        ]
-
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: data => {
-                const line = data.trim()
-                if (line === "") return
-                const parts = line.split(";")
-                const values = []
-                for (let i = 0; i < parts.length; ++i) {
-                    if (parts[i] === "") continue
-                    const raw = Number(parts[i])
-                    if (isNaN(raw)) continue
-                    // Natural audio dynamics (0.0 to 1.0) with slight mid-range compensation
-                    const val = Math.max(0.0, Math.min(1.0, (raw / 1000.0) * 1.15))
-                    values.push(val)
-                }
-                if (values.length > 0)
-                    root.spectrumBins = values
-            }
-        }
-
-        onRunningChanged: {
-            if (!running)
-                root.spectrumBins = []
-        }
-    }
-
     // Position refresh timer
     Timer {
         interval: 500
@@ -234,60 +205,6 @@ Item {
         return minutes + ":" + String(secs).padStart(2, "0")
     }
 
-    function playerBrandColor(idName) {
-        const id = String(idName || "").toLowerCase()
-        if (id.includes("spotify")) return "#1DB954"
-        if (id.includes("firefox")) return "#FF7139"
-        if (id.includes("chrome") || id.includes("chromium")) return "#4285F4"
-        if (id.includes("brave")) return "#FB542B"
-        if (id.includes("vlc")) return "#FF8800"
-        if (id.includes("mpv")) return "#9C27B0"
-        return Nexa.Theme.primary
-    }
-
-    // ============================================================
-    // SINK VOLUME TRACKING & CONTROLS
-    // ============================================================
-
-    property real sinkVolume: 0.65
-    property bool sinkMuted: false
-
-    Process {
-        id: sinkVolumeReader
-        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: line => {
-                const parts = line.trim().split(" ")
-                if (parts.length >= 2 && parts[0] === "Volume:") {
-                    const val = parseFloat(parts[1])
-                    if (!isNaN(val)) root.sinkVolume = Math.max(0.0, Math.min(1.0, val))
-                    root.sinkMuted = line.includes("[MUTED]")
-                }
-            }
-        }
-    }
-
-    Timer {
-        interval: 1200
-        repeat: true
-        running: root.presentation === "full"
-        onTriggered: {
-            if (!sinkVolumeReader.running) sinkVolumeReader.running = true
-        }
-    }
-
-    function setSinkVolume(val) {
-        root.sinkVolume = Math.max(0.0, Math.min(1.0, val))
-        const pct = Math.round(root.sinkVolume * 100)
-        Quickshell.execDetached(["wpctl", "set-volume", "-l", "1.0", "@DEFAULT_AUDIO_SINK@", pct + "%"])
-    }
-
-    function toggleSinkMute() {
-        Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
-        sinkVolumeReader.running = true
-    }
-
     // ============================================================
     // PLAYBACK ACTIONS
     // ============================================================
@@ -302,22 +219,6 @@ Item {
 
     function next() {
         if (available && player.canGoNext) player.next()
-    }
-
-    function toggleShuffle() {
-        if (!available || !player.canShuffle) return
-        player.shuffle = !player.shuffle
-    }
-
-    function toggleLoop() {
-        if (!available || !player.canLoop) return
-        if (player.loopStatus === MprisLoopStatus.None) {
-            player.loopStatus = MprisLoopStatus.Playlist
-        } else if (player.loopStatus === MprisLoopStatus.Playlist) {
-            player.loopStatus = MprisLoopStatus.Track
-        } else {
-            player.loopStatus = MprisLoopStatus.None
-        }
     }
 
     function updateSeekFromX(x, width) {
@@ -338,7 +239,7 @@ Item {
     }
 
     // ============================================================
-    // COMPACT PRESENTATION (Dynamic Island Notch)
+    // 1. COMPACT PRESENTATION (Dynamic Island Notch)
     // ============================================================
 
     Item {
@@ -347,32 +248,67 @@ Item {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: Nexa.Theme.spacingMd
-            anchors.rightMargin: Nexa.Theme.spacingMd
-            spacing: Nexa.Theme.spacingSm
+            anchors.leftMargin: 8
+            anchors.rightMargin: 12
+            spacing: 8
 
-            // Small Artwork Thumbnail
-            Rectangle {
-                Layout.preferredWidth: 24
-                Layout.preferredHeight: 24
-                radius: 6
-                color: Nexa.Theme.surfaceContainerHigh
-                clip: true
+            // True Circular Cropped Album Art Avatar (Pin-Sharp)
+            Item {
+                Layout.preferredWidth: 22
+                Layout.preferredHeight: 22
+                Layout.alignment: Qt.AlignVCenter
+
+                Rectangle {
+                    id: compactMask
+                    anchors.fill: parent
+                    radius: width / 2
+                    visible: false
+                }
 
                 Image {
+                    id: compactImg
                     anchors.fill: parent
                     source: root.artwork
                     fillMode: Image.PreserveAspectCrop
+                    visible: false
+                    asynchronous: true
+                    mipmap: true
+                    sourceSize: Qt.size(64, 64)
+                    smooth: true
+                }
+
+                OpacityMask {
+                    anchors.fill: parent
+                    source: compactImg
+                    maskSource: compactMask
                     visible: root.artwork !== ""
                 }
 
-                Text {
-                    anchors.centerIn: parent
+                // Fallback circular badge
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
                     visible: root.artwork === ""
-                    text: root.playerIcon(root.identity)
-                    color: Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.iconFontFamily
-                    font.pixelSize: Nexa.Theme.iconSm
+                    color: Nexa.Theme.surfaceContainerHigh
+                    border.width: 1
+                    border.color: Nexa.Theme.border
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.playerIcon(root.identity)
+                        color: Nexa.Theme.primary
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: 11
+                    }
+                }
+
+                // Clean circular border ring
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: "transparent"
+                    border.width: 1
+                    border.color: Qt.rgba(255, 255, 255, 0.20)
                 }
             }
 
@@ -441,7 +377,7 @@ Item {
     }
 
     // ============================================================
-    // HOVER PRESENTATION (Dynamic Island Expansion)
+    // 2. HOVER PRESENTATION (Dynamic Island Expansion)
     // ============================================================
 
     Item {
@@ -458,16 +394,21 @@ Item {
 
             // Artwork Card
             Rectangle {
-                Layout.preferredWidth: 42
-                Layout.preferredHeight: 42
+                Layout.preferredWidth: 44
+                Layout.preferredHeight: 44
                 radius: Nexa.Theme.radiusSm
                 color: Nexa.Theme.surfaceContainerHigh
+                border.width: 1
+                border.color: Nexa.Theme.border
                 clip: true
 
                 Image {
                     anchors.fill: parent
                     source: root.artwork
                     fillMode: Image.PreserveAspectCrop
+                    mipmap: true
+                    sourceSize: Qt.size(128, 128)
+                    smooth: true
                     visible: root.artwork !== ""
                 }
 
@@ -585,7 +526,7 @@ Item {
                 }
             }
 
-            // Quick Playback Controls
+            // Minimal Playback Controls
             RowLayout {
                 spacing: Nexa.Theme.spacingXs
 
@@ -612,7 +553,7 @@ Item {
     }
 
     // ============================================================
-    // FULL MUSIC VIEW (CYBER-LUMINOUS GLASS DECK)
+    // 3. FULL MUSIC VIEW (APPLE-MINIMAL CARD)
     // ============================================================
 
     Item {
@@ -620,34 +561,39 @@ Item {
         anchors.fill: parent
         visible: root.presentation === "full"
 
+        // Smooth opacity fade on appearance for butter-smooth opening
+        opacity: visible ? 1.0 : 0.0
+        Behavior on opacity {
+            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        }
+
         // --------------------------------------------------------
-        // 1. AMBIENT BACKDROP & SPECULAR RIM
+        // Ambient Backdrop & Specular Rim (Hardware-Optimized)
         // --------------------------------------------------------
         Rectangle {
             anchors.fill: parent
             radius: Nexa.Theme.radiusLg
             color: Nexa.Theme.surfaceContainerLow
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.08)
+            border.color: Qt.rgba(1, 1, 1, 0.09)
             clip: true
             z: -1
 
-            // Dynamic blurred ambient artwork glow
+            // Soft ambient glow using downsampled 120x120 texture (0ms resize overhead)
             Image {
                 id: bgAmbientArt
                 anchors.fill: parent
-                anchors.margins: -40
+                anchors.margins: -20
                 source: root.artwork
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: true
-                opacity: (root.hasTrack && root.artwork !== "") ? 0.35 : 0.0
+                sourceSize: Qt.size(120, 120)
+                smooth: true
+                opacity: (root.hasTrack && root.artwork !== "") ? 0.25 : 0.0
 
                 Behavior on opacity {
-                    NumberAnimation {
-                        duration: 600
-                        easing.type: Easing.OutCubic
-                    }
+                    NumberAnimation { duration: 400; easing.type: Easing.OutCubic }
                 }
             }
 
@@ -658,7 +604,7 @@ Item {
                     Nexa.Theme.surfaceContainerLow.r,
                     Nexa.Theme.surfaceContainerLow.g,
                     Nexa.Theme.surfaceContainerLow.b,
-                    0.88
+                    0.91
                 )
             }
 
@@ -668,12 +614,12 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 height: 1
-                color: Qt.rgba(1, 1, 1, 0.14)
+                color: Qt.rgba(1, 1, 1, 0.16)
             }
         }
 
         // --------------------------------------------------------
-        // 2. IDLE STATE: WHEN NO ACTIVE TRACK IS PLAYING
+        // Idle State: When No Active Media is Playing
         // --------------------------------------------------------
         Item {
             anchors.fill: parent
@@ -683,54 +629,27 @@ Item {
                 anchors.centerIn: parent
                 spacing: 36
 
-                // Frosted Vinyl Disc
                 Item {
-                    width: 150
-                    height: 150
+                    width: 140
+                    height: 140
                     Layout.alignment: Qt.AlignVCenter
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: 75
-                        color: Nexa.Theme.surfaceContainerHighest
+                        radius: 70
+                        color: Nexa.Theme.surfaceContainerHigh
                         border.width: 1
                         border.color: Nexa.Theme.border
 
-                        // Grooves
-                        Repeater {
-                            model: [130, 110, 90, 70]
-                            delegate: Rectangle {
-                                anchors.centerIn: parent
-                                width: modelData
-                                height: modelData
-                                radius: modelData / 2
-                                color: "transparent"
-                                border.width: 1
-                                border.color: Nexa.Theme.borderSubtle
-                            }
-                        }
-
-                        // Center Label
-                        Rectangle {
+                        Text {
                             anchors.centerIn: parent
-                            width: 50
-                            height: 50
-                            radius: 25
-                            color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.20)
-                            border.width: 1
-                            border.color: Nexa.Theme.primary
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰎆"
-                                color: Nexa.Theme.primary
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 22
-                            }
+                            text: "󰎆"
+                            color: Nexa.Theme.primary
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: 42
                         }
                     }
 
-                    // Gentle breathing pulse
                     SequentialAnimation on scale {
                         loops: Animation.Infinite
                         running: fullMusicContainer.visible && (!root.hasTrack || (!root.playing && !root.paused))
@@ -739,7 +658,6 @@ Item {
                     }
                 }
 
-                // Clean Description & Prompt
                 ColumnLayout {
                     spacing: 8
                     Layout.alignment: Qt.AlignVCenter
@@ -783,7 +701,7 @@ Item {
                     }
 
                     Text {
-                        text: "Play music or video on Spotify, YouTube, or MPV\nto unlock live controls, audio visualizer, and lyrics."
+                        text: "Play music or video on Spotify, YouTube, or MPV\nto unlock live controls in the Dynamic Island."
                         color: Nexa.Theme.mutedText
                         font.family: Nexa.Theme.fontFamily
                         font.pixelSize: 13
@@ -794,7 +712,7 @@ Item {
         }
 
         // --------------------------------------------------------
-        // 3. ACTIVE STATE: MODERN HERO PLAYER DECK
+        // Active State: Clean Apple-Minimal Player Deck
         // --------------------------------------------------------
         Item {
             anchors.fill: parent
@@ -802,121 +720,47 @@ Item {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: Nexa.Theme.spacingLg
-                spacing: Nexa.Theme.spacingXl
+                anchors.margins: 24
+                spacing: 28
 
                 // ====================================================
-                // LEFT: FLOATING VINYL + ALBUM ART CARD
+                // LEFT: LARGE ULTRA-CRISP APPLE ALBUM ART CARD
                 // ====================================================
                 Item {
-                    Layout.preferredWidth: 210
-                    Layout.preferredHeight: 210
+                    Layout.preferredWidth: 175
+                    Layout.preferredHeight: 175
                     Layout.alignment: Qt.AlignVCenter
 
-                    // The Spinning Vinyl Record (Slides out when playing)
-                    Item {
-                        id: vinylDisc
-                        width: 190
-                        height: 190
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: root.playing ? 34 : 4
-                        z: 1
-
-                        Behavior on anchors.leftMargin {
-                            NumberAnimation { duration: 600; easing.type: Easing.OutBack }
-                        }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: width / 2
-                            color: Nexa.Theme.surfaceContainerHighest
-                            border.width: 1
-                            border.color: Nexa.Theme.border
-
-                            // Vinyl grooves
-                            Repeater {
-                                model: [170, 150, 130, 110, 90]
-                                delegate: Rectangle {
-                                    anchors.centerIn: parent
-                                    width: modelData
-                                    height: modelData
-                                    radius: modelData / 2
-                                    color: "transparent"
-                                    border.width: 1
-                                    border.color: Nexa.Theme.borderSubtle
-                                }
-                            }
-
-                            // Center Label
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: 66
-                                height: 66
-                                radius: 33
-                                color: Nexa.Theme.surfaceContainerHigh
-                                border.width: 1
-                                border.color: root.playerBrandColor(root.identity)
-                                clip: true
-
-                                Image {
-                                    anchors.fill: parent
-                                    source: root.artwork
-                                    fillMode: Image.PreserveAspectCrop
-                                    visible: root.artwork !== ""
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: root.artwork === ""
-                                    text: "󰎆"
-                                    color: Nexa.Theme.primary
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: 22
-                                }
-
-                                // Spindle Hole
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: 10; height: 10; radius: 5
-                                    color: Nexa.Theme.surfaceDim
-                                    border.width: 1; border.color: Nexa.Theme.border
-                                }
-                            }
-
-                            RotationAnimation on rotation {
-                                loops: Animation.Infinite
-                                from: 0
-                                to: 360
-                                duration: 9000
-                                running: root.playing && root.presentation === "full"
-                            }
-                        }
+                    // Soft ambient drop-shadow glow behind card
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: -4
+                        radius: 22
+                        color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.18)
+                        opacity: root.playing ? 0.65 : 0.2
+                        Behavior on opacity { NumberAnimation { duration: 400 } }
                     }
 
-                    // Front Floating Album Artwork Card
+                    // Native Rounded Artwork Container (Crystal-Sharp Mipmaps, 0% FBO overhead)
                     Rectangle {
                         id: frontArtworkCard
-                        width: 190
-                        height: 190
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.fill: parent
                         radius: 18
                         color: Nexa.Theme.surfaceContainerHigh
                         border.width: 1
-                        border.color: Nexa.Theme.border
+                        border.color: Qt.rgba(255, 255, 255, 0.16)
                         clip: true
-                        z: 2
-                        scale: root.playing ? 1.015 : 1.0
-
-                        Behavior on scale {
-                            NumberAnimation { duration: 400; easing.type: Easing.OutCubic }
-                        }
 
                         Image {
+                            id: mainArtworkImage
                             anchors.fill: parent
                             source: root.artwork
                             fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            cache: true
+                            mipmap: true
+                            sourceSize: Qt.size(600, 600)
+                            smooth: true
                             visible: root.artwork !== ""
                         }
 
@@ -949,26 +793,29 @@ Item {
                             }
                         }
 
-                        // Glass sheen line
+                        // Glass specular sheen highlight line
                         Rectangle {
                             anchors.top: parent.top
                             anchors.left: parent.left
                             anchors.right: parent.right
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
                             height: 1
-                            color: Qt.rgba(255, 255, 255, 0.20)
+                            color: Qt.rgba(255, 255, 255, 0.25)
                         }
                     }
                 }
 
                 // ====================================================
-                // RIGHT: METADATA, SCRUBBER, HERO CONTROLS & SPECTRUM
+                // RIGHT: METADATA, SCRUBBER & HERO CONTROLS
                 // ====================================================
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    spacing: 8
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: 12
 
-                    // Header Status & Source Row
+                    // 1. Header Badges: Source App & Status
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 8
@@ -978,9 +825,9 @@ Item {
                             implicitWidth: sourcePillRow.implicitWidth + 18
                             implicitHeight: 26
                             radius: 13
-                            color: Qt.rgba(255/255, 255/255, 255/255, 0.06)
+                            color: Qt.rgba(255/255, 255/255, 255/255, 0.07)
                             border.width: 1
-                            border.color: Qt.rgba(255/255, 255/255, 255/255, 0.10)
+                            border.color: Qt.rgba(255/255, 255/255, 255/255, 0.12)
 
                             Row {
                                 id: sourcePillRow
@@ -1006,7 +853,7 @@ Item {
                             }
                         }
 
-                        // Live Status Pill (Playing / Paused)
+                        // Status Pill
                         Rectangle {
                             implicitWidth: statusPillRow.implicitWidth + 16
                             implicitHeight: 24
@@ -1053,7 +900,7 @@ Item {
 
                         // Quality Badge
                         Rectangle {
-                            implicitWidth: 70
+                            implicitWidth: 72
                             implicitHeight: 22
                             radius: 11
                             color: Nexa.Theme.surfaceContainerLow
@@ -1071,7 +918,7 @@ Item {
                         }
                     }
 
-                    // Sliding Marquee Track Title Box
+                    // 2. Track Title Box (Apple Bold)
                     Item {
                         id: fullTitleBox
                         Layout.fillWidth: true
@@ -1131,7 +978,7 @@ Item {
                         }
                     }
 
-                    // Artist & Album
+                    // 3. Artist & Album Subtitle
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 6
@@ -1140,7 +987,7 @@ Item {
                             text: root.artist
                             color: Nexa.Theme.primary
                             font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 14
+                            font.pixelSize: 15
                             font.weight: Nexa.Theme.fontWeightDemiBold
                             elide: Text.ElideRight
                         }
@@ -1158,22 +1005,20 @@ Item {
                             text: root.album
                             color: Nexa.Theme.mutedText
                             font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 13
+                            font.pixelSize: 14
                             elide: Text.ElideRight
                         }
                     }
 
-                    // ----------------------------------------------------
-                    // Modern Progress Capsule Scrubber
-                    // ----------------------------------------------------
+                    // 4. Apple-Style Progress Scrubber
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 4
+                        spacing: 5
 
                         Rectangle {
                             id: seekArea
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 16
+                            Layout.preferredHeight: 18
                             color: "transparent"
 
                             Rectangle {
@@ -1183,7 +1028,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 height: seekMouse.containsMouse || root.seeking ? 6 : 4
                                 radius: height / 2
-                                color: Qt.rgba(255/255, 255/255, 255/255, 0.10)
+                                color: Qt.rgba(255/255, 255/255, 255/255, 0.12)
 
                                 Behavior on height {
                                     NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
@@ -1197,7 +1042,7 @@ Item {
                                     gradient: Gradient {
                                         orientation: Gradient.Horizontal
                                         GradientStop { position: 0.0; color: Nexa.Theme.primary }
-                                        GradientStop { position: 1.0; color: Nexa.Theme.tertiary }
+                                        GradientStop { position: 1.0; color: Nexa.Theme.secondary }
                                     }
                                 }
 
@@ -1262,24 +1107,22 @@ Item {
                         }
                     }
 
-                    // ----------------------------------------------------
-                    // Playback Controls Deck & Volume Bar
-                    // ----------------------------------------------------
+                    // 5. Minimal Apple Hero Controls (Prev, Hero Play/Pause, Next)
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 18
+                        spacing: 28
 
                         Item { Layout.fillWidth: true }
 
                         // Previous Track
                         Rectangle {
-                            implicitWidth: 38
-                            implicitHeight: 38
-                            radius: 19
+                            implicitWidth: 44
+                            implicitHeight: 44
+                            radius: 22
                             color: prevMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
                             border.width: 1
                             border.color: Nexa.Theme.border
-                            scale: prevMouse.pressed ? 0.92 : 1.0
+                            scale: prevMouse.pressed ? 0.90 : 1.0
 
                             Behavior on scale { NumberAnimation { duration: 100 } }
 
@@ -1288,7 +1131,7 @@ Item {
                                 text: "󰒮"
                                 color: Nexa.Theme.text
                                 font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 17
+                                font.pixelSize: 19
                             }
 
                             MouseArea {
@@ -1303,14 +1146,14 @@ Item {
                         // HERO Play / Pause Button
                         Rectangle {
                             id: heroPlayBtn
-                            implicitWidth: 50
-                            implicitHeight: 50
-                            radius: 25
+                            implicitWidth: 58
+                            implicitHeight: 58
+                            radius: 29
                             gradient: Gradient {
                                 GradientStop { position: 0.0; color: playMouse.pressed ? Qt.darker(Nexa.Theme.primary, 1.25) : Nexa.Theme.primary }
-                                GradientStop { position: 1.0; color: Qt.darker(Nexa.Theme.primary, 1.25) }
+                                GradientStop { position: 1.0; color: Qt.darker(Nexa.Theme.primary, 1.20) }
                             }
-                            scale: playMouse.pressed ? 0.92 : playMouse.containsMouse ? 1.06 : 1.0
+                            scale: playMouse.pressed ? 0.90 : playMouse.containsMouse ? 1.06 : 1.0
 
                             Behavior on scale {
                                 NumberAnimation { duration: 150; easing.type: Easing.OutBack }
@@ -1321,7 +1164,7 @@ Item {
                                 text: root.playing ? "󰏤" : "󰐊"
                                 color: Nexa.Theme.onPrimary
                                 font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 22
+                                font.pixelSize: 26
                             }
 
                             MouseArea {
@@ -1335,13 +1178,13 @@ Item {
 
                         // Next Track
                         Rectangle {
-                            implicitWidth: 38
-                            implicitHeight: 38
-                            radius: 19
+                            implicitWidth: 44
+                            implicitHeight: 44
+                            radius: 22
                             color: nextMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
                             border.width: 1
                             border.color: Nexa.Theme.border
-                            scale: nextMouse.pressed ? 0.92 : 1.0
+                            scale: nextMouse.pressed ? 0.90 : 1.0
 
                             Behavior on scale { NumberAnimation { duration: 100 } }
 
@@ -1350,7 +1193,7 @@ Item {
                                 text: "󰒭"
                                 color: Nexa.Theme.text
                                 font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 17
+                                font.pixelSize: 19
                             }
 
                             MouseArea {
@@ -1363,70 +1206,6 @@ Item {
                         }
 
                         Item { Layout.fillWidth: true }
-                    }
-
-                    // ----------------------------------------------------
-                    // 64-Band Equalizer Spectrum Visualizer
-                    // ----------------------------------------------------
-                    Rectangle {
-                        id: spectrumArea
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 28
-                        radius: Nexa.Theme.radiusSm
-                        color: "transparent"
-                        clip: true
-
-                        Row {
-                            id: spectrumBars
-                            anchors.fill: parent
-                            anchors.leftMargin: 2
-                            anchors.rightMargin: 2
-                            anchors.bottomMargin: 2
-                            spacing: 2
-
-                            Repeater {
-                                model: 48
-                                delegate: Item {
-                                    id: barSlot
-                                    required property int index
-
-                                    width: Math.max(1.5, (spectrumBars.width - spectrumBars.spacing * 47) / 48)
-                                    height: spectrumBars.height
-
-                                    readonly property real rawTargetLevel: {
-                                        if (!root.playing) return 0.0
-                                        if (root.spectrumBins && index < root.spectrumBins.length) {
-                                            return Number(root.spectrumBins[index]) || 0.0
-                                        }
-                                        return 0.0
-                                    }
-
-                                    property real visualLevel: rawTargetLevel
-
-                                    Behavior on visualLevel {
-                                        NumberAnimation { duration: 40; easing.type: Easing.OutQuad }
-                                    }
-
-                                    Rectangle {
-                                        anchors.bottom: parent.bottom
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        width: parent.width
-                                        height: Math.max(2, parent.height * barSlot.visualLevel)
-                                        radius: 1
-
-                                        color: {
-                                            const ratio = barSlot.index / 47.0
-                                            return Qt.rgba(
-                                                Nexa.Theme.primary.r + (Nexa.Theme.tertiary.r - Nexa.Theme.primary.r) * ratio,
-                                                Nexa.Theme.primary.g + (Nexa.Theme.tertiary.g - Nexa.Theme.primary.g) * ratio,
-                                                Nexa.Theme.primary.b + (Nexa.Theme.tertiary.b - Nexa.Theme.primary.b) * ratio,
-                                                0.35 + barSlot.visualLevel * 0.65
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }

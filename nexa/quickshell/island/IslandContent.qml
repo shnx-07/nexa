@@ -60,7 +60,7 @@ Item {
     property bool notificationEventInitialized: false
     signal notificationPreviewActivated()
 
-    function dismissNotification(): void {
+    function dismissNotification() {
         root.notificationActive = false
         root.pendingNotificationData = null
         notificationTimer.stop()

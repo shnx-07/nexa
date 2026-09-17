@@ -1041,6 +1041,137 @@ presets-json)
   exit 0
   ;;
 
+apply-preset)
+
+  require_runtime
+
+  NEW_PRESET="${2:-}"
+  NEW_MODE="${3:-}"
+
+  [[ -n "$NEW_PRESET" ]] ||
+    fail "Usage: theme.sh apply-preset <preset-id> [dark|light]"
+
+  load_theme_config
+
+  if [[ -n "$NEW_MODE" ]]; then
+    valid_mode "$NEW_MODE" ||
+      fail "Invalid mode: $NEW_MODE"
+    MODE="$NEW_MODE"
+  fi
+
+  STYLE="preset"
+
+  PRESET_PATH="$(
+    resolve_preset "$NEW_PRESET" "$MODE"
+  )" || exit 1
+
+  PRESET="$(
+    preset_id_from_path "$PRESET_PATH"
+  )" || exit 1
+
+  save_theme_config
+
+  set_gtk_color_preference "$MODE"
+
+  log "Applying preset directly: $PRESET ($MODE)"
+
+  render_canonical "$PRESET_PATH" || exit 1
+
+  cat >"$STATE_FILE" <<STATE
+style=$STYLE
+preset=$PRESET
+mode=$MODE
+STATE
+
+  log "Theme applied successfully."
+
+  exit 0
+  ;;
+
+apply-mode)
+
+  require_runtime
+
+  NEW_MODE="${2:-}"
+
+  valid_mode "$NEW_MODE" ||
+    fail "Invalid mode: $NEW_MODE (expected dark or light)"
+
+  load_theme_config
+
+  MODE="$NEW_MODE"
+
+  save_theme_config
+
+  set_gtk_color_preference "$MODE"
+
+  log "Applying mode: style=$STYLE preset=$PRESET mode=$MODE"
+
+  case "$STYLE" in
+  preset)
+    render_preset "$PRESET" "$MODE" || exit 1
+    ;;
+  wallpaperAccents)
+    apply_wallpaper_accents || exit 1
+    ;;
+  wallpaperFull)
+    apply_wallpaper_full || exit 1
+    ;;
+  esac
+
+  cat >"$STATE_FILE" <<STATE
+style=$STYLE
+preset=$PRESET
+mode=$MODE
+STATE
+
+  log "Mode applied successfully: $MODE"
+
+  exit 0
+  ;;
+
+apply-style)
+
+  require_runtime
+
+  NEW_STYLE="${2:-}"
+
+  valid_style "$NEW_STYLE" ||
+    fail "Invalid theme style: $NEW_STYLE"
+
+  load_theme_config
+
+  STYLE="$NEW_STYLE"
+
+  save_theme_config
+
+  set_gtk_color_preference "$MODE"
+
+  log "Applying style: style=$STYLE preset=$PRESET mode=$MODE"
+
+  case "$STYLE" in
+  preset)
+    render_preset "$PRESET" "$MODE" || exit 1
+    ;;
+  wallpaperAccents)
+    apply_wallpaper_accents || exit 1
+    ;;
+  wallpaperFull)
+    apply_wallpaper_full || exit 1
+    ;;
+  esac
+
+  cat >"$STATE_FILE" <<STATE
+style=$STYLE
+preset=$PRESET
+mode=$MODE
+STATE
+
+  log "Style applied successfully: $STYLE"
+
+  exit 0
+  ;;
+
 apply)
 
   require_runtime
