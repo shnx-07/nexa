@@ -1,11 +1,31 @@
 pragma Singleton
 
 import QtQuick
+import Quickshell
+import Quickshell.Io
 import "." as ThemeParts
 
 
 QtObject {
     id: root
+
+    // ============================================================
+    // GLASS MODE (iOS Liquid Glass with HyprGlass refraction)
+    // ============================================================
+
+    property bool glassMode: false
+
+    property FileView _glassWatcher: FileView {
+        path: Quickshell.env("HOME") + "/.config/nexa/config/glass.conf"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const txt = text().trim().toLowerCase()
+                root.glassMode = (txt === "true" || txt === "1")
+            } catch (e) {}
+        }
+    }
 
 
     // ============================================================
@@ -27,28 +47,44 @@ QtObject {
     // ============================================================
 
     readonly property color surface:
-        ThemeParts.MatugenColors.surface
+        glassMode
+            ? Qt.rgba(ThemeParts.MatugenColors.surface.r, ThemeParts.MatugenColors.surface.g, ThemeParts.MatugenColors.surface.b, 0.35)
+            : ThemeParts.MatugenColors.surface
 
     readonly property color surfaceDim:
-        ThemeParts.MatugenColors.surfaceDim
+        glassMode
+            ? Qt.rgba(ThemeParts.MatugenColors.surfaceDim.r, ThemeParts.MatugenColors.surfaceDim.g, ThemeParts.MatugenColors.surfaceDim.b, 0.28)
+            : ThemeParts.MatugenColors.surfaceDim
 
     readonly property color surfaceBright:
-        ThemeParts.MatugenColors.surfaceBright
+        glassMode
+            ? Qt.rgba(ThemeParts.MatugenColors.surfaceBright.r, ThemeParts.MatugenColors.surfaceBright.g, ThemeParts.MatugenColors.surfaceBright.b, 0.45)
+            : ThemeParts.MatugenColors.surfaceBright
 
     readonly property color surfaceVariant:
-        ThemeParts.MatugenColors.surfaceVariant
+        glassMode
+            ? Qt.rgba(ThemeParts.MatugenColors.surfaceVariant.r, ThemeParts.MatugenColors.surfaceVariant.g, ThemeParts.MatugenColors.surfaceVariant.b, 0.38)
+            : ThemeParts.MatugenColors.surfaceVariant
 
     readonly property color surfaceContainer:
-        ThemeParts.MatugenColors.surfaceContainer
+        glassMode
+            ? Qt.rgba(ThemeParts.MatugenColors.surfaceContainer.r, ThemeParts.MatugenColors.surfaceContainer.g, ThemeParts.MatugenColors.surfaceContainer.b, 0.32)
+            : ThemeParts.MatugenColors.surfaceContainer
 
     readonly property color surfaceContainerLow:
-        ThemeParts.MatugenColors.surfaceContainerLow
+        glassMode
+            ? Qt.rgba(ThemeParts.MatugenColors.surfaceContainerLow.r, ThemeParts.MatugenColors.surfaceContainerLow.g, ThemeParts.MatugenColors.surfaceContainerLow.b, 0.25)
+            : ThemeParts.MatugenColors.surfaceContainerLow
 
     readonly property color surfaceContainerHigh:
-        ThemeParts.MatugenColors.surfaceContainerHigh
+        glassMode
+            ? Qt.rgba(ThemeParts.MatugenColors.surfaceContainerHigh.r, ThemeParts.MatugenColors.surfaceContainerHigh.g, ThemeParts.MatugenColors.surfaceContainerHigh.b, 0.42)
+            : ThemeParts.MatugenColors.surfaceContainerHigh
 
     readonly property color surfaceContainerHighest:
-        ThemeParts.MatugenColors.surfaceContainerHighest
+        glassMode
+            ? Qt.rgba(ThemeParts.MatugenColors.surfaceContainerHighest.r, ThemeParts.MatugenColors.surfaceContainerHighest.g, ThemeParts.MatugenColors.surfaceContainerHighest.b, 0.50)
+            : ThemeParts.MatugenColors.surfaceContainerHighest
 
     readonly property color onSurface:
         ThemeParts.MatugenColors.on_surface
@@ -294,36 +330,44 @@ QtObject {
     // ============================================================
 
     readonly property color divider:
-        Qt.rgba(
-            outline.r,
-            outline.g,
-            outline.b,
-            0.22
-        )
+        glassMode
+            ? Qt.rgba(1, 1, 1, 0.12)
+            : Qt.rgba(
+                outline.r,
+                outline.g,
+                outline.b,
+                0.22
+            )
 
     readonly property color borderSubtle:
-        Qt.rgba(
-            outline.r,
-            outline.g,
-            outline.b,
-            0.18
-        )
+        glassMode
+            ? Qt.rgba(1, 1, 1, 0.15)
+            : Qt.rgba(
+                outline.r,
+                outline.g,
+                outline.b,
+                0.18
+            )
 
     readonly property color border:
-        Qt.rgba(
-            outline.r,
-            outline.g,
-            outline.b,
-            0.32
-        )
+        glassMode
+            ? Qt.rgba(1, 1, 1, 0.22)
+            : Qt.rgba(
+                outline.r,
+                outline.g,
+                outline.b,
+                0.32
+            )
 
     readonly property color borderStrong:
-        Qt.rgba(
-            outline.r,
-            outline.g,
-            outline.b,
-            0.55
-        )
+        glassMode
+            ? Qt.rgba(1, 1, 1, 0.38)
+            : Qt.rgba(
+                outline.r,
+                outline.g,
+                outline.b,
+                0.55
+            )
 
     readonly property color focusBorder:
         primary

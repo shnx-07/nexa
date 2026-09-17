@@ -40,9 +40,15 @@ hl.bind(MOD .. " + SHIFT + T", function()
 	local win = hl.get_active_window()
 	if win and win.class and win.class ~= "" then
 		local lower = tostring(win.class):lower()
-		if lower:find("kitty") or lower:find("alacritty") or lower:find("ghostty")
-			or lower:find("konsole") or lower:find("wezterm") or lower:find("terminal")
-			or lower:find("foot") then
+		if
+			lower:find("kitty")
+			or lower:find("alacritty")
+			or lower:find("ghostty")
+			or lower:find("konsole")
+			or lower:find("wezterm")
+			or lower:find("terminal")
+			or lower:find("foot")
+		then
 			hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
 			hl.dispatch(hl.dsp.window.center())
 		end
@@ -153,8 +159,8 @@ hl.bind(MOD .. " + V", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call
 hl.bind(MOD .. " + SHIFT + F", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call fileShelf toggle"))
 
 -- Window Management
-hl.bind(MOD .. " + Q", hl.dsp.window.close())
-hl.bind(MOD .. " + SHIFT + Q", hl.dsp.window.kill())
+hl.bind(MOD .. " + SHIFT + Q", hl.dsp.window.close())
+hl.bind(MOD .. " + SHIFT + X", hl.dsp.window.kill())
 hl.bind(MOD .. " + F", hl.dsp.window.fullscreen(mode == 1))
 hl.bind(MOD .. " + T", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(MOD .. " + P", hl.dsp.window.pseudo())
@@ -268,11 +274,7 @@ hl.bind(
 	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland brightnessDown"),
 	{ locked = true, repeating = true }
 )
-hl.bind(
-	"F8",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleAirplane"),
-	{ locked = true }
-)
+hl.bind("F8", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleAirplane"), { locked = true })
 hl.bind(
 	"XF86WLAN",
 	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleAirplane"),

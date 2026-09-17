@@ -12,13 +12,13 @@ CACHYWHITE  = "rgba(ffffffff)"
 CACHYGREY   = "rgba(ddddddff)"
 CACHYGRAY   = "rgba(798bb2ff)"
 
-local primary = "#ffb4a4"
-local secondary = "#f3ba9b"
-local background = "#1a1b26"
-local surface = "#1a1b26"
-local outline = "#565f89"
-local outline_variant = "#292e42"
-local error = "#f7768e"
+local primary = "#e9c400"
+local secondary = "#cec890"
+local background = "#171306"
+local surface = "#171306"
+local outline = "#98907c"
+local outline_variant = "#4c4735"
+local error = "#f0757f"
 
 local function to_rgba(hex, alpha)
     local h = tostring(hex or ""):gsub("#", "")

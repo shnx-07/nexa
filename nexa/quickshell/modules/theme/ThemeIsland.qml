@@ -419,6 +419,15 @@ Item {
         }
     }
 
+    function setGlassMode(enabled: bool): void {
+        Nexa.Theme.glassMode = enabled
+        Quickshell.execDetached([
+            "sh",
+            "-c",
+            "mkdir -p \"$HOME/.config/nexa/config\" && printf '%s\\n' \"" + (enabled ? "true" : "false") + "\" > \"$HOME/.config/nexa/config/glass.conf\""
+        ])
+    }
+
     Component.onCompleted: {
         presetCatalogProcess.running = true
         warmthStatusProcess.running = true
@@ -443,7 +452,7 @@ Item {
             // Style Segmented Switch (Presets / Wallpaper Accents / Full)
             Rectangle {
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 310
+                Layout.preferredWidth: 260
                 radius: Nexa.Theme.radiusSm
                 color: Nexa.Theme.cardBackground
                 border.width: Nexa.Theme.borderThin
@@ -520,7 +529,7 @@ Item {
             // Night Warmth Toggle Chip
             Rectangle {
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 92
+                Layout.preferredWidth: 78
                 radius: Nexa.Theme.radiusSm
                 color: root.warmthEnabled
                     ? Nexa.Theme.hoverStrong
@@ -562,10 +571,89 @@ Item {
                 }
             }
 
+            // Surface Material Switch (Solid / Glass)
+            Rectangle {
+                Layout.preferredHeight: 32
+                Layout.preferredWidth: 120
+                radius: Nexa.Theme.radiusSm
+                color: Nexa.Theme.cardBackground
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.border
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 2
+                    spacing: 2
+
+                    Repeater {
+                        model: [
+                            { id: "solid", label: "Solid", icon: "󱂬" },
+                            { id: "glass", label: "Glass", icon: "󱡁" }
+                        ]
+
+                        Rectangle {
+                            id: glassPill
+                            required property var modelData
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: Nexa.Theme.radiusXs
+
+                            readonly property bool isSelected:
+                                (glassPill.modelData.id === "glass" && Nexa.Theme.glassMode)
+                                || (glassPill.modelData.id === "solid" && !Nexa.Theme.glassMode)
+
+                            color: isSelected
+                                ? Nexa.Theme.primary
+                                : glassPillMouse.containsMouse
+                                    ? Nexa.Theme.hover
+                                    : "transparent"
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: Nexa.Theme.animationFast
+                                }
+                            }
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 4
+
+                                Text {
+                                    text: glassPill.modelData.icon
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: glassPill.isSelected
+                                        ? Nexa.Theme.selectedText
+                                        : Nexa.Theme.mutedText
+                                }
+
+                                Text {
+                                    text: glassPill.modelData.label
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    font.weight: Nexa.Theme.fontWeightMedium
+                                    color: glassPill.isSelected
+                                        ? Nexa.Theme.selectedText
+                                        : Nexa.Theme.text
+                                }
+                            }
+
+                            MouseArea {
+                                id: glassPillMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.setGlassMode(glassPill.modelData.id === "glass")
+                            }
+                        }
+                    }
+                }
+            }
+
             // Appearance Mode Switch (Dark / Light)
             Rectangle {
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 140
+                Layout.preferredWidth: 120
                 radius: Nexa.Theme.radiusSm
                 color: Nexa.Theme.cardBackground
                 border.width: Nexa.Theme.borderThin

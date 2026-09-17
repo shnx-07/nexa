@@ -168,44 +168,143 @@ if hl.plugin and hl.plugin.hyprglass then
 	-- Brighter and clearer than the Apple preset.
 	-- =========================================================
 
-	hg.preset("ios27", {
-		glass_opacity = 0.92,
+	hg.preset("ios", {
+		-- =====================================================
+		-- iOS LIQUID GLASS
+		-- =====================================================
 
-		blur_strength = 2.0,
+		-- Don't make the background too opaque.
+		glass_opacity = 0.82,
+
+		-- Less blur = background remains recognizable
+		blur_strength = 1.25,
 		blur_iterations = 3,
 
-		refraction_strength = 0.78,
-		chromatic_aberration = 0.28,
+		-- =====================================================
+		-- REFRACTION
+		-- =====================================================
 
-		fresnel_strength = 0.82,
-		specular_strength = 0.86,
+		-- Strong edge displacement
+		refraction_strength = 1.0,
 
-		edge_thickness = 0.06,
+		-- Keep rainbow/fringing subtle
+		chromatic_aberration = 0.08,
 
-		tint_color = tint("#5A9EFF", 0.045),
+		-- Wider optical bezel
+		edge_thickness = 0.12,
 
-		lens_distortion = 0.48,
+		-- =====================================================
+		-- CENTER LENS
+		-- =====================================================
+
+		-- This is the important one for the "iOS lens" look.
+		lens_distortion = 1.0,
+
+		-- =====================================================
+		-- LIGHTING
+		-- =====================================================
+
+		fresnel_strength = 0.55,
+		specular_strength = 0.45,
+
+		-- Almost invisible cool glass tint
+		tint_color = tint("#E8F1FF", 0.035),
+
+		-- =====================================================
+		-- DARK
+		-- =====================================================
 
 		dark = {
-			brightness = 1.02,
-			contrast = 0.96,
-			saturation = 0.92,
-
-			vibrancy = 0.16,
-			vibrancy_darkness = 0.08,
-
-			adaptive_dim = 0.05,
-		},
-
-		light = {
-			brightness = 1.10,
+			brightness = 0.98,
 			contrast = 0.96,
 			saturation = 0.94,
 
-			vibrancy = 0.12,
-			vibrancy_darkness = 0.04,
+			vibrancy = 0.10,
+			vibrancy_darkness = 0.03,
 
-			adaptive_boost = 0.12,
+			adaptive_dim = 0.03,
+		},
+
+		-- =====================================================
+		-- LIGHT
+		-- =====================================================
+
+		light = {
+			brightness = 1.06,
+			contrast = 0.96,
+			saturation = 0.96,
+
+			vibrancy = 0.08,
+			vibrancy_darkness = 0.02,
+
+			adaptive_boost = 0.06,
+		},
+	})
+
+	hg.preset("ios_2", {
+		-- =====================================================
+		-- CLEAR iOS LIQUID GLASS
+		-- =====================================================
+
+		-- High transparency
+		glass_opacity = 0.90,
+
+		-- Keep wallpaper sharp/visible
+		blur_strength = 0.8,
+		blur_iterations = 2,
+
+		-- =====================================================
+		-- OPTICAL REFRACTION
+		-- =====================================================
+
+		refraction_strength = 0.95,
+		lens_distortion = 0.85,
+
+		-- Very little rainbow coloration
+		chromatic_aberration = 0.06,
+
+		-- Thin optical edge
+		edge_thickness = 0.09,
+
+		-- =====================================================
+		-- LIGHT
+		-- =====================================================
+
+		fresnel_strength = 0.35,
+		specular_strength = 0.30,
+
+		-- Almost completely transparent / neutral
+		tint_color = tint("#FFFFFF", 0.015),
+
+		-- =====================================================
+		-- DARK THEME
+		-- DO NOT DARKEN THE BACKGROUND
+		-- =====================================================
+
+		dark = {
+			brightness = 1.0,
+			contrast = 1.0,
+			saturation = 1.0,
+
+			vibrancy = 0.0,
+			vibrancy_darkness = 0.0,
+
+			adaptive_dim = 0.0,
+		},
+
+		-- =====================================================
+		-- LIGHT THEME
+		-- =====================================================
+
+		light = {
+			brightness = 1.0,
+			contrast = 1.0,
+			saturation = 1.0,
+
+			vibrancy = 0.0,
+			vibrancy_darkness = 0.0,
+
+			adaptive_boost = 0.0,
 		},
 	})
 
@@ -219,7 +318,7 @@ if hl.plugin and hl.plugin.hyprglass then
 		default_theme = "dark",
 
 		-- Apple-style windows by default
-		default_preset = "apple",
+		default_preset = "ios_2",
 
 		layers = {
 			enabled = true,
@@ -232,7 +331,7 @@ if hl.plugin and hl.plugin.hyprglass then
 
 	-- Quickshell UI gets the brighter iOS glass
 	hg.layer("quickshell", {
-		preset = "ios27",
+		preset = "ios_2",
 		mask_threshold = 0.03,
 	})
 
