@@ -23,9 +23,9 @@ NEXA is a modern, high-performance Wayland desktop environment built around **Qu
 
 <br/>
 
-| **Spotlight Application Launcher** | **Dynamic Theme Engine (Matugen)** |
+| **Spotlight Application Launcher** | **Dynamic Theme Engine & iOS Liquid Glass** |
 | :---: | :---: |
-| <img src="assets/app_launcher.png" alt="App Launcher" width="100%" /><br/>*Sub-millisecond category-filtered search & Freedesktop app launcher* | <img src="assets/theme_customizer.png" alt="Theme Customizer" width="100%" /><br/>*Dynamic Material You palette customizer, presets, and live color previews* |
+| <img src="assets/app_launcher.png" alt="App Launcher" width="100%" /><br/>*Sub-millisecond category-filtered search & Freedesktop app launcher* | <img src="assets/theme_customizer.png" alt="Theme Customizer & Liquid Glass" width="100%" /><br/>*Dynamic Material You customizer, 85+ presets, and instant Solid / iOS Liquid Glass optical refraction mode* |
 
 <br/>
 
@@ -208,6 +208,7 @@ If you prefer installing dependencies manually or want a complete breakdown:
 * **Live Format Filters:** One-click filtering tabs for Static Images, Animated GIFs, and MPV Video Wallpapers.
 * **Dynamic Palette Generation:** Powered by Matugen, applying any wallpaper instantly extracts Material You harmonic palettes and updates Quickshell, GTK, Qt, Kvantum, KDE Globals, and terminal themes across the system in real time.
 * **Visual Theme Customizer:** Fine-tune accent tones, toggle light/dark modes, and switch between curated color palettes with real-time live preview.
+* **iOS Liquid Glass & Solid Surface Switcher:** Integrated 2-segment switch in the Theme Island providing instant zero-rebuild switching between clean opaque Material You palettes and VisionOS-inspired translucent liquid glass with GPU-accelerated optical wallpaper refraction, chromatic aberration, and specular rim lighting powered by HyprGlass.
 
 ### 📱 Modern App Launcher & Workspace Manager
 * **App Launcher (`Super + A`):** High-density 2-column grid layout with fluid spring entrance motion, category chips (Development, Media, Office, Utilities), and sub-millisecond search.
