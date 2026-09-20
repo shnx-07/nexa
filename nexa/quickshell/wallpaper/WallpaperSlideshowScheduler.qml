@@ -17,6 +17,8 @@ Item {
     property string typeFilter: "All"
     property string applyTarget: "Background"
 
+    property bool isLocked: false
+
     function intervalToMs(str) {
         switch (str) {
             case "5m":  return 5 * 60 * 1000
@@ -29,6 +31,11 @@ Item {
     }
 
     function triggerNext() {
+        if (root.isLocked) {
+            console.log("[WallpaperSlideshow] Screen is locked, postponing wallpaper change")
+            cycleTimer.restart()
+            return
+        }
         if (!nextProcess.running) {
             nextProcess.running = true
         }
@@ -89,7 +96,7 @@ Item {
         repeat: true
         running: false
         onTriggered: {
-            if (root.enabled && !root.paused) {
+            if (root.enabled && !root.paused && !root.isLocked) {
                 root.triggerNext()
             }
         }

@@ -177,10 +177,21 @@ Item {
                 secure
             )
         }
+
+        Component.onDestruction: {
+            if (locked) {
+                console.log("NEXA lockscreen: releasing session lock during destruction")
+                locked = false
+            }
+        }
     }
 
     Component.onCompleted: {
         Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked", "/tmp/nexa-restart-pending"])
+    }
+
+    Component.onDestruction: {
+        Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
     }
 
     // ============================================================

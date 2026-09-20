@@ -153,6 +153,17 @@ hl.window_rule({
 	size = { "monitor_w*0.55", "monitor_h*0.52" },
 })
 
+-- Scratchpad workspace file manager rules (centered compact popup)
+hl.window_rule({
+	name = "files-scratchpad-geometry",
+	match = {
+		workspace = "special:files",
+	},
+	float = true,
+	center = true,
+	size = { "monitor_w*0.55", "monitor_h*0.55" },
+})
+
 -- ------------------------------------------------------------
 -- Specific Application Floating & Sizing Rules
 -- ------------------------------------------------------------

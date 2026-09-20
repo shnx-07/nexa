@@ -18,7 +18,9 @@ ShellRoot {
     }
 
     NightLightModule.NightLightScheduler {}
-    WallpaperModule.WallpaperSlideshowScheduler {}
+    WallpaperModule.WallpaperSlideshowScheduler {
+        isLocked: lockScreen.locked
+    }
 
     Process {
         id: notificationDaemonStartup
@@ -218,5 +220,7 @@ ShellRoot {
         }
     }
 
-    LockScreenModule.LockScreen {}
+    LockScreenModule.LockScreen {
+        id: lockScreen
+    }
 }

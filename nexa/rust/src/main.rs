@@ -26,6 +26,7 @@ mod brightness;
 mod state;
 mod shelf;
 mod slideshow;
+mod media;
 
 use std::env;
 
@@ -947,6 +948,49 @@ fn main() {
 
                 "status" => {
                     recorder::status();
+                }
+
+                _ => {
+                    print_usage();
+                }
+            }
+        }
+
+        // ========================================================
+        // MEDIA
+        // ========================================================
+
+        "media" => {
+            if args.len() < 3 {
+                print_usage();
+                return;
+            }
+
+            match args[2].as_str() {
+                "fetch" => {
+                    let title = if args.len() > 3 { args[3].as_str() } else { "" };
+                    let artist = if args.len() > 4 { args[4].as_str() } else { "" };
+                    media::run_fetch(title, artist);
+                }
+
+                "info" => {
+                    media::run_info();
+                }
+
+                "watch" => {
+                    media::watch_daemon();
+                }
+
+                "toggle" | "play-pause" => {
+                    media::run_toggle();
+                }
+
+                "next" => {
+                    media::run_next();
+                }
+
+                "prev" | "previous" => {
+                    media::run_prev();
                 }
 
                 _ => {

@@ -1174,6 +1174,12 @@ STATE
 
 apply)
 
+  if [[ -f /tmp/nexa-locked ]]; then
+    log "Session is locked (/tmp/nexa-locked present). Deferring theme apply to prevent lockscreen reload."
+    touch /tmp/nexa-restart-pending
+    exit 0
+  fi
+
   require_runtime
 
   load_theme_config

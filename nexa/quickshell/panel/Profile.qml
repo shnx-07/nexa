@@ -323,7 +323,7 @@ Item {
             [
                 "printf 'USER %s\\n' \"$(whoami)\"; ",
                 "printf 'HOST %s\\n' \"$(hostname)\"; ",
-                "printf 'UPTIME %s\\n' \"$(uptime -p | sed 's/^up //')\"; ",
+
                 "( . \"$HOME/.config/nexa/config/wallpaper.conf\" 2>/dev/null; printf 'WALLPAPER %s\\n' \"$WALLPAPER\"; printf 'WALLPAPER_TYPE %s\\n' \"${WALLPAPER_TYPE:-image}\"; printf 'THEME_SOURCE %s\\n' \"${THEME_SOURCE:-}\"; ); ",
                 "( . \"$HOME/.config/nexa/config/lockscreen.conf\" 2>/dev/null; printf 'LOCK_WALLPAPER %s\\n' \"$WALLPAPER\"; printf 'LOCK_WALLPAPER_TYPE %s\\n' \"${WALLPAPER_TYPE:-image}\"; ); ",
                 "printf 'OS %s\\n' \"$(grep -s '^PRETTY_NAME=' /etc/os-release | cut -d= -f2 | tr -d '\"')\""
@@ -375,6 +375,32 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    // ============================================================
+    // UPTIME REFRESHER — updates every 60 seconds
+    // ============================================================
+
+    Process {
+        id: uptimeProcess
+        command: ["sh", "-c", "uptime -p | sed 's/^up //'"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const val = text.trim()
+                if (val !== "") root.uptimeText = val
+            }
+        }
+    }
+
+    Timer {
+        interval: 60000
+        repeat: true
+        running: true
+        onTriggered: {
+            uptimeProcess.running = false
+            uptimeProcess.running = true
         }
     }
 }

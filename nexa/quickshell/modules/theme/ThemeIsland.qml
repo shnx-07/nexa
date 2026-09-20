@@ -529,7 +529,7 @@ Item {
             // Night Warmth Toggle Chip
             Rectangle {
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 78
+                Layout.preferredWidth: 92
                 radius: Nexa.Theme.radiusSm
                 color: root.warmthEnabled
                     ? Nexa.Theme.hoverStrong
@@ -574,7 +574,7 @@ Item {
             // Surface Material Switch (Solid / Glass)
             Rectangle {
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 120
+                Layout.preferredWidth: 140
                 radius: Nexa.Theme.radiusSm
                 color: Nexa.Theme.cardBackground
                 border.width: Nexa.Theme.borderThin
@@ -653,7 +653,7 @@ Item {
             // Appearance Mode Switch (Dark / Light)
             Rectangle {
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 120
+                Layout.preferredWidth: 140
                 radius: Nexa.Theme.radiusSm
                 color: Nexa.Theme.cardBackground
                 border.width: Nexa.Theme.borderThin
