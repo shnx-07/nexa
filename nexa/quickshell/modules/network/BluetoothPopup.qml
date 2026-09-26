@@ -7,7 +7,7 @@ import Quickshell.Io
 import Quickshell.Bluetooth
 
 import "../../theme" as Nexa
-
+import "../../theme/components" as NexaUI
 
 PopupWindow {
     id: root
@@ -19,81 +19,48 @@ PopupWindow {
     // ============================================================
 
     property var deviceCatalog: []
-
     property string pendingAction: ""
     property string pendingAddress: ""
     property string actionError: ""
-
     property int postActionPolls: 0
 
-
     readonly property string nexad:
-        Quickshell.env("HOME")
-        + "/.config/nexa/rust/target/release/nexad"
-
+        Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
 
     readonly property var adapter:
         Bluetooth.defaultAdapter
 
-
     readonly property bool enabled:
-        root.adapter !== null
-        && root.adapter.enabled
+        root.adapter !== null && root.adapter.enabled
 
+    property bool optimisticEnabled: root.enabled
+
+    onEnabledChanged: {
+        root.optimisticEnabled = root.enabled
+    }
 
     readonly property bool scanning:
-        root.adapter !== null
-        && root.adapter.discovering
+        root.adapter !== null && root.adapter.discovering
 
-
-    // ============================================================
-    // DEVICE GROUPS
-    //
-    // IMPORTANT:
-    //
-    // These come from nexad / BlueZ.
-    //
-    // We deliberately DO NOT use:
-    //
-    //     Bluetooth.devices
-    //     adapter.devices
-    //
-    // as the full catalogue because those models represent
-    // connected Bluetooth devices.
-    // ============================================================
-
+    // Device Groups from BlueZ / nexad
     readonly property var connectedDevices:
-        root.deviceCatalog.filter(
-            device => device.connected
-        )
-
+        root.deviceCatalog.filter(device => device.connected)
 
     readonly property var pairedDevices:
-        root.deviceCatalog.filter(
-            device =>
-                device.paired
-                && !device.connected
-        )
-
+        root.deviceCatalog.filter(device => device.paired && !device.connected)
 
     readonly property var availableDevices:
-        root.deviceCatalog.filter(
-            device =>
-                !device.paired
-                && !device.connected
-        )
-
+        root.deviceCatalog.filter(device => !device.paired && !device.connected)
 
     // ============================================================
-    // WINDOW
+    // WINDOW GEOMETRY & ANCHORING
     // ============================================================
 
-    implicitWidth: 410
-    implicitHeight: 580
+    implicitWidth: 380
+    implicitHeight: Math.min(540, Math.max(340, mainLayout.implicitHeight + Nexa.Theme.spacingMd * 2))
 
     color: "transparent"
     grabFocus: true
-
 
     anchor {
         item: root.anchorItem
@@ -105,2309 +72,898 @@ PopupWindow {
 
         rect.y:
             root.anchorItem
-            ? root.anchorItem.height
-              + Nexa.Theme.spacingSm
+            ? root.anchorItem.height + Nexa.Theme.spacingSm
             : 0
 
         rect.width: 1
         rect.height: 1
 
         edges:
-            Edges.Top
-            | Edges.Left
+            Edges.Top | Edges.Left
 
         gravity:
-            Edges.Bottom
-            | Edges.Left
+            Edges.Bottom | Edges.Left
     }
-
 
     // ============================================================
     // HELPERS
     // ============================================================
 
     function deviceGlyph(type) {
-
-        const value =
-            (type || "").toLowerCase()
-
-
-        if (
-            value.includes("headset")
-            || value.includes("headphone")
-            || value.includes("audio")
-        ) {
-            return "󰋋"
-        }
-
-
-        if (
-            value.includes("mouse")
-        ) {
-            return "󰍽"
-        }
-
-
-        if (
-            value.includes("keyboard")
-        ) {
-            return "󰌌"
-        }
-
-
-        if (
-            value.includes("phone")
-            || value.includes("smartphone")
-        ) {
-            return "󰄜"
-        }
-
-
-        if (
-            value.includes("computer")
-        ) {
-            return "󰍹"
-        }
-
-
+        const val = (type || "").toLowerCase()
+        if (val.includes("headset") || val.includes("headphone") || val.includes("audio")) return "󰋋"
+        if (val.includes("mouse")) return "󰍽"
+        if (val.includes("keyboard")) return "󰌌"
+        if (val.includes("phone") || val.includes("smartphone")) return "󰄜"
+        if (val.includes("computer")) return "󰍹"
         return "󰂯"
     }
 
-
     function deviceName(device) {
-
-        if (!device)
-            return "Unknown device"
-
-
-        if (
-            device.name
-            && device.name !== ""
-        ) {
-            return device.name
-        }
-
-
-        return device.address
-            || "Unknown device"
+        if (!device) return "Unknown device"
+        if (device.name && device.name.trim() !== "") return device.name
+        return device.address || "Unknown device"
     }
-
 
     function isPending(device) {
-
-        return (
-            device
-            && root.pendingAddress
-                === device.address
-            && root.pendingAction !== ""
-        )
+        return device && root.pendingAddress === device.address && root.pendingAction !== ""
     }
 
-
     // ============================================================
-    // BLUETOOTH INFO PROCESS
-    //
-    // This is separate from actions so polling never interferes
-    // with pair/connect/disconnect/forget.
+    // PROCESSES
     // ============================================================
 
     Process {
         id: infoProcess
-
-        stdout:
-            StdioCollector {
-                id: infoOutput
-
-                waitForEnd: true
-
-
-                onStreamFinished: {
-
-                    const raw =
-                        infoOutput.text.trim()
-
-
-                    if (raw === "")
-                        return
-
-
-                    try {
-
-                        const parsed =
-                            JSON.parse(raw)
-
-
-                        if (
-                            parsed
-                            && Array.isArray(
-                                parsed.devices
-                            )
-                        ) {
-                            root.deviceCatalog =
-                                parsed.devices
-                        }
-
-                    } catch (error) {
-
-                        console.warn(
-                            "NEXA Bluetooth JSON error:",
-                            error,
-                            raw
-                        )
+        stdout: StdioCollector {
+            id: infoOutput
+            waitForEnd: true
+            onStreamFinished: {
+                const raw = infoOutput.text.trim()
+                if (raw === "") return
+                try {
+                    const parsed = JSON.parse(raw)
+                    if (parsed && Array.isArray(parsed.devices)) {
+                        root.deviceCatalog = parsed.devices
                     }
+                } catch (err) {
+                    console.warn("NEXA Bluetooth JSON error:", err)
                 }
-            }
-
-
-        onExited: function(
-            exitCode,
-            exitStatus
-        ) {
-
-            if (exitCode !== 0) {
-
-                console.warn(
-                    "NEXA bluetooth info failed"
-                )
             }
         }
     }
 
-
     function refreshInfo() {
-
-        if (infoProcess.running)
-            return
-
-
-        infoProcess.exec(
-            [
-                root.nexad,
-                "network",
-                "bluetooth",
-                "info"
-            ]
-        )
+        if (infoProcess.running) return
+        infoProcess.exec([root.nexad, "network", "bluetooth", "info"])
     }
-
-
-    // ============================================================
-    // ACTION PROCESS
-    // ============================================================
 
     Process {
         id: actionProcess
-
-
         onStarted: {
-
             root.actionError = ""
         }
-
-
-        onExited: function(
-            exitCode,
-            exitStatus
-        ) {
-
+        onExited: function(exitCode, exitStatus) {
             if (exitCode !== 0) {
-
-                root.actionError =
-                    "Bluetooth action failed"
-
+                root.actionError = "Bluetooth action failed"
+                root.optimisticEnabled = root.enabled
             } else {
-
                 root.actionError = ""
             }
-
-
-            /*
-             * BlueZ state may take a moment to settle after
-             * pair/connect/disconnect/forget.
-             *
-             * Poll several times so the card smoothly moves
-             * between Connected / Paired / Available.
-             */
             root.postActionPolls = 5
-
             postActionTimer.restart()
         }
     }
 
-
-    function runBluetooth(
-        args,
-        action,
-        address
-    ) {
-
-        if (actionProcess.running)
-            return
-
-
-        root.pendingAction =
-            action || ""
-
-        root.pendingAddress =
-            address || ""
-
+    function runBluetooth(args, action, address) {
+        if (actionProcess.running) return
+        root.pendingAction = action || ""
+        root.pendingAddress = address || ""
         root.actionError = ""
-
-
-        actionProcess.exec(
-            [
-                root.nexad,
-                "network",
-                "bluetooth"
-            ].concat(args)
-        )
+        actionProcess.exec([root.nexad, "network", "bluetooth"].concat(args))
     }
-
 
     // ============================================================
     // ACTIONS
     // ============================================================
 
     function toggleBluetooth() {
-
-        if (!root.adapter)
-            return
-
-
-        /*
-         * Stop discovery first when powering off.
-         */
-        if (
-            root.adapter.enabled
-            && root.adapter.discovering
-        ) {
-            root.adapter.discovering =
-                false
+        if (actionProcess.running) return
+        const nextState = !root.optimisticEnabled
+        root.optimisticEnabled = nextState
+        if (root.adapter && root.adapter.enabled && root.adapter.discovering) {
+            root.adapter.discovering = false
         }
-
-
-        /*
-         * Quickshell exposes adapter.enabled as writable.
-         */
-        root.adapter.enabled =
-            !root.adapter.enabled
+        runBluetooth([nextState ? "on" : "off"], "toggle")
     }
-
-
-    function pairDevice(device) {
-
-        if (!device)
-            return
-
-
-        runBluetooth(
-            [
-                "pair",
-                device.address
-            ],
-            "pair",
-            device.address
-        )
-    }
-
-
-    function connectDevice(device) {
-
-        if (!device)
-            return
-
-
-        runBluetooth(
-            [
-                "connect",
-                device.address
-            ],
-            "connect",
-            device.address
-        )
-    }
-
-
-    function disconnectDevice(device) {
-
-        if (!device)
-            return
-
-
-        runBluetooth(
-            [
-                "disconnect",
-                device.address
-            ],
-            "disconnect",
-            device.address
-        )
-    }
-
-
-    function forgetDevice(device) {
-
-        if (!device)
-            return
-
-
-        runBluetooth(
-            [
-                "forget",
-                device.address
-            ],
-            "forget",
-            device.address
-        )
-    }
-
-
-    // ============================================================
-    // DISCOVERY
-    //
-    // Quickshell owns the long-lived BlueZ discovery session.
-    //
-    // Rust only reads the BlueZ device catalogue.
-    // ============================================================
-
-    function startDiscovery() {
-
-        if (
-            !root.adapter
-            || !root.adapter.enabled
-        ) {
-            return
-        }
-
-
-        if (!root.adapter.discovering) {
-
-            root.adapter.discovering =
-                true
-        }
-    }
-
-
-    function stopDiscovery() {
-
-        if (!root.adapter)
-            return
-
-
-        if (root.adapter.discovering) {
-
-            root.adapter.discovering =
-                false
-        }
-    }
-
 
     function toggleDiscovery() {
-
-        if (!root.enabled)
-            return
-
-
-        if (root.scanning)
-            root.stopDiscovery()
-        else
-            root.startDiscovery()
+        if (!root.adapter || !root.adapter.enabled) return
+        root.adapter.discovering = !root.adapter.discovering
+        if (root.adapter.discovering) {
+            root.refreshInfo()
+        }
     }
 
+    function pairDevice(device) {
+        if (!device) return
+        runBluetooth(["pair", device.address], "pair", device.address)
+    }
+
+    function connectDevice(device) {
+        if (!device) return
+        runBluetooth(["connect", device.address], "connect", device.address)
+    }
+
+    function disconnectDevice(device) {
+        if (!device) return
+        runBluetooth(["disconnect", device.address], "disconnect", device.address)
+    }
+
+    function forgetDevice(device) {
+        if (!device) return
+        runBluetooth(["forget", device.address], "forget", device.address)
+    }
 
     // ============================================================
-    // POLLING
-    //
-    // While popup is open:
-    //
-    // Quickshell maintains discovery
-    // Rust reads the resulting BlueZ catalogue
+    // TIMERS & LIFECYCLE
     // ============================================================
 
     Timer {
-        id: catalogueTimer
-
-        interval: 1200
+        id: pollTimer
+        interval: 3000
         repeat: true
-
-        running:
-            root.visible
-
-
-        triggeredOnStart:
-            true
-
-
-        onTriggered:
-            root.refreshInfo()
+        running: root.visible && root.enabled
+        onTriggered: root.refreshInfo()
     }
-
-
-    // ============================================================
-    // AFTER-ACTION FAST POLLING
-    // ============================================================
 
     Timer {
         id: postActionTimer
-
-        interval: 450
+        interval: 600
         repeat: true
-
-
+        running: root.visible && root.postActionPolls > 0
         onTriggered: {
-
             root.refreshInfo()
-
-
             root.postActionPolls--
-
-
-            if (
-                root.postActionPolls <= 0
-            ) {
-
-                stop()
-
-
+            if (root.postActionPolls <= 0) {
                 root.pendingAction = ""
                 root.pendingAddress = ""
+                root.optimisticEnabled = root.enabled
             }
         }
     }
-
-
-    // ============================================================
-    // DISCOVERY START DELAY
-    //
-    // Useful after Bluetooth is powered on.
-    // ============================================================
 
     Timer {
-        id: discoveryStartDelay
-
-        interval: 300
-        repeat: false
-
-
-        onTriggered: {
-
-            if (
-                root.visible
-                && root.enabled
-            ) {
-                root.startDiscovery()
-            }
-        }
+        id: discoveryPollTimer
+        interval: 2000
+        repeat: true
+        running: root.visible && root.scanning
+        onTriggered: root.refreshInfo()
     }
-
-
-    // ============================================================
-    // ADAPTER CHANGES
-    // ============================================================
-
-    Connections {
-        target:
-            root.adapter
-
-        ignoreUnknownSignals: true
-
-
-        function onEnabledChanged() {
-
-            root.refreshInfo()
-
-
-            if (
-                root.visible
-                && root.enabled
-            ) {
-
-                discoveryStartDelay.restart()
-
-            } else if (
-                root.adapter
-                && !root.enabled
-            ) {
-
-                root.deviceCatalog = []
-            }
-        }
-    }
-
-
-    // ============================================================
-    // POPUP LIFECYCLE
-    // ============================================================
 
     onVisibleChanged: {
-
         if (visible) {
-
-            /*
-             * Read paired/connected devices immediately.
-             */
+            root.actionError = ""
+            root.optimisticEnabled = root.enabled
             root.refreshInfo()
-
-
-            /*
-             * Start OUR discovery session.
-             */
-            if (root.enabled) {
-
-                discoveryStartDelay.restart()
+            if (root.enabled && !root.scanning) {
+                root.toggleDiscovery()
             }
-
         } else {
-
-            /*
-             * CRITICAL:
-             *
-             * Closing this popup ONLY stops discovery.
-             *
-             * It does NOT:
-             *
-             * - disconnect
-             * - forget
-             * - cancel pairing
-             * - power Bluetooth off
-             */
-            discoveryStartDelay.stop()
-
-            root.stopDiscovery()
+            root.pendingAction = ""
+            root.pendingAddress = ""
+            root.postActionPolls = 0
+            if (root.scanning) {
+                root.toggleDiscovery()
+            }
         }
     }
 
-
     // ============================================================
-    // REUSABLE DEVICE CARD
-    // ============================================================
-
-    component DeviceCard: Rectangle {
-
-        id: card
-
-
-        required property var deviceData
-
-
-        readonly property bool connected:
-            card.deviceData.connected
-
-
-        readonly property bool paired:
-            card.deviceData.paired
-
-
-        readonly property bool pending:
-            root.isPending(
-                card.deviceData
-            )
-
-
-        width:
-            deviceColumn.width
-
-        height: 62
-
-
-        radius:
-            Nexa.Theme.radiusSm
-
-
-        color:
-            cardMouse.pressed
-            ? Nexa.Theme.pressed
-
-            : cardMouse.containsMouse
-                ? Nexa.Theme.hover
-
-                : Nexa.Theme.surfaceContainerHighest
-
-
-        border {
-            width:
-                Nexa.Theme.borderThin
-
-
-            color:
-                card.connected
-                ? Nexa.Theme.primary
-
-                : card.pending
-                    ? Nexa.Theme.primary
-
-                    : Nexa.Theme.border
-        }
-
-
-        scale:
-            cardMouse.pressed
-            ? 0.985
-            : 1.0
-
-
-        Behavior on color {
-
-            ColorAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-            }
-        }
-
-
-        Behavior on border.color {
-
-            ColorAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-            }
-        }
-
-
-        Behavior on scale {
-
-            NumberAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-
-                easing.type:
-                    Nexa.Theme.easingStandard
-            }
-        }
-
-
-        RowLayout {
-            anchors {
-                fill: parent
-
-                margins:
-                    Nexa.Theme.spacingSm
-            }
-
-
-            spacing:
-                Nexa.Theme.spacingSm
-
-
-            // ====================================================
-            // DEVICE ICON
-            // ====================================================
-
-            Rectangle {
-                Layout.preferredWidth: 38
-                Layout.preferredHeight: 38
-
-
-                radius:
-                    Nexa.Theme.radiusPill
-
-
-                color:
-                    card.connected
-                    ? Nexa.Theme.primaryContainer
-
-                    : card.paired
-                        ? Nexa.Theme.surfaceContainerHigh
-
-                        : Nexa.Theme.surfaceContainerLow
-
-
-                Behavior on color {
-
-                    ColorAnimation {
-                        duration:
-                            Nexa.Theme.animationFast
-                    }
-                }
-
-
-                Text {
-                    anchors.centerIn:
-                        parent
-
-
-                    text:
-                        root.deviceGlyph(
-                            card.deviceData
-                                .device_type
-                        )
-
-
-                    color:
-                        card.connected
-                        ? Nexa.Theme.primary
-
-                        : Nexa.Theme.text
-
-
-                    font {
-                        family:
-                            Nexa.Theme.iconFontFamily
-
-                        pixelSize:
-                            Nexa.Theme.iconMd
-                    }
-
-
-                    scale:
-                        cardMouse.containsMouse
-                        ? 1.08
-                        : 1.0
-
-
-                    Behavior on scale {
-
-                        NumberAnimation {
-                            duration:
-                                Nexa.Theme.animationFast
-
-                            easing.type:
-                                Nexa.Theme.easingStandard
-                        }
-                    }
-                }
-            }
-
-
-            // ====================================================
-            // NAME / STATE
-            // ====================================================
-
-            ColumnLayout {
-                Layout.fillWidth:
-                    true
-
-
-                spacing: 1
-
-
-                Text {
-                    Layout.fillWidth:
-                        true
-
-
-                    text:
-                        root.deviceName(
-                            card.deviceData
-                        )
-
-
-                    elide:
-                        Text.ElideRight
-
-
-                    color:
-                        Nexa.Theme.text
-
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSizeXs
-
-                        weight:
-                            Nexa.Theme.fontWeightMedium
-                    }
-                }
-
-
-                Text {
-                    text: {
-
-                        if (card.pending) {
-
-                            if (
-                                root.pendingAction
-                                    === "pair"
-                            ) {
-                                return "Pairing…"
-                            }
-
-
-                            if (
-                                root.pendingAction
-                                    === "connect"
-                            ) {
-                                return "Connecting…"
-                            }
-
-
-                            if (
-                                root.pendingAction
-                                    === "disconnect"
-                            ) {
-                                return "Disconnecting…"
-                            }
-
-
-                            if (
-                                root.pendingAction
-                                    === "forget"
-                            ) {
-                                return "Removing…"
-                            }
-                        }
-
-
-                        if (card.connected)
-                            return "Connected"
-
-
-                        if (card.paired)
-                            return "Paired"
-
-
-                        return "Available"
-                    }
-
-
-                    color:
-                        card.connected
-                        || card.pending
-
-                        ? Nexa.Theme.primary
-                        : Nexa.Theme.mutedText
-
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSize2Xs
-
-                        weight:
-                            card.connected
-                            || card.pending
-
-                            ? Nexa.Theme.fontWeightMedium
-                            : Nexa.Theme.fontWeightRegular
-                    }
-
-
-                    Behavior on color {
-
-                        ColorAnimation {
-                            duration:
-                                Nexa.Theme.animationFast
-                        }
-                    }
-                }
-            }
-
-
-            // ====================================================
-            // ACTION SPINNER
-            // ====================================================
-
-            Text {
-                visible:
-                    card.pending
-
-
-                text:
-                    "󰑐"
-
-
-                color:
-                    Nexa.Theme.primary
-
-
-                font {
-                    family:
-                        Nexa.Theme.iconFontFamily
-
-                    pixelSize:
-                        Nexa.Theme.iconSm
-                }
-
-
-                RotationAnimator on rotation {
-                    running:
-                        card.pending
-                        && root.visible
-
-
-                    from: 0
-                    to: 360
-
-                    duration: 900
-
-                    loops:
-                        Animation.Infinite
-                }
-            }
-
-
-            // ====================================================
-            // PRIMARY ACTION
-            // ====================================================
-
-            Rectangle {
-                visible:
-                    !card.pending
-
-
-                implicitWidth:
-                    card.connected
-                    ? 78
-
-                    : card.paired
-                        ? 58
-                        : 46
-
-
-                implicitHeight:
-                    Nexa.Theme.controlHeightSm
-
-
-                radius:
-                    Nexa.Theme.radiusSm
-
-
-                color:
-                    actionMouse.pressed
-                    ? Nexa.Theme.pressed
-
-                    : actionMouse.containsMouse
-                        ? Nexa.Theme.hoverStrong
-
-                        : "transparent"
-
-
-                scale:
-                    actionMouse.pressed
-                    ? Nexa.Theme.pressScale
-                    : Nexa.Theme.normalScale
-
-
-                Behavior on color {
-
-                    ColorAnimation {
-                        duration:
-                            Nexa.Theme.animationFast
-                    }
-                }
-
-
-                Behavior on scale {
-
-                    NumberAnimation {
-                        duration:
-                            Nexa.Theme.animationFast
-
-                        easing.type:
-                            Nexa.Theme.easingStandard
-                    }
-                }
-
-
-                Text {
-                    anchors.centerIn:
-                        parent
-
-
-                    text:
-                        card.connected
-                        ? "Disconnect"
-
-                        : card.paired
-                            ? "Connect"
-
-                            : "Pair"
-
-
-                    color:
-                        card.connected
-                        ? Nexa.Theme.mutedText
-
-                        : Nexa.Theme.primary
-
-
-                    font {
-                        family:
-                            Nexa.Theme.fontFamily
-
-                        pixelSize:
-                            Nexa.Theme.fontSize2Xs
-
-                        weight:
-                            Nexa.Theme.fontWeightMedium
-                    }
-                }
-
-
-                MouseArea {
-                    id: actionMouse
-
-                    anchors.fill:
-                        parent
-
-
-                    enabled:
-                        !actionProcess.running
-
-
-                    hoverEnabled:
-                        true
-
-
-                    cursorShape:
-                        Qt.PointingHandCursor
-
-
-                    onClicked: {
-
-                        if (card.connected) {
-
-                            root.disconnectDevice(
-                                card.deviceData
-                            )
-
-                            return
-                        }
-
-
-                        if (card.paired) {
-
-                            root.connectDevice(
-                                card.deviceData
-                            )
-
-                            return
-                        }
-
-
-                        root.pairDevice(
-                            card.deviceData
-                        )
-                    }
-                }
-            }
-
-
-            // ====================================================
-            // FORGET
-            //
-            // Only paired / connected saved devices.
-            // ====================================================
-
-            Rectangle {
-                visible:
-                    card.paired
-                    || card.connected
-
-
-                implicitWidth:
-                    Nexa.Theme.controlHeightSm
-
-                implicitHeight:
-                    Nexa.Theme.controlHeightSm
-
-
-                radius:
-                    Nexa.Theme.radiusSm
-
-
-                color:
-                    forgetMouse.pressed
-                    ? Nexa.Theme.pressed
-
-                    : forgetMouse.containsMouse
-                        ? Nexa.Theme.hoverStrong
-
-                        : "transparent"
-
-
-                scale:
-                    forgetMouse.pressed
-                    ? Nexa.Theme.pressScale
-                    : Nexa.Theme.normalScale
-
-
-                Behavior on color {
-
-                    ColorAnimation {
-                        duration:
-                            Nexa.Theme.animationFast
-                    }
-                }
-
-
-                Behavior on scale {
-
-                    NumberAnimation {
-                        duration:
-                            Nexa.Theme.animationFast
-
-                        easing.type:
-                            Nexa.Theme.easingStandard
-                    }
-                }
-
-
-                Text {
-                    anchors.centerIn:
-                        parent
-
-
-                    text:
-                        "󰆴"
-
-
-                    color:
-                        Nexa.Theme.error
-
-
-                    font {
-                        family:
-                            Nexa.Theme.iconFontFamily
-
-                        pixelSize:
-                            Nexa.Theme.iconSm
-                    }
-                }
-
-
-                MouseArea {
-                    id: forgetMouse
-
-                    anchors.fill:
-                        parent
-
-
-                    enabled:
-                        !actionProcess.running
-
-
-                    hoverEnabled:
-                        true
-
-
-                    cursorShape:
-                        Qt.PointingHandCursor
-
-
-                    preventStealing:
-                        true
-
-
-                    onClicked: function(mouse) {
-
-                        mouse.accepted = true
-
-
-                        root.forgetDevice(
-                            card.deviceData
-                        )
-                    }
-                }
-            }
-        }
-
-
-        /*
-         * Hover-only mouse layer.
-         *
-         * Qt.NoButton means it never steals clicks from the
-         * Connect / Disconnect / Pair / Forget buttons.
-         */
-        MouseArea {
-            id: cardMouse
-
-            anchors.fill:
-                parent
-
-
-            acceptedButtons:
-                Qt.NoButton
-
-
-            hoverEnabled:
-                true
-        }
-    }
-
-
-    // ============================================================
-    // PANEL
+    // MAIN POPUP CONTAINER
     // ============================================================
 
     Rectangle {
-        anchors.fill:
-            parent
+        id: mainSurface
+        anchors.fill: parent
+        radius: Nexa.Theme.radiusLg
+        color: Nexa.Theme.panelBackground
+        border.width: Nexa.Theme.borderThin
+        border.color: Nexa.Theme.border
 
-
-        radius:
-            Nexa.Theme.radiusLg
-
-
-        color:
-            Nexa.Theme.panelBackground
-
-
-        border {
-            width:
-                Nexa.Theme.borderThin
-
-            color:
-                Nexa.Theme.border
-        }
-
-
-        opacity:
-            root.visible
-            ? Nexa.Theme.opacityFull
-            : Nexa.Theme.opacityHidden
-
-
-        scale:
-            root.visible
-            ? Nexa.Theme.normalScale
-            : 0.97
-
-
-        transformOrigin:
-            Item.TopRight
-
-
-        Behavior on opacity {
-
-            NumberAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-
-                easing.type:
-                    Nexa.Theme.easingEnter
+        // Static continuous-corner glass gradient highlight
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: mainSurface.border.width
+            radius: Math.max(0, mainSurface.radius - mainSurface.border.width)
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlightStrong }
+                GradientStop { position: 0.45; color: "transparent" }
             }
         }
-
-
-        Behavior on scale {
-
-            NumberAnimation {
-                duration:
-                    Nexa.Theme.animationNormal
-
-                easing.type:
-                    Nexa.Theme.easingEnter
-            }
-        }
-
 
         ColumnLayout {
-            anchors {
-                fill: parent
-
-                margins:
-                    Nexa.Theme.spacingMd
-            }
-
-
-            spacing:
-                Nexa.Theme.spacingSm
-
+            id: mainLayout
+            anchors.fill: parent
+            anchors.margins: Nexa.Theme.spacingMd
+            spacing: Nexa.Theme.spacingMd
 
             // ====================================================
-            // BLUETOOTH STATUS
+            // TOP HEADER ROW
             // ====================================================
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Nexa.Theme.spacingSm
 
-            Rectangle {
-                Layout.fillWidth:
-                    true
-
-                Layout.preferredHeight:
-                    82
-
-
-                radius:
-                    Nexa.Theme.radiusMd
-
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
-
-
-                border {
-                    width:
-                        Nexa.Theme.borderThin
-
-
-                    color:
-                        root.connectedDevices.length > 0
-                        ? Nexa.Theme.primary
-                        : Nexa.Theme.border
+                // Status Icon
+                Text {
+                    text: root.connectedDevices.length > 0 ? "󰂱" : root.optimisticEnabled ? "󰂯" : "󰂲"
+                    color: root.connectedDevices.length > 0 ? Nexa.Theme.primary : root.optimisticEnabled ? Nexa.Theme.text : Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: Nexa.Theme.iconLg
+                    Layout.alignment: Qt.AlignVCenter
                 }
 
-
-                Behavior on border.color {
-
-                    ColorAnimation {
-                        duration:
-                            Nexa.Theme.animationFast
-                    }
-                }
-
-
-                RowLayout {
-                    anchors {
-                        fill: parent
-
-                        margins:
-                            Nexa.Theme.spacingMd
-                    }
-
-
-                    spacing:
-                        Nexa.Theme.spacingSm
-
-
-                    Text {
-                        text:
-                            root.enabled
-                            ? "󰂯"
-                            : "󰂲"
-
-
-                        color:
-                            root.connectedDevices.length > 0
-                            ? Nexa.Theme.primary
-
-                            : root.enabled
-                                ? Nexa.Theme.text
-
-                                : Nexa.Theme.mutedText
-
-
-                        font {
-                            family:
-                                Nexa.Theme.iconFontFamily
-
-                            pixelSize:
-                                Nexa.Theme.iconLg
-                        }
-                    }
-
-
-                    ColumnLayout {
-                        Layout.fillWidth:
-                            true
-
-
-                        spacing: 2
-
-
-                        Text {
-                            text:
-                                root.enabled
-                                ? "Bluetooth"
-                                : "Bluetooth disabled"
-
-
-                            color:
-                                Nexa.Theme.text
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeSm
-
-                                weight:
-                                    Nexa.Theme.fontWeightDemiBold
-                            }
-                        }
-
-
-                        Text {
-                            text: {
-
-                                if (!root.enabled)
-                                    return "Off"
-
-
-                                if (
-                                    root.connectedDevices.length > 0
-                                ) {
-
-                                    return root.connectedDevices.length
-                                        + (
-                                            root.connectedDevices.length
-                                                === 1
-                                            ? " device connected"
-                                            : " devices connected"
-                                        )
-                                }
-
-
-                                if (root.scanning)
-                                    return "Searching for devices…"
-
-
-                                return "No connected devices"
-                            }
-
-
-                            color:
-                                Nexa.Theme.mutedText
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeXs
-                            }
-                        }
-                    }
-
-
-                    // --------------------------------------------
-                    // POWER TOGGLE
-                    // --------------------------------------------
-
-                    Rectangle {
-                        implicitWidth: 38
-                        implicitHeight: 20
-
-
-                        radius:
-                            Nexa.Theme.radiusPill
-
-
-                        color:
-                            root.enabled
-                            ? Nexa.Theme.primary
-                            : Nexa.Theme.surfaceContainerHighest
-
-
-                        scale:
-                            powerMouse.pressed
-                            ? Nexa.Theme.pressScale
-                            : Nexa.Theme.normalScale
-
-
-                        Behavior on color {
-
-                            ColorAnimation {
-                                duration:
-                                    Nexa.Theme.animationFast
-                            }
-                        }
-
-
-                        Behavior on scale {
-
-                            NumberAnimation {
-                                duration:
-                                    Nexa.Theme.animationFast
-                            }
-                        }
-
-
-                        Rectangle {
-                            width: 16
-                            height: 16
-
-
-                            radius:
-                                Nexa.Theme.radiusPill
-
-
-                            anchors.verticalCenter:
-                                parent.verticalCenter
-
-
-                            x:
-                                root.enabled
-                                ? parent.width
-                                  - width
-                                  - 2
-
-                                : 2
-
-
-                            color:
-                                root.enabled
-                                ? Nexa.Theme.primaryText
-                                : Nexa.Theme.mutedText
-
-
-                            Behavior on x {
-
-                                NumberAnimation {
-                                    duration:
-                                        Nexa.Theme.animationNormal
-
-                                    easing.type:
-                                        Nexa.Theme.easingStandard
-                                }
-                            }
-
-
-                            Behavior on color {
-
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-                        }
-
-
-                        MouseArea {
-                            id: powerMouse
-
-                            anchors.fill:
-                                parent
-
-
-                            cursorShape:
-                                Qt.PointingHandCursor
-
-
-                            onClicked:
-                                root.toggleBluetooth()
-                        }
-                    }
-                }
-            }
-
-
-            // ====================================================
-            // DEVICES
-            // ====================================================
-
-            Rectangle {
-                Layout.fillWidth:
-                    true
-
-                Layout.fillHeight:
-                    true
-
-
-                radius:
-                    Nexa.Theme.radiusMd
-
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
-
-
-                border {
-                    width:
-                        Nexa.Theme.borderThin
-
-                    color:
-                        Nexa.Theme.border
-                }
-
-
+                // Title & Subtitle
                 ColumnLayout {
-                    anchors {
-                        fill: parent
-
-                        margins:
-                            Nexa.Theme.spacingMd
-                    }
-
-
-                    spacing:
-                        Nexa.Theme.spacingSm
-
-
-                    // ============================================
-                    // HEADER
-                    // ============================================
+                    spacing: 1
+                    Layout.alignment: Qt.AlignVCenter
 
                     RowLayout {
-                        Layout.fillWidth:
-                            true
-
-
-                        Text {
-                            text:
-                                "Devices"
-
-
-                            color:
-                                Nexa.Theme.text
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeSm
-
-                                weight:
-                                    Nexa.Theme.fontWeightDemiBold
-                            }
-                        }
-
-
-                        Item {
-                            Layout.fillWidth:
-                                true
-                        }
-
+                        spacing: Nexa.Theme.spacingXs
+                        Layout.alignment: Qt.AlignVCenter
 
                         Text {
-                            visible:
-                                root.scanning
-
-
-                            text:
-                                "Scanning"
-
-
-                            color:
-                                Nexa.Theme.primary
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSize2Xs
-
-                                weight:
-                                    Nexa.Theme.fontWeightMedium
-                            }
+                            text: "Bluetooth"
+                            color: Nexa.Theme.text
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeMd
+                            font.weight: Nexa.Theme.fontWeightDemiBold
+                            Layout.alignment: Qt.AlignVCenter
                         }
 
-
-                        // ----------------------------------------
-                        // SCAN TOGGLE
-                        // ----------------------------------------
-
+                        // Badge count
                         Rectangle {
-                            implicitWidth:
-                                Nexa.Theme.controlHeightSm
-
-                            implicitHeight:
-                                Nexa.Theme.controlHeightSm
-
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-
-                            opacity:
-                                root.enabled
-                                ? Nexa.Theme.opacityFull
-                                : Nexa.Theme.opacityDisabled
-
-
-                            color:
-                                scanMouse.pressed
-                                ? Nexa.Theme.pressed
-
-                                : scanMouse.containsMouse
-                                    ? Nexa.Theme.hover
-
-                                    : "transparent"
-
-
-                            scale:
-                                scanMouse.pressed
-                                ? Nexa.Theme.pressScale
-                                : Nexa.Theme.normalScale
-
-
-                            Behavior on color {
-
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
-
-                            Behavior on scale {
-
-                                NumberAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
+                            visible: root.optimisticEnabled && root.deviceCatalog.length > 0
+                            implicitWidth: badgeText.implicitWidth + 10
+                            implicitHeight: 18
+                            radius: 9
+                            color: Nexa.Theme.surfaceContainerHighest
+                            Layout.alignment: Qt.AlignVCenter
 
                             Text {
-                                anchors.centerIn:
-                                    parent
-
-
-                                text:
-                                    "󰑐"
-
-
-                                color:
-                                    root.scanning
-                                    ? Nexa.Theme.primary
-                                    : Nexa.Theme.text
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.iconFontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.iconSm
-                                }
-
-
-                                RotationAnimator on rotation {
-                                    running:
-                                        root.scanning
-                                        && root.visible
-
-
-                                    from: 0
-                                    to: 360
-
-                                    duration: 1200
-
-                                    loops:
-                                        Animation.Infinite
-                                }
-                            }
-
-
-                            MouseArea {
-                                id: scanMouse
-
-                                anchors.fill:
-                                    parent
-
-
-                                enabled:
-                                    root.enabled
-
-
-                                hoverEnabled:
-                                    true
-
-
-                                cursorShape:
-                                    Qt.PointingHandCursor
-
-
-                                onClicked:
-                                    root.toggleDiscovery()
+                                id: badgeText
+                                anchors.centerIn: parent
+                                text: root.connectedDevices.length > 0
+                                      ? root.connectedDevices.length + " connected"
+                                      : root.deviceCatalog.length.toString()
+                                color: root.connectedDevices.length > 0 ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
+                                font.weight: Nexa.Theme.fontWeightMedium
                             }
                         }
                     }
-
-
-                    // ============================================
-                    // ERROR
-                    // ============================================
 
                     Text {
-                        visible:
-                            root.actionError !== ""
+                        text: !root.optimisticEnabled ? "Disabled"
+                            : root.connectedDevices.length > 0 ? root.connectedDevices.length + (root.connectedDevices.length === 1 ? " device active" : " devices active")
+                            : root.scanning ? "Searching for devices…"
+                            : "Ready to connect"
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                    }
+                }
 
+                Item { Layout.fillWidth: true }
 
-                        Layout.fillWidth:
-                            true
+                // Scan / Rescan Button (Hover background stays stable, only icon rotates)
+                Item {
+                    id: scanButton
+                    implicitWidth: 32
+                    implicitHeight: 32
+                    visible: root.optimisticEnabled
+                    Layout.alignment: Qt.AlignVCenter
 
+                    Rectangle {
+                        id: scanHoverBg
+                        anchors.fill: parent
+                        radius: Nexa.Theme.radiusPill
+                        color: scanArea.containsMouse ? Nexa.Theme.hover : "transparent"
+                        border.color: scanArea.containsMouse ? Nexa.Theme.borderSubtle : "transparent"
+                        border.width: 1
 
-                        text:
-                            root.actionError
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                    }
 
+                    Text {
+                        id: scanIcon
+                        anchors.centerIn: parent
+                        text: "󰑐"
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: 16
+                        color: root.scanning ? Nexa.Theme.primary : Nexa.Theme.onSurface
 
-                        color:
-                            Nexa.Theme.error
-
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSize2Xs
-
-                            weight:
-                                Nexa.Theme.fontWeightMedium
+                        RotationAnimator on rotation {
+                            from: 0
+                            to: 360
+                            duration: 1000
+                            loops: Animation.Infinite
+                            running: root.scanning && root.visible
                         }
                     }
 
+                    MouseArea {
+                        id: scanArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.toggleDiscovery()
+                    }
+                }
+
+                // Master Bluetooth Toggle
+                NexaUI.NexaToggle {
+                    id: headerToggle
+                    checked: root.optimisticEnabled
+                    interactive: !actionProcess.running
+                    Layout.alignment: Qt.AlignVCenter
+                    onToggled: function(val) {
+                        if (val !== root.optimisticEnabled) {
+                            root.toggleBluetooth()
+                        }
+                    }
+                    Connections {
+                        target: root
+                        function onOptimisticEnabledChanged() {
+                            headerToggle.checked = root.optimisticEnabled
+                        }
+                    }
+                }
+            }
+
+            // Backend Action Error
+            Text {
+                visible: root.actionError !== ""
+                Layout.fillWidth: true
+                text: root.actionError
+                color: Nexa.Theme.error
+                font.family: Nexa.Theme.fontFamily
+                font.pixelSize: Nexa.Theme.fontSize2Xs
+                font.weight: Nexa.Theme.fontWeightMedium
+            }
+
+            // ====================================================
+            // CONNECTED HERO SECTION (Unified Cards)
+            // ====================================================
+            Repeater {
+                model: root.optimisticEnabled ? root.connectedDevices : []
+
+                delegate: NexaUI.NexaCard {
+                    id: connectedCard
+                    required property var modelData
+                    Layout.fillWidth: true
+                    padding: Nexa.Theme.spacingSm
+                    implicitHeight: Math.max(52, connectedRow.implicitHeight + padding * 2)
+                    selected: true
+
+                    RowLayout {
+                        id: connectedRow
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: connectedCard.padding
+                        anchors.rightMargin: connectedCard.padding
+                        spacing: Nexa.Theme.spacingSm
+
+                        // Capsule Device Glyph
+                        Rectangle {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            radius: Nexa.Theme.radiusPill
+                            color: Nexa.Theme.primaryContainer
+                            Layout.alignment: Qt.AlignVCenter
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: root.deviceGlyph(connectedCard.modelData.device_type)
+                                color: Nexa.Theme.primary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 16
+                            }
+                        }
+
+                        // Name & Status Details
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 2
+
+                            Text {
+                                text: root.deviceName(connectedCard.modelData)
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+
+                            RowLayout {
+                                spacing: Nexa.Theme.spacingXs
+                                Layout.alignment: Qt.AlignVCenter
+
+                                NexaUI.NexaActiveIndicator {
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+
+                                Text {
+                                    text: {
+                                        let str = "Connected"
+                                        if (connectedCard.modelData.battery !== undefined && connectedCard.modelData.battery !== null) {
+                                            str += " · " + connectedCard.modelData.battery + "%"
+                                        }
+                                        return str
+                                    }
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                            }
+                        }
+
+                        // Forget Button
+                        NexaUI.NexaIconButton {
+                            icon: "󰆴"
+                            iconSize: Nexa.Theme.iconSm
+                            implicitWidth: Nexa.Theme.controlHeightSm
+                            implicitHeight: Nexa.Theme.controlHeightSm
+                            iconColor: hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
+                            Layout.alignment: Qt.AlignVCenter
+                            enabled: !actionProcess.running
+                            onClicked: root.forgetDevice(connectedCard.modelData)
+                        }
+
+                        // Disconnect Button
+                        NexaUI.NexaButton {
+                            text: root.isPending(connectedCard.modelData) ? "Disconnecting…" : "Disconnect"
+                            textSize: Nexa.Theme.fontSizeXs
+                            implicitHeight: Nexa.Theme.controlHeightSm
+                            horizontalPadding: Nexa.Theme.spacingSm
+                            Layout.alignment: Qt.AlignVCenter
+                            interactive: !actionProcess.running
+                            onClicked: root.disconnectDevice(connectedCard.modelData)
+                        }
+                    }
+                }
+            }
+
+            // ====================================================
+            // DEVICE LIST VIEWPORT
+            // ====================================================
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                implicitHeight: Math.min(320, Math.max(220, listInnerColumn.implicitHeight + Nexa.Theme.spacingSm * 2))
+                radius: Nexa.Theme.radiusMd
+                color: Nexa.Theme.surfaceContainer
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.border
+
+                ColumnLayout {
+                    id: listInnerColumn
+                    anchors.fill: parent
+                    anchors.margins: Nexa.Theme.spacingSm
+                    spacing: Nexa.Theme.spacingSm
 
                     // ============================================
-                    // DEVICE SCROLLER
+                    // EMPTY / DISABLED STATES
                     // ============================================
 
+                    // State 1: Bluetooth Disabled
+                    ColumnLayout {
+                        visible: !root.optimisticEnabled
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.alignment: Qt.AlignCenter
+                        spacing: Nexa.Theme.spacingMd
+
+                        Item { Layout.fillHeight: true }
+
+                        Text {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: "󰂲"
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: 48
+                        }
+
+                        ColumnLayout {
+                            Layout.alignment: Qt.AlignHCenter
+                            spacing: 4
+
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: "Bluetooth is turned off"
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                            }
+
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: "Turn on Bluetooth to find and connect to devices"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                            }
+                        }
+
+                        NexaUI.NexaButton {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: "Turn On Bluetooth"
+                            icon: "󰂯"
+                            selected: true
+                            interactive: !actionProcess.running
+                            onClicked: root.toggleBluetooth()
+                        }
+
+                        Item { Layout.fillHeight: true }
+                    }
+
+                    // State 2: Bluetooth Enabled, Scanning or 0 Devices Found
+                    ColumnLayout {
+                        visible: root.optimisticEnabled && (root.deviceCatalog.length === 0 && root.connectedDevices.length === 0)
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.alignment: Qt.AlignCenter
+                        spacing: Nexa.Theme.spacingSm
+
+                        Item { Layout.fillHeight: true }
+
+                        Text {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: root.scanning ? "󰑐" : "󰂲"
+                            color: root.scanning ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: 32
+
+                            RotationAnimator on rotation {
+                                running: root.scanning && root.visible
+                                from: 0
+                                to: 360
+                                duration: 1200
+                                loops: Animation.Infinite
+                            }
+                        }
+
+                        ColumnLayout {
+                            Layout.alignment: Qt.AlignHCenter
+                            spacing: 4
+
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: root.scanning ? "Searching for nearby devices…" : "No Bluetooth devices found"
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                            }
+
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: "Make sure devices are in pairing mode"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                            }
+                        }
+
+                        NexaUI.NexaButton {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: "Scan for Devices"
+                            icon: "󰑐"
+                            selected: true
+                            interactive: !actionProcess.running
+                            onClicked: root.toggleDiscovery()
+                        }
+
+                        Item { Layout.fillHeight: true }
+                    }
+
+                    // Scrollable List of Devices
                     Flickable {
                         id: deviceFlick
-
-
-                        Layout.fillWidth:
-                            true
-
-                        Layout.fillHeight:
-                            true
-
-
-                        clip:
-                            true
-
-
-                        contentWidth:
-                            width
-
-                        contentHeight:
-                            deviceColumn.height
-
-
-                        boundsBehavior:
-                            Flickable.StopAtBounds
-
-                        flickDeceleration:
-                            Nexa.Theme.flickDeceleration
-
-                        maximumFlickVelocity:
-                            Nexa.Theme.flickVelocityMax
-
+                        visible: root.optimisticEnabled && (root.pairedDevices.length > 0 || root.availableDevices.length > 0)
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        implicitHeight: Math.min(260, Math.max(120, deviceColumn.implicitHeight))
+                        clip: true
+                        contentHeight: deviceColumn.implicitHeight
+                        contentWidth: width
+                        boundsBehavior: Flickable.StopAtBounds
+                        flickDeceleration: Nexa.Theme.flickDeceleration
+                        maximumFlickVelocity: Nexa.Theme.flickVelocityMax
                         pixelAligned: true
 
+                        // Sleek discreet floating scrollbar
                         ScrollBar.vertical: ScrollBar {
                             id: btScrollBar
                             policy: ScrollBar.AsNeeded
+                            width: 4
+                            anchors.right: parent.right
+                            anchors.rightMargin: 1
+                            visible: size < 1.0
 
                             contentItem: Rectangle {
                                 implicitWidth: 3
-                                radius: width / 2
-                                color: Qt.rgba(
-                                    Nexa.Theme.text.r,
-                                    Nexa.Theme.text.g,
-                                    Nexa.Theme.text.b,
-                                    btScrollBar.hovered ? 0.5 : 0.18
-                                )
+                                radius: Nexa.Theme.radiusPill
+                                color: btScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                opacity: (btScrollBar.active || btScrollBar.hovered) ? 0.6 : 0.0
 
-                                Behavior on color {
-                                    ColorAnimation { duration: Nexa.Theme.animationFast }
-                                }
+                                Behavior on opacity { NumberAnimation { duration: Nexa.Theme.animationNormal } }
+                                Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
                             }
-
                             background: null
                         }
 
-
                         Column {
                             id: deviceColumn
+                            width: deviceFlick.width - (deviceFlick.contentHeight > deviceFlick.height ? (Nexa.Theme.spacingSm + 4) : 0)
+                            spacing: Nexa.Theme.spacingSm
 
-
-                            width:
-                                deviceFlick.width
-
-
-                            spacing:
-                                Nexa.Theme.spacingXs
-
-
-                            // ====================================
-                            // CONNECTED
-                            // ====================================
-
-                            Text {
-                                visible:
-                                    root.connectedDevices.length > 0
-
-
-                                width:
-                                    parent.width
-
-                                height:
-                                    visible
-                                    ? implicitHeight
-                                    : 0
-
-
-                                text:
-                                    "Connected"
-
-
-                                color:
-                                    Nexa.Theme.primary
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSize2Xs
-
-                                    weight:
-                                        Nexa.Theme.fontWeightDemiBold
-                                }
+                            Behavior on width {
+                                NumberAnimation { duration: Nexa.Theme.animationFast }
                             }
 
+                            // ----------------------------------------
+                            // PAIRED DEVICES SECTION
+                            // ----------------------------------------
+                            Column {
+                                width: parent.width
+                                spacing: Nexa.Theme.spacingXs
+                                visible: root.pairedDevices.length > 0
 
-                            Repeater {
-                                model:
-                                    root.connectedDevices
-
-
-                                DeviceCard {
-                                    required property var modelData
-
-                                    deviceData:
-                                        modelData
-                                }
-                            }
-
-
-                            // ====================================
-                            // PAIRED
-                            // ====================================
-
-                            Text {
-                                visible:
-                                    root.pairedDevices.length > 0
-
-
-                                width:
-                                    parent.width
-
-                                height:
-                                    visible
-                                    ? implicitHeight
-                                    : 0
-
-
-                                topPadding:
-                                    visible
-                                    ? Nexa.Theme.spacingXs
-                                    : 0
-
-
-                                text:
-                                    "Paired"
-
-
-                                color:
-                                    Nexa.Theme.mutedText
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSize2Xs
-
-                                    weight:
-                                        Nexa.Theme.fontWeightDemiBold
-                                }
-                            }
-
-
-                            Repeater {
-                                model:
-                                    root.pairedDevices
-
-
-                                DeviceCard {
-                                    required property var modelData
-
-                                    deviceData:
-                                        modelData
-                                }
-                            }
-
-
-                            // ====================================
-                            // AVAILABLE
-                            // ====================================
-
-                            Text {
-                                visible:
-                                    root.availableDevices.length > 0
-
-
-                                width:
-                                    parent.width
-
-                                height:
-                                    visible
-                                    ? implicitHeight
-                                    : 0
-
-
-                                topPadding:
-                                    visible
-                                    ? Nexa.Theme.spacingXs
-                                    : 0
-
-
-                                text:
-                                    "Available"
-
-
-                                color:
-                                    Nexa.Theme.mutedText
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSize2Xs
-
-                                    weight:
-                                        Nexa.Theme.fontWeightDemiBold
-                                }
-                            }
-
-
-                            Repeater {
-                                model:
-                                    root.availableDevices
-
-
-                                DeviceCard {
-                                    required property var modelData
-
-                                    deviceData:
-                                        modelData
-                                }
-                            }
-
-
-                            // ====================================
-                            // EMPTY
-                            // ====================================
-
-                            Item {
-                                visible:
-                                    root.deviceCatalog.length === 0
-
-
-                                width:
-                                    parent.width
-
-                                height:
-                                    visible
-                                    ? 180
-                                    : 0
-
-
-                                Column {
-                                    anchors.centerIn:
-                                        parent
-
-
-                                    spacing:
-                                        Nexa.Theme.spacingSm
-
-
+                                RowLayout {
+                                    width: parent.width
                                     Text {
-                                        anchors.horizontalCenter:
-                                            parent.horizontalCenter
-
-
-                                        text:
-                                            root.enabled
-                                            ? "󰂯"
-                                            : "󰂲"
-
-
-                                        color:
-                                            root.scanning
-                                            ? Nexa.Theme.primary
-                                            : Nexa.Theme.mutedText
-
-
-                                        font {
-                                            family:
-                                                Nexa.Theme.iconFontFamily
-
-                                            pixelSize:
-                                                Nexa.Theme.iconLg
-                                        }
+                                        text: "Paired Devices"
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                        font.weight: Nexa.Theme.fontWeightDemiBold
                                     }
-
-
+                                    Item { Layout.fillWidth: true }
                                     Text {
-                                        anchors.horizontalCenter:
-                                            parent.horizontalCenter
+                                        text: root.pairedDevices.length.toString()
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                    }
+                                }
 
+                                Repeater {
+                                    model: root.pairedDevices
 
-                                        text:
-                                            !root.enabled
-                                            ? "Bluetooth is disabled"
+                                    delegate: Rectangle {
+                                        id: pairedItem
+                                        required property var modelData
+                                        width: deviceColumn.width
+                                        height: 48
+                                        radius: Nexa.Theme.radiusSm
+                                        color: pairedMouse.pressed ? Nexa.Theme.pressed
+                                             : pairedMouse.containsMouse ? Nexa.Theme.hover
+                                             : Nexa.Theme.surfaceContainerHigh
+                                        border.width: Nexa.Theme.borderThin
+                                        border.color: pairedMouse.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.border
+                                        scale: pairedMouse.pressed ? 0.985 : 1.0
 
-                                            : root.scanning
-                                                ? "Searching for nearby devices…"
+                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                        Behavior on border.color { ColorAnimation { duration: 120 } }
+                                        Behavior on scale { NumberAnimation { duration: 120 } }
 
-                                                : "No Bluetooth devices"
+                                        MouseArea {
+                                            id: pairedMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            enabled: !actionProcess.running
+                                            onClicked: root.connectDevice(pairedItem.modelData)
+                                        }
 
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: Nexa.Theme.spacingSm
+                                            anchors.rightMargin: Nexa.Theme.spacingSm
+                                            spacing: Nexa.Theme.spacingSm
 
-                                        color:
-                                            Nexa.Theme.mutedText
+                                            Text {
+                                                text: root.deviceGlyph(pairedItem.modelData.device_type)
+                                                color: Nexa.Theme.text
+                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.pixelSize: Nexa.Theme.iconMd
+                                                Layout.alignment: Qt.AlignVCenter
+                                            }
 
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                Layout.alignment: Qt.AlignVCenter
+                                                spacing: 1
 
-                                        font {
-                                            family:
-                                                Nexa.Theme.fontFamily
+                                                Text {
+                                                    text: root.deviceName(pairedItem.modelData)
+                                                    color: Nexa.Theme.text
+                                                    font.family: Nexa.Theme.fontFamily
+                                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                                    font.weight: Nexa.Theme.fontWeightMedium
+                                                    elide: Text.ElideRight
+                                                    Layout.fillWidth: true
+                                                }
 
-                                            pixelSize:
-                                                Nexa.Theme.fontSizeXs
+                                                Text {
+                                                    text: root.isPending(pairedItem.modelData) ? "Connecting…" : "Paired"
+                                                    color: root.isPending(pairedItem.modelData) ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                                    font.family: Nexa.Theme.fontFamily
+                                                    font.pixelSize: Nexa.Theme.fontSize2Xs
+                                                }
+                                            }
+
+                                            // Action Spinner
+                                            Text {
+                                                visible: root.isPending(pairedItem.modelData)
+                                                text: "󰑐"
+                                                color: Nexa.Theme.primary
+                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.pixelSize: Nexa.Theme.iconSm
+                                                Layout.alignment: Qt.AlignVCenter
+
+                                                RotationAnimator on rotation {
+                                                    from: 0; to: 360; duration: 900
+                                                    loops: Animation.Infinite
+                                                    running: root.isPending(pairedItem.modelData) && root.visible
+                                                }
+                                            }
+
+                                            // Forget Button
+                                            NexaUI.NexaIconButton {
+                                                icon: "󰆴"
+                                                iconSize: Nexa.Theme.iconSm
+                                                implicitWidth: Nexa.Theme.controlHeightSm
+                                                implicitHeight: Nexa.Theme.controlHeightSm
+                                                iconColor: hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                                Layout.alignment: Qt.AlignVCenter
+                                                enabled: !actionProcess.running
+                                                onClicked: root.forgetDevice(pairedItem.modelData)
+                                            }
+
+                                            // Connect Button
+                                            NexaUI.NexaButton {
+                                                text: "Connect"
+                                                textSize: Nexa.Theme.fontSizeXs
+                                                implicitHeight: Nexa.Theme.controlHeightSm
+                                                horizontalPadding: Nexa.Theme.spacingSm
+                                                Layout.alignment: Qt.AlignVCenter
+                                                interactive: !actionProcess.running
+                                                onClicked: root.connectDevice(pairedItem.modelData)
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
 
+                            // ----------------------------------------
+                            // AVAILABLE DEVICES SECTION
+                            // ----------------------------------------
+                            Column {
+                                width: parent.width
+                                spacing: Nexa.Theme.spacingXs
+                                visible: root.availableDevices.length > 0
 
-                    // ============================================
-                    // SUMMARY
-                    // ============================================
+                                RowLayout {
+                                    width: parent.width
+                                    Text {
+                                        text: "Available Devices"
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                        font.weight: Nexa.Theme.fontWeightDemiBold
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                    Text {
+                                        text: root.availableDevices.length.toString()
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                    }
+                                }
 
-                    RowLayout {
-                        visible:
-                            root.enabled
-                            && root.deviceCatalog.length > 0
+                                Repeater {
+                                    model: root.availableDevices
 
+                                    delegate: Rectangle {
+                                        id: availItem
+                                        required property var modelData
+                                        width: deviceColumn.width
+                                        height: 44
+                                        radius: Nexa.Theme.radiusSm
+                                        color: availMouse.pressed ? Nexa.Theme.pressed
+                                             : availMouse.containsMouse ? Nexa.Theme.hover
+                                             : Nexa.Theme.surfaceContainerHigh
+                                        border.width: Nexa.Theme.borderThin
+                                        border.color: availMouse.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.border
+                                        scale: availMouse.pressed ? 0.985 : 1.0
 
-                        Layout.fillWidth:
-                            true
+                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                        Behavior on border.color { ColorAnimation { duration: 120 } }
+                                        Behavior on scale { NumberAnimation { duration: 120 } }
 
+                                        MouseArea {
+                                            id: availMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            enabled: !actionProcess.running
+                                            onClicked: root.pairDevice(availItem.modelData)
+                                        }
 
-                        spacing:
-                            Nexa.Theme.spacingXs
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: Nexa.Theme.spacingSm
+                                            anchors.rightMargin: Nexa.Theme.spacingSm
+                                            spacing: Nexa.Theme.spacingSm
 
+                                            Text {
+                                                text: root.deviceGlyph(availItem.modelData.device_type)
+                                                color: Nexa.Theme.mutedText
+                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.pixelSize: Nexa.Theme.iconMd
+                                                Layout.alignment: Qt.AlignVCenter
+                                            }
 
-                        Text {
-                            text:
-                                root.connectedDevices.length
-                                + " connected"
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: root.deviceName(availItem.modelData)
+                                                color: Nexa.Theme.text
+                                                font.family: Nexa.Theme.fontFamily
+                                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                                font.weight: Nexa.Theme.fontWeightMedium
+                                                elide: Text.ElideRight
+                                                Layout.alignment: Qt.AlignVCenter
+                                            }
 
+                                            // Action Spinner
+                                            Text {
+                                                visible: root.isPending(availItem.modelData)
+                                                text: "󰑐"
+                                                color: Nexa.Theme.primary
+                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.pixelSize: Nexa.Theme.iconSm
+                                                Layout.alignment: Qt.AlignVCenter
 
-                            color:
-                                root.connectedDevices.length > 0
-                                ? Nexa.Theme.primary
-                                : Nexa.Theme.mutedText
+                                                RotationAnimator on rotation {
+                                                    from: 0; to: 360; duration: 900
+                                                    loops: Animation.Infinite
+                                                    running: root.isPending(availItem.modelData) && root.visible
+                                                }
+                                            }
 
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSize2Xs
-                            }
-                        }
-
-
-                        Text {
-                            text: "•"
-
-                            color:
-                                Nexa.Theme.divider
-                        }
-
-
-                        Text {
-                            text:
-                                root.pairedDevices.length
-                                + " paired"
-
-
-                            color:
-                                Nexa.Theme.mutedText
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSize2Xs
-                            }
-                        }
-
-
-                        Text {
-                            text: "•"
-
-                            color:
-                                Nexa.Theme.divider
-                        }
-
-
-                        Text {
-                            text:
-                                root.availableDevices.length
-                                + " available"
-
-
-                            color:
-                                Nexa.Theme.mutedText
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSize2Xs
-                            }
-                        }
-
-
-                        Item {
-                            Layout.fillWidth:
-                                true
-                        }
-
-
-                        Text {
-                            visible:
-                                root.scanning
-
-
-                            text:
-                                "󰑐"
-
-
-                            color:
-                                Nexa.Theme.primary
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.iconFontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.iconXs
-                            }
-
-
-                            RotationAnimator on rotation {
-                                running:
-                                    root.scanning
-                                    && root.visible
-
-
-                                from: 0
-                                to: 360
-
-                                duration: 1200
-
-                                loops:
-                                    Animation.Infinite
+                                            // Pair Button
+                                            NexaUI.NexaButton {
+                                                text: root.isPending(availItem.modelData) ? "Pairing…" : "Pair"
+                                                textSize: Nexa.Theme.fontSizeXs
+                                                implicitHeight: Nexa.Theme.controlHeightSm
+                                                horizontalPadding: Nexa.Theme.spacingSm
+                                                Layout.alignment: Qt.AlignVCenter
+                                                selected: true
+                                                interactive: !actionProcess.running
+                                                onClicked: root.pairDevice(availItem.modelData)
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

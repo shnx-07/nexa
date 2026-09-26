@@ -1,6 +1,7 @@
 import QtQuick
 
 import Quickshell
+import Quickshell.Io
 import Quickshell.Bluetooth
 
 import "../../theme" as Nexa
@@ -54,7 +55,7 @@ Item {
 
 
     readonly property bool popupVisible:
-        popup.visible
+        popupLoader.item ? popupLoader.item.visible : false
 
 
     readonly property string nexad:
@@ -67,31 +68,46 @@ Item {
     // ============================================================
 
     function toggle() {
-        if (adapter !== null) {
-            adapter.enabled = !adapter.enabled
-        }
-
+        const nextState = !root.enabled
         Quickshell.execDetached([
             nexad,
             "network",
             "bluetooth",
-            enabled ? "off" : "on"
+            nextState ? "on" : "off"
         ])
     }
 
 
     function openPopup() {
-        popup.visible = true
+        if (popupLoader.item)
+            popupLoader.item.visible = true
     }
 
 
     function closePopup() {
-        popup.visible = false
+        if (popupLoader.item)
+            popupLoader.item.visible = false
     }
 
 
     function togglePopup() {
-        popup.visible = !popup.visible
+        if (popupLoader.item)
+            popupLoader.item.visible = !popupLoader.item.visible
+    }
+
+
+    property bool enablePopup: true
+
+    Loader {
+        active: root.enablePopup
+        sourceComponent: Component {
+            IpcHandler {
+                target: "bluetooth"
+                function toggle(): void { root.togglePopup() }
+                function open(): void { root.openPopup() }
+                function close(): void { root.closePopup() }
+            }
+        }
     }
 
 
@@ -225,7 +241,7 @@ Item {
         visible:
             root.visible
             && mouse.containsMouse
-            && !popup.visible
+            && !root.popupVisible
 
         title:
             "Bluetooth"
@@ -250,13 +266,17 @@ Item {
 
 
     // ============================================================
-    // EXISTING POPUP
+    // POPUP LOADER
     // ============================================================
 
-    BluetoothPopup {
-        id: popup
-
-        anchorItem:
-            button
+    Loader {
+        id: popupLoader
+        active: root.enablePopup
+        sourceComponent: Component {
+            BluetoothPopup {
+                id: popup
+                anchorItem: button
+            }
+        }
     }
 }

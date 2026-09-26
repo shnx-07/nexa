@@ -7,7 +7,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
-import "../theme" as NTheme
+import "../theme" as Nexa
 
 PanelWindow {
     id: root
@@ -471,6 +471,16 @@ PanelWindow {
             "--type", typeFilter,
             "--target", target
         ])
+
+        Quickshell.execDetached([
+            "quickshell",
+            "ipc",
+            "-p",
+            Quickshell.env("HOME") + "/.config/nexa/quickshell",
+            "call",
+            "wallpaperSlideshow",
+            "reload"
+        ])
     }
 
     function toggleSlideshowEnabled() {
@@ -622,7 +632,7 @@ PanelWindow {
         anchors.fill: parent
         z: -100
 
-        color: NTheme.Theme.scrim
+        color: Nexa.Theme.scrim
 
         MouseArea {
             anchors.fill: parent
@@ -844,10 +854,10 @@ PanelWindow {
                 Behavior on scale {
                     NumberAnimation {
                         duration:
-                            NTheme.Theme.animationFast
+                            Nexa.Theme.animationFast
 
                         easing.type:
-                            NTheme.Theme.easingEmphasized
+                            Nexa.Theme.easingEmphasized
                     }
                 }
 
@@ -896,7 +906,7 @@ PanelWindow {
                     anchors.fill: parent
 
                     color:
-                        NTheme.Theme.surface
+                        Nexa.Theme.surface
 
                     radius: 0
 
@@ -905,14 +915,14 @@ PanelWindow {
 
                     border.color:
                         cardRoot.selected
-                        ? NTheme.Theme.primary
-                        : (cardMouse.containsMouse ? NTheme.Theme.borderStrong : NTheme.Theme.outlineVariant)
+                        ? Nexa.Theme.primary
+                        : (cardMouse.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.outlineVariant)
 
                     clip: true
 
                     Rectangle {
                         anchors.fill: parent
-                        color: NTheme.Theme.surfaceContainerLowest
+                        color: Nexa.Theme.surfaceContainerLowest
                     }
 
                     // -------------------------------------------------
@@ -1263,8 +1273,8 @@ PanelWindow {
                         }
                         height: 32
                         width: Math.min(nameRow.implicitWidth + 24, parent.width - 120)
-                        radius: NTheme.Theme.radiusFull
-                        color: Qt.rgba(NTheme.Theme.background.r, NTheme.Theme.background.g, NTheme.Theme.background.b, 0.82)
+                        radius: Nexa.Theme.radiusFull
+                        color: Qt.rgba(Nexa.Theme.background.r, Nexa.Theme.background.g, Nexa.Theme.background.b, 0.82)
                         border.width: 1
                         border.color: Qt.rgba(255, 255, 255, 0.15)
 
@@ -1277,16 +1287,16 @@ PanelWindow {
 
                             Text {
                                 text: "󰋩"
-                                color: NTheme.Theme.primary
-                                font.family: NTheme.Theme.iconFont
+                                color: Nexa.Theme.primary
+                                font.family: Nexa.Theme.iconFont
                                 font.pixelSize: 13
                             }
 
                             Text {
                                 text: cardRoot.wallName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")
-                                color: NTheme.Theme.text
-                                font.family: NTheme.Theme.fontFamily
-                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
                                 font.weight: Font.DemiBold
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
@@ -1307,8 +1317,8 @@ PanelWindow {
 
                         height: 32
                         width: typeBadgeRow.implicitWidth + 20
-                        radius: NTheme.Theme.radiusFull
-                        color: Qt.rgba(NTheme.Theme.background.r, NTheme.Theme.background.g, NTheme.Theme.background.b, 0.82)
+                        radius: Nexa.Theme.radiusFull
+                        color: Qt.rgba(Nexa.Theme.background.r, Nexa.Theme.background.g, Nexa.Theme.background.b, 0.82)
                         border.width: 1
                         border.color: Qt.rgba(255, 255, 255, 0.15)
 
@@ -1321,14 +1331,14 @@ PanelWindow {
                                 implicitWidth: 6
                                 implicitHeight: 6
                                 radius: 3
-                                color: cardRoot.isVideo ? NTheme.Theme.error : (cardRoot.isGif ? NTheme.Theme.warning : NTheme.Theme.primary)
+                                color: cardRoot.isVideo ? Nexa.Theme.error : (cardRoot.isGif ? Nexa.Theme.warning : Nexa.Theme.primary)
                             }
 
                             Text {
                                 text: cardRoot.isVideo ? "VIDEO" : (cardRoot.isGif ? "GIF" : "IMAGE")
-                                color: NTheme.Theme.text
-                                font.family: NTheme.Theme.monoFont
-                                font.pixelSize: NTheme.Theme.fontSize2Xs
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.monoFont
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
                                 font.weight: Font.Bold
                             }
                         }
@@ -1415,13 +1425,13 @@ PanelWindow {
             filterRow.implicitWidth + 24
 
         radius:
-            NTheme.Theme.radiusLg
+            Nexa.Theme.radiusLg
 
         color:
             Qt.rgba(
-                NTheme.Theme.surface.r,
-                NTheme.Theme.surface.g,
-                NTheme.Theme.surface.b,
+                Nexa.Theme.surface.r,
+                Nexa.Theme.surface.g,
+                Nexa.Theme.surface.b,
                 0.92
             )
 
@@ -1429,9 +1439,9 @@ PanelWindow {
 
         border.color:
             Qt.rgba(
-                NTheme.Theme.outline.r,
-                NTheme.Theme.outline.g,
-                NTheme.Theme.outline.b,
+                Nexa.Theme.outline.r,
+                Nexa.Theme.outline.g,
+                Nexa.Theme.outline.b,
                 0.55
             )
 
@@ -1472,20 +1482,20 @@ PanelWindow {
                         + 24
 
                     radius:
-                        NTheme.Theme.radiusSm
+                        Nexa.Theme.radiusSm
 
 
                     color:
                         active
-                        ? NTheme.Theme.selectedOverlay
-                        : (tabMouse.containsMouse ? NTheme.Theme.hover : "transparent")
+                        ? Nexa.Theme.selectedOverlay
+                        : (tabMouse.containsMouse ? Nexa.Theme.hover : "transparent")
 
 
                     border.width:
                         active ? 1 : 0
 
                     border.color:
-                        NTheme.Theme.primary
+                        Nexa.Theme.primary
 
                     scale:
                         tabMouse.pressed
@@ -1496,14 +1506,14 @@ PanelWindow {
                     Behavior on color {
                         ColorAnimation {
                             duration:
-                                NTheme.Theme.animationFast
+                                Nexa.Theme.animationFast
                         }
                     }
 
                     Behavior on scale {
                         NumberAnimation {
-                            duration: NTheme.Theme.animationFast
-                            easing.type: NTheme.Theme.easingEmphasized
+                            duration: Nexa.Theme.animationFast
+                            easing.type: Nexa.Theme.easingEmphasized
                         }
                     }
 
@@ -1519,14 +1529,14 @@ PanelWindow {
 
                         color:
                             parent.active
-                            ? NTheme.Theme.primary
-                            : NTheme.Theme.mutedText
+                            ? Nexa.Theme.primary
+                            : Nexa.Theme.mutedText
 
                         font.family:
-                            NTheme.Theme.uiFont
+                            Nexa.Theme.uiFont
 
                         font.pixelSize:
-                            NTheme.Theme.fontSizeSm
+                            Nexa.Theme.fontSizeSm
 
                         font.weight:
                             parent.active
@@ -1571,9 +1581,9 @@ PanelWindow {
 
                 color:
                     Qt.rgba(
-                        NTheme.Theme.outline.r,
-                        NTheme.Theme.outline.g,
-                        NTheme.Theme.outline.b,
+                        Nexa.Theme.outline.r,
+                        Nexa.Theme.outline.g,
+                        Nexa.Theme.outline.b,
                         0.35
                     )
             }
@@ -1617,13 +1627,13 @@ PanelWindow {
                         root.applyMenuOpen
 
                     radius:
-                        NTheme.Theme.radiusMd
+                        Nexa.Theme.radiusMd
 
                     color:
                         Qt.rgba(
-                            NTheme.Theme.surface.r,
-                            NTheme.Theme.surface.g,
-                            NTheme.Theme.surface.b,
+                            Nexa.Theme.surface.r,
+                            Nexa.Theme.surface.g,
+                            Nexa.Theme.surface.b,
                             0.96
                         )
 
@@ -1631,9 +1641,9 @@ PanelWindow {
 
                     border.color:
                         Qt.rgba(
-                            NTheme.Theme.outline.r,
-                            NTheme.Theme.outline.g,
-                            NTheme.Theme.outline.b,
+                            Nexa.Theme.outline.r,
+                            Nexa.Theme.outline.g,
+                            Nexa.Theme.outline.b,
                             0.55
                         )
 
@@ -1669,21 +1679,21 @@ PanelWindow {
                                 height: 38
 
                                 radius:
-                                    NTheme.Theme.radiusSm
+                                    Nexa.Theme.radiusSm
 
 
                                 color:
                                     targetMouse.containsMouse
-                                    ? NTheme.Theme.hover
+                                    ? Nexa.Theme.hover
                                     : active
-                                        ? NTheme.Theme.selectedOverlay
+                                        ? Nexa.Theme.selectedOverlay
                                         : "transparent"
 
 
                                 Behavior on color {
                                     ColorAnimation {
                                         duration:
-                                            NTheme.Theme.animationFast
+                                            Nexa.Theme.animationFast
                                     }
                                 }
 
@@ -1705,14 +1715,14 @@ PanelWindow {
 
                                     color:
                                         parent.active
-                                        ? NTheme.Theme.primary
-                                        : NTheme.Theme.text
+                                        ? Nexa.Theme.primary
+                                        : Nexa.Theme.text
 
                                     font.family:
-                                        NTheme.Theme.uiFont
+                                        Nexa.Theme.uiFont
 
                                     font.pixelSize:
-                                        NTheme.Theme.fontSizeSm
+                                        Nexa.Theme.fontSizeSm
 
                                     font.weight:
                                         parent.active
@@ -1756,20 +1766,20 @@ PanelWindow {
                         parent
 
                     radius:
-                        NTheme.Theme.radiusSm
+                        Nexa.Theme.radiusSm
 
 
                     color:
                         applyMouse.containsMouse
                         || root.applyMenuOpen
-                        ? NTheme.Theme.hover
+                        ? Nexa.Theme.hover
                         : "transparent"
 
 
                     Behavior on color {
                         ColorAnimation {
                             duration:
-                                NTheme.Theme.animationFast
+                                Nexa.Theme.animationFast
                         }
                     }
 
@@ -1786,13 +1796,13 @@ PanelWindow {
                                 "Apply to:"
 
                             color:
-                                NTheme.Theme.mutedText
+                                Nexa.Theme.mutedText
 
                             font.family:
-                                NTheme.Theme.uiFont
+                                Nexa.Theme.uiFont
 
                             font.pixelSize:
-                                NTheme.Theme.fontSizeSm
+                                Nexa.Theme.fontSizeSm
                         }
 
 
@@ -1802,14 +1812,14 @@ PanelWindow {
 
                             color:
                                 root.applyMenuOpen
-                                ? NTheme.Theme.primary
-                                : NTheme.Theme.text
+                                ? Nexa.Theme.primary
+                                : Nexa.Theme.text
 
                             font.family:
-                                NTheme.Theme.uiFont
+                                Nexa.Theme.uiFont
 
                             font.pixelSize:
-                                NTheme.Theme.fontSizeSm
+                                Nexa.Theme.fontSizeSm
 
                             font.weight:
                                 Font.DemiBold
@@ -1824,14 +1834,14 @@ PanelWindow {
 
                             color:
                                 root.applyMenuOpen
-                                ? NTheme.Theme.primary
-                                : NTheme.Theme.mutedText
+                                ? Nexa.Theme.primary
+                                : Nexa.Theme.mutedText
 
                             font.family:
-                                NTheme.Theme.uiFont
+                                Nexa.Theme.uiFont
 
                             font.pixelSize:
-                                NTheme.Theme.fontSizeXs
+                                Nexa.Theme.fontSizeXs
                         }
                     }
 
@@ -1869,20 +1879,20 @@ PanelWindow {
 
             height: 56
             width: slideshowRow.implicitWidth + 24
-            radius: NTheme.Theme.radiusLg
+            radius: Nexa.Theme.radiusLg
 
             color: Qt.rgba(
-                NTheme.Theme.surface.r,
-                NTheme.Theme.surface.g,
-                NTheme.Theme.surface.b,
+                Nexa.Theme.surface.r,
+                Nexa.Theme.surface.g,
+                Nexa.Theme.surface.b,
                 0.92
             )
 
             border.width: 1
             border.color: Qt.rgba(
-                NTheme.Theme.outline.r,
-                NTheme.Theme.outline.g,
-                NTheme.Theme.outline.b,
+                Nexa.Theme.outline.r,
+                Nexa.Theme.outline.g,
+                Nexa.Theme.outline.b,
                 0.55
             )
 
@@ -1896,22 +1906,22 @@ PanelWindow {
                     id: slideshowToggleBtn
                     height: 40
                     width: toggleContentRow.implicitWidth + 22
-                    radius: NTheme.Theme.radiusSm
+                    radius: Nexa.Theme.radiusSm
 
                     color: root.slideshowEnabled
-                        ? NTheme.Theme.selectedOverlay
-                        : (toggleMouse.containsMouse ? NTheme.Theme.hover : "transparent")
+                        ? Nexa.Theme.selectedOverlay
+                        : (toggleMouse.containsMouse ? Nexa.Theme.hover : "transparent")
 
                     border.width: root.slideshowEnabled ? 1 : 0
-                    border.color: NTheme.Theme.primary
+                    border.color: Nexa.Theme.primary
 
                     scale: toggleMouse.pressed ? 0.95 : (toggleMouse.containsMouse ? 1.03 : 1.0)
 
                     Behavior on color {
-                        ColorAnimation { duration: NTheme.Theme.animationFast }
+                        ColorAnimation { duration: Nexa.Theme.animationFast }
                     }
                     Behavior on scale {
-                        NumberAnimation { duration: NTheme.Theme.animationFast; easing.type: NTheme.Theme.easingEmphasized }
+                        NumberAnimation { duration: Nexa.Theme.animationFast; easing.type: Nexa.Theme.easingEmphasized }
                     }
 
                     Row {
@@ -1925,15 +1935,15 @@ PanelWindow {
                             height: 8
                             radius: 4
                             color: root.slideshowEnabled
-                                ? (root.slideshowPaused ? NTheme.Theme.warning : NTheme.Theme.success)
-                                : NTheme.Theme.mutedText
+                                ? (root.slideshowPaused ? Nexa.Theme.warning : Nexa.Theme.success)
+                                : Nexa.Theme.mutedText
                         }
 
                         Text {
                             text: "Slideshow: " + (root.slideshowEnabled ? "ON" : "OFF")
-                            color: root.slideshowEnabled ? NTheme.Theme.primary : NTheme.Theme.mutedText
-                            font.family: NTheme.Theme.uiFont
-                            font.pixelSize: NTheme.Theme.fontSizeSm
+                            color: root.slideshowEnabled ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.uiFont
+                            font.pixelSize: Nexa.Theme.fontSizeSm
                             font.weight: root.slideshowEnabled ? Font.DemiBold : Font.Normal
                         }
                     }
@@ -1952,7 +1962,7 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 1
                     height: 24
-                    color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.35)
+                    color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.35)
                 }
 
                 // 2. TIMER DROPDOWN
@@ -1973,10 +1983,10 @@ PanelWindow {
                         width: 108
                         height: 5 * 34 + 12
                         visible: root.slideshowTimerMenuOpen
-                        radius: NTheme.Theme.radiusMd
-                        color: Qt.rgba(NTheme.Theme.surface.r, NTheme.Theme.surface.g, NTheme.Theme.surface.b, 0.96)
+                        radius: Nexa.Theme.radiusMd
+                        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
                         border.width: 1
-                        border.color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.55)
+                        border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
 
                         Column {
                             anchors { fill: parent; margins: 6 }
@@ -1990,15 +2000,15 @@ PanelWindow {
 
                                     width: parent.width
                                     height: 32
-                                    radius: NTheme.Theme.radiusSm
-                                    color: itemMouse.containsMouse ? NTheme.Theme.hover : (active ? NTheme.Theme.selectedOverlay : "transparent")
+                                    radius: Nexa.Theme.radiusSm
+                                    color: itemMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData
-                                        color: parent.active ? NTheme.Theme.primary : NTheme.Theme.text
-                                        font.family: NTheme.Theme.uiFont
-                                        font.pixelSize: NTheme.Theme.fontSizeSm
+                                        color: parent.active ? Nexa.Theme.primary : Nexa.Theme.text
+                                        font.family: Nexa.Theme.uiFont
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
                                         font.weight: parent.active ? Font.DemiBold : Font.Normal
                                     }
 
@@ -2021,8 +2031,8 @@ PanelWindow {
                     Rectangle {
                         id: timerBtn
                         anchors.fill: parent
-                        radius: NTheme.Theme.radiusSm
-                        color: timerBtnMouse.containsMouse || root.slideshowTimerMenuOpen ? NTheme.Theme.hover : "transparent"
+                        radius: Nexa.Theme.radiusSm
+                        color: timerBtnMouse.containsMouse || root.slideshowTimerMenuOpen ? Nexa.Theme.hover : "transparent"
 
                         Row {
                             id: timerBtnRow
@@ -2031,24 +2041,24 @@ PanelWindow {
 
                             Text {
                                 text: "Timer:"
-                                color: NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeSm
                             }
 
                             Text {
                                 text: root.slideshowInterval
-                                color: root.slideshowTimerMenuOpen ? NTheme.Theme.primary : NTheme.Theme.text
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                color: root.slideshowTimerMenuOpen ? Nexa.Theme.primary : Nexa.Theme.text
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeSm
                                 font.weight: Font.DemiBold
                             }
 
                             Text {
                                 text: root.slideshowTimerMenuOpen ? "▾" : "▴"
-                                color: root.slideshowTimerMenuOpen ? NTheme.Theme.primary : NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                color: root.slideshowTimerMenuOpen ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeXs
                             }
                         }
 
@@ -2072,7 +2082,7 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 1
                     height: 24
-                    color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.35)
+                    color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.35)
                 }
 
                 // 3. START/PAUSE & NEXT PLAYBACK CONTROLS
@@ -2085,10 +2095,10 @@ PanelWindow {
                         id: playPauseBtn
                         height: 40
                         width: playPauseRow.implicitWidth + 18
-                        radius: NTheme.Theme.radiusSm
+                        radius: Nexa.Theme.radiusSm
                         color: root.slideshowPaused
-                            ? (playPauseMouse.containsMouse ? NTheme.Theme.hover : Qt.rgba(1, 0.8, 0, 0.15))
-                            : (playPauseMouse.containsMouse ? NTheme.Theme.hover : "transparent")
+                            ? (playPauseMouse.containsMouse ? Nexa.Theme.hover : Qt.rgba(1, 0.8, 0, 0.15))
+                            : (playPauseMouse.containsMouse ? Nexa.Theme.hover : "transparent")
 
                         Row {
                             id: playPauseRow
@@ -2097,16 +2107,16 @@ PanelWindow {
 
                             Text {
                                 text: root.slideshowPaused ? "▶" : "⏸"
-                                color: root.slideshowPaused ? NTheme.Theme.warning : NTheme.Theme.primary
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                color: root.slideshowPaused ? Nexa.Theme.warning : Nexa.Theme.primary
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeSm
                             }
 
                             Text {
                                 text: root.slideshowPaused ? "Start" : "Pause"
-                                color: root.slideshowPaused ? NTheme.Theme.warning : NTheme.Theme.text
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                color: root.slideshowPaused ? Nexa.Theme.warning : Nexa.Theme.text
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeSm
                                 font.weight: Font.DemiBold
                             }
                         }
@@ -2129,12 +2139,12 @@ PanelWindow {
                         id: nextBtn
                         height: 40
                         width: nextRow.implicitWidth + 18
-                        radius: NTheme.Theme.radiusSm
-                        color: nextMouse.containsMouse ? NTheme.Theme.hover : "transparent"
+                        radius: Nexa.Theme.radiusSm
+                        color: nextMouse.containsMouse ? Nexa.Theme.hover : "transparent"
                         scale: nextMouse.pressed ? 0.95 : 1.0
 
                         Behavior on scale {
-                            NumberAnimation { duration: NTheme.Theme.animationFast; easing.type: NTheme.Theme.easingEmphasized }
+                            NumberAnimation { duration: Nexa.Theme.animationFast; easing.type: Nexa.Theme.easingEmphasized }
                         }
 
                         Row {
@@ -2144,16 +2154,16 @@ PanelWindow {
 
                             Text {
                                 text: "⏭"
-                                color: NTheme.Theme.primary
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                color: Nexa.Theme.primary
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeSm
                             }
 
                             Text {
                                 text: "Next"
-                                color: NTheme.Theme.text
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeSm
                                 font.weight: Font.DemiBold
                             }
                         }
@@ -2177,7 +2187,7 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 1
                     height: 24
-                    color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.35)
+                    color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.35)
                 }
 
                 // 4. TYPE FILTER DROPDOWN
@@ -2198,10 +2208,10 @@ PanelWindow {
                         width: 120
                         height: 4 * 34 + 12
                         visible: root.slideshowTypeMenuOpen
-                        radius: NTheme.Theme.radiusMd
-                        color: Qt.rgba(NTheme.Theme.surface.r, NTheme.Theme.surface.g, NTheme.Theme.surface.b, 0.96)
+                        radius: Nexa.Theme.radiusMd
+                        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
                         border.width: 1
-                        border.color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.55)
+                        border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
 
                         Column {
                             anchors { fill: parent; margins: 6 }
@@ -2215,15 +2225,15 @@ PanelWindow {
 
                                     width: parent.width
                                     height: 32
-                                    radius: NTheme.Theme.radiusSm
-                                    color: typeItemMouse.containsMouse ? NTheme.Theme.hover : (active ? NTheme.Theme.selectedOverlay : "transparent")
+                                    radius: Nexa.Theme.radiusSm
+                                    color: typeItemMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData
-                                        color: parent.active ? NTheme.Theme.primary : NTheme.Theme.text
-                                        font.family: NTheme.Theme.uiFont
-                                        font.pixelSize: NTheme.Theme.fontSizeSm
+                                        color: parent.active ? Nexa.Theme.primary : Nexa.Theme.text
+                                        font.family: Nexa.Theme.uiFont
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
                                         font.weight: parent.active ? Font.DemiBold : Font.Normal
                                     }
 
@@ -2246,8 +2256,8 @@ PanelWindow {
                     Rectangle {
                         id: typeBtn
                         anchors.fill: parent
-                        radius: NTheme.Theme.radiusSm
-                        color: typeBtnMouse.containsMouse || root.slideshowTypeMenuOpen ? NTheme.Theme.hover : "transparent"
+                        radius: Nexa.Theme.radiusSm
+                        color: typeBtnMouse.containsMouse || root.slideshowTypeMenuOpen ? Nexa.Theme.hover : "transparent"
 
                         Row {
                             id: typeBtnRow
@@ -2256,24 +2266,24 @@ PanelWindow {
 
                             Text {
                                 text: "Type:"
-                                color: NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeSm
                             }
 
                             Text {
                                 text: root.slideshowType
-                                color: root.slideshowTypeMenuOpen ? NTheme.Theme.primary : NTheme.Theme.text
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                color: root.slideshowTypeMenuOpen ? Nexa.Theme.primary : Nexa.Theme.text
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeSm
                                 font.weight: Font.DemiBold
                             }
 
                             Text {
                                 text: root.slideshowTypeMenuOpen ? "▾" : "▴"
-                                color: root.slideshowTypeMenuOpen ? NTheme.Theme.primary : NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                color: root.slideshowTypeMenuOpen ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeXs
                             }
                         }
 
@@ -2297,7 +2307,7 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 1
                     height: 24
-                    color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.35)
+                    color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.35)
                 }
 
                 // 5. APPLY TO DROPDOWN
@@ -2318,10 +2328,10 @@ PanelWindow {
                         width: 154
                         height: 3 * 38 + 12
                         visible: root.slideshowTargetMenuOpen
-                        radius: NTheme.Theme.radiusMd
-                        color: Qt.rgba(NTheme.Theme.surface.r, NTheme.Theme.surface.g, NTheme.Theme.surface.b, 0.96)
+                        radius: Nexa.Theme.radiusMd
+                        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
                         border.width: 1
-                        border.color: Qt.rgba(NTheme.Theme.outline.r, NTheme.Theme.outline.g, NTheme.Theme.outline.b, 0.55)
+                        border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
 
                         Column {
                             anchors { fill: parent; margins: 6 }
@@ -2335,8 +2345,8 @@ PanelWindow {
 
                                     width: parent.width
                                     height: 36
-                                    radius: NTheme.Theme.radiusSm
-                                    color: targetItemMouse.containsMouse ? NTheme.Theme.hover : (active ? NTheme.Theme.selectedOverlay : "transparent")
+                                    radius: Nexa.Theme.radiusSm
+                                    color: targetItemMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
 
                                     Text {
                                         anchors {
@@ -2345,9 +2355,9 @@ PanelWindow {
                                             leftMargin: 12
                                         }
                                         text: modelData
-                                        color: parent.active ? NTheme.Theme.primary : NTheme.Theme.text
-                                        font.family: NTheme.Theme.uiFont
-                                        font.pixelSize: NTheme.Theme.fontSizeSm
+                                        color: parent.active ? Nexa.Theme.primary : Nexa.Theme.text
+                                        font.family: Nexa.Theme.uiFont
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
                                         font.weight: parent.active ? Font.DemiBold : Font.Normal
                                     }
 
@@ -2370,8 +2380,8 @@ PanelWindow {
                     Rectangle {
                         id: targetBtn
                         anchors.fill: parent
-                        radius: NTheme.Theme.radiusSm
-                        color: targetBtnMouse.containsMouse || root.slideshowTargetMenuOpen ? NTheme.Theme.hover : "transparent"
+                        radius: Nexa.Theme.radiusSm
+                        color: targetBtnMouse.containsMouse || root.slideshowTargetMenuOpen ? Nexa.Theme.hover : "transparent"
 
                         Row {
                             id: targetBtnRow
@@ -2380,24 +2390,24 @@ PanelWindow {
 
                             Text {
                                 text: "Apply to:"
-                                color: NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeSm
                             }
 
                             Text {
                                 text: root.slideshowTarget
-                                color: root.slideshowTargetMenuOpen ? NTheme.Theme.primary : NTheme.Theme.text
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeSm
+                                color: root.slideshowTargetMenuOpen ? Nexa.Theme.primary : Nexa.Theme.text
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeSm
                                 font.weight: Font.DemiBold
                             }
 
                             Text {
                                 text: root.slideshowTargetMenuOpen ? "▾" : "▴"
-                                color: root.slideshowTargetMenuOpen ? NTheme.Theme.primary : NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.uiFont
-                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                color: root.slideshowTargetMenuOpen ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.uiFont
+                                font.pixelSize: Nexa.Theme.fontSizeXs
                             }
                         }
 
@@ -2444,13 +2454,13 @@ PanelWindow {
             statusLabel.implicitWidth + 22
 
         radius:
-            NTheme.Theme.radiusFull
+            Nexa.Theme.radiusFull
 
         color:
             Qt.rgba(
-                NTheme.Theme.surface.r,
-                NTheme.Theme.surface.g,
-                NTheme.Theme.surface.b,
+                Nexa.Theme.surface.r,
+                Nexa.Theme.surface.g,
+                Nexa.Theme.surface.b,
                 0.82
             )
 
@@ -2469,13 +2479,13 @@ PanelWindow {
             }
 
             color:
-                NTheme.Theme.mutedText
+                Nexa.Theme.mutedText
 
             font.family:
-                NTheme.Theme.monoFont
+                Nexa.Theme.monoFont
 
             font.pixelSize:
-                NTheme.Theme.fontSizeXs
+                Nexa.Theme.fontSizeXs
         }
     }
 

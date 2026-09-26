@@ -83,9 +83,32 @@ ShellRoot {
     }
     
 
-    TopBar {}
+    Variants {
+        model: Quickshell.screens
 
-    Island {}
+        delegate: Component {
+            TopBar {}
+        }
+    }
+
+    Variants {
+        // Place Island on the active main screen: prefer external display if active, else laptop
+        model: {
+            const screens = Quickshell.screens;
+            if (!screens || screens.length === 0) return [];
+            for (let i = 0; i < screens.length; i++) {
+                const s = screens[i];
+                if (s && s.name && !s.name.startsWith("eDP") && !s.name.startsWith("LVDS") && !s.name.startsWith("DSI")) {
+                    return [s];
+                }
+            }
+            return [screens[0]];
+        }
+
+        delegate: Component {
+            Island {}
+        }
+    }
 
     Loader {
         id: wallpaperLoader

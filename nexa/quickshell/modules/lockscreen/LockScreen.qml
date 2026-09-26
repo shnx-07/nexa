@@ -18,6 +18,12 @@ Item {
     readonly property bool secure:
         sessionLock.secure
 
+    readonly property string runtimeDir: {
+        const xdg = Quickshell.env("XDG_RUNTIME_DIR")
+        return (xdg && xdg.trim() !== "") ? (xdg + "/nexa") : ("/tmp/nexa-" + Quickshell.env("USER"))
+    }
+    readonly property string lockFlag: runtimeDir + "/locked"
+    readonly property string pendingFlag: runtimeDir + "/restart-pending"
 
     property bool previewOpen: false
 
@@ -52,6 +58,8 @@ Item {
             "NEXA lockscreen: lock requested"
         )
 
+        Quickshell.execDetached(["mkdir", "-p", root.runtimeDir])
+        Quickshell.execDetached(["touch", root.lockFlag])
         Quickshell.execDetached(["touch", "/tmp/nexa-locked"])
         sessionLock.locked = true
     }
@@ -65,14 +73,14 @@ Item {
             "NEXA lockscreen: releasing session"
         )
 
-        Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
+        Quickshell.execDetached(["rm", "-f", root.lockFlag, "/tmp/nexa-locked"])
         sessionLock.locked = false
 
         // Check if monitor configuration changed while session was locked
         Quickshell.execDetached([
             "sh", "-c",
-            "if [ -f /tmp/nexa-restart-pending ]; then "
-            + "rm -f /tmp/nexa-restart-pending; "
+            "if [ -f " + root.pendingFlag + " ] || [ -f /tmp/nexa-restart-pending ]; then "
+            + "rm -f " + root.pendingFlag + " /tmp/nexa-restart-pending; "
             + "sleep 0.2; "
             + "$HOME/.config/nexa/scripts/nexa-restart.sh && $HOME/.config/nexa/scripts/restore-wallpaper.sh; "
             + "fi"
@@ -156,13 +164,15 @@ Item {
                 locked
             )
             if (locked) {
+                Quickshell.execDetached(["mkdir", "-p", root.runtimeDir])
+                Quickshell.execDetached(["touch", root.lockFlag])
                 Quickshell.execDetached(["touch", "/tmp/nexa-locked"])
             } else {
-                Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
+                Quickshell.execDetached(["rm", "-f", root.lockFlag, "/tmp/nexa-locked"])
                 Quickshell.execDetached([
                     "sh", "-c",
-                    "if [ -f /tmp/nexa-restart-pending ]; then "
-                    + "rm -f /tmp/nexa-restart-pending; "
+                    "if [ -f " + root.pendingFlag + " ] || [ -f /tmp/nexa-restart-pending ]; then "
+                    + "rm -f " + root.pendingFlag + " /tmp/nexa-restart-pending; "
                     + "sleep 0.2; "
                     + "$HOME/.config/nexa/scripts/nexa-restart.sh && $HOME/.config/nexa/scripts/restore-wallpaper.sh; "
                     + "fi"
@@ -187,11 +197,11 @@ Item {
     }
 
     Component.onCompleted: {
-        Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked", "/tmp/nexa-restart-pending"])
+        Quickshell.execDetached(["rm", "-f", root.lockFlag, root.pendingFlag, "/tmp/nexa-locked", "/tmp/nexa-restart-pending"])
     }
 
     Component.onDestruction: {
-        Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
+        Quickshell.execDetached(["rm", "-f", root.lockFlag, "/tmp/nexa-locked"])
     }
 
     // ============================================================

@@ -299,6 +299,31 @@ if [[ "$WALLPAPER_TYPE" == "gif" || "$WALLPAPER_TYPE" == "video" ]]; then
 fi
 
 # ------------------------------------------------------------
+# Generate lightweight thumbnail preview
+# ------------------------------------------------------------
+
+THUMB_DIR="$CACHE_DIR/wallpapers/thumbs"
+mkdir -p "$THUMB_DIR"
+THUMB_FILE="$THUMB_DIR/${filename}.jpg"
+
+if [[ ! -f "$THUMB_FILE" ]]; then
+  if command -v ffmpeg >/dev/null 2>&1; then
+    if [[ "$WALLPAPER_TYPE" == "gif" || "$WALLPAPER_TYPE" == "video" ]]; then
+      ffmpeg -hide_banner -loglevel error -y -ss 1 -i "$WALLPAPER" -frames:v 1 -vf "scale=800:-2" -q:v 3 "$THUMB_FILE" 2>/dev/null || true
+    else
+      ffmpeg -hide_banner -loglevel error -y -i "$WALLPAPER" -vf "scale=1200:-2" -q:v 3 "$THUMB_FILE" 2>/dev/null || true
+    fi
+  fi
+fi
+
+PREVIEW="$WALLPAPER"
+if [[ -f "$THUMB_FILE" ]]; then
+  PREVIEW="$THUMB_FILE"
+elif [[ -n "${THEME_SOURCE:-}" && -f "$THEME_SOURCE" ]]; then
+  PREVIEW="$THEME_SOURCE"
+fi
+
+# ------------------------------------------------------------
 # Save persistent wallpaper state
 # ------------------------------------------------------------
 
@@ -306,6 +331,7 @@ fi
   printf 'WALLPAPER=%q\n' "$WALLPAPER"
   printf 'WALLPAPER_TYPE=%q\n' "$WALLPAPER_TYPE"
   printf 'THEME_SOURCE=%q\n' "$THEME_SOURCE"
+  printf 'PREVIEW=%q\n' "$PREVIEW"
   printf 'MONITOR=%q\n' "$MONITOR"
 } >"$WALLPAPER_CONFIG"
 

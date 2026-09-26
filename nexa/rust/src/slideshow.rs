@@ -20,6 +20,8 @@ pub struct SlideshowConfig {
     pub apply_target: String,  // "Background", "Lock Screen", "Both"
     #[serde(default)]
     pub last_wallpaper: String,
+    #[serde(default)]
+    pub last_changed: u64,
 }
 
 impl Default for SlideshowConfig {
@@ -31,6 +33,7 @@ impl Default for SlideshowConfig {
             type_filter: "All".to_string(),
             apply_target: "Background".to_string(),
             last_wallpaper: String::new(),
+            last_changed: 0,
         }
     }
 }
@@ -210,6 +213,15 @@ pub fn next() -> Result<String, String> {
     let selected_str = selected_path.to_string_lossy().to_string();
     set_last_wallpaper(&selected_str);
 
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let mut updated_cfg = cfg.clone();
+    updated_cfg.last_wallpaper = selected_str.clone();
+    updated_cfg.last_changed = now;
+    let _ = save_config(&updated_cfg);
+
     // 5. Apply according to apply_target
     let target = cfg.apply_target.as_str();
 
@@ -289,6 +301,13 @@ pub fn handle_set(args: &[String]) -> Result<(), String> {
             _ => {}
         }
         i += 1;
+    }
+
+    if cfg.last_changed == 0 {
+        cfg.last_changed = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
     }
 
     save_config(&cfg)?;

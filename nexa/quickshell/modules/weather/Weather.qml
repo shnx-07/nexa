@@ -623,20 +623,48 @@ Item {
                     color: Nexa.Theme.divider
                 }
 
-                // ── Scrollable Details ───────────────────────────
                 Flickable {
+                    id: detailsFlickable
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
                     contentHeight: detailsCol.implicitHeight
                     contentWidth: width
                     boundsBehavior: Flickable.StopAtBounds
-                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+                    ScrollBar.vertical: ScrollBar {
+                        id: detailsScrollBar
+                        policy: ScrollBar.AsNeeded
+                        width: 4
+                        anchors.right: parent.right
+                        anchors.rightMargin: 1
+                        visible: size < 1.0
+
+                        contentItem: Rectangle {
+                            implicitWidth: 3
+                            radius: Nexa.Theme.radiusPill
+                            color: detailsScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                            opacity: (detailsScrollBar.active || detailsScrollBar.hovered) ? 0.6 : 0.0
+
+                            Behavior on opacity {
+                                NumberAnimation { duration: Nexa.Theme.animationNormal }
+                            }
+                            Behavior on color {
+                                ColorAnimation { duration: Nexa.Theme.animationFast }
+                            }
+                        }
+
+                        background: null
+                    }
 
                     Column {
                         id: detailsCol
-                        width: parent.width
+                        width: parent.width - (parent.contentHeight > parent.height ? (Nexa.Theme.spacingSm + 4) : 0)
                         spacing: 0
+
+                        Behavior on width {
+                            NumberAnimation { duration: Nexa.Theme.animationFast }
+                        }
 
                         // Helper component
                         component DetailItem: Item {
@@ -831,20 +859,49 @@ Item {
 
                 // ── Scrollable forecast list ──────────────────────
                 Flickable {
+                    id: forecastFlickable
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
                     contentHeight: forecastMode === 0 ? dailyCol.implicitHeight : hourlyCol.implicitHeight
                     contentWidth: width
                     boundsBehavior: Flickable.StopAtBounds
-                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+                    ScrollBar.vertical: ScrollBar {
+                        id: forecastScrollBar
+                        policy: ScrollBar.AsNeeded
+                        width: 4
+                        anchors.right: parent.right
+                        anchors.rightMargin: 1
+                        visible: size < 1.0
+
+                        contentItem: Rectangle {
+                            implicitWidth: 3
+                            radius: Nexa.Theme.radiusPill
+                            color: forecastScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                            opacity: (forecastScrollBar.active || forecastScrollBar.hovered) ? 0.6 : 0.0
+
+                            Behavior on opacity {
+                                NumberAnimation { duration: Nexa.Theme.animationNormal }
+                            }
+                            Behavior on color {
+                                ColorAnimation { duration: Nexa.Theme.animationFast }
+                            }
+                        }
+
+                        background: null
+                    }
 
                     // DAILY
                     Column {
                         id: dailyCol
-                        width: parent.width
+                        width: parent.width - (parent.contentHeight > parent.height ? (Nexa.Theme.spacingSm + 4) : 0)
                         visible: root.forecastMode === 0
                         spacing: 0
+
+                        Behavior on width {
+                            NumberAnimation { duration: Nexa.Theme.animationFast }
+                        }
 
                         Repeater {
                             model: root.hasWeather ? root.weatherData.daily : []
@@ -929,9 +986,13 @@ Item {
                     // HOURLY
                     Column {
                         id: hourlyCol
-                        width: parent.width
+                        width: parent.width - (parent.contentHeight > parent.height ? (Nexa.Theme.spacingSm + 4) : 0)
                         visible: root.forecastMode === 1
                         spacing: 0
+
+                        Behavior on width {
+                            NumberAnimation { duration: Nexa.Theme.animationFast }
+                        }
 
                         Repeater {
                             model: root.hasWeather ? root.weatherData.hourly : []
@@ -1043,33 +1104,42 @@ Item {
 
         z: 1000
 
-        width: 220
-        height: 300
-
-        x: 8
-        y: 125
+        width: 250
+        x: 12
+        y: locationButton ? Math.max(8, locationButton.mapToItem(root, 0, 0).y + locationButton.height + 6) : 90
+        implicitHeight: locationLayout.implicitHeight + Nexa.Theme.spacingMd * 2
+        height: Math.min(root.height - y - 10, implicitHeight)
 
         radius:
-            Nexa.Theme.radiusLg
+            Nexa.Theme.radiusMd
 
         color:
-            Nexa.Theme.cardBackground
+            Nexa.Theme.surfaceContainerHigh
 
         border.width:
             Nexa.Theme.borderThin
 
         border.color:
-            Nexa.Theme.border
+            Nexa.Theme.borderStrong
 
+        // Subtle depth highlight
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: parent.border.width
+            radius: Math.max(0, parent.radius - parent.border.width)
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlight }
+                GradientStop { position: 0.5; color: "transparent" }
+            }
+        }
 
         ColumnLayout {
-            anchors.fill: parent
-
-            anchors.margins:
-                Nexa.Theme.spacingMd
-
-            spacing:
-                Nexa.Theme.spacingSm
+            id: locationLayout
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: Nexa.Theme.spacingMd
+            spacing: Nexa.Theme.spacingSm
 
 
             RowLayout {
@@ -1251,7 +1321,8 @@ Item {
                 id: locationResultsList
 
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: Math.min(130, contentHeight)
+                Layout.maximumHeight: 130
 
                 visible:
                     root.locationResults.length > 0
@@ -1263,11 +1334,40 @@ Item {
                 model:
                     root.locationResults
 
+                ScrollBar.vertical: ScrollBar {
+                    id: resultsScrollBar
+                    policy: ScrollBar.AsNeeded
+                    width: 4
+                    anchors.right: parent.right
+                    anchors.rightMargin: 1
+                    visible: size < 1.0
+
+                    contentItem: Rectangle {
+                        implicitWidth: 3
+                        radius: Nexa.Theme.radiusPill
+                        color: resultsScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                        opacity: (resultsScrollBar.active || resultsScrollBar.hovered) ? 0.6 : 0.0
+
+                        Behavior on opacity {
+                            NumberAnimation { duration: Nexa.Theme.animationNormal }
+                        }
+                        Behavior on color {
+                            ColorAnimation { duration: Nexa.Theme.animationFast }
+                        }
+                    }
+
+                    background: null
+                }
+
                 delegate: Rectangle {
                     required property var modelData
 
                     width:
-                        locationResultsList.width
+                        locationResultsList.width - (locationResultsList.contentHeight > locationResultsList.height ? 8 : 0)
+
+                    Behavior on width {
+                        NumberAnimation { duration: Nexa.Theme.animationFast }
+                    }
 
                     height: 42
 

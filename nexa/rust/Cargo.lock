@@ -904,6 +904,8 @@ version = "0.1.0"
 dependencies = [
  "async-io",
  "futures-lite",
+ "hex",
+ "openssl",
  "pam",
  "reqwest",
  "serde",

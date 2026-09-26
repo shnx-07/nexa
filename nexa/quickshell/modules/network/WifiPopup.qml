@@ -7,6 +7,7 @@ import Quickshell.Io
 import Quickshell.Networking
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 PopupWindow {
@@ -29,14 +30,12 @@ PopupWindow {
     property bool showPassword: false
     property bool connecting: false
 
-
     readonly property string nexad:
         Quickshell.env("HOME")
         + "/.config/nexa/rust/target/release/nexad"
 
-
     // ============================================================
-    // QUICKShell NETWORK STATE
+    // QUICKSHELL NETWORK STATE
     // ============================================================
 
     readonly property var device: {
@@ -44,10 +43,8 @@ PopupWindow {
             if (d.type === DeviceType.Wifi)
                 return d
         }
-
         return null
     }
-
 
     readonly property var connectedNetwork: {
         if (!root.device)
@@ -57,26 +54,52 @@ PopupWindow {
             if (n.connected)
                 return n
         }
-
         return null
     }
-
 
     readonly property bool wifiEnabled:
         Networking.wifiEnabled
         && Networking.wifiHardwareEnabled
 
+    readonly property bool isScanning:
+        (root.device && root.device.scannerEnabled)
+        || networkProcess.running
 
     // ============================================================
-    // WINDOW
+    // DEDUPLICATED AVAILABLE NETWORKS
     // ============================================================
 
-    implicitWidth: 430
-    implicitHeight: 610
+    readonly property var availableList: {
+        if (!root.device || !root.wifiEnabled)
+            return []
+
+        const connectedName = root.connectedNetwork ? root.connectedNetwork.name : ""
+        const map = new Map()
+
+        for (let net of root.device.networks.values) {
+            if (!net.name || net.name === "" || net.connected || net.name === connectedName)
+                continue
+
+            const existing = map.get(net.name)
+            if (!existing || net.signalStrength > existing.signalStrength) {
+                map.set(net.name, net)
+            }
+        }
+
+        return Array.from(map.values()).sort(
+            (a, b) => b.signalStrength - a.signalStrength
+        )
+    }
+
+    // ============================================================
+    // WINDOW CONFIGURATION
+    // ============================================================
+
+    implicitWidth: 420
+    implicitHeight: Math.min(540, Math.max(300, contentColumn.implicitHeight + Nexa.Theme.spacingMd * 2))
 
     color: "transparent"
     grabFocus: true
-
 
     anchor {
         item: root.anchorItem
@@ -88,33 +111,21 @@ PopupWindow {
 
         rect.y:
             root.anchorItem
-            ? root.anchorItem.height
-              + Nexa.Theme.spacingSm
+            ? root.anchorItem.height + Nexa.Theme.spacingSm
             : 0
 
         rect.width: 1
         rect.height: 1
 
         edges:
-            Edges.Top
-            | Edges.Left
+            Edges.Top | Edges.Left
 
         gravity:
-            Edges.Bottom
-            | Edges.Left
+            Edges.Bottom | Edges.Left
     }
 
-
     // ============================================================
-    // RUST PROCESS
-    //
-    // Rust remains responsible for:
-    // - toggle
-    // - refresh
-    // - disconnect
-    //
-    // Password connection is handled by Quickshell so failures
-    // can be detected correctly.
+    // RUST PROCESS (Toggle & Refresh)
     // ============================================================
 
     Process {
@@ -125,2110 +136,729 @@ PopupWindow {
         }
 
         onExited: function(exitCode, exitStatus) {
-
             if (exitCode !== 0) {
-
-                root.actionError =
-                    "Network action failed"
-
-                root.pendingAction = ""
-
-                return
+                root.actionError = "Network action failed"
+            } else {
+                root.actionError = ""
             }
-
-            root.actionError = ""
             root.pendingAction = ""
-
-            refreshDelay.restart()
         }
     }
-
-
-    // ============================================================
-    // REFRESH
-    // ============================================================
-
-    Timer {
-        id: refreshDelay
-
-        interval: 400
-        repeat: false
-
-        onTriggered: {
-
-            if (!root.device)
-                return
-
-            root.device.scannerEnabled = false
-            scannerRestart.restart()
-        }
-    }
-
-
-    Timer {
-        id: scannerRestart
-
-        interval: 120
-        repeat: false
-
-        onTriggered: {
-
-            if (root.device && root.visible)
-                root.device.scannerEnabled = true
-        }
-    }
-
 
     Timer {
         id: passwordFocusTimer
-
         interval: 100
         repeat: false
-
         onTriggered: {
-
-            if (
-                root.selectedNetwork
-                && passwordInput
-            ) {
-                passwordInput.forceActiveFocus()
+            if (root.selectedNetwork && passwordInputField) {
+                passwordInputField.forceActiveFocus()
             }
         }
     }
 
-
-    // ============================================================
-    // RUST COMMAND
-    // ============================================================
-
     function runNetwork(args, action) {
-
         if (networkProcess.running)
             return
 
-        root.pendingAction =
-            action || ""
-
-        networkProcess.exec(
-            [root.nexad, "network"].concat(args)
-        )
+        root.pendingAction = action || ""
+        networkProcess.exec([root.nexad, "network"].concat(args))
     }
-
 
     // ============================================================
     // HELPERS
     // ============================================================
 
     function signalPercent(network) {
-
-        return network
-            ? Math.round(
-                network.signalStrength * 100
-            )
-            : 0
+        return network ? Math.round(network.signalStrength * 100) : 0
     }
 
-
     function signalIcon(network) {
-
-        const strength =
-            signalPercent(network)
-
-        if (strength >= 75)
-            return "󰤨"
-
-        if (strength >= 50)
-            return "󰤥"
-
-        if (strength >= 25)
-            return "󰤢"
-
+        const strength = signalPercent(network)
+        if (strength >= 75) return "󰤨"
+        if (strength >= 50) return "󰤥"
+        if (strength >= 25) return "󰤢"
         return "󰤟"
     }
 
-
     function isOpen(network) {
-
-        return network
-            && (
-                network.security
-                    === WifiSecurityType.Open
-
-                || network.security
-                    === WifiSecurityType.Owe
-            )
+        return network && (
+            network.security === WifiSecurityType.Open
+            || network.security === WifiSecurityType.Owe
+        )
     }
 
-
-    function secured(network) {
-
-        return network
-            && !isOpen(network)
+    function isSecured(network) {
+        return network && !isOpen(network)
     }
-
 
     function connectionErrorText(reason) {
-
-        if (
-            reason
-            === ConnectionFailReason.NoSecrets
-        ) {
+        if (reason === ConnectionFailReason.NoSecrets)
             return "Password required"
-        }
-
-
-        if (
-            reason
-            === ConnectionFailReason.WifiAuthTimeout
-        ) {
+        if (reason === ConnectionFailReason.WifiAuthTimeout)
             return "Incorrect password or authentication timed out"
-        }
-
-
-        if (
-            reason
-            === ConnectionFailReason.WifiClientFailed
-        ) {
+        if (reason === ConnectionFailReason.WifiClientFailed)
             return "Incorrect password or authentication failed"
-        }
-
-
-        if (
-            reason
-            === ConnectionFailReason.WifiNetworkLost
-        ) {
+        if (reason === ConnectionFailReason.WifiNetworkLost)
             return "Network is no longer available"
-        }
-
-
-        if (
-            reason
-            === ConnectionFailReason.WifiClientDisconnected
-        ) {
+        if (reason === ConnectionFailReason.WifiClientDisconnected)
             return "Connection rejected or disconnected"
-        }
-
 
         return "Unable to connect to network"
     }
 
-
     function isAuthenticationFailure(reason) {
-
         return (
-            reason
-                === ConnectionFailReason.NoSecrets
-
-            || reason
-                === ConnectionFailReason.WifiAuthTimeout
-
-            || reason
-                === ConnectionFailReason.WifiClientFailed
-
-            || reason
-                === ConnectionFailReason.WifiClientDisconnected
+            reason === ConnectionFailReason.NoSecrets
+            || reason === ConnectionFailReason.WifiAuthTimeout
+            || reason === ConnectionFailReason.WifiClientFailed
+            || reason === ConnectionFailReason.WifiClientDisconnected
         )
     }
-
 
     // ============================================================
     // CONNECTION ACTIONS
     // ============================================================
 
     function chooseNetwork(network) {
-
-        if (!network)
+        if (!network || root.connecting)
             return
-
-
-        if (root.connecting)
-            return
-
 
         root.connectError = ""
-
-
-        // --------------------------------------------------------
-        // ALREADY CONNECTED
-        // --------------------------------------------------------
 
         if (network.connected)
             return
 
-
-        // --------------------------------------------------------
-        // KNOWN NETWORK
-        //
-        // First try NetworkManager's stored configuration.
-        // If it fails because authentication is invalid, the
-        // connectionFailed signal below will reopen the password UI.
-        // --------------------------------------------------------
-
-        if (network.known) {
-
+        if (network.known || root.isOpen(network)) {
             root.connecting = true
             root.connectingNetwork = network
-
             network.connect()
-
             return
         }
-
-
-        // --------------------------------------------------------
-        // OPEN NETWORK
-        // --------------------------------------------------------
-
-        if (root.isOpen(network)) {
-
-            root.connecting = true
-            root.connectingNetwork = network
-
-            network.connect()
-
-            return
-        }
-
-
-        // --------------------------------------------------------
-        // NEW SECURED NETWORK
-        // --------------------------------------------------------
 
         root.selectedNetwork = network
         root.password = ""
         root.showPassword = false
-
         passwordFocusTimer.restart()
     }
 
-
     function connectSelected() {
-
-        if (!root.selectedNetwork)
+        if (!root.selectedNetwork || root.password.length === 0 || root.connecting)
             return
-
-
-        if (root.password.length === 0)
-            return
-
-
-        if (root.connecting)
-            return
-
 
         root.connectError = ""
-
-        root.connectingNetwork =
-            root.selectedNetwork
-
+        root.connectingNetwork = root.selectedNetwork
         root.connecting = true
 
-
-        root.selectedNetwork.connectWithPsk(
-            root.password
-        )
+        root.selectedNetwork.connectWithPsk(root.password)
     }
 
-
     function connectionSucceeded() {
-
         root.connecting = false
-
         root.connectingNetwork = null
         root.selectedNetwork = null
-
         root.password = ""
         root.connectError = ""
         root.showPassword = false
-
-        refreshDelay.restart()
     }
 
-
-    function connectionFailed(
-        network,
-        reason
-    ) {
-
+    function connectionFailed(network, reason) {
         if (!network)
             return
 
-
         root.connecting = false
+        root.connectError = root.connectionErrorText(reason)
 
-        root.connectError =
-            root.connectionErrorText(reason)
-
-
-        /*
-         * Authentication failure:
-         *
-         * NetworkManager may now consider the profile "known",
-         * even though its credentials are unusable.
-         *
-         * Forget those settings immediately so clicking the
-         * network again never silently retries the bad password.
-         */
-        if (
-            root.isAuthenticationFailure(reason)
-            && network.known
-        ) {
+        if (root.isAuthenticationFailure(reason) && network.known) {
             network.forget()
         }
 
-
-        /*
-         * For secured networks keep the password editor open.
-         */
-        if (root.secured(network)) {
-
+        if (root.isSecured(network)) {
             root.selectedNetwork = network
-
-            /*
-             * Clear the rejected password.
-             * User can immediately type the corrected password.
-             */
             root.password = ""
             root.showPassword = false
-
             passwordFocusTimer.restart()
-
         } else {
-
             root.selectedNetwork = null
         }
 
-
         root.connectingNetwork = null
     }
 
-
     function cancelConnect() {
-
         root.selectedNetwork = null
         root.connectingNetwork = null
-
         root.password = ""
         root.connectError = ""
         root.showPassword = false
-
         root.connecting = false
     }
 
-
     function disconnectCurrent() {
-
-        if (!root.connectedNetwork)
-            return
-
-        root.connectedNetwork.disconnect()
+        if (root.connectedNetwork)
+            root.connectedNetwork.disconnect()
     }
 
-
     function forgetNetwork(network) {
-
         if (!network)
             return
-
 
         if (network.connected)
             network.disconnect()
 
-
         network.forget()
 
-
-        if (
-            root.selectedNetwork
-            && root.selectedNetwork.name
-                === network.name
-        ) {
+        if (root.selectedNetwork && root.selectedNetwork.name === network.name)
             root.cancelConnect()
-        }
-
-
-        refreshDelay.restart()
     }
-
 
     function refreshNetworks() {
-
-        runNetwork(
-            [
-                "wifi",
-                "refresh"
-            ],
-            "refresh"
-        )
+        runNetwork(["wifi", "refresh"], "refresh")
     }
-
 
     function toggleWifi() {
-
-        runNetwork(
-            [
-                "wifi",
-                Networking.wifiEnabled
-                    ? "off"
-                    : "on"
-            ],
-            "toggle"
-        )
+        runNetwork(["wifi", Networking.wifiEnabled ? "off" : "on"], "toggle")
     }
-
 
     // ============================================================
     // WATCH CURRENT CONNECTION ATTEMPT
     // ============================================================
 
     Connections {
-        target:
-            root.connectingNetwork
-
+        target: root.connectingNetwork
         ignoreUnknownSignals: true
 
-
         function onConnectionFailed(reason) {
-
-            const failed =
-                root.connectingNetwork
-
-            root.connectionFailed(
-                failed,
-                reason
-            )
+            root.connectionFailed(root.connectingNetwork, reason)
         }
 
-
         function onConnectedChanged() {
-
-            if (
-                root.connectingNetwork
-                && root.connectingNetwork.connected
-            ) {
+            if (root.connectingNetwork && root.connectingNetwork.connected) {
                 root.connectionSucceeded()
             }
         }
     }
 
-
     // ============================================================
-    // AVAILABLE NETWORKS
-    // ============================================================
-
-    ScriptModel {
-        id: availableNetworks
-
-
-        values:
-            root.device
-            ? [...root.device.networks.values]
-                .filter(
-                    network =>
-                        !network.connected
-                        && network.name !== ""
-                )
-                .sort(
-                    (a, b) =>
-                        b.signalStrength
-                        - a.signalStrength
-                )
-            : []
-    }
-
-
-    // ============================================================
-    // POPUP STATE
+    // POPUP LIFECYCLE
     // ============================================================
 
     onVisibleChanged: {
-
         if (root.device)
             root.device.scannerEnabled = visible
-
 
         if (!visible)
             root.cancelConnect()
     }
 
-
     onDeviceChanged: {
-
-        if (
-            root.device
-            && root.visible
-        ) {
+        if (root.device && root.visible)
             root.device.scannerEnabled = true
-        }
     }
 
-
     // ============================================================
-    // MAIN PANEL
+    // POPUP MAIN PANEL
     // ============================================================
 
     Rectangle {
+        id: panelBackground
         anchors.fill: parent
 
-        radius:
-            Nexa.Theme.radiusLg
+        radius: Nexa.Theme.radiusLg
+        color: Nexa.Theme.panelBackground
+        border.width: Nexa.Theme.borderThin
+        border.color: Nexa.Theme.borderStrong
 
-        color:
-            Nexa.Theme.panelBackground
-
-
-        border {
-            width:
-                Nexa.Theme.borderThin
-
-            color:
-                Nexa.Theme.border
+        // Continuous-corner top glass highlight
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: parent.border.width
+            radius: Math.max(0, parent.radius - parent.border.width)
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlight }
+                GradientStop { position: 0.35; color: "transparent" }
+            }
         }
 
-
-        opacity:
-            root.visible
-            ? Nexa.Theme.opacityFull
-            : Nexa.Theme.opacityHidden
-
-
-        scale:
-            root.visible
-            ? Nexa.Theme.normalScale
-            : 0.97
-
-
-        transformOrigin:
-            Item.TopRight
-
+        opacity: root.visible ? Nexa.Theme.opacityFull : Nexa.Theme.opacityHidden
+        scale: root.visible ? Nexa.Theme.normalScale : 0.96
+        transformOrigin: Item.TopRight
 
         Behavior on opacity {
-
             NumberAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-
-                easing.type:
-                    Nexa.Theme.easingEnter
+                duration: Nexa.Theme.popEnterDuration
+                easing.type: Nexa.Theme.easingStandard
+                easing.bezierCurve: Nexa.Theme.easingFluidCurve
             }
         }
-
 
         Behavior on scale {
-
             NumberAnimation {
-                duration:
-                    Nexa.Theme.animationNormal
-
-                easing.type:
-                    Nexa.Theme.easingEnter
+                duration: Nexa.Theme.popEnterDuration
+                easing.type: Nexa.Theme.easingEnter
+                easing.bezierCurve: Nexa.Theme.easingSpringCurve
             }
         }
 
-
         ColumnLayout {
-            anchors {
-                fill: parent
-                margins:
-                    Nexa.Theme.spacingMd
-            }
-
-            spacing:
-                Nexa.Theme.spacingSm
-
+            id: contentColumn
+            anchors.fill: parent
+            anchors.margins: Nexa.Theme.spacingMd
+            spacing: Nexa.Theme.spacingSm
 
             // ====================================================
-            // CONNECTED WIFI
+            // HEADER BAR
             // ====================================================
-
-            Rectangle {
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 82
+                spacing: Nexa.Theme.spacingSm
 
-                radius:
-                    Nexa.Theme.radiusMd
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
-
-
-                border {
-                    width:
-                        Nexa.Theme.borderThin
-
-                    color:
-                        root.connectedNetwork
-                        ? Nexa.Theme.primary
-                        : Nexa.Theme.border
-                }
-
-
-                Behavior on color {
-
-                    ColorAnimation {
-                        duration:
-                            Nexa.Theme.animationFast
-                    }
-                }
-
-
+                // Status Icon & Titles
                 RowLayout {
-                    anchors {
-                        fill: parent
-                        margins:
-                            Nexa.Theme.spacingMd
-                    }
-
-                    spacing:
-                        Nexa.Theme.spacingSm
-
+                    spacing: Nexa.Theme.spacingSm
 
                     Text {
-                        text:
-                            root.connectedNetwork
-                            ? root.signalIcon(
-                                root.connectedNetwork
-                            )
-                            : "󰤭"
-
-
-                        color:
-                            root.connectedNetwork
-                            ? Nexa.Theme.primary
-                            : Nexa.Theme.mutedText
-
-
-                        font {
-                            family:
-                                Nexa.Theme.iconFontFamily
-
-                            pixelSize:
-                                Nexa.Theme.iconLg
-                        }
-
-
-                        scale:
-                            root.connectedNetwork
-                            ? 1.0
-                            : 0.92
-
-
-                        Behavior on scale {
-
-                            NumberAnimation {
-                                duration:
-                                    Nexa.Theme.animationNormal
-
-                                easing.type:
-                                    Nexa.Theme.easingStandard
-                            }
-                        }
-                    }
-
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-
-                        spacing: 2
-
-
-                        Text {
-                            text:
-                                root.connectedNetwork
-                                ? root.connectedNetwork.name
-                                : "No Wi-Fi connection"
-
-
-                            color:
-                                Nexa.Theme.text
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeSm
-
-                                weight:
-                                    Nexa.Theme.fontWeightDemiBold
-                            }
-                        }
-
-
-                        Text {
-                            text:
-                                root.connectedNetwork
-                                ? "Connected · "
-                                  + root.signalPercent(
-                                      root.connectedNetwork
-                                  )
-                                  + "%"
-
-                                : root.wifiEnabled
-                                    ? "Disconnected"
-                                    : "Wi-Fi disabled"
-
-
-                            color:
-                                Nexa.Theme.mutedText
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeXs
-                            }
-                        }
-                    }
-
-
-                    Rectangle {
-                        visible:
-                            root.connectedNetwork !== null
-
-                        implicitWidth:
-                            Nexa.Theme.controlHeightSm
-
-                        implicitHeight:
-                            Nexa.Theme.controlHeightSm
-
-                        radius:
-                            Nexa.Theme.radiusSm
-
-
-                        color:
-                            disconnectMouse.pressed
-                            ? Nexa.Theme.pressed
-
-                            : disconnectMouse.containsMouse
-                                ? Nexa.Theme.hoverStrong
-
-                                : Nexa.Theme.surfaceContainerHighest
-
-
-                        scale:
-                            disconnectMouse.pressed
-                            ? Nexa.Theme.pressScale
-                            : Nexa.Theme.normalScale
-
+                        text: "󰤨"
+                        color: root.wifiEnabled ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: Nexa.Theme.iconMd
 
                         Behavior on color {
-
                             ColorAnimation {
-                                duration:
-                                    Nexa.Theme.animationFast
+                                duration: Nexa.Theme.motionInteraction
+                                easing.bezierCurve: Nexa.Theme.easingFluidCurve
                             }
                         }
+                    }
 
-
-                        Behavior on scale {
-
-                            NumberAnimation {
-                                duration:
-                                    Nexa.Theme.animationFast
-
-                                easing.type:
-                                    Nexa.Theme.easingStandard
-                            }
-                        }
-
+                    ColumnLayout {
+                        spacing: 1
 
                         Text {
-                            anchors.centerIn:
-                                parent
+                            text: "Wi-Fi"
+                            color: Nexa.Theme.text
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            font.weight: Nexa.Theme.fontWeightDemiBold
+                        }
 
-                            text: "󰅖"
+                        Text {
+                            text: {
+                                if (!root.wifiEnabled) return "Disabled"
+                                if (root.connectedNetwork) return "Connected to " + root.connectedNetwork.name
+                                if (root.isScanning) return "Scanning nearby…"
+                                return root.availableList.length + " networks found"
+                            }
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                            elide: Text.ElideRight
+                            Layout.maximumWidth: 220
+                        }
+                    }
+                }
 
-                            color:
-                                Nexa.Theme.error
+                Item { Layout.fillWidth: true }
 
+                // Rescan Button (Stable hover background, only icon rotates)
+                Rectangle {
+                    implicitWidth: Nexa.Theme.controlHeightMd
+                    implicitHeight: Nexa.Theme.controlHeightMd
+                    radius: Nexa.Theme.radiusMd
+                    antialiasing: true
+                    color: refreshMouse.pressed ? Nexa.Theme.pressed
+                         : refreshMouse.containsMouse ? Nexa.Theme.hoverStrong
+                         : "transparent"
+                    scale: refreshMouse.pressed ? Nexa.Theme.pressScale
+                         : refreshMouse.containsMouse ? Nexa.Theme.hoverScale
+                         : Nexa.Theme.normalScale
 
-                            font {
-                                family:
-                                    Nexa.Theme.iconFontFamily
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: Nexa.Theme.motionInteraction
+                            easing.bezierCurve: Nexa.Theme.easingFluidCurve
+                        }
+                    }
 
-                                pixelSize:
-                                    Nexa.Theme.iconMd
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: Nexa.Theme.motionInteraction
+                            easing.bezierCurve: Nexa.Theme.easingFluidCurve
+                        }
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰑐"
+                        color: root.isScanning ? Nexa.Theme.primary : (refreshMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText)
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: Nexa.Theme.iconSm
+
+                        RotationAnimator on rotation {
+                            running: root.isScanning && root.visible
+                            from: 0
+                            to: 360
+                            duration: 1200
+                            loops: Animation.Infinite
+                        }
+                    }
+
+                    MouseArea {
+                        id: refreshMouse
+                        anchors.fill: parent
+                        enabled: root.wifiEnabled && !networkProcess.running
+                        hoverEnabled: true
+                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: root.refreshNetworks()
+                    }
+                }
+
+                // Wi-Fi Master Toggle
+                NexaUI.NexaToggle {
+                    checked: Networking.wifiEnabled
+                    interactive: !networkProcess.running
+                    onToggled: root.toggleWifi()
+                }
+            }
+
+            // Backend Action Error (if any)
+            Text {
+                visible: root.actionError !== ""
+                Layout.fillWidth: true
+                text: root.actionError
+                color: Nexa.Theme.error
+                font.family: Nexa.Theme.fontFamily
+                font.pixelSize: Nexa.Theme.fontSize2Xs
+                font.weight: Nexa.Theme.fontWeightMedium
+            }
+
+            // ====================================================
+            // ACTIVE CONNECTION CARD (Single Unified Card)
+            // ====================================================
+            NexaUI.NexaCard {
+                id: activeNetworkCard
+                visible: root.connectedNetwork !== null && root.wifiEnabled
+                Layout.fillWidth: true
+                padding: Nexa.Theme.spacingSm
+                implicitHeight: Math.max(52, activeRow.implicitHeight + padding * 2)
+                selected: true
+
+                RowLayout {
+                    id: activeRow
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: activeNetworkCard.padding
+                    anchors.rightMargin: activeNetworkCard.padding
+                    spacing: Nexa.Theme.spacingSm
+
+                    // Prominent Signal Glyph
+                    Text {
+                        text: root.connectedNetwork ? root.signalIcon(root.connectedNetwork) : "󰤭"
+                        color: Nexa.Theme.primary
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: Nexa.Theme.iconLg
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    // SSID & Details
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 2
+
+                        Text {
+                            text: root.connectedNetwork ? root.connectedNetwork.name : ""
+                            color: Nexa.Theme.text
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            font.weight: Nexa.Theme.fontWeightDemiBold
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
+
+                        RowLayout {
+                            spacing: Nexa.Theme.spacingXs
+                            Layout.alignment: Qt.AlignVCenter
+
+                            NexaUI.NexaActiveIndicator {
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+
+                            Text {
+                                text: "Connected · " + root.signalPercent(root.connectedNetwork) + "%"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                Layout.alignment: Qt.AlignVCenter
                             }
                         }
+                    }
 
+                    // Forget Active Network Button
+                    NexaUI.NexaIconButton {
+                        icon: "󰆴"
+                        iconSize: Nexa.Theme.iconSm
+                        implicitWidth: Nexa.Theme.controlHeightSm
+                        implicitHeight: Nexa.Theme.controlHeightSm
+                        iconColor: hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
+                        Layout.alignment: Qt.AlignVCenter
+                        onClicked: root.forgetNetwork(root.connectedNetwork)
+                    }
 
-                        MouseArea {
-                            id: disconnectMouse
-
-                            anchors.fill:
-                                parent
-
-                            hoverEnabled:
-                                true
-
-                            cursorShape:
-                                Qt.PointingHandCursor
-
-
-                            onClicked:
-                                root.disconnectCurrent()
-                        }
+                    // Disconnect Active Network Button
+                    NexaUI.NexaButton {
+                        text: "Disconnect"
+                        textSize: Nexa.Theme.fontSizeXs
+                        implicitHeight: Nexa.Theme.controlHeightSm
+                        horizontalPadding: Nexa.Theme.spacingSm
+                        Layout.alignment: Qt.AlignVCenter
+                        onClicked: root.disconnectCurrent()
                     }
                 }
             }
 
-
             // ====================================================
-            // PASSWORD PANEL
+            // INLINE PASSWORD EXPANDER CARD
             // ====================================================
-
-            Rectangle {
+            NexaUI.NexaCard {
                 id: passwordCard
-
-                visible:
-                    root.selectedNetwork !== null
-
-
+                visible: root.selectedNetwork !== null && root.wifiEnabled
                 Layout.fillWidth: true
-
-                Layout.preferredHeight:
-                    root.connectError !== ""
-                    ? 116
-                    : 92
-
-
-                radius:
-                    Nexa.Theme.radiusMd
-
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
-
-
-                border {
-                    width:
-                        Nexa.Theme.borderThin
-
-                    color:
-                        root.connectError !== ""
-                        ? Nexa.Theme.error
-                        : Nexa.Theme.border
-                }
-
-
-                opacity:
-                    root.selectedNetwork
-                    ? 1.0
-                    : 0.0
-
-
-                scale:
-                    root.selectedNetwork
-                    ? 1.0
-                    : 0.97
-
-
-                Behavior on opacity {
-
-                    NumberAnimation {
-                        duration:
-                            Nexa.Theme.animationFast
-                    }
-                }
-
-
-                Behavior on scale {
-
-                    NumberAnimation {
-                        duration:
-                            Nexa.Theme.animationNormal
-
-                        easing.type:
-                            Nexa.Theme.easingStandard
-                    }
-                }
-
+                padding: Nexa.Theme.spacingMd
+                selected: true
+                implicitHeight: passwordColumn.implicitHeight + padding * 2
 
                 ColumnLayout {
-                    anchors {
-                        fill: parent
-                        margins:
-                            Nexa.Theme.spacingMd
-                    }
+                    id: passwordColumn
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    spacing: Nexa.Theme.spacingSm
 
-                    spacing:
-                        Nexa.Theme.spacingXs
-
-
-                    Text {
-                        text:
-                            root.selectedNetwork
-                            ? "Connect to  "
-                              + root.selectedNetwork.name
-
-                            : ""
-
-
-                        color:
-                            Nexa.Theme.text
-
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSizeSm
-
-                            weight:
-                                Nexa.Theme.fontWeightDemiBold
-                        }
-                    }
-
-
+                    // Title & Security Info
                     RowLayout {
-                        Layout.fillWidth:
-                            true
+                        Layout.fillWidth: true
+                        spacing: Nexa.Theme.spacingXs
 
-                        spacing:
-                            Nexa.Theme.spacingXs
+                        Text {
+                            text: root.selectedNetwork ? "Connect to " + root.selectedNetwork.name : ""
+                            color: Nexa.Theme.text
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            font.weight: Nexa.Theme.fontWeightDemiBold
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
 
+                        Text {
+                            text: "󰌾 Secured"
+                            color: Nexa.Theme.primary
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                            font.weight: Nexa.Theme.fontWeightMedium
+                        }
+                    }
 
-                        // ----------------------------------------
-                        // PASSWORD INPUT
-                        // ----------------------------------------
+                    // Password Input Container
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: Nexa.Theme.controlHeightMd
+                        radius: Nexa.Theme.radiusSm
+                        color: Nexa.Theme.inputBackground
+                        border.width: Nexa.Theme.borderThin
+                        border.color: root.connectError !== "" ? Nexa.Theme.error
+                                    : passwordInputField.activeFocus ? Nexa.Theme.focusBorder
+                                    : Nexa.Theme.border
 
-                        Rectangle {
-                            Layout.fillWidth:
-                                true
+                        Behavior on border.color {
+                            ColorAnimation { duration: Nexa.Theme.animationFast }
+                        }
 
-                            implicitHeight:
-                                Nexa.Theme.controlHeightMd
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: Nexa.Theme.spacingSm
+                            anchors.rightMargin: Nexa.Theme.spacingXs
+                            spacing: Nexa.Theme.spacingXs
 
-                            radius:
-                                Nexa.Theme.radiusSm
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
 
+                                TextInput {
+                                    id: passwordInputField
+                                    anchors.fill: parent
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    text: root.password
+                                    color: Nexa.Theme.text
+                                    echoMode: root.showPassword ? TextInput.Normal : TextInput.Password
+                                    enabled: !root.connecting
+                                    selectByMouse: true
+                                    focus: true
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
 
-                            color:
-                                Nexa.Theme.inputBackground
+                                    onTextChanged: {
+                                        root.password = text
+                                        if (text.length > 0 && root.connectError !== "")
+                                            root.connectError = ""
+                                    }
 
+                                    Keys.onReturnPressed: {
+                                        if (root.password.length > 0 && !root.connecting)
+                                            root.connectSelected()
+                                    }
 
-                            border {
-                                width:
-                                    Nexa.Theme.borderThin
-
-                                color:
-                                    root.connectError !== ""
-                                    ? Nexa.Theme.error
-
-                                    : passwordInput.activeFocus
-                                        ? Nexa.Theme.focusBorder
-
-                                        : Nexa.Theme.border
-                            }
-
-
-                            Behavior on border.color {
-
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
-
-                            TextInput {
-                                id: passwordInput
-
-                                anchors {
-                                    fill: parent
-
-                                    leftMargin:
-                                        Nexa.Theme.spacingSm
-
-                                    rightMargin:
-                                        Nexa.Theme.spacingSm
-                                }
-
-
-                                verticalAlignment:
-                                    TextInput.AlignVCenter
-
-
-                                text:
-                                    root.password
-
-
-                                color:
-                                    Nexa.Theme.text
-
-
-                                echoMode:
-                                    root.showPassword
-                                    ? TextInput.Normal
-                                    : TextInput.Password
-
-
-                                enabled:
-                                    !root.connecting
-
-
-                                selectByMouse:
-                                    true
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSizeXs
-                                }
-
-
-                                onTextChanged: {
-
-                                    root.password = text
-
-                                    if (
-                                        text.length > 0
-                                        && root.connectError !== ""
-                                    ) {
-                                        root.connectError = ""
+                                    Keys.onEscapePressed: {
+                                        root.cancelConnect()
                                     }
                                 }
 
-
-                                Keys.onReturnPressed: {
-
-                                    if (
-                                        root.password.length > 0
-                                        && !root.connecting
-                                    ) {
-                                        root.connectSelected()
-                                    }
+                                Text {
+                                    visible: passwordInputField.text.length === 0 && !passwordInputField.activeFocus
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    enabled: false
+                                    text: "Enter password"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
                                 }
                             }
 
-
-                            Text {
-                                visible:
-                                    passwordInput.text.length === 0
-                                    && !passwordInput.activeFocus
-
-
-                                anchors {
-                                    left:
-                                        parent.left
-
-                                    verticalCenter:
-                                        parent.verticalCenter
-
-                                    leftMargin:
-                                        Nexa.Theme.spacingSm
-                                }
-
-
-                                text:
-                                    "Password"
-
-
-                                color:
-                                    Nexa.Theme.mutedText
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSizeXs
-                                }
-                            }
-                        }
-
-
-                        // ----------------------------------------
-                        // SHOW PASSWORD
-                        // ----------------------------------------
-
-                        Rectangle {
-                            implicitWidth:
-                                Nexa.Theme.controlHeightMd
-
-                            implicitHeight:
-                                Nexa.Theme.controlHeightMd
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-
-                            color:
-                                eyeMouse.pressed
-                                ? Nexa.Theme.pressed
-
-                                : eyeMouse.containsMouse
-                                    ? Nexa.Theme.hover
-
-                                    : Nexa.Theme.surfaceContainerHighest
-
-
-                            Behavior on color {
-
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
-
-                            Text {
-                                anchors.centerIn:
-                                    parent
-
-
-                                text:
-                                    root.showPassword
-                                    ? "󰛐"
-                                    : "󰈈"
-
-
-                                color:
-                                    Nexa.Theme.mutedText
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.iconFontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.iconSm
-                                }
-                            }
-
-
-                            MouseArea {
-                                id: eyeMouse
-
-                                anchors.fill:
-                                    parent
-
-                                hoverEnabled:
-                                    true
-
-                                cursorShape:
-                                    Qt.PointingHandCursor
-
-
-                                onClicked: {
-
-                                    root.showPassword =
-                                        !root.showPassword
-                                }
-                            }
-                        }
-
-
-                        // ----------------------------------------
-                        // CANCEL
-                        // ----------------------------------------
-
-                        Rectangle {
-                            implicitWidth: 64
-
-                            implicitHeight:
-                                Nexa.Theme.controlHeightMd
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-
-                            color:
-                                cancelMouse.pressed
-                                ? Nexa.Theme.pressed
-
-                                : cancelMouse.containsMouse
-                                    ? Nexa.Theme.hover
-
-                                    : Nexa.Theme.surfaceContainerHighest
-
-
-                            scale:
-                                cancelMouse.pressed
-                                ? Nexa.Theme.pressScale
-                                : Nexa.Theme.normalScale
-
-
-                            Behavior on color {
-
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
-
-                            Behavior on scale {
-
-                                NumberAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
-
-                            Text {
-                                anchors.centerIn:
-                                    parent
-
-                                text:
-                                    "Cancel"
-
-                                color:
-                                    Nexa.Theme.text
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSizeXs
-
-                                    weight:
-                                        Nexa.Theme.fontWeightMedium
-                                }
-                            }
-
-
-                            MouseArea {
-                                id: cancelMouse
-
-                                anchors.fill:
-                                    parent
-
-                                hoverEnabled:
-                                    true
-
-                                cursorShape:
-                                    Qt.PointingHandCursor
-
-
-                                onClicked:
-                                    root.cancelConnect()
-                            }
-                        }
-
-
-                        // ----------------------------------------
-                        // CONNECT
-                        // ----------------------------------------
-
-                        Rectangle {
-                            implicitWidth: 72
-
-                            implicitHeight:
-                                Nexa.Theme.controlHeightMd
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-
-                            opacity:
-                                root.password.length > 0
-                                && !root.connecting
-
-                                ? Nexa.Theme.opacityFull
-                                : Nexa.Theme.opacityDisabled
-
-
-                            color:
-                                connectMouse.pressed
-                                ? Nexa.Theme.primaryContainer
-
-                                : connectMouse.containsMouse
-                                    ? Nexa.Theme.primaryContainer
-
-                                    : Nexa.Theme.primary
-
-
-                            scale:
-                                connectMouse.pressed
-                                ? Nexa.Theme.pressScale
-                                : Nexa.Theme.normalScale
-
-
-                            Behavior on color {
-
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
-
-                            Behavior on scale {
-
-                                NumberAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
-
-                            Text {
-                                anchors.centerIn:
-                                    parent
-
-
-                                text:
-                                    root.connecting
-                                    ? "..."
-                                    : "Connect"
-
-
-                                color:
-                                    Nexa.Theme.primaryText
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSizeXs
-
-                                    weight:
-                                        Nexa.Theme.fontWeightDemiBold
-                                }
-                            }
-
-
-                            MouseArea {
-                                id: connectMouse
-
-                                anchors.fill:
-                                    parent
-
-
-                                enabled:
-                                    root.password.length > 0
-                                    && !root.connecting
-
-
-                                hoverEnabled:
-                                    true
-
-                                cursorShape:
-                                    Qt.PointingHandCursor
-
-
-                                onClicked:
-                                    root.connectSelected()
+                            // Show / Hide Password Icon
+                            NexaUI.NexaIconButton {
+                                icon: root.showPassword ? "󰛐" : "󰈈"
+                                iconSize: Nexa.Theme.iconSm
+                                implicitWidth: Nexa.Theme.controlHeightSm
+                                implicitHeight: Nexa.Theme.controlHeightSm
+                                onClicked: root.showPassword = !root.showPassword
                             }
                         }
                     }
 
+                    // Action Buttons Row
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Nexa.Theme.spacingSm
 
-                    // --------------------------------------------
-                    // CONNECTION ERROR
-                    // --------------------------------------------
+                        Item { Layout.fillWidth: true }
 
-                    Text {
-                        visible:
-                            root.connectError !== ""
-
-
-                        Layout.fillWidth:
-                            true
-
-
-                        text:
-                            root.connectError
-
-
-                        color:
-                            Nexa.Theme.error
-
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSize2Xs
-
-                            weight:
-                                Nexa.Theme.fontWeightMedium
+                        NexaUI.NexaButton {
+                            text: "Cancel"
+                            textSize: Nexa.Theme.fontSizeXs
+                            interactive: !root.connecting
+                            onClicked: root.cancelConnect()
                         }
+
+                        NexaUI.NexaButton {
+                            text: root.connecting ? "Connecting…" : "Connect"
+                            textSize: Nexa.Theme.fontSizeXs
+                            selected: true
+                            interactive: root.password.length > 0 && !root.connecting
+                            onClicked: root.connectSelected()
+                        }
+                    }
+
+                    // Error Message
+                    Text {
+                        visible: root.connectError !== ""
+                        Layout.fillWidth: true
+                        text: root.connectError
+                        color: Nexa.Theme.error
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                        font.weight: Nexa.Theme.fontWeightMedium
+                        wrapMode: Text.WordWrap
                     }
                 }
             }
 
-
             // ====================================================
-            // NETWORK LIST
+            // AVAILABLE NETWORKS LIST SECTION
             // ====================================================
-
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-
-
-                radius:
-                    Nexa.Theme.radiusMd
-
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
-
-
-                border {
-                    width:
-                        Nexa.Theme.borderThin
-
-                    color:
-                        Nexa.Theme.border
-                }
-
+                implicitHeight: Math.min(320, Math.max(100, listInnerColumn.implicitHeight + Nexa.Theme.spacingSm * 2))
+                radius: Nexa.Theme.radiusMd
+                color: Nexa.Theme.surfaceContainer
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.border
 
                 ColumnLayout {
-                    anchors {
-                        fill: parent
+                    id: listInnerColumn
+                    anchors.fill: parent
+                    anchors.margins: Nexa.Theme.spacingSm
+                    spacing: Nexa.Theme.spacingSm
 
-                        margins:
-                            Nexa.Theme.spacingMd
-                    }
-
-                    spacing:
-                        Nexa.Theme.spacingSm
-
-
-                    // ============================================
-                    // HEADER
-                    // ============================================
-
+                    // Section Title Row
                     RowLayout {
-                        Layout.fillWidth:
-                            true
-
-
-                        Text {
-                            text:
-                                "Wi-Fi"
-
-                            color:
-                                Nexa.Theme.text
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeSm
-
-                                weight:
-                                    Nexa.Theme.fontWeightDemiBold
-                            }
-                        }
-
-
-                        Item {
-                            Layout.fillWidth:
-                                true
-                        }
-
-
-                        // ----------------------------------------
-                        // SCANNER INDICATOR
-                        // ----------------------------------------
+                        visible: root.wifiEnabled && root.availableList.length > 0
+                        Layout.fillWidth: true
 
                         Text {
-                            id: scanningIcon
-
-                            text:
-                                "󰑐"
-
-
-                            color:
-                                root.device
-                                && root.device.scannerEnabled
-
-                                ? Nexa.Theme.primary
-                                : Nexa.Theme.mutedText
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.iconFontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.iconSm
-                            }
-
-
-                            RotationAnimator on rotation {
-                                running:
-                                    root.device
-                                    && root.device.scannerEnabled
-                                    && root.visible
-
-
-                                from: 0
-                                to: 360
-
-                                duration: 1400
-
-                                loops:
-                                    Animation.Infinite
-                            }
+                            text: "Available Networks"
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                            font.weight: Nexa.Theme.fontWeightDemiBold
                         }
 
+                        Item { Layout.fillWidth: true }
 
-                        // ----------------------------------------
-                        // REFRESH
-                        // ----------------------------------------
-
+                        // Network Count Badge
                         Rectangle {
-                            implicitWidth:
-                                Nexa.Theme.controlHeightSm
-
-                            implicitHeight:
-                                Nexa.Theme.controlHeightSm
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-
-                            color:
-                                refreshMouse.pressed
-                                ? Nexa.Theme.pressed
-
-                                : refreshMouse.containsMouse
-                                    ? Nexa.Theme.hover
-
-                                    : "transparent"
-
-
-                            scale:
-                                refreshMouse.pressed
-                                ? Nexa.Theme.pressScale
-                                : Nexa.Theme.normalScale
-
-
-                            Behavior on color {
-
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
-
-                            Behavior on scale {
-
-                                NumberAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
+                            implicitWidth: countText.implicitWidth + Nexa.Theme.spacingSm
+                            implicitHeight: 18
+                            radius: 9
+                            color: Nexa.Theme.surfaceContainerHighest
 
                             Text {
-                                anchors.centerIn:
-                                    parent
-
-                                text:
-                                    "󰑐"
-
-                                color:
-                                    Nexa.Theme.text
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.iconFontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.iconSm
-                                }
-                            }
-
-
-                            MouseArea {
-                                id: refreshMouse
-
-                                anchors.fill:
-                                    parent
-
-
-                                enabled:
-                                    !networkProcess.running
-
-
-                                hoverEnabled:
-                                    true
-
-                                cursorShape:
-                                    Qt.PointingHandCursor
-
-
-                                onClicked:
-                                    root.refreshNetworks()
-                            }
-                        }
-
-
-                        // ----------------------------------------
-                        // WIFI TOGGLE
-                        // ----------------------------------------
-
-                        Rectangle {
-                            implicitWidth: 38
-                            implicitHeight: 20
-
-
-                            radius:
-                                Nexa.Theme.radiusPill
-
-
-                            color:
-                                Networking.wifiEnabled
-                                ? Nexa.Theme.primary
-                                : Nexa.Theme.surfaceContainerHighest
-
-
-                            Behavior on color {
-
-                                ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-                                }
-                            }
-
-
-                            Rectangle {
-                                width: 16
-                                height: 16
-
-                                radius:
-                                    Nexa.Theme.radiusPill
-
-
-                                anchors.verticalCenter:
-                                    parent.verticalCenter
-
-
-                                x:
-                                    Networking.wifiEnabled
-                                    ? parent.width
-                                      - width
-                                      - 2
-
-                                    : 2
-
-
-                                color:
-                                    Networking.wifiEnabled
-                                    ? Nexa.Theme.primaryText
-                                    : Nexa.Theme.mutedText
-
-
-                                Behavior on x {
-
-                                    NumberAnimation {
-                                        duration:
-                                            Nexa.Theme.animationNormal
-
-                                        easing.type:
-                                            Nexa.Theme.easingStandard
-                                    }
-                                }
-
-
-                                Behavior on color {
-
-                                    ColorAnimation {
-                                        duration:
-                                            Nexa.Theme.animationFast
-                                    }
-                                }
-                            }
-
-
-                            MouseArea {
-                                anchors.fill:
-                                    parent
-
-
-                                enabled:
-                                    !networkProcess.running
-
-
-                                cursorShape:
-                                    Qt.PointingHandCursor
-
-
-                                onClicked:
-                                    root.toggleWifi()
+                                id: countText
+                                anchors.centerIn: parent
+                                text: root.availableList.length.toString()
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
+                                font.weight: Nexa.Theme.fontWeightMedium
                             }
                         }
                     }
 
-
-                    // ============================================
-                    // BACKEND ERROR
-                    // ============================================
-
-                    Text {
-                        visible:
-                            root.actionError !== ""
-
-
-                        Layout.fillWidth:
-                            true
-
-
-                        text:
-                            root.actionError
-
-
-                        color:
-                            Nexa.Theme.error
-
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSize2Xs
-                        }
-                    }
-
-
-                    // ============================================
-                    // CONNECTED NETWORK
-                    // ============================================
-
-                    ColumnLayout {
-                        visible:
-                            root.connectedNetwork !== null
-
-
-                        Layout.fillWidth:
-                            true
-
-                        spacing:
-                            Nexa.Theme.spacingXs
-
-
-                        Text {
-                            text:
-                                "Connected"
-
-                            color:
-                                Nexa.Theme.mutedText
-
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSize2Xs
-
-                                weight:
-                                    Nexa.Theme.fontWeightDemiBold
-                            }
-                        }
-
-
-                        Rectangle {
-                            Layout.fillWidth:
-                                true
-
-                            implicitHeight: 48
-
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-
-                            color:
-                                Nexa.Theme.surfaceContainerHighest
-
-
-                            border {
-                                width:
-                                    Nexa.Theme.borderThin
-
-                                color:
-                                    Nexa.Theme.primary
-                            }
-
-
-                            RowLayout {
-                                anchors {
-                                    fill: parent
-
-                                    margins:
-                                        Nexa.Theme.spacingSm
-                                }
-
-                                spacing:
-                                    Nexa.Theme.spacingSm
-
-
-                                Text {
-                                    text:
-                                        root.signalIcon(
-                                            root.connectedNetwork
-                                        )
-
-
-                                    color:
-                                        Nexa.Theme.primary
-
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.iconFontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.iconMd
-                                    }
-                                }
-
-
-                                Text {
-                                    Layout.fillWidth:
-                                        true
-
-
-                                    text:
-                                        root.connectedNetwork
-                                        ? root.connectedNetwork.name
-                                        : ""
-
-
-                                    elide:
-                                        Text.ElideRight
-
-
-                                    color:
-                                        Nexa.Theme.text
-
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSizeXs
-
-                                        weight:
-                                            Nexa.Theme.fontWeightMedium
-                                    }
-                                }
-
-
-                                Text {
-                                    text:
-                                        root.signalPercent(
-                                            root.connectedNetwork
-                                        )
-                                        + "%"
-
-
-                                    color:
-                                        Nexa.Theme.mutedText
-
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSizeXs
-                                    }
-                                }
-
-
-                                // --------------------------------
-                                // FORGET CONNECTED NETWORK
-                                // --------------------------------
-
-                                Rectangle {
-                                    implicitWidth:
-                                        Nexa.Theme.controlHeightSm
-
-                                    implicitHeight:
-                                        Nexa.Theme.controlHeightSm
-
-
-                                    radius:
-                                        Nexa.Theme.radiusSm
-
-
-                                    color:
-                                        pinnedForgetMouse.pressed
-                                        ? Nexa.Theme.pressed
-
-                                        : pinnedForgetMouse.containsMouse
-                                            ? Nexa.Theme.hoverStrong
-
-                                            : "transparent"
-
-
-                                    scale:
-                                        pinnedForgetMouse.pressed
-                                        ? Nexa.Theme.pressScale
-                                        : Nexa.Theme.normalScale
-
-
-                                    Behavior on color {
-
-                                        ColorAnimation {
-                                            duration:
-                                                Nexa.Theme.animationFast
-                                        }
-                                    }
-
-
-                                    Behavior on scale {
-
-                                        NumberAnimation {
-                                            duration:
-                                                Nexa.Theme.animationFast
-                                        }
-                                    }
-
-
-                                    Text {
-                                        anchors.centerIn:
-                                            parent
-
-                                        text:
-                                            "󰆴"
-
-                                        color:
-                                            Nexa.Theme.error
-
-
-                                        font {
-                                            family:
-                                                Nexa.Theme.iconFontFamily
-
-                                            pixelSize:
-                                                Nexa.Theme.iconSm
-                                        }
-                                    }
-
-
-                                    MouseArea {
-                                        id: pinnedForgetMouse
-
-                                        anchors.fill:
-                                            parent
-
-                                        hoverEnabled:
-                                            true
-
-                                        cursorShape:
-                                            Qt.PointingHandCursor
-
-
-                                        onClicked: {
-
-                                            root.forgetNetwork(
-                                                root.connectedNetwork
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-
-                    // ============================================
-                    // AVAILABLE HEADER
-                    // ============================================
-
-                    Text {
-                        visible:
-                            availableNetworks.values.length > 0
-
-
-                        text:
-                            "Available Networks"
-
-
-                        color:
-                            Nexa.Theme.mutedText
-
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSize2Xs
-
-                            weight:
-                                Nexa.Theme.fontWeightDemiBold
-                        }
-                    }
-
-
-                    // ============================================
-                    // AVAILABLE NETWORK LIST
-                    // ============================================
-
+                    // Scrollable List
                     ListView {
-                        id: networkList
+                        id: networkListView
+                        visible: root.wifiEnabled && root.availableList.length > 0
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        implicitHeight: Math.min(260, Math.max(50, contentHeight))
+                        clip: true
+                        spacing: Nexa.Theme.spacingXs
+                        model: root.availableList
 
-                        Layout.fillWidth:
-                            true
-
-                        Layout.fillHeight:
-                            true
-
-
-                        clip:
-                            true
-
-
-                        spacing:
-                            Nexa.Theme.spacingXs
-
-
-                        model:
-                            availableNetworks
-
-                        flickDeceleration:
-                            Nexa.Theme.flickDeceleration
-
-                        maximumFlickVelocity:
-                            Nexa.Theme.flickVelocityMax
-
+                        flickDeceleration: Nexa.Theme.flickDeceleration
+                        maximumFlickVelocity: Nexa.Theme.flickVelocityMax
                         pixelAligned: true
+                        boundsBehavior: Flickable.StopAtBounds
+                        reuseItems: true
 
+                        // Sleek discreet floating scrollbar
                         ScrollBar.vertical: ScrollBar {
                             id: wifiScrollBar
                             policy: ScrollBar.AsNeeded
+                            width: 4
+                            anchors.right: parent.right
+                            anchors.rightMargin: 1
+                            visible: size < 1.0
 
                             contentItem: Rectangle {
                                 implicitWidth: 3
-                                radius: width / 2
-                                color: Qt.rgba(
-                                    Nexa.Theme.text.r,
-                                    Nexa.Theme.text.g,
-                                    Nexa.Theme.text.b,
-                                    wifiScrollBar.hovered ? 0.5 : 0.18
-                                )
+                                radius: 1.5
+                                color: wifiScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                opacity: (wifiScrollBar.active || wifiScrollBar.hovered) ? 0.6 : 0.0
 
+                                Behavior on opacity {
+                                    NumberAnimation { duration: Nexa.Theme.animationNormal }
+                                }
                                 Behavior on color {
                                     ColorAnimation { duration: Nexa.Theme.animationFast }
                                 }
@@ -2237,436 +867,269 @@ PopupWindow {
                             background: null
                         }
 
-
-                        boundsBehavior: Flickable.StopAtBounds
-                        reuseItems: true
-
-
                         delegate: Rectangle {
-                            id: networkCard
-
-
+                            id: networkItem
                             required property var modelData
 
-
-                            width:
-                                networkList.width - 8
-
+                            width: networkListView.width - (networkListView.contentHeight > networkListView.height ? (Nexa.Theme.spacingSm + 4) : 0)
                             height: 48
+                            radius: Nexa.Theme.radiusSm
 
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-
-                            color:
-                                cardMouse.pressed
-                                ? Nexa.Theme.pressed
-
-                                : cardMouse.containsMouse
-                                    ? Nexa.Theme.hover
-
-                                    : Nexa.Theme.surfaceContainerHighest
-
-
-                            border {
-                                width:
-                                    Nexa.Theme.borderThin
-
-                                color:
-                                    root.connectingNetwork
-                                    === networkCard.modelData
-
-                                    ? Nexa.Theme.primary
-
-                                    : Nexa.Theme.border
+                            Behavior on width {
+                                NumberAnimation { duration: Nexa.Theme.animationFast }
                             }
 
+                            readonly property bool isConnectingThis:
+                                root.connectingNetwork === networkItem.modelData
 
-                            scale:
-                                cardMouse.pressed
-                                ? 0.985
-                                : 1.0
+                            color: itemMouse.pressed ? Nexa.Theme.pressed
+                                 : itemMouse.containsMouse ? Nexa.Theme.hover
+                                 : Nexa.Theme.surfaceContainerHigh
 
+                            border.width: Nexa.Theme.borderThin
+                            border.color: isConnectingThis ? Nexa.Theme.primary
+                                        : itemMouse.containsMouse ? Nexa.Theme.borderStrong
+                                        : Nexa.Theme.border
+
+                            scale: itemMouse.pressed ? 0.985 : 1.0
 
                             Behavior on color {
-
                                 ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
+                                    duration: Nexa.Theme.motionInteraction
+                                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                                 }
                             }
-
 
                             Behavior on border.color {
-
                                 ColorAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
+                                    duration: Nexa.Theme.motionInteraction
+                                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                                 }
                             }
-
 
                             Behavior on scale {
-
                                 NumberAnimation {
-                                    duration:
-                                        Nexa.Theme.animationFast
-
-                                    easing.type:
-                                        Nexa.Theme.easingStandard
+                                    duration: Nexa.Theme.motionInteraction
+                                    easing.type: Nexa.Theme.easingStandard
+                                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
                                 }
                             }
 
-
-                            /*
-                             * IMPORTANT:
-                             *
-                             * The card MouseArea stays behind the content.
-                             * The delete button is therefore clickable.
-                             */
+                            // Card Click Handler
                             MouseArea {
-                                id: cardMouse
-
-                                anchors.fill:
-                                    parent
-
-
+                                id: itemMouse
+                                anchors.fill: parent
                                 z: 0
-
-
-                                enabled:
-                                    !root.connecting
-
-
-                                hoverEnabled:
-                                    true
-
-
-                                cursorShape:
-                                    Qt.PointingHandCursor
-
-
-                                onClicked: {
-
-                                    root.chooseNetwork(
-                                        networkCard.modelData
-                                    )
-                                }
+                                enabled: !root.connecting
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.chooseNetwork(networkItem.modelData)
                             }
-
 
                             RowLayout {
-                                anchors {
-                                    fill: parent
-
-                                    margins:
-                                        Nexa.Theme.spacingSm
-                                }
-
-
+                                anchors.fill: parent
+                                anchors.leftMargin: Nexa.Theme.spacingSm
+                                anchors.rightMargin: Nexa.Theme.spacingSm
                                 z: 1
+                                spacing: Nexa.Theme.spacingSm
 
-
-                                spacing:
-                                    Nexa.Theme.spacingSm
-
-
+                                // Signal Strength Icon
                                 Text {
-                                    text:
-                                        root.signalIcon(
-                                            networkCard.modelData
-                                        )
-
-
-                                    color:
-                                        root.connectingNetwork
-                                            === networkCard.modelData
-
-                                        ? Nexa.Theme.primary
-                                        : Nexa.Theme.text
-
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.iconFontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.iconMd
-                                    }
+                                    text: root.signalIcon(networkItem.modelData)
+                                    color: networkItem.isConnectingThis ? Nexa.Theme.primary
+                                         : root.signalPercent(networkItem.modelData) >= 50 ? Nexa.Theme.primary
+                                         : root.signalPercent(networkItem.modelData) >= 25 ? Nexa.Theme.text
+                                         : Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconMd
                                 }
 
-
+                                // Network SSID
                                 Text {
-                                    Layout.fillWidth:
-                                        true
-
-
-                                    text:
-                                        networkCard.modelData.name
-
-
-                                    elide:
-                                        Text.ElideRight
-
-
-                                    color:
-                                        Nexa.Theme.text
-
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSizeXs
-
-                                        weight:
-                                            Nexa.Theme.fontWeightMedium
-                                    }
+                                    Layout.fillWidth: true
+                                    text: networkItem.modelData.name
+                                    elide: Text.ElideRight
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    font.weight: Nexa.Theme.fontWeightMedium
                                 }
 
-
-                                // --------------------------------
-                                // CONNECTING INDICATOR
-                                // --------------------------------
-
+                                // Connecting Spinner
                                 Text {
-                                    visible:
-                                        root.connectingNetwork
-                                        === networkCard.modelData
-
-
-                                    text:
-                                        "󰑐"
-
-
-                                    color:
-                                        Nexa.Theme.primary
-
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.iconFontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.iconXs
-                                    }
-
+                                    visible: networkItem.isConnectingThis
+                                    text: "󰑐"
+                                    color: Nexa.Theme.primary
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
 
                                     RotationAnimator on rotation {
-                                        running:
-                                            root.visible
-                                            && root.connectingNetwork
-                                            === networkCard.modelData
-
-
+                                        running: root.visible && networkItem.isConnectingThis
                                         from: 0
                                         to: 360
-
                                         duration: 900
-
-                                        loops:
-                                            Animation.Infinite
+                                        loops: Animation.Infinite
                                     }
                                 }
 
-
-                                // --------------------------------
-                                // SECURITY
-                                // --------------------------------
-
-                                Text {
-                                    visible:
-                                        root.secured(
-                                            networkCard.modelData
-                                        )
-
-
-                                    text:
-                                        "󰌾"
-
-
-                                    color:
-                                        Nexa.Theme.mutedText
-
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.iconFontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.iconXs
-                                    }
-                                }
-
-
-                                Text {
-                                    text:
-                                        root.signalPercent(
-                                            networkCard.modelData
-                                        )
-                                        + "%"
-
-
-                                    color:
-                                        Nexa.Theme.mutedText
-
-
-                                    font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSizeXs
-                                    }
-                                }
-
-
-                                // --------------------------------
-                                // FORGET SAVED NETWORK
-                                //
-                                // This now sits ABOVE cardMouse.
-                                // --------------------------------
-
+                                // "Saved" Known Badge
                                 Rectangle {
-                                    visible:
-                                        networkCard.modelData.known
-
-
-                                    implicitWidth:
-                                        Nexa.Theme.controlHeightSm
-
-                                    implicitHeight:
-                                        Nexa.Theme.controlHeightSm
-
-
-                                    radius:
-                                        Nexa.Theme.radiusSm
-
-
-                                    color:
-                                        forgetMouse.pressed
-                                        ? Nexa.Theme.pressed
-
-                                        : forgetMouse.containsMouse
-                                            ? Nexa.Theme.hoverStrong
-
-                                            : "transparent"
-
-
-                                    scale:
-                                        forgetMouse.pressed
-                                        ? Nexa.Theme.pressScale
-                                        : Nexa.Theme.normalScale
-
-
-                                    Behavior on color {
-
-                                        ColorAnimation {
-                                            duration:
-                                                Nexa.Theme.animationFast
-                                        }
-                                    }
-
-
-                                    Behavior on scale {
-
-                                        NumberAnimation {
-                                            duration:
-                                                Nexa.Theme.animationFast
-                                        }
-                                    }
-
+                                    visible: networkItem.modelData.known && !networkItem.isConnectingThis
+                                    implicitWidth: savedBadgeText.implicitWidth + 8
+                                    implicitHeight: 18
+                                    radius: 9
+                                    color: Nexa.Theme.surfaceContainerHighest
 
                                     Text {
-                                        anchors.centerIn:
-                                            parent
-
-                                        text:
-                                            "󰆴"
-
-                                        color:
-                                            Nexa.Theme.error
-
-
-                                        font {
-                                            family:
-                                                Nexa.Theme.iconFontFamily
-
-                                            pixelSize:
-                                                Nexa.Theme.iconSm
-                                        }
+                                        id: savedBadgeText
+                                        anchors.centerIn: parent
+                                        text: "Saved"
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSize2Xs
                                     }
+                                }
 
+                                // Security Lock Icon
+                                Text {
+                                    visible: root.isSecured(networkItem.modelData)
+                                    text: "󰌾"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconXs
+                                }
 
-                                    MouseArea {
-                                        id: forgetMouse
+                                // Signal Percentage
+                                Text {
+                                    text: root.signalPercent(networkItem.modelData) + "%"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                }
 
-                                        anchors.fill:
-                                            parent
-
-
-                                        hoverEnabled:
-                                            true
-
-                                        preventStealing:
-                                            true
-
-
-                                        cursorShape:
-                                            Qt.PointingHandCursor
-
-
-                                        onClicked: function(mouse) {
-
-                                            mouse.accepted = true
-
-                                            root.forgetNetwork(
-                                                networkCard.modelData
-                                            )
-                                        }
-                                    }
+                                // Forget Saved Network Icon Button
+                                NexaUI.NexaIconButton {
+                                    visible: networkItem.modelData.known
+                                    icon: "󰆴"
+                                    iconSize: Nexa.Theme.iconSm
+                                    implicitWidth: Nexa.Theme.controlHeightSm
+                                    implicitHeight: Nexa.Theme.controlHeightSm
+                                    iconColor: hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                    onClicked: root.forgetNetwork(networkItem.modelData)
                                 }
                             }
                         }
                     }
 
-
                     // ============================================
-                    // EMPTY STATE
+                    // EMPTY / DISABLED STATES
                     // ============================================
 
-                    Text {
-                        visible:
-                            root.wifiEnabled
-                            && availableNetworks.values.length === 0
-                            && root.connectedNetwork === null
+                    // State 1: Wi-Fi Disabled
+                    ColumnLayout {
+                        visible: !root.wifiEnabled
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.alignment: Qt.AlignCenter
+                        spacing: Nexa.Theme.spacingMd
 
+                        Item { Layout.fillHeight: true }
 
-                        Layout.alignment:
-                            Qt.AlignHCenter
-
-
-                        text:
-                            root.device
-                            && root.device.scannerEnabled
-
-                            ? "Searching for networks…"
-                            : "No networks found"
-
-
-                        color:
-                            Nexa.Theme.mutedText
-
-
-                        font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSizeXs
+                        Text {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: "󰤭"
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: 48
                         }
+
+                        ColumnLayout {
+                            Layout.alignment: Qt.AlignHCenter
+                            spacing: 4
+
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: "Wi-Fi is turned off"
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                font.weight: Nexa.Theme.fontWeightDemiBold
+                            }
+
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: "Turn on Wi-Fi to find and connect to networks"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                            }
+                        }
+
+                        NexaUI.NexaButton {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: "Turn On Wi-Fi"
+                            icon: "󰤨"
+                            selected: true
+                            onClicked: root.toggleWifi()
+                        }
+
+                        Item { Layout.fillHeight: true }
+                    }
+
+                    // State 2: Wi-Fi Enabled, Scanning or 0 Networks Found
+                    ColumnLayout {
+                        visible: root.wifiEnabled && root.availableList.length === 0
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.alignment: Qt.AlignCenter
+                        spacing: Nexa.Theme.spacingSm
+
+                        Item { Layout.fillHeight: true }
+
+                        Text {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: root.isScanning ? "󰑐" : "󰤭"
+                            color: root.isScanning ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: 32
+
+                            RotationAnimator on rotation {
+                                running: root.isScanning && root.visible
+                                from: 0
+                                to: 360
+                                duration: 1200
+                                loops: Animation.Infinite
+                            }
+                        }
+
+                        Text {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: root.isScanning ? "Searching for networks…"
+                                : (root.connectedNetwork ? "No other networks found" : "No networks found")
+                            color: Nexa.Theme.text
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            font.weight: Nexa.Theme.fontWeightMedium
+                        }
+
+                        Text {
+                            visible: !root.isScanning
+                            Layout.alignment: Qt.AlignHCenter
+                            text: "Click refresh to scan for nearby Wi-Fi"
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeXs
+                        }
+
+                        NexaUI.NexaButton {
+                            visible: !root.isScanning
+                            Layout.alignment: Qt.AlignHCenter
+                            text: "Rescan"
+                            icon: "󰑐"
+                            onClicked: root.refreshNetworks()
+                        }
+
+                        Item { Layout.fillHeight: true }
                     }
                 }
             }

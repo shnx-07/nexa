@@ -1,8 +1,9 @@
 {
   "enabled": false,
   "paused": false,
-  "interval": "5m",
-  "type_filter": "Image",
+  "interval": "1h",
+  "type_filter": "All",
   "apply_target": "Background",
-  "last_wallpaper": ""
+  "last_wallpaper": "/home/shnx/Pictures/Wallpapers/Slideshow/Anime-Girl1.png",
+  "last_changed": 1790449666
 }

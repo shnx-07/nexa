@@ -233,6 +233,12 @@ Item {
                 islandShelf.refresh
             )
         }
+
+        if (root.specialMode === "display") {
+            Qt.callLater(
+                displayIsland.refreshInfo
+            )
+        }
     }
 
     // ============================================================
@@ -1045,8 +1051,45 @@ Item {
             root.requestCloseSpecialMode()
     }
 
+    DisplayIsland {
+        id: displayIsland
+
+        anchors.fill: parent
+
+        visible: root.full && root.specialMode === "display"
+
+        z: 100
+
+        onRequestClose:
+            root.requestCloseSpecialMode()
+    }
+
     function setControlCenterPage(page) {
         controlCenterIsland.currentPage = page
+    }
+
+    function cycleDisplayMode() {
+        if (displayIsland) {
+            displayIsland.cycleNext()
+        }
+    }
+
+    function moveDisplayLeft() {
+        if (displayIsland) {
+            displayIsland.moveLeft()
+        }
+    }
+
+    function moveDisplayRight() {
+        if (displayIsland) {
+            displayIsland.moveRight()
+        }
+    }
+
+    function applyDisplaySelected() {
+        if (displayIsland) {
+            displayIsland.applySelected()
+        }
     }
 
     function triggerPowerKey(keyNum) {

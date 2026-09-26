@@ -1,6 +1,7 @@
 import QtQuick
 
 import Quickshell
+import Quickshell.Io
 import Quickshell.Networking
 
 import "../../theme" as Nexa
@@ -96,6 +97,20 @@ Item {
 
     function togglePopup() {
         popup.visible = !popup.visible
+    }
+
+    property bool enablePopup: true
+
+    Loader {
+        active: root.enablePopup
+        sourceComponent: Component {
+            IpcHandler {
+                target: "wifi"
+                function toggle(): void { root.togglePopup() }
+                function open(): void { root.openPopup() }
+                function close(): void { root.closePopup() }
+            }
+        }
     }
 
 

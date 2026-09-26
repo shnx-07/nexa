@@ -2,7 +2,7 @@
 
 hl.on("hyprland.start", function()
 	-- NEXA / Quickshell
-	hl.exec_cmd("env QS_NO_RELOAD_POPUP=1 quickshell -p ~/.config/nexa/quickshell/shell.qml")
+	hl.exec_cmd("env QS_NO_RELOAD_POPUP=1 QT_IMAGEIO_MAXALLOC=1024 quickshell -p ~/.config/nexa/quickshell/shell.qml")
 
 	-- Wallpaper daemon
 	hl.exec_cmd("awww-daemon")
@@ -21,4 +21,5 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("hyprpm reload")
 
 	hl.exec_cmd("hypridle")
+	--	hl.exec_cmd(os.getenv("HOME") .. "/.config/nexa/rust/target/release/nexad display daemon")
 end)

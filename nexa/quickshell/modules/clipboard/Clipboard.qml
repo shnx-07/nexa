@@ -5,7 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
-import "../../theme" as NTheme
+import "../../theme" as Nexa
 
 
 PanelWindow {
@@ -123,10 +123,10 @@ PanelWindow {
 
     function getCategoryColor(category) {
         switch (category) {
-            case "image": return NTheme.Theme.tertiary
-            case "link":  return NTheme.Theme.secondary
-            case "code":  return NTheme.Theme.success
-            default:      return NTheme.Theme.primary
+            case "image": return Nexa.Theme.tertiary
+            case "link":  return Nexa.Theme.secondary
+            case "code":  return Nexa.Theme.success
+            default:      return Nexa.Theme.primary
         }
     }
 
@@ -594,7 +594,7 @@ PanelWindow {
 
     Timer {
         id: closeTimer
-        interval: NTheme.Theme.animationFast
+        interval: Nexa.Theme.animationFast
         repeat: false
         onTriggered: {
             root.windowAlive = false
@@ -616,20 +616,20 @@ PanelWindow {
     Item {
         anchors.fill: parent
 
-        opacity: root.clipboardOpen ? NTheme.Theme.opacityFull : NTheme.Theme.opacityHidden
+        opacity: root.clipboardOpen ? Nexa.Theme.opacityFull : Nexa.Theme.opacityHidden
         scale: root.clipboardOpen ? 1.0 : 0.97
 
         Behavior on opacity {
             NumberAnimation {
-                duration: root.clipboardOpen ? NTheme.Theme.animationNormal : NTheme.Theme.animationFast
-                easing.type: root.clipboardOpen ? NTheme.Theme.easingEnter : NTheme.Theme.easingExit
+                duration: root.clipboardOpen ? Nexa.Theme.animationNormal : Nexa.Theme.animationFast
+                easing.type: root.clipboardOpen ? Nexa.Theme.easingEnter : Nexa.Theme.easingExit
             }
         }
 
         Behavior on scale {
             NumberAnimation {
-                duration: root.clipboardOpen ? NTheme.Theme.animationNormal : NTheme.Theme.animationFast
-                easing.type: root.clipboardOpen ? NTheme.Theme.easingEnter : NTheme.Theme.easingExit
+                duration: root.clipboardOpen ? Nexa.Theme.animationNormal : Nexa.Theme.animationFast
+                easing.type: root.clipboardOpen ? Nexa.Theme.easingEnter : Nexa.Theme.easingExit
             }
         }
 
@@ -650,10 +650,10 @@ PanelWindow {
             width: Math.min(root.panelWidth, parent.width - 40)
             height: Math.min(root.panelHeight, parent.height - 60)
 
-            radius: NTheme.Theme.radiusLg
-            color: NTheme.Theme.panelBackground
-            border.width: NTheme.Theme.borderThin
-            border.color: NTheme.Theme.border
+            radius: Nexa.Theme.radiusLg
+            color: Nexa.Theme.panelBackground
+            border.width: Nexa.Theme.borderThin
+            border.color: Nexa.Theme.border
 
             clip: true
 
@@ -668,7 +668,7 @@ PanelWindow {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 height: 1
-                color: NTheme.Theme.edgeHighlightStrong
+                color: Nexa.Theme.edgeHighlightStrong
                 z: 10
             }
 
@@ -686,8 +686,8 @@ PanelWindow {
                     Layout.topMargin: root.outerPadding
                     Layout.leftMargin: root.outerPadding
                     Layout.rightMargin: root.outerPadding
-                    Layout.bottomMargin: NTheme.Theme.spacingSm
-                    spacing: NTheme.Theme.spacingLg
+                    Layout.bottomMargin: Nexa.Theme.spacingSm
+                    spacing: Nexa.Theme.spacingLg
 
                     // =============================================
                     // LEFT COLUMN (HEADER, SEARCH, TABS, LIST)
@@ -699,40 +699,40 @@ PanelWindow {
                         Layout.maximumWidth: root.leftWidth
                         Layout.fillWidth: false
                         Layout.fillHeight: true
-                        spacing: NTheme.Theme.spacingMd
+                        spacing: Nexa.Theme.spacingMd
 
                         // -----------------------------------------
                         // LEFT HEADER
                         // -----------------------------------------
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: NTheme.Theme.spacingSm
+                            spacing: Nexa.Theme.spacingSm
 
                             Text {
                                 text: "Clipboard"
-                                color: NTheme.Theme.text
-                                font.family: NTheme.Theme.fontFamily
-                                font.pixelSize: NTheme.Theme.fontSizeXl
-                                font.weight: NTheme.Theme.fontWeightBold
+                                color: Nexa.Theme.text
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXl
+                                font.weight: Nexa.Theme.fontWeightBold
                             }
 
                             // Clips count badge
                             Rectangle {
                                 implicitWidth: countText.implicitWidth + 12
                                 implicitHeight: 20
-                                radius: NTheme.Theme.radiusPill
-                                color: NTheme.Theme.surfaceContainerHigh
-                                border.width: NTheme.Theme.borderThin
-                                border.color: NTheme.Theme.borderSubtle
+                                radius: Nexa.Theme.radiusPill
+                                color: Nexa.Theme.surfaceContainerHigh
+                                border.width: Nexa.Theme.borderThin
+                                border.color: Nexa.Theme.borderSubtle
 
                                 Text {
                                     id: countText
                                     anchors.centerIn: parent
                                     text: root.entries.length + " clips"
-                                    color: NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.fontFamily
-                                    font.pixelSize: NTheme.Theme.fontSizeXs
-                                    font.weight: NTheme.Theme.fontWeightMedium
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    font.weight: Nexa.Theme.fontWeightMedium
                                 }
                             }
 
@@ -742,15 +742,15 @@ PanelWindow {
                             Rectangle {
                                 width: 32
                                 height: 32
-                                radius: NTheme.Theme.radiusSm
-                                color: refreshMouse.containsMouse ? NTheme.Theme.hoverStrong : "transparent"
+                                radius: Nexa.Theme.radiusSm
+                                color: refreshMouse.containsMouse ? Nexa.Theme.hoverStrong : "transparent"
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰑐"
-                                    color: NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.iconFontFamily
-                                    font.pixelSize: NTheme.Theme.iconSm
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
                                 }
 
                                 MouseArea {
@@ -766,18 +766,18 @@ PanelWindow {
                             Rectangle {
                                 width: 32
                                 height: 32
-                                radius: NTheme.Theme.radiusSm
-                                color: clearMouse.containsMouse ? NTheme.Theme.hoverStrong : "transparent"
+                                radius: Nexa.Theme.radiusSm
+                                color: clearMouse.containsMouse ? Nexa.Theme.hoverStrong : "transparent"
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰆴"
-                                    color: clearMouse.containsMouse ? NTheme.Theme.error : NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.iconFontFamily
-                                    font.pixelSize: NTheme.Theme.iconSm
+                                    color: clearMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
 
                                     Behavior on color {
-                                        ColorAnimation { duration: NTheme.Theme.animationFast }
+                                        ColorAnimation { duration: Nexa.Theme.animationFast }
                                     }
                                 }
 
@@ -800,13 +800,13 @@ PanelWindow {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 40
-                            radius: NTheme.Theme.radiusMd
-                            color: searchInput.activeFocus ? NTheme.Theme.inputBackgroundFocus : NTheme.Theme.inputBackground
-                            border.width: searchInput.activeFocus ? NTheme.Theme.borderNormal : NTheme.Theme.borderThin
-                            border.color: searchInput.activeFocus ? NTheme.Theme.focusBorder : NTheme.Theme.borderSubtle
+                            radius: Nexa.Theme.radiusMd
+                            color: searchInput.activeFocus ? Nexa.Theme.inputBackgroundFocus : Nexa.Theme.inputBackground
+                            border.width: searchInput.activeFocus ? Nexa.Theme.borderNormal : Nexa.Theme.borderThin
+                            border.color: searchInput.activeFocus ? Nexa.Theme.focusBorder : Nexa.Theme.borderSubtle
 
                             Behavior on border.color {
-                                ColorAnimation { duration: NTheme.Theme.animationFast }
+                                ColorAnimation { duration: Nexa.Theme.animationFast }
                             }
 
                             RowLayout {
@@ -817,12 +817,12 @@ PanelWindow {
 
                                 Text {
                                     text: "󰍉"
-                                    color: searchInput.activeFocus ? NTheme.Theme.primary : NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.iconFontFamily
-                                    font.pixelSize: NTheme.Theme.iconSm
+                                    color: searchInput.activeFocus ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
 
                                     Behavior on color {
-                                        ColorAnimation { duration: NTheme.Theme.animationFast }
+                                        ColorAnimation { duration: Nexa.Theme.animationFast }
                                     }
                                 }
 
@@ -835,20 +835,20 @@ PanelWindow {
                                         anchors.verticalCenter: parent.verticalCenter
                                         visible: searchInput.text.length === 0
                                         text: "Filter clipboard history..."
-                                        color: NTheme.Theme.mutedText
-                                        font.family: NTheme.Theme.fontFamily
-                                        font.pixelSize: NTheme.Theme.fontSizeSm
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
                                     }
 
                                     TextInput {
                                         id: searchInput
                                         anchors.fill: parent
                                         verticalAlignment: TextInput.AlignVCenter
-                                        color: NTheme.Theme.text
-                                        selectionColor: NTheme.Theme.primary
-                                        selectedTextColor: NTheme.Theme.primaryText
-                                        font.family: NTheme.Theme.fontFamily
-                                        font.pixelSize: NTheme.Theme.fontSizeSm
+                                        color: Nexa.Theme.text
+                                        selectionColor: Nexa.Theme.primary
+                                        selectedTextColor: Nexa.Theme.primaryText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
                                         clip: true
 
                                         onTextChanged: searchDebounce.restart()
@@ -918,14 +918,14 @@ PanelWindow {
                                     width: 20
                                     height: 20
                                     radius: 10
-                                    color: clearSearchMouse.containsMouse ? NTheme.Theme.hoverStrong : NTheme.Theme.surfaceContainerHigh
+                                    color: clearSearchMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: "󰅖"
-                                        color: NTheme.Theme.mutedText
-                                        font.family: NTheme.Theme.iconFontFamily
-                                        font.pixelSize: NTheme.Theme.icon2Xs
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: Nexa.Theme.icon2Xs
                                     }
 
                                     MouseArea {
@@ -965,21 +965,21 @@ PanelWindow {
 
                                     implicitHeight: 28
                                     implicitWidth: pillRow.implicitWidth + 16
-                                    radius: NTheme.Theme.radiusPill
+                                    radius: Nexa.Theme.radiusPill
 
-                                    color: active ? NTheme.Theme.primarySurfaceStrong
-                                                  : hovered ? NTheme.Theme.hoverStrong
-                                                            : NTheme.Theme.surfaceContainerLow
+                                    color: active ? Nexa.Theme.primarySurfaceStrong
+                                                  : hovered ? Nexa.Theme.hoverStrong
+                                                            : Nexa.Theme.surfaceContainerLow
 
-                                    border.width: NTheme.Theme.borderThin
-                                    border.color: active ? NTheme.Theme.primary : NTheme.Theme.borderSubtle
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: active ? Nexa.Theme.primary : Nexa.Theme.borderSubtle
 
                                     Behavior on color {
-                                        ColorAnimation { duration: NTheme.Theme.animationFast }
+                                        ColorAnimation { duration: Nexa.Theme.animationFast }
                                     }
 
                                     Behavior on border.color {
-                                        ColorAnimation { duration: NTheme.Theme.animationFast }
+                                        ColorAnimation { duration: Nexa.Theme.animationFast }
                                     }
 
                                     Row {
@@ -989,19 +989,19 @@ PanelWindow {
 
                                         Text {
                                             text: modelData.label
-                                            color: filterPill.active ? NTheme.Theme.primary : (filterPill.hovered ? NTheme.Theme.text : NTheme.Theme.mutedText)
-                                            font.family: NTheme.Theme.fontFamily
-                                            font.pixelSize: NTheme.Theme.fontSizeXs
-                                            font.weight: filterPill.active ? NTheme.Theme.fontWeightDemiBold : NTheme.Theme.fontWeightNormal
+                                            color: filterPill.active ? Nexa.Theme.primary : (filterPill.hovered ? Nexa.Theme.text : Nexa.Theme.mutedText)
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: Nexa.Theme.fontSizeXs
+                                            font.weight: filterPill.active ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightNormal
                                         }
 
                                         Text {
                                             visible: modelData.count >= 0
                                             text: modelData.count
-                                            color: filterPill.active ? NTheme.Theme.primary : NTheme.Theme.mutedText
+                                            color: filterPill.active ? Nexa.Theme.primary : Nexa.Theme.mutedText
                                             opacity: filterPill.active ? 0.9 : 0.6
-                                            font.family: NTheme.Theme.monoFontFamily
-                                            font.pixelSize: NTheme.Theme.fontSize2Xs
+                                            font.family: Nexa.Theme.monoFontFamily
+                                            font.pixelSize: Nexa.Theme.fontSize2Xs
                                         }
                                     }
 
@@ -1042,8 +1042,8 @@ PanelWindow {
                                 spacing: 6
                                 clip: true
                                 boundsBehavior: Flickable.StopAtBounds
-                                flickDeceleration: NTheme.Theme.flickDeceleration
-                                maximumFlickVelocity: NTheme.Theme.flickVelocityMax
+                                flickDeceleration: Nexa.Theme.flickDeceleration
+                                maximumFlickVelocity: Nexa.Theme.flickVelocityMax
                                 pixelAligned: true
 
                                 delegate: Item {
@@ -1064,22 +1064,22 @@ PanelWindow {
                                     // Card background container
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: NTheme.Theme.radiusSm
+                                        radius: Nexa.Theme.radiusSm
 
                                         color: entryDelegate.selected
-                                            ? NTheme.Theme.selectedSurface
-                                            : (entryMouse.containsMouse ? NTheme.Theme.hoverStrong : NTheme.Theme.cardBackground)
+                                            ? Nexa.Theme.selectedSurface
+                                            : (entryMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.cardBackground)
 
-                                        border.width: NTheme.Theme.borderThin
+                                        border.width: Nexa.Theme.borderThin
                                         border.color: entryDelegate.selected
-                                            ? NTheme.Theme.selectedBorder
-                                            : (modelData.pinned ? NTheme.Theme.primary : NTheme.Theme.borderSubtle)
+                                            ? Nexa.Theme.selectedBorder
+                                            : (modelData.pinned ? Nexa.Theme.primary : Nexa.Theme.borderSubtle)
 
                                         Behavior on color {
-                                            ColorAnimation { duration: NTheme.Theme.animationFast }
+                                            ColorAnimation { duration: Nexa.Theme.animationFast }
                                         }
                                         Behavior on border.color {
-                                            ColorAnimation { duration: NTheme.Theme.animationFast }
+                                            ColorAnimation { duration: Nexa.Theme.animationFast }
                                         }
 
                                         // Left vertical accent indicator bar
@@ -1089,11 +1089,11 @@ PanelWindow {
                                             width: 3.5
                                             height: entryDelegate.selected ? 26 : 0
                                             radius: 2
-                                            color: NTheme.Theme.primary
+                                            color: Nexa.Theme.primary
                                             visible: entryDelegate.selected
 
                                             Behavior on height {
-                                                NumberAnimation { duration: NTheme.Theme.animationFast }
+                                                NumberAnimation { duration: Nexa.Theme.animationFast }
                                             }
                                         }
                                     }
@@ -1121,17 +1121,17 @@ PanelWindow {
                                         Rectangle {
                                             Layout.preferredWidth: 38
                                             Layout.preferredHeight: 38
-                                            radius: NTheme.Theme.radiusSm
+                                            radius: Nexa.Theme.radiusSm
                                             color: entryDelegate.selected
                                                 ? Qt.rgba(entryDelegate.categoryColor.r, entryDelegate.categoryColor.g, entryDelegate.categoryColor.b, 0.18)
-                                                : NTheme.Theme.surfaceContainerHigh
+                                                : Nexa.Theme.surfaceContainerHigh
 
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: entryDelegate.categoryIcon
                                                 color: entryDelegate.categoryColor
-                                                font.family: NTheme.Theme.iconFontFamily
-                                                font.pixelSize: NTheme.Theme.iconMd
+                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.pixelSize: Nexa.Theme.iconMd
                                             }
                                         }
 
@@ -1144,15 +1144,15 @@ PanelWindow {
                                             Text {
                                                 Layout.fillWidth: true
                                                 text: modelData.type === "image" ? "Image clip" : (modelData.preview || "")
-                                                color: entryDelegate.selected ? NTheme.Theme.primary : NTheme.Theme.text
-                                                font.family: NTheme.Theme.fontFamily
-                                                font.pixelSize: NTheme.Theme.fontSizeSm
-                                                font.weight: NTheme.Theme.fontWeightDemiBold
+                                                color: entryDelegate.selected ? Nexa.Theme.primary : Nexa.Theme.text
+                                                font.family: Nexa.Theme.fontFamily
+                                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                                font.weight: Nexa.Theme.fontWeightDemiBold
                                                 elide: Text.ElideRight
                                                 maximumLineCount: 1
 
                                                 Behavior on color {
-                                                    ColorAnimation { duration: NTheme.Theme.animationFast }
+                                                    ColorAnimation { duration: Nexa.Theme.animationFast }
                                                 }
                                             }
 
@@ -1173,9 +1173,9 @@ PanelWindow {
                                                         anchors.centerIn: parent
                                                         text: entryDelegate.categoryLabel
                                                         color: entryDelegate.categoryColor
-                                                        font.family: NTheme.Theme.fontFamily
-                                                        font.pixelSize: NTheme.Theme.fontSize2Xs
-                                                        font.weight: NTheme.Theme.fontWeightDemiBold
+                                                        font.family: Nexa.Theme.fontFamily
+                                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                                        font.weight: Nexa.Theme.fontWeightDemiBold
                                                     }
                                                 }
 
@@ -1185,9 +1185,9 @@ PanelWindow {
                                                     text: modelData.type === "image"
                                                         ? root.formatBytes(modelData.size_bytes || 0)
                                                         : (modelData.preview ? (modelData.preview.length + " chars") : root.formatBytes(modelData.size_bytes || 0))
-                                                    color: NTheme.Theme.mutedText
-                                                    font.family: NTheme.Theme.fontFamily
-                                                    font.pixelSize: NTheme.Theme.fontSizeXs
+                                                    color: Nexa.Theme.mutedText
+                                                    font.family: Nexa.Theme.fontFamily
+                                                    font.pixelSize: Nexa.Theme.fontSizeXs
                                                     elide: Text.ElideRight
                                                 }
                                             }
@@ -1200,14 +1200,14 @@ PanelWindow {
                                             width: 26
                                             height: 26
                                             radius: 6
-                                            color: quickPinMouse.containsMouse ? NTheme.Theme.hoverStrong : "transparent"
+                                            color: quickPinMouse.containsMouse ? Nexa.Theme.hoverStrong : "transparent"
 
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: "󰐃"
-                                                color: modelData.pinned ? NTheme.Theme.primary : NTheme.Theme.mutedText
-                                                font.family: NTheme.Theme.iconFontFamily
-                                                font.pixelSize: NTheme.Theme.iconSm
+                                                color: modelData.pinned ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.pixelSize: Nexa.Theme.iconSm
                                             }
 
                                             MouseArea {
@@ -1233,18 +1233,18 @@ PanelWindow {
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: "󰅇"
-                                    color: NTheme.Theme.mutedText
+                                    color: Nexa.Theme.mutedText
                                     opacity: 0.5
-                                    font.family: NTheme.Theme.iconFontFamily
+                                    font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: 36
                                 }
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: searchInput.text.length > 0 ? "No matches found" : "No clips in this filter"
-                                    color: NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.fontFamily
-                                    font.pixelSize: NTheme.Theme.fontSizeSm
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeSm
                                 }
                             }
                         }
@@ -1260,7 +1260,7 @@ PanelWindow {
                         Layout.minimumWidth: 1
                         Layout.maximumWidth: 1
                         Layout.fillWidth: false
-                        color: NTheme.Theme.divider
+                        color: Nexa.Theme.divider
                     }
 
                     // =============================================
@@ -1271,32 +1271,32 @@ PanelWindow {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
                         Layout.fillHeight: true
-                        spacing: NTheme.Theme.spacingMd
+                        spacing: Nexa.Theme.spacingMd
 
                         // -----------------------------------------
                         // PREVIEW HEADER
                         // -----------------------------------------
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: NTheme.Theme.spacingMd
+                            spacing: Nexa.Theme.spacingMd
 
                             // Type icon badge
                             Rectangle {
                                 width: 40
                                 height: 40
-                                radius: NTheme.Theme.radiusSm
+                                radius: Nexa.Theme.radiusSm
                                 color: root.selectedEntry
                                     ? Qt.rgba(root.getCategoryColor(root.getItemCategory(root.selectedEntry)).r,
                                               root.getCategoryColor(root.getItemCategory(root.selectedEntry)).g,
                                               root.getCategoryColor(root.getItemCategory(root.selectedEntry)).b, 0.16)
-                                    : NTheme.Theme.surfaceContainerHigh
+                                    : Nexa.Theme.surfaceContainerHigh
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: root.selectedEntry ? root.getCategoryIcon(root.getItemCategory(root.selectedEntry)) : "󰅇"
-                                    color: root.selectedEntry ? root.getCategoryColor(root.getItemCategory(root.selectedEntry)) : NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.iconFontFamily
-                                    font.pixelSize: NTheme.Theme.iconMd
+                                    color: root.selectedEntry ? root.getCategoryColor(root.getItemCategory(root.selectedEntry)) : Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconMd
                                 }
                             }
 
@@ -1314,10 +1314,10 @@ PanelWindow {
                                         if (cat === "code")  return "Code Snippet"
                                         return "Text Clip"
                                     }
-                                    color: NTheme.Theme.text
-                                    font.family: NTheme.Theme.fontFamily
-                                    font.pixelSize: NTheme.Theme.fontSizeLg
-                                    font.weight: NTheme.Theme.fontWeightDemiBold
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeLg
+                                    font.weight: Nexa.Theme.fontWeightDemiBold
                                 }
 
                                 RowLayout {
@@ -1326,33 +1326,33 @@ PanelWindow {
 
                                     Text {
                                         text: root.formatBytes(root.selectedSize)
-                                        color: NTheme.Theme.mutedText
-                                        font.family: NTheme.Theme.fontFamily
-                                        font.pixelSize: NTheme.Theme.fontSizeXs
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
                                     }
 
                                     Text {
                                         visible: root.selectedType === "text" && root.textCharCount > 0
                                         text: "•  " + root.textCharCount + " chars"
-                                        color: NTheme.Theme.mutedText
-                                        font.family: NTheme.Theme.fontFamily
-                                        font.pixelSize: NTheme.Theme.fontSizeXs
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
                                     }
 
                                     Text {
                                         visible: root.selectedType === "text" && root.textLineCount > 1
                                         text: "•  " + root.textLineCount + " lines"
-                                        color: NTheme.Theme.mutedText
-                                        font.family: NTheme.Theme.fontFamily
-                                        font.pixelSize: NTheme.Theme.fontSizeXs
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
                                     }
 
                                     Text {
                                         visible: root.selectedType === "image" && previewImage.sourceSize.width > 0
                                         text: "•  " + previewImage.sourceSize.width + " × " + previewImage.sourceSize.height + " px"
-                                        color: NTheme.Theme.mutedText
-                                        font.family: NTheme.Theme.fontFamily
-                                        font.pixelSize: NTheme.Theme.fontSizeXs
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
                                     }
                                 }
                             }
@@ -1366,18 +1366,18 @@ PanelWindow {
                             Rectangle {
                                 Layout.preferredWidth: 34
                                 Layout.preferredHeight: 34
-                                radius: NTheme.Theme.radiusSm
+                                radius: Nexa.Theme.radiusSm
                                 color: root.selectedEntry && root.selectedEntry.pinned
-                                    ? NTheme.Theme.primarySurfaceStrong
-                                    : (pinMouse.containsMouse ? NTheme.Theme.hoverStrong : NTheme.Theme.surfaceContainerHigh)
-                                opacity: root.selectedEntry ? 1 : NTheme.Theme.opacityDisabled
+                                    ? Nexa.Theme.primarySurfaceStrong
+                                    : (pinMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh)
+                                opacity: root.selectedEntry ? 1 : Nexa.Theme.opacityDisabled
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰐃"
-                                    color: root.selectedEntry && root.selectedEntry.pinned ? NTheme.Theme.primary : NTheme.Theme.text
-                                    font.family: NTheme.Theme.iconFontFamily
-                                    font.pixelSize: NTheme.Theme.iconSm
+                                    color: root.selectedEntry && root.selectedEntry.pinned ? Nexa.Theme.primary : Nexa.Theme.text
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
                                 }
 
                                 MouseArea {
@@ -1394,16 +1394,16 @@ PanelWindow {
                             Rectangle {
                                 Layout.preferredWidth: 34
                                 Layout.preferredHeight: 34
-                                radius: NTheme.Theme.radiusSm
-                                color: deleteMouse.containsMouse ? NTheme.Theme.hoverStrong : NTheme.Theme.surfaceContainerHigh
-                                opacity: root.selectedEntry ? 1 : NTheme.Theme.opacityDisabled
+                                radius: Nexa.Theme.radiusSm
+                                color: deleteMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
+                                opacity: root.selectedEntry ? 1 : Nexa.Theme.opacityDisabled
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰆴"
-                                    color: deleteMouse.containsMouse ? NTheme.Theme.error : NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.iconFontFamily
-                                    font.pixelSize: NTheme.Theme.iconSm
+                                    color: deleteMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
                                 }
 
                                 MouseArea {
@@ -1423,15 +1423,15 @@ PanelWindow {
                             Rectangle {
                                 Layout.preferredWidth: 34
                                 Layout.preferredHeight: 34
-                                radius: NTheme.Theme.radiusSm
-                                color: closeMouse.containsMouse ? NTheme.Theme.hoverStrong : NTheme.Theme.surfaceContainerHigh
+                                radius: Nexa.Theme.radiusSm
+                                color: closeMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰅖"
-                                    color: NTheme.Theme.text
-                                    font.family: NTheme.Theme.iconFontFamily
-                                    font.pixelSize: NTheme.Theme.iconSm
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
                                 }
 
                                 MouseArea {
@@ -1450,10 +1450,10 @@ PanelWindow {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: NTheme.Theme.radiusMd
-                            color: NTheme.Theme.surfaceContainerLow
-                            border.width: NTheme.Theme.borderThin
-                            border.color: NTheme.Theme.borderSubtle
+                            radius: Nexa.Theme.radiusMd
+                            color: Nexa.Theme.surfaceContainerLow
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.borderSubtle
                             clip: true
 
                             // Empty state
@@ -1465,18 +1465,18 @@ PanelWindow {
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: "󰅈"
-                                    color: NTheme.Theme.mutedText
+                                    color: Nexa.Theme.mutedText
                                     opacity: 0.4
-                                    font.family: NTheme.Theme.iconFontFamily
+                                    font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: 48
                                 }
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: "Select a clip to view details"
-                                    color: NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.fontFamily
-                                    font.pixelSize: NTheme.Theme.fontSizeMd
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeMd
                                 }
                             }
 
@@ -1490,8 +1490,8 @@ PanelWindow {
                                 contentHeight: clipboardText.implicitHeight
                                 clip: true
                                 boundsBehavior: Flickable.StopAtBounds
-                                flickDeceleration: NTheme.Theme.flickDeceleration
-                                maximumFlickVelocity: NTheme.Theme.flickVelocityMax
+                                flickDeceleration: Nexa.Theme.flickDeceleration
+                                maximumFlickVelocity: Nexa.Theme.flickVelocityMax
                                 pixelAligned: true
 
                                 ScrollBar.vertical: ScrollBar {
@@ -1500,7 +1500,7 @@ PanelWindow {
                                     contentItem: Rectangle {
                                         implicitWidth: 4
                                         radius: 2
-                                        color: Qt.rgba(NTheme.Theme.text.r, NTheme.Theme.text.g, NTheme.Theme.text.b, cbScrollBar.hovered ? 0.5 : 0.2)
+                                        color: Qt.rgba(Nexa.Theme.text.r, Nexa.Theme.text.g, Nexa.Theme.text.b, cbScrollBar.hovered ? 0.5 : 0.2)
                                     }
                                 }
 
@@ -1508,9 +1508,9 @@ PanelWindow {
                                     id: clipboardText
                                     width: textPreview.width
                                     text: root.selectedContent
-                                    color: NTheme.Theme.text
-                                    font.family: root.isCode(root.selectedContent) ? NTheme.Theme.monoFontFamily : NTheme.Theme.fontFamily
-                                    font.pixelSize: NTheme.Theme.fontSizeMd
+                                    color: Nexa.Theme.text
+                                    font.family: root.isCode(root.selectedContent) ? Nexa.Theme.monoFontFamily : Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeMd
                                     lineHeight: 1.3
                                     wrapMode: Text.WrapAnywhere
                                     textFormat: Text.PlainText
@@ -1525,10 +1525,10 @@ PanelWindow {
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    radius: NTheme.Theme.radiusSm
-                                    color: NTheme.Theme.surfaceContainer
-                                    border.width: NTheme.Theme.borderThin
-                                    border.color: NTheme.Theme.borderSubtle
+                                    radius: Nexa.Theme.radiusSm
+                                    color: Nexa.Theme.surfaceContainer
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: Nexa.Theme.borderSubtle
                                     clip: true
 
                                     Image {
@@ -1558,10 +1558,10 @@ PanelWindow {
                                 visible: root.selectedType === "text" && root.isLink(root.selectedContent)
                                 implicitHeight: 36
                                 implicitWidth: openUrlContent.implicitWidth + 24
-                                radius: NTheme.Theme.radiusSm
-                                color: openUrlMouse.containsMouse ? NTheme.Theme.hoverStrong : NTheme.Theme.surfaceContainerHigh
-                                border.width: NTheme.Theme.borderThin
-                                border.color: NTheme.Theme.secondary
+                                radius: Nexa.Theme.radiusSm
+                                color: openUrlMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
+                                border.width: Nexa.Theme.borderThin
+                                border.color: Nexa.Theme.secondary
 
                                 RowLayout {
                                     id: openUrlContent
@@ -1570,16 +1570,16 @@ PanelWindow {
 
                                     Text {
                                         text: "󰌹"
-                                        color: NTheme.Theme.secondary
-                                        font.family: NTheme.Theme.iconFontFamily
-                                        font.pixelSize: NTheme.Theme.iconSm
+                                        color: Nexa.Theme.secondary
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: Nexa.Theme.iconSm
                                     }
                                     Text {
                                         text: "Open in Browser"
-                                        color: NTheme.Theme.text
-                                        font.family: NTheme.Theme.fontFamily
-                                        font.pixelSize: NTheme.Theme.fontSizeSm
-                                        font.weight: NTheme.Theme.fontWeightMedium
+                                        color: Nexa.Theme.text
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
+                                        font.weight: Nexa.Theme.fontWeightMedium
                                     }
                                 }
 
@@ -1597,10 +1597,10 @@ PanelWindow {
                                 visible: root.selectedType === "image" && root.selectedImageSource.length > 0
                                 implicitHeight: 36
                                 implicitWidth: openImgContent.implicitWidth + 24
-                                radius: NTheme.Theme.radiusSm
-                                color: openImgMouse.containsMouse ? NTheme.Theme.hoverStrong : NTheme.Theme.surfaceContainerHigh
-                                border.width: NTheme.Theme.borderThin
-                                border.color: NTheme.Theme.tertiary
+                                radius: Nexa.Theme.radiusSm
+                                color: openImgMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
+                                border.width: Nexa.Theme.borderThin
+                                border.color: Nexa.Theme.tertiary
 
                                 RowLayout {
                                     id: openImgContent
@@ -1609,16 +1609,16 @@ PanelWindow {
 
                                     Text {
                                         text: "󰋩"
-                                        color: NTheme.Theme.tertiary
-                                        font.family: NTheme.Theme.iconFontFamily
-                                        font.pixelSize: NTheme.Theme.iconSm
+                                        color: Nexa.Theme.tertiary
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: Nexa.Theme.iconSm
                                     }
                                     Text {
                                         text: "Open in Viewer"
-                                        color: NTheme.Theme.text
-                                        font.family: NTheme.Theme.fontFamily
-                                        font.pixelSize: NTheme.Theme.fontSizeSm
-                                        font.weight: NTheme.Theme.fontWeightMedium
+                                        color: Nexa.Theme.text
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
+                                        font.weight: Nexa.Theme.fontWeightMedium
                                     }
                                 }
 
@@ -1640,13 +1640,13 @@ PanelWindow {
                             Rectangle {
                                 implicitHeight: 36
                                 implicitWidth: copyContent.implicitWidth + 24
-                                radius: NTheme.Theme.radiusSm
+                                radius: Nexa.Theme.radiusSm
                                 color: copyBtnMouse.pressed
-                                    ? NTheme.Theme.primarySurfaceStrong
-                                    : (copyBtnMouse.containsMouse ? NTheme.Theme.primary : NTheme.Theme.primaryContainer)
+                                    ? Nexa.Theme.primarySurfaceStrong
+                                    : (copyBtnMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.primaryContainer)
 
                                 Behavior on color {
-                                    ColorAnimation { duration: NTheme.Theme.animationFast }
+                                    ColorAnimation { duration: Nexa.Theme.animationFast }
                                 }
 
                                 RowLayout {
@@ -1656,22 +1656,22 @@ PanelWindow {
 
                                     Text {
                                         text: "󰆏"
-                                        color: copyBtnMouse.containsMouse ? NTheme.Theme.primaryText : NTheme.Theme.primaryContainerText
-                                        font.family: NTheme.Theme.iconFontFamily
-                                        font.pixelSize: NTheme.Theme.iconSm
+                                        color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.primaryContainerText
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: Nexa.Theme.iconSm
                                     }
                                     Text {
                                         text: "Copy to Clipboard"
-                                        color: copyBtnMouse.containsMouse ? NTheme.Theme.primaryText : NTheme.Theme.primaryContainerText
-                                        font.family: NTheme.Theme.fontFamily
-                                        font.pixelSize: NTheme.Theme.fontSizeSm
-                                        font.weight: NTheme.Theme.fontWeightDemiBold
+                                        color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.primaryContainerText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
+                                        font.weight: Nexa.Theme.fontWeightDemiBold
                                     }
                                     Text {
                                         text: "↵"
-                                        color: copyBtnMouse.containsMouse ? NTheme.Theme.primaryText : NTheme.Theme.mutedText
-                                        font.family: NTheme.Theme.monoFontFamily
-                                        font.pixelSize: NTheme.Theme.fontSizeXs
+                                        color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.monoFontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
                                     }
                                 }
 
@@ -1693,9 +1693,9 @@ PanelWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 32
-                    color: NTheme.Theme.surfaceContainerLow
-                    border.width: NTheme.Theme.borderThin
-                    border.color: NTheme.Theme.borderSubtle
+                    color: Nexa.Theme.surfaceContainerLow
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.borderSubtle
 
                     RowLayout {
                         anchors.fill: parent
@@ -1709,21 +1709,21 @@ PanelWindow {
                                 width: 20
                                 height: 16
                                 radius: 3
-                                color: NTheme.Theme.surfaceContainerHigh
+                                color: Nexa.Theme.surfaceContainerHigh
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
                                     text: "↑↓"
-                                    color: NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.monoFontFamily
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.monoFontFamily
                                     font.pixelSize: 10
                                 }
                             }
                             Text {
                                 text: "Navigate"
-                                color: NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.fontFamily
-                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1734,22 +1734,22 @@ PanelWindow {
                                 width: 22
                                 height: 16
                                 radius: 3
-                                color: NTheme.Theme.surfaceContainerHigh
+                                color: Nexa.Theme.surfaceContainerHigh
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
                                     text: "↵"
-                                    color: NTheme.Theme.primary
-                                    font.family: NTheme.Theme.monoFontFamily
+                                    color: Nexa.Theme.primary
+                                    font.family: Nexa.Theme.monoFontFamily
                                     font.pixelSize: 11
                                     font.weight: Font.Bold
                                 }
                             }
                             Text {
                                 text: "Copy & Close"
-                                color: NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.fontFamily
-                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1760,21 +1760,21 @@ PanelWindow {
                                 width: 18
                                 height: 16
                                 radius: 3
-                                color: NTheme.Theme.surfaceContainerHigh
+                                color: Nexa.Theme.surfaceContainerHigh
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
                                     text: "P"
-                                    color: NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.monoFontFamily
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.monoFontFamily
                                     font.pixelSize: 10
                                 }
                             }
                             Text {
                                 text: "Pin / Unpin"
-                                color: NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.fontFamily
-                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1785,21 +1785,21 @@ PanelWindow {
                                 width: 24
                                 height: 16
                                 radius: 3
-                                color: NTheme.Theme.surfaceContainerHigh
+                                color: Nexa.Theme.surfaceContainerHigh
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
                                     text: "Del"
-                                    color: NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.monoFontFamily
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.monoFontFamily
                                     font.pixelSize: 10
                                 }
                             }
                             Text {
                                 text: "Delete"
-                                color: NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.fontFamily
-                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1812,21 +1812,21 @@ PanelWindow {
                                 width: 26
                                 height: 16
                                 radius: 3
-                                color: NTheme.Theme.surfaceContainerHigh
+                                color: Nexa.Theme.surfaceContainerHigh
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
                                     text: "ESC"
-                                    color: NTheme.Theme.mutedText
-                                    font.family: NTheme.Theme.monoFontFamily
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.monoFontFamily
                                     font.pixelSize: 9
                                 }
                             }
                             Text {
                                 text: "Close"
-                                color: NTheme.Theme.mutedText
-                                font.family: NTheme.Theme.fontFamily
-                                font.pixelSize: NTheme.Theme.fontSizeXs
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1845,11 +1845,11 @@ PanelWindow {
 
                 implicitWidth: toastRow.implicitWidth + 24
                 implicitHeight: 34
-                radius: NTheme.Theme.radiusPill
+                radius: Nexa.Theme.radiusPill
 
-                color: NTheme.Theme.surfaceContainerHighest
-                border.width: NTheme.Theme.borderThin
-                border.color: NTheme.Theme.primary
+                color: Nexa.Theme.surfaceContainerHighest
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.primary
 
                 opacity: root.toastVisible ? 1 : 0
                 scale: root.toastVisible ? 1 : 0.85
@@ -1869,16 +1869,16 @@ PanelWindow {
 
                     Text {
                         text: "󰄬"
-                        color: NTheme.Theme.primary
-                        font.family: NTheme.Theme.iconFontFamily
-                        font.pixelSize: NTheme.Theme.iconSm
+                        color: Nexa.Theme.primary
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: Nexa.Theme.iconSm
                     }
                     Text {
                         text: root.toastText
-                        color: NTheme.Theme.text
-                        font.family: NTheme.Theme.fontFamily
-                        font.pixelSize: NTheme.Theme.fontSizeSm
-                        font.weight: NTheme.Theme.fontWeightDemiBold
+                        color: Nexa.Theme.text
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeSm
+                        font.weight: Nexa.Theme.fontWeightDemiBold
                     }
                 }
             }
@@ -1897,10 +1897,10 @@ PanelWindow {
                     anchors.centerIn: parent
                     width: 380
                     implicitHeight: modalColumn.implicitHeight + 40
-                    radius: NTheme.Theme.radiusMd
-                    color: NTheme.Theme.panelBackgroundElevated
-                    border.width: NTheme.Theme.borderThin
-                    border.color: NTheme.Theme.borderStrong
+                    radius: Nexa.Theme.radiusMd
+                    color: Nexa.Theme.panelBackgroundElevated
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.borderStrong
 
                     ColumnLayout {
                         id: modalColumn
@@ -1914,13 +1914,13 @@ PanelWindow {
                             width: 44
                             height: 44
                             radius: 22
-                            color: NTheme.Theme.errorContainer
+                            color: Nexa.Theme.errorContainer
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "󰆴"
-                                color: NTheme.Theme.error
-                                font.family: NTheme.Theme.iconFontFamily
+                                color: Nexa.Theme.error
+                                font.family: Nexa.Theme.iconFontFamily
                                 font.pixelSize: 22
                             }
                         }
@@ -1929,10 +1929,10 @@ PanelWindow {
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.confirmClear ? "Clear Entire Clipboard?" : "Delete Clipboard Item?"
-                            color: NTheme.Theme.text
-                            font.family: NTheme.Theme.fontFamily
-                            font.pixelSize: NTheme.Theme.fontSizeLg
-                            font.weight: NTheme.Theme.fontWeightBold
+                            color: Nexa.Theme.text
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeLg
+                            font.weight: Nexa.Theme.fontWeightBold
                         }
 
                         // Subtitle
@@ -1942,9 +1942,9 @@ PanelWindow {
                             text: root.confirmClear
                                 ? "All saved history items will be permanently removed."
                                 : "This item will be removed from your clipboard history."
-                            color: NTheme.Theme.mutedText
-                            font.family: NTheme.Theme.fontFamily
-                            font.pixelSize: NTheme.Theme.fontSizeSm
+                            color: Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: Nexa.Theme.fontSizeSm
                             wrapMode: Text.Wrap
                         }
 
@@ -1959,18 +1959,18 @@ PanelWindow {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 36
-                                radius: NTheme.Theme.radiusSm
-                                color: modalCancelMouse.containsMouse ? NTheme.Theme.hoverStrong : NTheme.Theme.surfaceContainerHigh
-                                border.width: NTheme.Theme.borderThin
-                                border.color: NTheme.Theme.borderSubtle
+                                radius: Nexa.Theme.radiusSm
+                                color: modalCancelMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
+                                border.width: Nexa.Theme.borderThin
+                                border.color: Nexa.Theme.borderSubtle
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "Cancel"
-                                    color: NTheme.Theme.text
-                                    font.family: NTheme.Theme.fontFamily
-                                    font.pixelSize: NTheme.Theme.fontSizeSm
-                                    font.weight: NTheme.Theme.fontWeightMedium
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeSm
+                                    font.weight: Nexa.Theme.fontWeightMedium
                                 }
 
                                 MouseArea {
@@ -1989,16 +1989,16 @@ PanelWindow {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 36
-                                radius: NTheme.Theme.radiusSm
-                                color: modalConfirmMouse.containsMouse ? NTheme.Theme.error : NTheme.Theme.errorContainer
+                                radius: Nexa.Theme.radiusSm
+                                color: modalConfirmMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.errorContainer
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: root.confirmClear ? "Clear All" : "Delete"
-                                    color: modalConfirmMouse.containsMouse ? NTheme.Theme.onError : NTheme.Theme.error
-                                    font.family: NTheme.Theme.fontFamily
-                                    font.pixelSize: NTheme.Theme.fontSizeSm
-                                    font.weight: NTheme.Theme.fontWeightDemiBold
+                                    color: modalConfirmMouse.containsMouse ? Nexa.Theme.onError : Nexa.Theme.error
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeSm
+                                    font.weight: Nexa.Theme.fontWeightDemiBold
                                 }
 
                                 MouseArea {

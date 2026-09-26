@@ -82,6 +82,15 @@ struct HyprActiveWindow {
 }
 
 
+#[derive(Debug, Deserialize, Default, Clone)]
+struct HyprSpecialWorkspaceRef {
+    #[serde(default)]
+    id: i32,
+    #[serde(default)]
+    name: String,
+}
+
+
 #[derive(Debug, Deserialize)]
 struct HyprMonitor {
     id: i32,
@@ -104,6 +113,9 @@ struct HyprMonitor {
 
     #[serde(default)]
     focused: bool,
+
+    #[serde(rename = "specialWorkspace", default)]
+    special_workspace: Option<HyprSpecialWorkspaceRef>,
 }
 
 
@@ -579,6 +591,18 @@ pub fn info() -> Result<WorkspaceState, String> {
     let mut special_workspaces =
         Vec::new();
 
+    let active_special_names: Vec<String> = hypr_monitors
+        .iter()
+        .filter_map(|m| {
+            m.special_workspace.as_ref().and_then(|s| {
+                if s.id != 0 && !s.name.is_empty() {
+                    Some(s.name.strip_prefix("special:").unwrap_or(&s.name).to_string())
+                } else {
+                    None
+                }
+            })
+        })
+        .collect();
 
     for workspace in
         hypr_workspaces
@@ -632,6 +656,9 @@ pub fn info() -> Result<WorkspaceState, String> {
                 )
                 .to_string();
 
+        let is_act = active_special_names.iter().any(|an| {
+            an == &display_name || an == &workspace.name || format!("special:{}", an) == workspace.name
+        });
 
         special_workspaces.push(
             SpecialWorkspaceInfo {
@@ -645,8 +672,7 @@ pub fn info() -> Result<WorkspaceState, String> {
                 display_name,
 
                 active:
-                    active_workspace.id
-                        == workspace.id,
+                    is_act,
 
                 monitor:
                     workspace.monitor.clone(),
@@ -656,16 +682,46 @@ pub fn info() -> Result<WorkspaceState, String> {
         );
     }
 
+    let known_scratchpads = [
+        ("special:terminal", "terminal", -97),
+        ("special:files", "files", -98),
+        ("special:magic", "magic", -99),
+    ];
+
+    for (k_name, k_disp, k_id) in &known_scratchpads {
+        if !special_workspaces.iter().any(|s: &SpecialWorkspaceInfo| s.name == *k_name || s.display_name == *k_disp) {
+            let is_act = active_special_names.iter().any(|an| an == *k_disp || an == *k_name);
+            special_workspaces.push(SpecialWorkspaceInfo {
+                id: *k_id,
+                name: k_name.to_string(),
+                display_name: k_disp.to_string(),
+                active: is_act,
+                monitor: hypr_monitors.first().map(|m| m.name.clone()).unwrap_or_default(),
+                windows: Vec::new(),
+            });
+        }
+    }
 
     special_workspaces.sort_by(
         |a, b| {
-
-            a.display_name
-                .to_lowercase()
-                .cmp(
-                    &b.display_name
-                        .to_lowercase()
-                )
+            let order = |name: &str| match name {
+                "terminal" | "special:terminal" => 0,
+                "files" | "special:files" => 1,
+                "magic" | "special:magic" => 2,
+                _ => 3,
+            };
+            let oa = order(&a.display_name);
+            let ob = order(&b.display_name);
+            if oa != ob {
+                oa.cmp(&ob)
+            } else {
+                a.display_name
+                    .to_lowercase()
+                    .cmp(
+                        &b.display_name
+                            .to_lowercase()
+                    )
+            }
         }
     );
 

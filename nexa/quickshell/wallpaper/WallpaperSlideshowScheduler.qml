@@ -16,6 +16,7 @@ Item {
     property string intervalStr: "10m"
     property string typeFilter: "All"
     property string applyTarget: "Background"
+    property double lastChangedTime: 0
 
     property bool isLocked: false
 
@@ -31,18 +32,18 @@ Item {
     }
 
     function triggerNext() {
-        if (root.isLocked) {
+        if (Boolean(root.isLocked)) {
             console.log("[WallpaperSlideshow] Screen is locked, postponing wallpaper change")
-            cycleTimer.restart()
             return
         }
-        if (!nextProcess.running) {
-            nextProcess.running = true
-        }
-        cycleTimer.restart()
+
+        console.log("[WallpaperSlideshow] Triggering next wallpaper via nexad")
+        root.lastChangedTime = Date.now()
+        Quickshell.execDetached([root.nexad, "wallpaper", "slideshow", "next"])
     }
 
     function parseConfig(raw) {
+        if (!raw || raw.trim() === "") return
         try {
             const data = JSON.parse(raw)
             root.enabled = !!data.enabled
@@ -51,20 +52,17 @@ Item {
             root.typeFilter = data.type_filter || "All"
             root.applyTarget = data.apply_target || "Background"
 
-            const targetMs = root.intervalToMs(root.intervalStr)
-            if (cycleTimer.interval !== targetMs) {
-                cycleTimer.interval = targetMs
+            if (data.last_changed && Number(data.last_changed) > 0) {
+                root.lastChangedTime = Number(data.last_changed) * 1000
+            } else if (root.lastChangedTime === 0) {
+                root.lastChangedTime = Date.now()
             }
 
-            if (root.enabled && !root.paused) {
-                if (!cycleTimer.running) {
-                    cycleTimer.start()
-                }
-            } else {
-                cycleTimer.stop()
-            }
+            console.log("[WallpaperSlideshow] Config loaded: enabled=" + root.enabled +
+                        " paused=" + root.paused + " interval=" + root.intervalStr +
+                        " lastChanged=" + new Date(root.lastChangedTime).toLocaleTimeString())
         } catch (e) {
-            console.log("[WallpaperSlideshow] Error parsing config:", e)
+            console.warn("[WallpaperSlideshow] Error parsing config:", e)
         }
     }
 
@@ -72,11 +70,7 @@ Item {
         id: configFile
         path: root.configPath
         watchChanges: true
-        onFileChanged: {
-            if (configFile.text()) {
-                root.parseConfig(configFile.text())
-            }
-        }
+        onFileChanged: reload()
         onLoaded: {
             if (configFile.text()) {
                 root.parseConfig(configFile.text())
@@ -84,25 +78,40 @@ Item {
         }
     }
 
-    Process {
-        id: nextProcess
-        command: [root.nexad, "wallpaper", "slideshow", "next"]
-        stdout: StdioCollector {}
+    // Wall-clock time ticker: runs constantly every 5 seconds without relying on dynamic running bindings
+    Timer {
+        id: tickerTimer
+        interval: 5000 // 5 seconds
+        repeat: true
+        running: true
+        onTriggered: {
+            if (!root.enabled || root.paused || Boolean(root.isLocked)) return
+
+            const now = Date.now()
+            const intervalMs = root.intervalToMs(root.intervalStr)
+            const elapsed = now - root.lastChangedTime
+
+            if (elapsed >= intervalMs) {
+                console.log("[WallpaperSlideshow] Time elapsed (" + Math.round(elapsed / 1000) + "s >= " + Math.round(intervalMs / 1000) + "s), changing wallpaper")
+                root.triggerNext()
+            }
+        }
     }
 
-    Timer {
-        id: cycleTimer
-        interval: root.intervalToMs(root.intervalStr)
-        repeat: true
-        running: false
-        onTriggered: {
-            if (root.enabled && !root.paused && !root.isLocked) {
+    // When screen unlocks, immediately check if elapsed time passed during lock
+    onIsLockedChanged: {
+        if (!isLocked && root.enabled && !root.paused) {
+            const now = Date.now()
+            const intervalMs = root.intervalToMs(root.intervalStr)
+            if (now - root.lastChangedTime >= intervalMs) {
+                console.log("[WallpaperSlideshow] Screen unlocked and interval elapsed, changing wallpaper immediately")
                 root.triggerNext()
             }
         }
     }
 
     Component.onCompleted: {
+        configFile.reload()
         Qt.callLater(function() {
             if (configFile.text()) {
                 root.parseConfig(configFile.text())
@@ -118,10 +127,7 @@ Item {
         }
 
         function reload(): void {
-            if (configFile.text()) {
-                root.parseConfig(configFile.text())
-            }
+            configFile.reload()
         }
     }
 }
-

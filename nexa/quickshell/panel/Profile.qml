@@ -13,6 +13,7 @@ Item {
     property string wallpaperPath: ""
     property string wallpaperType: "image"
     property string themeSource: ""
+    property string previewPath: ""
     property string lockWallpaperPath: ""
     property string lockWallpaperType: "image"
     property string userName: ""
@@ -20,16 +21,39 @@ Item {
     property string uptimeText: ""
     property string osInfo: ""
 
-    function getPreviewSource(path, type, themeSource) {
-        if (!path || path === "") return ""
-        if (themeSource && themeSource !== "") {
-            return "file://" + themeSource
+    function cleanPath(raw) {
+        if (!raw || raw === "") return ""
+        let p = String(raw).trim()
+        p = p.replace(/^['"]|['"]$/g, "")
+        p = p.replace(/\\(.)/g, "$1")
+        if (p.startsWith("file://")) {
+            p = p.substring(7)
         }
+        return p
+    }
+
+    function getPreviewSource(path, type, themeSource, preview) {
+        const cPreview = cleanPath(preview)
+        if (cPreview !== "") {
+            return "file://" + cPreview
+        }
+
+        const cPath = cleanPath(path)
+        if (cPath === "") return ""
+
+        const fileName = cPath.substring(cPath.lastIndexOf("/") + 1)
+        const thumbPath = Quickshell.env("HOME") + "/.cache/nexa/wallpapers/thumbs/" + fileName + ".jpg"
+
         if (type === "video" || type === "gif") {
-            const fileName = path.substring(path.lastIndexOf("/") + 1)
-            return "file://" + Quickshell.env("HOME") + "/.cache/nexa/wallpapers/thumbs/" + fileName + ".jpg"
+            return "file://" + thumbPath
         }
-        return "file://" + path
+
+        const cTheme = cleanPath(themeSource)
+        if (cTheme !== "" && (cTheme.endsWith(".jpg") || cTheme.endsWith(".jpeg"))) {
+            return "file://" + cTheme
+        }
+
+        return "file://" + cPath
     }
 
     // Live FileView watcher for dynamic wallpaper changes
@@ -41,17 +65,20 @@ Item {
         onLoaded: {
             try {
                 root.themeSource = ""
+                root.previewPath = ""
                 const text = wallpaperConfigFile.text()
                 if (text && text.length > 0) {
                     const lines = text.split("\n")
                     for (let i = 0; i < lines.length; i++) {
                         const line = lines[i].trim()
                         if (line.startsWith("WALLPAPER=")) {
-                            root.wallpaperPath = line.substring(10).replace(/^['"]|['"]$/g, "")
+                            root.wallpaperPath = root.cleanPath(line.substring(10))
                         } else if (line.startsWith("WALLPAPER_TYPE=")) {
-                            root.wallpaperType = line.substring(15).replace(/^['"]|['"]$/g, "")
+                            root.wallpaperType = root.cleanPath(line.substring(15))
                         } else if (line.startsWith("THEME_SOURCE=")) {
-                            root.themeSource = line.substring(13).replace(/^['"]|['"]$/g, "")
+                            root.themeSource = root.cleanPath(line.substring(13))
+                        } else if (line.startsWith("PREVIEW=")) {
+                            root.previewPath = root.cleanPath(line.substring(8))
                         }
                     }
                 }
@@ -73,9 +100,9 @@ Item {
                     for (let i = 0; i < lines.length; i++) {
                         const line = lines[i].trim()
                         if (line.startsWith("WALLPAPER=")) {
-                            root.lockWallpaperPath = line.substring(10).replace(/^['"]|['"]$/g, "")
+                            root.lockWallpaperPath = root.cleanPath(line.substring(10))
                         } else if (line.startsWith("WALLPAPER_TYPE=")) {
-                            root.lockWallpaperType = line.substring(15).replace(/^['"]|['"]$/g, "")
+                            root.lockWallpaperType = root.cleanPath(line.substring(15))
                         }
                     }
                 }
@@ -130,7 +157,7 @@ Item {
                 sourceSize.width: 500
                 sourceSize.height: 600
 
-                source: root.getPreviewSource(root.lockWallpaperPath, root.lockWallpaperType, "")
+                source: root.getPreviewSource(root.lockWallpaperPath, root.lockWallpaperType, "", "")
 
                 fillMode: Image.PreserveAspectCrop
                 horizontalAlignment: Image.AlignHCenter
@@ -139,6 +166,58 @@ Item {
                 asynchronous: true
                 cache: true
                 smooth: true
+
+                onStatusChanged: {
+                    if (status === Image.Error) {
+                        const cPath = root.cleanPath(root.lockWallpaperPath)
+                        const fileName = cPath.substring(cPath.lastIndexOf("/") + 1)
+                        const thumb = "file://" + Quickshell.env("HOME") + "/.cache/nexa/wallpapers/thumbs/" + fileName + ".jpg"
+                        if (source !== thumb) {
+                            source = thumb
+                        }
+                    }
+                }
+            }
+
+            // Lock Screen Indicator Tag
+            Rectangle {
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    margins: 10
+                }
+                height: 22
+                width: lockTagRow.implicitWidth + 14
+                radius: 11
+                color: Qt.rgba(0, 0, 0, 0.45)
+                z: 15
+
+                Row {
+                    id: lockTagRow
+                    anchors.centerIn: parent
+                    spacing: 5
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "󰌾"
+                        color: Nexa.Theme.text
+                        font {
+                            family: Nexa.Theme.iconFontFamily
+                            pixelSize: 11
+                        }
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Lock Screen"
+                        color: Nexa.Theme.text
+                        font {
+                            family: Nexa.Theme.fontFamily
+                            pixelSize: 10
+                            weight: Nexa.Theme.fontWeightMedium
+                        }
+                    }
+                }
             }
 
             // Interactive hover (unclickable)
@@ -187,7 +266,7 @@ Item {
                 sourceSize.width: 900
                 sourceSize.height: 500
 
-                source: root.getPreviewSource(root.wallpaperPath, root.wallpaperType, root.themeSource)
+                source: root.getPreviewSource(root.wallpaperPath, root.wallpaperType, root.themeSource, root.previewPath)
 
                 fillMode: Image.PreserveAspectCrop
                 horizontalAlignment: Image.AlignHCenter
@@ -196,6 +275,17 @@ Item {
                 asynchronous: true
                 cache: true
                 smooth: true
+
+                onStatusChanged: {
+                    if (status === Image.Error) {
+                        const cPath = root.cleanPath(root.wallpaperPath)
+                        const fileName = cPath.substring(cPath.lastIndexOf("/") + 1)
+                        const thumb = "file://" + Quickshell.env("HOME") + "/.cache/nexa/wallpapers/thumbs/" + fileName + ".jpg"
+                        if (source !== thumb) {
+                            source = thumb
+                        }
+                    }
+                }
             }
 
             // Horizontal Dark Fade Overlay (Deep dark on left, transparent on right)
@@ -324,7 +414,7 @@ Item {
                 "printf 'USER %s\\n' \"$(whoami)\"; ",
                 "printf 'HOST %s\\n' \"$(hostname)\"; ",
 
-                "( . \"$HOME/.config/nexa/config/wallpaper.conf\" 2>/dev/null; printf 'WALLPAPER %s\\n' \"$WALLPAPER\"; printf 'WALLPAPER_TYPE %s\\n' \"${WALLPAPER_TYPE:-image}\"; printf 'THEME_SOURCE %s\\n' \"${THEME_SOURCE:-}\"; ); ",
+                "( . \"$HOME/.config/nexa/config/wallpaper.conf\" 2>/dev/null; printf 'WALLPAPER %s\\n' \"$WALLPAPER\"; printf 'WALLPAPER_TYPE %s\\n' \"${WALLPAPER_TYPE:-image}\"; printf 'THEME_SOURCE %s\\n' \"${THEME_SOURCE:-}\"; printf 'PREVIEW %s\\n' \"${PREVIEW:-}\"; ); ",
                 "( . \"$HOME/.config/nexa/config/lockscreen.conf\" 2>/dev/null; printf 'LOCK_WALLPAPER %s\\n' \"$WALLPAPER\"; printf 'LOCK_WALLPAPER_TYPE %s\\n' \"${WALLPAPER_TYPE:-image}\"; ); ",
                 "printf 'OS %s\\n' \"$(grep -s '^PRETTY_NAME=' /etc/os-release | cut -d= -f2 | tr -d '\"')\""
             ].join("")
@@ -355,19 +445,22 @@ Item {
                         root.uptimeText = value
                         break
                     case "WALLPAPER":
-                        root.wallpaperPath = value
+                        root.wallpaperPath = root.cleanPath(value)
                         break
                     case "WALLPAPER_TYPE":
-                        root.wallpaperType = value
+                        root.wallpaperType = root.cleanPath(value)
                         break
                     case "THEME_SOURCE":
-                        root.themeSource = value
+                        root.themeSource = root.cleanPath(value)
+                        break
+                    case "PREVIEW":
+                        root.previewPath = root.cleanPath(value)
                         break
                     case "LOCK_WALLPAPER":
-                        root.lockWallpaperPath = value
+                        root.lockWallpaperPath = root.cleanPath(value)
                         break
                     case "LOCK_WALLPAPER_TYPE":
-                        root.lockWallpaperType = value
+                        root.lockWallpaperType = root.cleanPath(value)
                         break
                     case "OS":
                         root.osInfo = value

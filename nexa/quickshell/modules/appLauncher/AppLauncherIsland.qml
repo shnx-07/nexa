@@ -5,7 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
-import "../../theme" as NTheme
+import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
 
 
@@ -310,13 +310,13 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 50
 
-            radius: NTheme.Theme.radiusMd
-            color: NTheme.Theme.surfaceContainer
-            border.width: searchInput.activeFocus ? NTheme.Theme.borderNormal : NTheme.Theme.borderThin
-            border.color: searchInput.activeFocus ? NTheme.Theme.primary : NTheme.Theme.border
+            radius: Nexa.Theme.radiusMd
+            color: Nexa.Theme.surfaceContainer
+            border.width: searchInput.activeFocus ? Nexa.Theme.borderNormal : Nexa.Theme.borderThin
+            border.color: searchInput.activeFocus ? Nexa.Theme.primary : Nexa.Theme.border
 
             Behavior on border.color {
-                ColorAnimation { duration: NTheme.Theme.animationFast }
+                ColorAnimation { duration: Nexa.Theme.animationFast }
             }
 
             RowLayout {
@@ -327,9 +327,9 @@ Item {
 
                 Text {
                     text: "󰍉"
-                    color: searchInput.activeFocus ? NTheme.Theme.primary : NTheme.Theme.mutedText
-                    font.family: NTheme.Theme.iconFontFamily
-                    font.pixelSize: NTheme.Theme.iconMd
+                    color: searchInput.activeFocus ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: Nexa.Theme.iconMd
                 }
 
                 Item {
@@ -343,20 +343,20 @@ Item {
                         text: root.selectedCategoryId === "all"
                             ? "Search applications..."
                             : "Search in " + root.selectedCategoryName + "..."
-                        color: NTheme.Theme.mutedText
-                        font.family: NTheme.Theme.fontFamily
-                        font.pixelSize: NTheme.Theme.fontSizeMd
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeMd
                     }
 
                     TextInput {
                         id: searchInput
                         anchors.fill: parent
                         verticalAlignment: Text.AlignVCenter
-                        color: NTheme.Theme.text
-                        selectionColor: NTheme.Theme.primary
-                        selectedTextColor: NTheme.Theme.onPrimary
-                        font.family: NTheme.Theme.fontFamily
-                        font.pixelSize: NTheme.Theme.fontSizeMd
+                        color: Nexa.Theme.text
+                        selectionColor: Nexa.Theme.primary
+                        selectedTextColor: Nexa.Theme.onPrimary
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeMd
                         clip: true
 
                         onTextChanged: searchDebounce.restart()
@@ -427,14 +427,14 @@ Item {
                     height: 26
                     radius: 13
                     visible: searchInput.text.length > 0
-                    color: clearMouse.containsMouse ? NTheme.Theme.hover : "transparent"
+                    color: clearMouse.containsMouse ? Nexa.Theme.hover : "transparent"
 
                     Text {
                         anchors.centerIn: parent
                         text: "󰅖"
-                        color: clearMouse.containsMouse ? NTheme.Theme.text : NTheme.Theme.mutedText
-                        font.family: NTheme.Theme.iconFontFamily
-                        font.pixelSize: NTheme.Theme.iconSm
+                        color: clearMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: Nexa.Theme.iconSm
                     }
 
                     MouseArea {
@@ -488,18 +488,18 @@ Item {
                             radius: height / 2
 
                             color: active
-                                ? NTheme.Theme.primary
+                                ? Nexa.Theme.primary
                                 : chipMouse.containsMouse
-                                    ? NTheme.Theme.surfaceContainerHigh
-                                    : NTheme.Theme.surfaceContainer
+                                    ? Nexa.Theme.surfaceContainerHigh
+                                    : Nexa.Theme.surfaceContainer
 
-                            border.width: active ? 0 : NTheme.Theme.borderThin
-                            border.color: active ? "transparent" : NTheme.Theme.border
+                            border.width: active ? 0 : Nexa.Theme.borderThin
+                            border.color: active ? "transparent" : Nexa.Theme.border
 
                             scale: chipMouse.pressed ? 0.96 : (chipMouse.containsMouse ? 1.02 : 1.0)
 
-                            Behavior on color { ColorAnimation { duration: NTheme.Theme.animationFast } }
-                            Behavior on scale { NumberAnimation { duration: NTheme.Theme.animationFast } }
+                            Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                            Behavior on scale { NumberAnimation { duration: Nexa.Theme.animationFast } }
 
                             Row {
                                 id: chipRow
@@ -509,18 +509,18 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.categoryIcon(modelData.id, modelData.name)
-                                    color: catChip.active ? NTheme.Theme.onPrimary : NTheme.Theme.text
-                                    font.family: NTheme.Theme.iconFontFamily
-                                    font.pixelSize: NTheme.Theme.iconSm
+                                    color: catChip.active ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
                                 }
 
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: modelData.name
-                                    color: catChip.active ? NTheme.Theme.onPrimary : NTheme.Theme.text
-                                    font.family: NTheme.Theme.fontFamily
-                                    font.pixelSize: NTheme.Theme.fontSizeSm
-                                    font.weight: catChip.active ? NTheme.Theme.fontWeightSemiBold : NTheme.Theme.fontWeightMedium
+                                    color: catChip.active ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeSm
+                                    font.weight: catChip.active ? Nexa.Theme.fontWeightSemiBold : Nexa.Theme.fontWeightMedium
                                 }
                             }
 
@@ -545,10 +545,10 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            radius: NTheme.Theme.radiusLg
-            color: NTheme.Theme.surfaceContainer
-            border.width: NTheme.Theme.borderThin
-            border.color: NTheme.Theme.border
+            radius: Nexa.Theme.radiusLg
+            color: Nexa.Theme.surfaceContainer
+            border.width: Nexa.Theme.borderThin
+            border.color: Nexa.Theme.border
             clip: true
 
             GridView {
@@ -566,8 +566,8 @@ Item {
                 clip: true
 
                 boundsBehavior: Flickable.StopAtBounds
-                flickDeceleration: NTheme.Theme.flickDeceleration
-                maximumFlickVelocity: NTheme.Theme.flickVelocityMax
+                flickDeceleration: Nexa.Theme.flickDeceleration
+                maximumFlickVelocity: Nexa.Theme.flickVelocityMax
 
                 ScrollBar.vertical: ScrollBar {
                     id: gridScrollBar
@@ -584,20 +584,20 @@ Item {
                         implicitWidth: 3
                         radius: 1.5
                         color: Qt.rgba(
-                            NTheme.Theme.text.r,
-                            NTheme.Theme.text.g,
-                            NTheme.Theme.text.b,
+                            Nexa.Theme.text.r,
+                            Nexa.Theme.text.g,
+                            Nexa.Theme.text.b,
                             gridScrollBar.hovered ? 0.6 : 0.25
                         )
-                        Behavior on color { ColorAnimation { duration: NTheme.Theme.animationFast } }
+                        Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
                     }
                     background: Rectangle {
                         implicitWidth: 3
                         radius: 1.5
                         color: Qt.rgba(
-                            NTheme.Theme.text.r,
-                            NTheme.Theme.text.g,
-                            NTheme.Theme.text.b,
+                            Nexa.Theme.text.r,
+                            Nexa.Theme.text.g,
+                            Nexa.Theme.text.b,
                             0.06
                         )
                     }
@@ -618,24 +618,24 @@ Item {
                         anchors.fill: parent
                         anchors.margins: 4
 
-                        radius: NTheme.Theme.radiusMd
+                        radius: Nexa.Theme.radiusMd
 
                         color: appItem.isSelected
-                            ? NTheme.Theme.primaryContainer
+                            ? Nexa.Theme.primaryContainer
                             : appMouse.containsMouse
-                                ? NTheme.Theme.surfaceContainerHigh
-                                : NTheme.Theme.surfaceContainerLow
+                                ? Nexa.Theme.surfaceContainerHigh
+                                : Nexa.Theme.surfaceContainerLow
 
-                        border.width: appItem.isSelected ? NTheme.Theme.borderNormal : NTheme.Theme.borderThin
+                        border.width: appItem.isSelected ? Nexa.Theme.borderNormal : Nexa.Theme.borderThin
                         border.color: appItem.isSelected
-                            ? NTheme.Theme.primary
-                            : (appMouse.containsMouse ? NTheme.Theme.borderStrong : NTheme.Theme.border)
+                            ? Nexa.Theme.primary
+                            : (appMouse.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.border)
 
                         scale: appMouse.pressed ? 0.97 : (appMouse.containsMouse ? 1.01 : 1.0)
 
-                        Behavior on color { ColorAnimation { duration: NTheme.Theme.animationFast } }
-                        Behavior on scale { NumberAnimation { duration: NTheme.Theme.animationFast } }
-                        Behavior on border.color { ColorAnimation { duration: NTheme.Theme.animationFast } }
+                        Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                        Behavior on scale { NumberAnimation { duration: Nexa.Theme.animationFast } }
+                        Behavior on border.color { ColorAnimation { duration: Nexa.Theme.animationFast } }
 
                         RowLayout {
                             anchors.fill: parent
@@ -667,10 +667,10 @@ Item {
                                 Text {
                                     Layout.fillWidth: true
                                     text: modelData.name
-                                    color: appItem.isSelected ? NTheme.Theme.onPrimaryContainer : NTheme.Theme.text
-                                    font.family: NTheme.Theme.fontFamily
-                                    font.pixelSize: NTheme.Theme.fontSizeMd
-                                    font.weight: NTheme.Theme.fontWeightSemiBold
+                                    color: appItem.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeMd
+                                    font.weight: Nexa.Theme.fontWeightSemiBold
                                     elide: Text.ElideRight
                                     maximumLineCount: 1
                                 }
@@ -679,10 +679,10 @@ Item {
                                     Layout.fillWidth: true
                                     text: root.appDescription(modelData)
                                     visible: text.length > 0
-                                    color: appItem.isSelected ? NTheme.Theme.onPrimaryContainer : NTheme.Theme.mutedText
+                                    color: appItem.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.mutedText
                                     opacity: appItem.isSelected ? 0.8 : 1.0
-                                    font.family: NTheme.Theme.fontFamily
-                                    font.pixelSize: NTheme.Theme.fontSizeXs
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeXs
                                     elide: Text.ElideRight
                                     maximumLineCount: 1
                                 }
@@ -711,18 +711,18 @@ Item {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "󰀻"
-                        color: NTheme.Theme.mutedText
-                        font.family: NTheme.Theme.iconFontFamily
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.iconFontFamily
                         font.pixelSize: 36
                     }
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: searchInput.text.length > 0 ? "No applications found" : "No applications"
-                        color: NTheme.Theme.mutedText
-                        font.family: NTheme.Theme.fontFamily
-                        font.pixelSize: NTheme.Theme.fontSizeMd
-                        font.weight: NTheme.Theme.fontWeightMedium
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeMd
+                        font.weight: Nexa.Theme.fontWeightMedium
                     }
                 }
 
@@ -731,9 +731,9 @@ Item {
                     anchors.centerIn: parent
                     visible: root.loading && root.visibleApps.length === 0
                     text: "Loading applications..."
-                    color: NTheme.Theme.mutedText
-                    font.family: NTheme.Theme.fontFamily
-                    font.pixelSize: NTheme.Theme.fontSizeMd
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: Nexa.Theme.fontSizeMd
                 }
             }
         }
@@ -753,9 +753,9 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: searchInput.text.length > 0 ? "󰍉" : "󰀻"
-                    color: NTheme.Theme.mutedText
-                    font.family: NTheme.Theme.iconFontFamily
-                    font.pixelSize: NTheme.Theme.iconXs
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: Nexa.Theme.iconXs
                 }
 
                 Text {
@@ -763,10 +763,10 @@ Item {
                     text: searchInput.text.length > 0
                         ? root.visibleApps.length + " result" + (root.visibleApps.length === 1 ? "" : "s")
                         : root.visibleApps.length + " apps in " + root.selectedCategoryName
-                    color: NTheme.Theme.mutedText
-                    font.family: NTheme.Theme.fontFamily
-                    font.pixelSize: NTheme.Theme.fontSizeXs
-                    font.weight: NTheme.Theme.fontWeightMedium
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: Nexa.Theme.fontSizeXs
+                    font.weight: Nexa.Theme.fontWeightMedium
                 }
             }
 
@@ -780,16 +780,16 @@ Item {
                     spacing: 4
                     Text {
                         text: "↑↓←→"
-                        color: NTheme.Theme.primary
-                        font.family: NTheme.Theme.monoFont
-                        font.pixelSize: NTheme.Theme.fontSizeXs
-                        font.weight: NTheme.Theme.fontWeightBold
+                        color: Nexa.Theme.primary
+                        font.family: Nexa.Theme.monoFont
+                        font.pixelSize: Nexa.Theme.fontSizeXs
+                        font.weight: Nexa.Theme.fontWeightBold
                     }
                     Text {
                         text: "Navigate"
-                        color: NTheme.Theme.mutedText
-                        font.family: NTheme.Theme.fontFamily
-                        font.pixelSize: NTheme.Theme.fontSizeXs
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeXs
                     }
                 }
 
@@ -797,16 +797,16 @@ Item {
                     spacing: 4
                     Text {
                         text: "↵"
-                        color: NTheme.Theme.primary
-                        font.family: NTheme.Theme.monoFont
-                        font.pixelSize: NTheme.Theme.fontSizeXs
-                        font.weight: NTheme.Theme.fontWeightBold
+                        color: Nexa.Theme.primary
+                        font.family: Nexa.Theme.monoFont
+                        font.pixelSize: Nexa.Theme.fontSizeXs
+                        font.weight: Nexa.Theme.fontWeightBold
                     }
                     Text {
                         text: "Launch"
-                        color: NTheme.Theme.mutedText
-                        font.family: NTheme.Theme.fontFamily
-                        font.pixelSize: NTheme.Theme.fontSizeXs
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeXs
                     }
                 }
 
@@ -814,16 +814,16 @@ Item {
                     spacing: 4
                     Text {
                         text: "ESC"
-                        color: NTheme.Theme.primary
-                        font.family: NTheme.Theme.monoFont
-                        font.pixelSize: NTheme.Theme.fontSizeXs
-                        font.weight: NTheme.Theme.fontWeightBold
+                        color: Nexa.Theme.primary
+                        font.family: Nexa.Theme.monoFont
+                        font.pixelSize: Nexa.Theme.fontSizeXs
+                        font.weight: Nexa.Theme.fontWeightBold
                     }
                     Text {
                         text: "Close"
-                        color: NTheme.Theme.mutedText
-                        font.family: NTheme.Theme.fontFamily
-                        font.pixelSize: NTheme.Theme.fontSizeXs
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeXs
                     }
                 }
             }

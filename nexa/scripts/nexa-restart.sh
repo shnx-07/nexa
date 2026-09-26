@@ -4,8 +4,11 @@ set -e
 
 # NEVER kill or restart quickshell if the session is locked!
 # Killing quickshell while holding Wayland WlSessionLock crashes the session lock!
-if [ -f /tmp/nexa-locked ]; then
+RUNTIME_NEXA="${XDG_RUNTIME_DIR:-/tmp/nexa-${USER:-user}}/nexa"
+if [ -f "$RUNTIME_NEXA/locked" ] || [ -f /tmp/nexa-locked ]; then
     echo "Session is currently locked. Flagging deferred restart for when session is unlocked."
+    mkdir -p "$RUNTIME_NEXA"
+    touch "$RUNTIME_NEXA/restart-pending"
     touch /tmp/nexa-restart-pending
     exit 0
 fi

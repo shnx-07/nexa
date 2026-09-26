@@ -12,6 +12,9 @@ import "../modules/power" as PowerModule
 PanelWindow {
     id: root
 
+    required property var modelData
+    screen: modelData
+
     // ============================================================
     // NEXA TOP BAR
     //
@@ -131,95 +134,44 @@ PanelWindow {
             // PILL 1 — BATTERY
             // ----------------------------------------------------
 
-            Rectangle {
+            component BarPill: Rectangle {
+                default property alias content: pillRow.data
+                property int contentSpacing: 0
+                property int extraWidth: Nexa.Theme.spacingMd
+
+                implicitHeight: Nexa.Theme.controlHeightSm
+                implicitWidth: pillRow.implicitWidth + extraWidth
+                radius: height / 2
+                color: Nexa.Theme.surfaceContainer
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.border
+
+                Behavior on color {
+                    ColorAnimation { duration: Nexa.Theme.animationFast }
+                }
+
+                Row {
+                    id: pillRow
+                    anchors.centerIn: parent
+                    spacing: contentSpacing
+                }
+            }
+
+            BarPill {
                 id: batteryPill
-
-                implicitHeight: Nexa.Theme.controlHeightSm
-                implicitWidth: batteryPillRow.implicitWidth + Nexa.Theme.spacingMd
-
-                radius: height / 2
-                color: Nexa.Theme.surfaceContainer
-
-                border {
-                    width: Nexa.Theme.borderThin
-                    color: Nexa.Theme.border
-                }
-
-                Behavior on color {
-                    ColorAnimation { duration: Nexa.Theme.animationFast }
-                }
-
-                Row {
-                    id: batteryPillRow
-                    anchors.centerIn: parent
-                    spacing: 0
-
-                    BatteryModule.Battery {}
-                }
+                BatteryModule.Battery {}
             }
 
-
-            // ----------------------------------------------------
-            // PILL 2 — CONNECTIVITY  (Wi-Fi | BT)
-            // ----------------------------------------------------
-
-            Rectangle {
+            BarPill {
                 id: networkPill
-
-                implicitHeight: Nexa.Theme.controlHeightSm
-                implicitWidth: networkPillRow.implicitWidth + Nexa.Theme.spacingMd
-
-                radius: height / 2
-                color: Nexa.Theme.surfaceContainer
-
-                border {
-                    width: Nexa.Theme.borderThin
-                    color: Nexa.Theme.border
-                }
-
-                Behavior on color {
-                    ColorAnimation { duration: Nexa.Theme.animationFast }
-                }
-
-                Row {
-                    id: networkPillRow
-                    anchors.centerIn: parent
-                    spacing: 0
-
-                    NetworkModule.Network {}
-                }
+                NetworkModule.Network {}
             }
 
-
-            // ----------------------------------------------------
-            // PILL 3 — POWER
-            // ----------------------------------------------------
-
-            Rectangle {
+            BarPill {
                 id: powerPill
-
-                implicitHeight: Nexa.Theme.controlHeightSm
+                extraWidth: 0
                 implicitWidth: Nexa.Theme.controlHeightSm
-
-                radius: height / 2
-                color: Nexa.Theme.surfaceContainer
-
-                border {
-                    width: Nexa.Theme.borderThin
-                    color: Nexa.Theme.border
-                }
-
-                Behavior on color {
-                    ColorAnimation { duration: Nexa.Theme.animationFast }
-                }
-
-                Row {
-                    id: powerPillRow
-                    anchors.centerIn: parent
-                    spacing: 0
-
-                    PowerModule.Power {}
-                }
+                PowerModule.Power {}
             }
         }
     }

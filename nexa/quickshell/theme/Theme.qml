@@ -552,6 +552,10 @@ QtObject {
     readonly property int fontWeightNormal:
         Font.Normal
 
+    readonly property int fontWeightRegular:
+        Font.Normal
+
+
     readonly property int fontWeightMedium:
         Font.Medium
 

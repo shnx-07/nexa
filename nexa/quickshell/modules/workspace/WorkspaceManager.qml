@@ -924,11 +924,33 @@ PanelWindow {
             return
         }
 
+        const clean = cleanSpecialName(name)
+        const idx = specialWorkspaceIndex(clean)
+        const winCount = (idx >= 0 && specialWorkspaces[idx] && specialWorkspaces[idx].windows)
+            ? specialWorkspaces[idx].windows.length : 0
+
+        if (clean === "terminal" && winCount === 0) {
+            runAction([
+                "command",
+                "run",
+                "hyprctl dispatch 'hl.exec_cmd(\"[workspace special:terminal] kitty\")' && hyprctl dispatch 'hl.dsp.workspace.toggle_special(\"terminal\")'"
+            ])
+            return
+        }
+
+        if (clean === "files" && winCount === 0) {
+            runAction([
+                "command",
+                "run",
+                "hyprctl dispatch 'hl.exec_cmd(\"[workspace special:files] dolphin\")' && hyprctl dispatch 'hl.dsp.workspace.toggle_special(\"files\")'"
+            ])
+            return
+        }
 
         runAction([
             "workspace",
             "special",
-            String(name)
+            String(clean)
         ])
     }
 
@@ -1081,6 +1103,17 @@ PanelWindow {
 
         onActivated:
             manager.closeManager()
+    }
+
+    Repeater {
+        model: 10
+        Shortcut {
+            sequence: (index + 1) % 10 === 0 ? "0" : String(index + 1)
+            enabled: manager.visible && !manager.dragActive
+            onActivated: {
+                manager.switchWorkspace(index + 1)
+            }
+        }
     }
 
 
@@ -1554,7 +1587,7 @@ PanelWindow {
 
 
                 text:
-                    "Special"
+                    "Scratchpads & Special Workspaces"
 
 
                 color:
@@ -1605,152 +1638,6 @@ PanelWindow {
                 spacing:
                     Nexa.Theme.spacingMd
 
-                
-                Rectangle {
-                    id: defaultSpecial
-
-                    readonly property string specialName:
-                        "magic"
-
-                    visible:
-                        !manager.specialExists(
-                            "magic"
-                        )
-
-                    width:
-                        visible
-                        ? manager.workspacePreviewWidth
-                        : 0
-
-                    height:
-                        manager.workspacePreviewHeight
-
-                    radius:
-                        Nexa.Theme.radiusMd
-
-                    color:
-                        defaultSpecialDrop.containsDrag
-                        ? Nexa.Theme.primarySurfaceStrong
-                        : Nexa.Theme.cardBackgroundElevated
-
-                    border.width:
-                        defaultSpecialDrop.containsDrag
-                        ? Nexa.Theme.borderStrongWidth
-                        : 1
-
-                    border.color:
-                        defaultSpecialDrop.containsDrag
-                        ? Nexa.Theme.primary
-                        : Nexa.Theme.border
-
-
-                    Column {
-                        anchors.centerIn:
-                            parent
-
-                        spacing:
-                            Nexa.Theme.spacingXs
-
-
-                        Text {
-                            anchors.horizontalCenter:
-                                parent.horizontalCenter
-
-                            text:
-                                "Special"
-
-                            color:
-                                Nexa.Theme.text
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeSm
-
-                                bold:
-                                    true
-                            }
-                        }
-
-
-                        Text {
-                            anchors.horizontalCenter:
-                                parent.horizontalCenter
-
-                            text:
-                                "magic"
-
-                            color:
-                                Nexa.Theme.mutedText
-
-                            font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeXs
-                            }
-                        }
-                    }
-
-
-                    MouseArea {
-                        anchors.fill:
-                            parent
-
-                        enabled:
-                            !manager.dragActive
-
-                        onClicked:
-                            manager.toggleSpecial(
-                                defaultSpecial.specialName
-                            )
-                    }
-
-
-                    DropArea {
-                        id: defaultSpecialDrop
-
-                        anchors.fill:
-                            parent
-
-                        keys: [
-                            "nexa-workspace-window"
-                        ]
-
-
-                        onEntered: drag => {
-
-                            if (!manager.dragActive) {
-                                drag.accepted = false
-                                return
-                            }
-
-                            drag.accepted = true
-
-                            manager.draggingTargetWorkspace =
-                                -1
-
-                            manager.draggingTargetSpecialWorkspace =
-                                defaultSpecial.specialName
-                        }
-
-
-                        onExited: {
-
-                            if (
-                                manager.draggingTargetSpecialWorkspace
-                                === defaultSpecial.specialName
-                            ) {
-                                manager.draggingTargetSpecialWorkspace =
-                                    ""
-                            }
-                        }
-                    }
-                }
-
                 Repeater {
                     model:
                         manager.specialWorkspaces
@@ -1772,102 +1659,118 @@ PanelWindow {
                                     || ""
                                 )
 
+                            readonly property string friendlyTitle: {
+                                if (specialName === "terminal") return "Terminal"
+                                if (specialName === "files") return "Files"
+                                if (specialName === "magic") return "Quick Scratchpad"
+                                return specialName.charAt(0).toUpperCase() + specialName.slice(1)
+                            }
+
+                            readonly property string scratchIcon: {
+                                if (specialName === "terminal") return "󰆍"
+                                if (specialName === "files") return "󰉋"
+                                if (specialName === "magic") return "󰏤"
+                                return "󰍹"
+                            }
+
+                            readonly property int windowCount:
+                                modelData.windows ? modelData.windows.length : 0
+
 
                             implicitWidth: manager.workspacePreviewWidth
                             implicitHeight: manager.workspacePreviewHeight
                             padding: 0
                             selected: modelData.active
 
-                            scale:
-                                specialDrop.containsDrag
-                                ? 1.02
-                                : 1.0
-
-
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration:
-                                        Nexa.Theme.motionInteraction
-                                }
-                            }
-
                             border.width:
                                 specialDrop.containsDrag
                                 ? Nexa.Theme.borderStrongWidth
-                                : Nexa.Theme.borderThin
+                                : modelData.active
+                                  ? 2
+                                  : Nexa.Theme.borderThin
 
 
                             border.color:
                                 specialDrop.containsDrag
                                 ? Nexa.Theme.primary
                                 : modelData.active
-                                  ? Nexa.Theme.secondary
+                                  ? Nexa.Theme.primary
                                   : Nexa.Theme.border
 
 
-                            Text {
+                            // Header with Icon, Title, and Window Count Badge
+                            RowLayout {
                                 anchors {
-                                    left:
-                                        parent.left
+                                    left: parent.left
+                                    top: parent.top
+                                    right: parent.right
+                                    margins: Nexa.Theme.spacingSm
+                                }
+                                spacing: Nexa.Theme.spacingXs
 
-                                    top:
-                                        parent.top
-
-                                    margins:
-                                        Nexa.Theme.spacingSm
+                                Text {
+                                    text: specialTile.scratchIcon
+                                    color: modelData.active ? Nexa.Theme.primary : Nexa.Theme.text
+                                    font.pixelSize: Nexa.Theme.fontSizeSm
                                 }
 
+                                Text {
+                                    text: specialTile.friendlyTitle
+                                    color: Nexa.Theme.text
+                                    font {
+                                        family: Nexa.Theme.fontFamily
+                                        pixelSize: Nexa.Theme.fontSizeSm
+                                        bold: true
+                                    }
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
 
-                                text:
-                                    specialTile.specialName
+                                Rectangle {
+                                    visible: specialTile.windowCount > 0
+                                    implicitWidth: countText.implicitWidth + 8
+                                    implicitHeight: 16
+                                    radius: 8
+                                    color: modelData.active ? Nexa.Theme.primary : Qt.rgba(255, 255, 255, 0.12)
 
-
-                                color:
-                                    Nexa.Theme.text
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSizeSm
-
-                                    bold:
-                                        true
+                                    Text {
+                                        id: countText
+                                        anchors.centerIn: parent
+                                        text: String(specialTile.windowCount)
+                                        color: modelData.active ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        font {
+                                            pixelSize: 10
+                                            bold: true
+                                        }
+                                    }
                                 }
                             }
 
 
-                            Text {
-                                anchors.centerIn:
-                                    parent
+                            // Empty State Graphic
+                            Column {
+                                anchors.centerIn: parent
+                                visible: specialTile.windowCount === 0
+                                spacing: 4
 
-
-                                visible:
-                                    !modelData.windows
-                                    || modelData.windows.length === 0
-
-
-                                text:
-                                    "Empty"
-
-
-                                color:
-                                    Nexa.Theme.mutedText
-
-
-                                font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSizeXs
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: specialTile.scratchIcon
+                                    color: Nexa.Theme.mutedText
+                                    font.pixelSize: 22
+                                    opacity: 0.35
                                 }
 
-
-                                opacity:
-                                    0.45
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: "Click to launch"
+                                    color: Nexa.Theme.mutedText
+                                    font {
+                                        family: Nexa.Theme.fontFamily
+                                        pixelSize: Nexa.Theme.fontSizeXs
+                                    }
+                                    opacity: 0.55
+                                }
                             }
 
 
@@ -1875,65 +1778,56 @@ PanelWindow {
                                 anchors.fill:
                                     parent
 
-
                                 enabled:
                                     !manager.dragActive
 
+                                cursorShape:
+                                    Qt.PointingHandCursor
 
-                                onClicked:
+                                onClicked: {
+                                    manager.closeManager()
                                     manager.toggleSpecial(
                                         specialTile.specialName
                                     )
+                                }
                             }
 
 
                             DropArea {
                                 id: specialDrop
 
-
                                 anchors.fill:
                                     parent
-
 
                                 keys: [
                                     "nexa-workspace-window"
                                 ]
 
-
                                 onEntered: drag => {
-
                                     if (
                                         !manager.dragActive
                                         || manager.draggingAddress === ""
                                     ) {
-
                                         drag.accepted =
                                             false
-
                                         return
                                     }
-
 
                                     drag.accepted =
                                         true
 
-
                                     manager.draggingTargetSpecialWorkspace =
                                         specialTile.specialName
-
 
                                     manager.draggingTargetWorkspace =
                                         -1
                                 }
 
-
                                 onExited: {
-
                                     if (
                                         manager.draggingTargetSpecialWorkspace
                                         === specialTile.specialName
                                     ) {
-
                                         manager.draggingTargetSpecialWorkspace =
                                             ""
                                     }

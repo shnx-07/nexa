@@ -1,17 +1,17 @@
-# NEXA
+# NEXA Desktop
 
-NEXA is a modern, high-performance Wayland desktop environment built around **Quickshell**, **Hyprland**, and a dedicated **Rust backend** (`nexad`).
+A sleek, fluid, and modern desktop experience for Linux built on top of **Hyprland** and **Quickshell**, powered by a high-speed **Rust backend** (`nexad`).
 
-> **Philosophy:** Keep the UI reactive in QML, keep system logic fast and safe in Rust, and maintain strict desktop modularity.
+Designed to feel as polished and reactive as a flagship mobile OS, while giving you the full power and tiling efficiency of Linux.
 
 ---
 
-## 📸 Showcase
+## 📸 Preview
 
 <div align="center">
 
-### Dynamic Island & Quick Settings Control Center
-*Fluid interactive notch hub with multi-page navigation, hardware toggles, audio mixer, and system telemetry.*
+### Dynamic Island & Control Center
+*An interactive notch with quick settings, volume mixer, calendar, and system status.*
 
 <img src="assets/control_center.png" alt="NEXA Control Center & Quick Settings" width="100%" />
 
@@ -19,18 +19,18 @@ NEXA is a modern, high-performance Wayland desktop environment built around **Qu
 
 | **3D Wallpaper Carousel** | **Dynamic Island Clock & Calendar** |
 | :---: | :---: |
-| <img src="assets/wallpaper_picker.png" alt="Wallpaper Picker" width="100%" /><br/>*Real-time 3D perspective carousel with Video, GIF & Image filters* | <img src="assets/dynamic_island_clock.png" alt="Dynamic Island Clock" width="100%" /><br/>*Interactive expanded calendar, stopwatch, and focus timer* |
+| <img src="assets/wallpaper_picker.png" alt="Wallpaper Picker" width="100%" /><br/>*3D coverflow carousel supporting Images, GIFs, and Video wallpapers* | <img src="assets/dynamic_island_clock.png" alt="Dynamic Island Clock" width="100%" /><br/>*Expanded calendar, stopwatch, and focus timer* |
 
 <br/>
 
-| **Spotlight Application Launcher** | **Dynamic Theme Engine & iOS Liquid Glass** |
+| **Spotlight App Search** | **Dynamic Theme Engine & Liquid Glass** |
 | :---: | :---: |
-| <img src="assets/app_launcher.png" alt="App Launcher" width="100%" /><br/>*Sub-millisecond category-filtered search & Freedesktop app launcher* | <img src="assets/theme_customizer.png" alt="Theme Customizer & Liquid Glass" width="100%" /><br/>*Dynamic Material You customizer, 85+ presets, and instant Solid / iOS Liquid Glass optical refraction mode* |
+| <img src="assets/app_launcher.png" alt="App Launcher" width="100%" /><br/>*Instant app search with category filters* | <img src="assets/theme_customizer.png" alt="Theme Customizer & Liquid Glass" width="100%" /><br/>*Automatic color palettes from your wallpaper + iOS-style frosted glass mode* |
 
 <br/>
 
-### Interactive Workspace Manager
-*Visual workspace overview with live Wayland window thumbnails and drag-and-drop workspace migration.*
+### Visual Workspace Manager
+*Overview of all workspaces with live window previews.*
 
 <img src="assets/workspace_manager.png" alt="NEXA Workspace Manager" width="100%" />
 
@@ -38,13 +38,13 @@ NEXA is a modern, high-performance Wayland desktop environment built around **Qu
 
 ---
 
-## ⚡ Quick Start: Automated Installation
+## ⚡ Quick Start: Easy Installation
 
-NEXA includes a fully automated, production-grade installer and uninstaller for **Arch Linux** and **CachyOS**.
+NEXA comes with an automated one-step installer for **Arch Linux** and **CachyOS**.
 
-### 🚀 1. Install NEXA (Automated A-to-Z)
+### 🚀 1. Install NEXA
 
-Clone the repository and run the installer:
+Open a terminal and run:
 
 ```bash
 git clone https://github.com/shnx-07/nexa.git dotfiles
@@ -53,223 +53,120 @@ chmod +x install.sh uninstall.sh
 ./install.sh
 ```
 
-#### What the installer does automatically:
-1. **System & Sudo Check:** Validates Arch/CachyOS environment and ensures non-root execution with sudo privileges.
-2. **AUR Helper Bootstrapping:** Checks for `yay` or `paru`. If missing, automatically clones and builds `yay` from source.
-3. **Full Dependency Installation:** Installs all required official (`pacman`) and AUR (`yay`) packages.
-4. **Safe Automated Backups:** Automatically creates a timestamped backup of your existing configs in `~/.config/nexa_backups/backup_<timestamp>/`.
-5. **Configuration Deployment:** Deploys Hyprland, Quickshell, Kitty, Alacritty, WezTerm, Matugen, GTK, Qt/Qt6ct, KDE Globals, and Starship configurations.
-6. **Rust Backend Compilation:** Runs `cargo build --release` inside `~/.config/nexa/rust` to compile `nexad`.
-7. **Hyprland Plugins:** Automatically updates `hyprpm`, then installs and enables `hyprglass` and `dynamic-cursors`.
-8. **Runtime Initialization:** Sets up wallpaper cache and runtime directories.
+**What the installer does for you:**
+- Automatically downloads and installs all needed fonts, icons, and tools.
+- Creates a safe, timestamped backup of your current configurations.
+- Sets up all themes, wallpapers, and desktop components.
+- Compiles the fast Rust helper backend (`nexad`).
 
 ---
 
-### 🔄 2. Revert / Uninstall NEXA
+### 🔄 2. Uninstall / Restore
 
-To completely revert NEXA and restore your original configuration files:
+If you ever want to return to your original desktop setup, NEXA can be cleanly uninstalled:
 
 ```bash
 cd dotfiles
 ./uninstall.sh
 ```
 
-#### What the uninstaller does:
-- Gracefully terminates running `quickshell`, `nexad`, and wallpaper daemons.
-- Cleans up deployed NEXA configurations.
-- **Automatically restores your previous configuration backup** from `~/.config/nexa_backups/`.
-- Clears temporary runtime caches.
-- Optionally disables Hyprland plugins.
+Your previous configuration will be automatically restored from your backup.
 
 ---
 
-## 📦 Complete Package & Dependency Inventory
+## ✨ Features You'll Love
 
-If you prefer installing dependencies manually or want a complete breakdown:
+### 🏝️ Dynamic Island & Control Center
+- **Interactive Notch:** Click or hover over the top bar notch to reveal the media player, clock, calendar, weather, or notifications.
+- **Quick Settings (`Super + N`):** Easily adjust brightness, volume, Wi-Fi, Bluetooth, night light, and power options from a clean tabbed panel.
+- **On-Screen Displays:** Clean, animated indicator capsules appear in the notch when you adjust volume or screen brightness.
 
-### 1. Core Desktop & Window Management
-* `hyprland` — Wayland compositor
-* `hypridle` — Idle management daemon
-* `hyprpicker` — Wayland color picker
-* `hyprcursor` — Cursor theme format support
-* `xdg-desktop-portal-hyprland` & `xdg-desktop-portal-gtk` — Wayland desktop portals
-* `polkit-kde-agent` — Privilege escalation auth agent
+### 🖥️ Smart Display Manager (`Super + P`)
+- **Effortless Multi-Monitor:** Connect an external monitor or TV and press `Super + P` to switch modes:
+  - **PC screen only:** Use only your laptop screen.
+  - **Duplicate:** Mirror your screen onto the second display.
+  - **Extend:** Expand your desktop across multiple screens (with direction controls: Right, Left, Above, Below).
+  - **Second screen only:** Turn off the laptop display and work exclusively on your external monitor.
+- **Plug & Play Fallback:** Unplugging your cable automatically and safely restores your windows to your laptop display without flickering or crashes, even on the lock screen.
+- **Clamshell Mode:** Close your laptop lid while plugged into an external display to keep working uninterrupted.
 
-### 2. Theming, Shell & Icons (Quickshell & Matugen)
-* `quickshell-git` *(AUR)* — The reactive Wayland QML shell engine (provides `qs` and `quickshell`)
-* `breeze` & `breeze-icons` — KDE Breeze icon theme (required for Quickshell native theme icons)
-* `adwaita-icon-theme` — GNOME Adwaita icon theme
-* `matugen-bin` *(AUR)* — Material You dynamic color palette extractor
-* `awww-git` *(AUR)* — High-performance Wayland wallpaper daemon
-* `mpvpaper` *(AUR)* — Video wallpaper engine
-* `hyprsunset` *(AUR)* — Color temperature / night light daemon
-* `qt5ct` & `qt6ct` — Qt appearance configuration tools
-* `kvantum` — SVG-based Qt theme engine
-* `kdeglobals` — Native KDE configuration applying universal Kvantum styling and dynamically generated `Nexa.colors` across all KDE apps (Dolphin, Gwenview, Kate, Ark)
-* `nwg-look` *(AUR)* — GTK theme and icon switcher
+### 📁 Dynamic Island Shelf (File Stash Tray)
+- **Drag & Drop Anywhere:** Drag any file, image, or document from your browser, file manager, or chat and drop it onto the Dynamic Island notch.
+- **Temporary Stash:** Your files stay neatly stored in a deck of cards at the top of your screen until you need them. Drag them out into any app, email, or folder whenever you're ready.
 
-### 3. Terminals, Shell & Utilities
-* `alacritty`, `kitty` & `wezterm` — Terminal emulators
-* `nemo`, `dolphin` & `yazi` — Graphical and terminal file managers
-* `zsh` & `starship` — Shell and dynamic Powerline prompt
-* `btop` & `htop` — System monitors
-* `jq`, `glib2`, `socat` — Data formatting and IPC utilities
+### 🎨 Intelligent Colors & Liquid Glass
+- **Wallpaper Color Matching:** Whenever you set a new wallpaper, NEXA extracts matching color tones and updates your entire system (panels, windows, terminals, and apps) in real time.
+- **iOS Liquid Glass Mode:** Toggle between clean solid surfaces and translucent frosted liquid glass with realistic background blur and lighting.
 
-### 4. Audio, Media & Capture
-* `pipewire`, `wireplumber`, `pipewire-pulse`, `pipewire-alsa` — Audio server stack
-* `playerctl` — Media player controller
-* `mpv`, `cava`, `ffmpeg` — Media players and audio visualizer
-* `grim`, `slurp`, `satty` — Wayland screenshot and snipping tools
-* `wf-recorder` — Screen recorder
-* `wl-clipboard`, `cliphist` — Wayland clipboard managers
+### 🖼️ 3D Wallpaper Carousel (`Super + W`)
+- **Visual Coverflow:** Browse your wallpapers in an interactive 3D carousel.
+- **Video & GIF Support:** Set animated live wallpapers (MP4/WebM videos or GIFs) with seamless playback.
+- **Automatic Slideshow:** Have your wallpaper automatically change every 5m, 15m, 30m, 1h, or 2h with smooth transitions.
 
-### 5. Build & Development Chain
-* `base-devel`, `git`, `rust`, `cargo`, `gcc`, `pkgconf`, `cmake`, `python`
+### 🔍 Spotlight Search & App Launcher (`Super + Space`)
+- **Instant Search:** Press `Super + Space` to search through apps, settings, and files instantly.
+- **Full App Drawer (`Super + A`):** Categorized view of all your installed software (Development, Media, Office, Utilities).
 
-### 6. Typography & Fontconfig
-* `otf-apple-sf-pro` *(AUR)* / `otf-apple-fonts` *(AUR)* — Apple SF Pro font family (System-wide default UI & sans-serif font)
-* `ttf-jetbrains-mono-nerd` & `ttf-nerd-fonts-symbols` — Nerd Font icons & glyphs
-* `noto-fonts`, `noto-fonts-cjk`, `noto-fonts-emoji` — Universal fallback & emoji support
-* `otf-font-awesome` — Icon glyphs
-* `fontconfig` — XML configuration prioritizing SF Pro Display across UI and applications
-
----
-
-## ✨ Features
-
-### 🌟 Top Bar & Dynamic Island
-* **Live Workspaces:** Dynamic pill indicator with smooth sliding animation and active window tracking.
-* **Dynamic Island:** Interactive notch supporting Clock, Calendar, Stopwatch, Media player, Theme switcher, System Monitor, Audio visualizer, and Notification banners.
-* **Dynamic Island Shelf & Stash Tray (Wayland Drag & Drop):**
-  * **Interactive Dropzone:** Drag files from any file manager (Nemo, Dolphin, terminal, or browser) and hover over the Dynamic Island notch to automatically expand the Shelf (`580px × 155px`).
-  * **Polaroid Card Deck:** Live image thumbnails, category icons, file names, and badge counts for instant visual recognition.
-  * **Wayland Drag-Out:** Drag any file card directly from the notch into any target application window, text editor, chat, or folder.
-  * **Batch Clipboard Actions:** Quick actions to copy individual paths or all stashed files (`Copy All`) to the clipboard with animated toast feedback.
-  * **Rust CLI & IPC Integration:** Comprehensive backend controls via `nexad shelf` (`open`, `toggle`, `list`, `add <paths>`, `remove <id>`, `clear`).
-* **Integrated Control Center:** Sleek widescreen (`760px × 440px`) hub built directly into the Dynamic Island with tabbed navigation:
-  * **Controls (Quick Settings):** Dual-column layout featuring Output sink selector chip, per-app audio volume mixer, sound-reactive Microphone input with click-to-mute, Display Brightness & Night Light (with 3-mode switcher, debounced 12h AM/PM Custom Schedule steppers, and automated Sunrise/Sunset scheduling via `hyprsunset`), Screen Filters, and unified 2×2 Connectivity & Actions grids.
-  * **Alerts:** 2-column notification grid with instant dismissal and history.
-  * **Weather:** Dual-card 50/50 layout with current conditions, scrollable atmospheric metrics, and Daily/Hourly forecast views.
-  * **Profile:** User account overview with 1:3 profile picture split and cinematic wallpaper backdrop.
-* **On-Screen Display (OSD):** Zero-latency hardware feedback popups directly in the Dynamic Island with tailored dimensions:
-  * **Master Volume:** `320px` × `48px` capsule gauge with dynamic speaker icon (`F2` / `F3`)
-  * **Audio Output Mute:** `240px` × `44px` status pill with volume readout (`F1`)
-  * **Microphone Mute:** `240px` × `44px` status pill with mic input indicator (`F4`)
-  * **Display Brightness:** `320px` × `48px` capsule gauge with amber sun indicator (`F5` / `F6`)
-  * **Airplane Mode:** `260px` × `46px` quick toggle indicator (`F8`)
-
-### 🔍 Dynamic Island Search & Command Palette
-* **Fuzzy Application & File Search (`Super + Space`):** Sub-millisecond desktop application and filesystem search powered by the `nexad` Rust backend.
-* **Universal App Launching:** Standard Freedesktop desktop activation with automatic terminal emulator embedding for terminal apps (`btop`, `micro`, `htop`, `yazi`, `nvim`).
-* **Complete Icon Resolution:** Native Freedesktop icon theme integration (`breeze-dark`), pixmap resolution, and automatic file extension mime mapping (`.txt`, `.png`, `.pdf`, code, scripts, fonts, archives) with fallback protection.
-* **Apple SF Pro Typography:** System-wide font rendering with `SF Pro Display` across UI components, GTK, Qt, and fontconfig.
-
-### ⚡ Battery & Performance Optimized
-* **Dynamic Compositor Throttling:** Automatically switches to `power-saver` and disables expensive multi-pass blur and shadows on battery (slashing battery discharge by nearly 80%).
-* **0% Idle Polling:** System monitors only query hardware when open, eliminating background CPU spikes.
-* **Smart Process Termination:** `Super + Q` terminates background tray hoarders (Discord, Spotify, etc.) directly with `SIGTERM` so closed apps never linger in RAM.
-
-### 🔒 Cyber-Minimalist Glass Lock Screen & Avatar Customization
-* **Profile Picture & Illuminated Avatar Halo:** Features hardware-accelerated circular `OpacityMask` cropping and an animated glowing halo ring that pulses with theme accents when typing passwords.
-* **Intelligent Auto-Detection:** Automatically checks and loads your profile picture from `~/.face`, `~/.face.icon`, `~/.config/nexa/avatar.png` (or `.jpg`/`.svg`/`.webp`), falling back to a gradient initial badge.
-* **Built-in Curated Presets:** Comes bundled with handcrafted high-res SVG presets (`cyber_neon`, `astro_space`, `mecha_cat`, `crystal_prism`, `minimal_silhouette`).
-* **Instant Avatar Management (`nexa-avatar`):**
+### 🔒 Elegant Lock Screen & Custom Avatars
+- **Sleek Login Screen:** Ambient blurred background with an animated glowing halo ring around your profile avatar.
+- **Change Avatar Easily (`nexa-avatar`):**
   ```bash
-  # List all available avatar presets
-  nexa-avatar list
-
-  # Set avatar to a curated preset
+  # Pick from included artwork presets
   nexa-avatar set astro_space
-  nexa-avatar set mecha_cat
   nexa-avatar set cyber_neon
 
-  # Set any custom picture or wallpaper from disk as your lock screen avatar
-  nexa-avatar set ~/Pictures/avatar.png
+  # Or use any personal photo from your computer
+  nexa-avatar set ~/Pictures/my_photo.png
   ```
-* **Live System Telemetry & Power Actions:**
-  * Top bar displays live Battery percentage / charging beacon and OS host badge (`cachyos`).
-  * Bottom-right quick actions for **Sleep** (`󰤄`), **Reboot** (`󰜉`), and **Power Off** (`󰐥`).
-  * Bottom-left floating glass **Now Playing Card** with direct Play/Pause controls.
 
-### 🎵 Cyber-Luminous Glass Deck (Music Experience)
-* **Spinning Vinyl Disc:** A realistic vinyl record with micro-grooves physically slides out from behind the album artwork and spins continuously during playback.
-* **Ambient Artwork Bloom:** Dynamic blurred album art sampling creates an atmospheric underglow behind the player.
-* **Integrated Controls & Scrubber:** High-precision seekbar with monospace timestamps, hero play/pause button, shuffle/loop toggles, and an **inline system/music volume slider** right on the deck.
-* **48-Band CAVA Spectrum:** Audio-reactive visualizer spectrum across the base.
+### 🎵 Music Player Experience
+- **Spinning Vinyl:** When music is playing, a realistic vinyl disc slides out from behind the album artwork and spins in real time.
+- **Built-in Controls:** Seek bar, volume slider, play/pause, and an animated audio visualizer.
 
-### 🖼️ 3D Perspective Wallpaper Picker & Dynamic Theming Engine
-* **3D Perspective Coverflow Carousel (`Super + W`):** Hardware-accelerated 3D carousel effect presenting wallpapers with dynamic rotation, depth scaling, and smooth mouse-wheel/keyboard scrubbing.
-* **Automated Wallpaper Slideshow Scheduler:**
-  * **Background Rotation Daemon:** Integrated QML scheduler (`WallpaperSlideshowScheduler.qml`) running synchronously with the `nexad` Rust backend.
-  * **Flexible Intervals & Transitions:** Customizable rotation intervals (5m, 15m, 30m, 1h, 2h) paired with smooth transitions (`fade`, `wipe`, `slide`, `random`).
-  * **Interactive Controls:** Toggle slideshow state directly from the 3D Carousel header with a dedicated **Pause / Resume** button (`⏸` / `▶`) and real-time status pill.
-  * **Multi-Format Support:** Automatically cycles across Static Images, Animated GIFs, and MPV Video Wallpapers.
-  * **CLI & IPC Controls:** `nexad slideshow` commands (`toggle`, `pause`, `resume`, `next`, `prev`, `status`) with persistent state maintained in `~/.config/nexa/config/slideshow.json`.
-* **Live Format Filters:** One-click filtering tabs for Static Images, Animated GIFs, and MPV Video Wallpapers.
-* **Dynamic Palette Generation:** Powered by Matugen, applying any wallpaper instantly extracts Material You harmonic palettes and updates Quickshell, GTK, Qt, Kvantum, KDE Globals, and terminal themes across the system in real time.
-* **Visual Theme Customizer:** Fine-tune accent tones, toggle light/dark modes, and switch between curated color palettes with real-time live preview.
-* **iOS Liquid Glass & Solid Surface Switcher:** Integrated 2-segment switch in the Theme Island providing instant zero-rebuild switching between clean opaque Material You palettes and VisionOS-inspired translucent liquid glass with GPU-accelerated optical wallpaper refraction, chromatic aberration, and specular rim lighting powered by HyprGlass.
-
-### 📱 Modern App Launcher & Workspace Manager
-* **App Launcher (`Super + A`):** High-density 2-column grid layout with fluid spring entrance motion, category chips (Development, Media, Office, Utilities), and sub-millisecond search.
-* **Workspace Manager (`Super + Tab` / `Super + Shift + W`):** Fullscreen visual workspace overview with live Wayland window previews and candidate drop targets.
-* **Window Rules:** Automatic Picture-in-Picture sticky pinning, centered lower floating file managers (Dolphin, Nemo, Yazi), and automatic floating of file dialogs/modals.
-* **Universal Terminal & Floating Scratchpad Controls:**
-  * **Tiled Terminal (`Super + Return`):** Spawns a standard tiled terminal window on the active workspace.
-  * **Toggle Floating (`Super + Shift + T`):** Dynamically toggles floating for the currently focused terminal window, automatically centering it with tailored compact popup geometry.
-  * **Persistent Floating Scratchpad (`Super + Shift + Return`):** Quick dropdown floating terminal available on any workspace with full history retention, instant keyboard auto-focus on first launch, draggable via `Super + Left Click`, and seamless focus restoration to your previous workspace window upon minimizing.
+### 🔋 Battery Smart
+- **Power Saver on Battery:** Automatically reduces heavy blur and visual effects when you unplug from power, extending your laptop's battery life.
 
 ---
 
-## ⌨️ Hyprland Keybindings Reference
+## ⌨️ Essential Keyboard Shortcuts
 
-| Shortcut | Action |
+| Shortcut | What It Does |
 | :--- | :--- |
-| `Super + Space` | Dynamic Island Search |
-| `Super + Shift + Space` | Dynamic Island Command Palette |
-| `Super + A` | NEXA App Launcher |
-| `Super + W` | NEXA Wallpaper Picker |
-| `Super + N` | Toggle Control Center Island |
-| `Super + V` | Clipboard History (`cliphist`) |
-| `Super + Return` | Open Tiled Terminal (`kitty`) |
-| `Super + Shift + T` | Toggle Floating for Focused Terminal (centered popup geometry) |
-| `Super + Shift + Return` | Toggle Persistent Floating Scratchpad Terminal |
-| `Super + E` | Open File Manager (`nemo`) |
-| `Super + Q` | Close Active Window (with process termination) |
-| `Super + Shift + Q` | Force-Kill Active Window (`kill -9`) |
-| `Super + F` | Toggle Fullscreen |
-| `Super + T` | Toggle Floating |
+| `Super + Space` | Spotlight Search (Apps & Files) |
+| `Super + P` | Display & Projector Switcher (Extend, Mirror, External Only) |
+| `Super + N` | Open Control Center & Quick Settings |
+| `Super + A` | Open All Applications Drawer |
+| `Super + W` | Open 3D Wallpaper Picker |
+| `Super + V` | Open Clipboard History |
 | `Super + L` | Lock Screen |
-| `Super + Shift + S` | Snipping Tool |
-| `Super + X` | Instant Screenshot |
+| `Super + E` | Open File Manager |
+| `Super + Return` | Open Terminal |
+| `Super + Shift + Return` | Toggle Dropdown Scratchpad Terminal |
+| `Super + Q` | Close Current Window |
+| `Super + F` | Fullscreen Window |
+| `Super + T` | Float Window |
+| `Super + Tab` | Show Workspace Overview |
+| `Super + Shift + S` | Snipping Tool (Select area to screenshot) |
+| `Super + X` | Full Screenshot |
 | `F1` / `F2` / `F3` | Mute / Volume Down / Volume Up |
-| `F4` | Microphone Mute Toggle |
 | `F5` / `F6` | Brightness Down / Brightness Up |
-| `F8` | Airplane Mode Toggle |
-| `nexad shelf toggle` | Toggle Dynamic Island Shelf / File Stash Tray |
-| `nexad slideshow toggle` | Toggle Wallpaper Slideshow (Pause / Resume) |
 
 ---
 
-## 📂 Project Directory Structure
+## 📂 File Locations
+
+For users who like to customize their files:
 
 ```text
 ~/.config/nexa/
-├── config/              # User settings, wallpaper.conf, theme.conf, slideshow.json, shelf.json
-├── quickshell/          # QML User Interface
-│   ├── bar/             # Top bar components (Workspaces, TopBar)
-│   ├── island/          # Dynamic Island modules (IslandShelf, IslandOsd, ControlCenterIsland)
-│   ├── modules/         # AppLauncher, Workspace, LockScreen, Media, SystemInfo, Clock, etc.
-│   ├── panel/           # QuickSettings, Alerts, Weather, Profile
-│   ├── theme/           # Material color tokens and reusable UI components
-│   └── wallpaper/       # 3D Wallpaper Carousel & WallpaperSlideshowScheduler
-├── rust/                # Rust backend (nexad)
-│   └── src/             # search.rs, shelf.rs, slideshow.rs, state.rs, wallpaper.rs, etc.
-└── scripts/             # Helper scripts (nexa-restart.sh, nexa-start.sh, wallpaper.sh)
+├── config/              # User settings (theme, wallpaper, monitors)
+├── quickshell/          # User interface components
+├── rust/                # High-speed backend helper (nexad)
+└── scripts/             # Useful system automation scripts
 ```
 
 ---
 
 ## 📜 License
 
-Personal configuration and dotfiles. Distributed under the MIT License.
+Distributed under the MIT License.

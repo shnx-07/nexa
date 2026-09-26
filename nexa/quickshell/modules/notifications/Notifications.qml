@@ -251,14 +251,42 @@ Item {
             contentWidth: width
             contentHeight: cardsGrid.implicitHeight + 8
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+            ScrollBar.vertical: ScrollBar {
+                id: notifScrollBar
+                policy: ScrollBar.AsNeeded
+                width: 4
+                anchors.right: parent.right
+                anchors.rightMargin: 1
+                visible: size < 1.0
+
+                contentItem: Rectangle {
+                    implicitWidth: 3
+                    radius: Nexa.Theme.radiusPill
+                    color: notifScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                    opacity: (notifScrollBar.active || notifScrollBar.hovered) ? 0.6 : 0.0
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: Nexa.Theme.animationNormal }
+                    }
+                    Behavior on color {
+                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                    }
+                }
+
+                background: null
+            }
 
             Grid {
                 id: cardsGrid
-                width: notificationFlickable.width
+                width: notificationFlickable.width - (notificationFlickable.contentHeight > notificationFlickable.height ? (Nexa.Theme.spacingSm + 4) : 0)
                 columns: 2
                 columnSpacing: 10
                 rowSpacing: 10
+
+                Behavior on width {
+                    NumberAnimation { duration: Nexa.Theme.animationFast }
+                }
 
                 Repeater {
                     model: root.notificationListModel

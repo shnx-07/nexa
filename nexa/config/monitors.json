@@ -1,0 +1,130 @@
+{
+  "version": 2,
+  "default_policy_dual": "external-only",
+  "default_policy_multi": "extend-right",
+  "lid_close_policy": "external-only",
+  "lid_open_policy": "extend",
+  "align": "top",
+  "grid_columns": 2,
+  "primary": null,
+  "remember_layouts": true,
+  "restore_workspaces": true,
+  "audio_policy": "notify",
+  "osd_on_hotplug": "new-setup",
+  "internal_outputs": [],
+  "ignore_outputs": [],
+  "wallpaper_script": null,
+  "monitor_prefs": {},
+  "profiles": [
+    {
+      "name": "Laptop Display",
+      "fingerprint": "eDP-1_LenovoGroupLimited_0x9051",
+      "mode": "internal-only",
+      "monitors": {
+        "eDP-1": {
+          "enabled": true,
+          "mode": "1920x1080@60.00",
+          "position": "0x0",
+          "scale": 1.0,
+          "transform": 0,
+          "primary": true,
+          "mirror_of": null,
+          "vrr": null,
+          "last_output": ""
+        }
+      },
+      "auto": false,
+      "lid": null,
+      "created_ms": 0,
+      "last_used_ms": 0
+    },
+    {
+      "name": "Setup-HDMI-A-1_GIGABYT",
+      "fingerprint": "HDMI-A-1_GIGABYTETECHNOLOGYCOLTD_GS27QA+eDP-1_LenovoGroupLimited_0x9051",
+      "mode": "external-only",
+      "monitors": {
+        "HDMI-A-1": {
+          "enabled": true,
+          "mode": "2560x1440@60.00",
+          "position": "0x0",
+          "scale": 1.0,
+          "transform": 0,
+          "primary": true,
+          "mirror_of": null,
+          "vrr": null,
+          "last_output": ""
+        },
+        "eDP-1": {
+          "enabled": false,
+          "mode": "1920x1080@60.00",
+          "position": "0x0",
+          "scale": 1.0,
+          "transform": 0,
+          "primary": false,
+          "mirror_of": null,
+          "vrr": null,
+          "last_output": ""
+        }
+      },
+      "auto": false,
+      "lid": null,
+      "created_ms": 0,
+      "last_used_ms": 0
+    },
+    {
+      "name": "auto: 1 display [a3c751]",
+      "fingerprint": "LenovoGroupLimited_0x9051",
+      "mode": "internal-only",
+      "monitors": {
+        "LenovoGroupLimited_0x9051": {
+          "enabled": true,
+          "mode": "1920x1080@60.001",
+          "position": "0x0",
+          "scale": 1.0,
+          "transform": 0,
+          "primary": true,
+          "mirror_of": null,
+          "vrr": false,
+          "last_output": "eDP-1"
+        }
+      },
+      "auto": true,
+      "lid": "open",
+      "created_ms": 1790450011393,
+      "last_used_ms": 1790452683382
+    },
+    {
+      "name": "auto: 2 displays [393420]",
+      "fingerprint": "GIGABYTETECHNOLOGYCOLTD_GS27QA_26032B000279+LenovoGroupLimited_0x9051",
+      "mode": "extend",
+      "monitors": {
+        "GIGABYTETECHNOLOGYCOLTD_GS27QA_26032B000279": {
+          "enabled": true,
+          "mode": "2560x1440@60",
+          "position": "1920x0",
+          "scale": 1.0,
+          "transform": 0,
+          "primary": false,
+          "mirror_of": null,
+          "vrr": false,
+          "last_output": "HDMI-A-1"
+        },
+        "LenovoGroupLimited_0x9051": {
+          "enabled": true,
+          "mode": "1920x1080@60.001",
+          "position": "0x0",
+          "scale": 1.0,
+          "transform": 0,
+          "primary": true,
+          "mirror_of": null,
+          "vrr": false,
+          "last_output": "eDP-1"
+        }
+      },
+      "auto": true,
+      "lid": "open",
+      "created_ms": 1790450616134,
+      "last_used_ms": 1790452419825
+    }
+  ]
+}

@@ -75,8 +75,11 @@ Item {
 
         const monitorX = Number(monitorData.x || 0)
         const windowX = Number(windowData.x || 0)
+        const relX = Math.max(0, windowX - monitorX) * previewScaleX
 
-        return workspaceX + Math.max(0, windowX - monitorX) * previewScaleX
+        // Keep inside workspace horizontally
+        const maxRelX = Math.max(0, workspaceWidth - 40)
+        return workspaceX + Math.min(relX, maxRelX)
     }
 
     readonly property real initY: {
@@ -85,8 +88,11 @@ Item {
 
         const monitorY = Number(monitorData.y || 0)
         const windowY = Number(windowData.y || 0)
+        const relY = Math.max(0, windowY - monitorY) * previewScaleY
 
-        return workspaceY + Math.max(0, windowY - monitorY) * previewScaleY
+        // Keep inside workspace vertically
+        const maxRelY = Math.max(0, workspaceHeight - 30)
+        return workspaceY + Math.min(relY, maxRelY)
     }
 
     readonly property real targetWidth: {
@@ -110,9 +116,9 @@ Item {
     x: initX
     y: initY
 
-    // Fit strictly inside workspace bounds
-    width: Math.min(targetWidth, Math.max(20, workspaceWidth - (initX - workspaceX)))
-    height: Math.min(targetHeight, Math.max(16, workspaceHeight - (initY - workspaceY)))
+    // Fit strictly inside workspace bounds without bleeding into adjacent cards
+    width: Math.min(targetWidth, Math.max(10, (workspaceX + workspaceWidth) - initX))
+    height: Math.min(targetHeight, Math.max(10, (workspaceY + workspaceHeight) - initY))
 
     z: dragInProgress ? 1000 : (focused ? 20 : 10)
 

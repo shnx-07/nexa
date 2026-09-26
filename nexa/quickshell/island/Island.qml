@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell.Io
 import Quickshell
+import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Services.UPower
 import Quickshell.Bluetooth
@@ -12,6 +13,10 @@ import "../theme" as Nexa
 PanelWindow {
     id: root
 
+    required property var modelData
+    screen: modelData
+
+    WlrLayershell.layer: WlrLayer.Overlay
 
     readonly property bool notificationActive:
         islandContent.notificationActive
@@ -56,10 +61,6 @@ PanelWindow {
 
     margins {
         top: 3
-
-        left: Math.round(
-            ((screen ? screen.width : 1920) - implicitWidth) / 2
-        )
     }
 
     color: "transparent"
@@ -157,6 +158,13 @@ PanelWindow {
 
     readonly property int controlCenterWidth: 760
     readonly property int controlCenterHeight: 460
+
+    // ============================================================
+    // DISPLAY PROJECTION DIMENSIONS
+    // ============================================================
+
+    readonly property int displayWidth: 640
+    readonly property int displayHeight: 300
 
     // ============================================================
     // FILE SHELF / TRAY DIMENSIONS
@@ -775,6 +783,18 @@ PanelWindow {
         }
     }
 
+    function openDisplayOsd(): void {
+        root.enterSpecialMode("display")
+    }
+
+    function toggleDisplayOsd(): void {
+        if (root.specialMode === "display") {
+            root.closeIsland()
+        } else {
+            root.enterSpecialMode("display")
+        }
+    }
+
     function openQuickSettings(): void {
         root.openControlCenter(0)
     }
@@ -1020,6 +1040,31 @@ PanelWindow {
         }
     }
 
+    IpcHandler {
+        target: "displayProjection"
+
+        function open(): void {
+            root.openDisplayOsd()
+        }
+
+        function close(): void {
+            if (root.specialMode === "display")
+                root.closeIsland()
+        }
+
+        function toggle(): void {
+            root.toggleDisplayOsd()
+        }
+
+        function cycle(): void {
+            if (root.specialMode !== "display") {
+                root.openDisplayOsd()
+            } else if (islandContent) {
+                islandContent.cycleDisplayMode()
+            }
+        }
+    }
+
 
     // ============================================================
     // CONTENT-DERIVED STATE
@@ -1053,6 +1098,9 @@ PanelWindow {
 
         if (root.specialMode === "shelf")
             return root.shelfWidth
+
+        if (root.specialMode === "display")
+            return root.displayWidth
 
         if (root.full || root.specialModeActive)
             return root.fullWidth
@@ -1103,6 +1151,9 @@ PanelWindow {
 
         if (root.specialMode === "shelf")
             return root.shelfHeight
+
+        if (root.specialMode === "display")
+            return root.displayHeight
 
         if (root.full || root.specialModeActive)
             return root.fullHeight
@@ -1490,6 +1541,20 @@ PanelWindow {
                         event.accepted = true
                     } else if (event.key === Qt.Key_5 || event.text === "5") {
                         islandContent.triggerPowerKey(5)
+                        event.accepted = true
+                    }
+                } else if (root.specialMode === "display") {
+                    if (event.key === Qt.Key_Left) {
+                        islandContent.moveDisplayLeft()
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_Right) {
+                        islandContent.moveDisplayRight()
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Space) {
+                        islandContent.cycleDisplayMode()
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        islandContent.applyDisplaySelected()
                         event.accepted = true
                     }
                 }

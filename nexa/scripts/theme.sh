@@ -1174,8 +1174,11 @@ STATE
 
 apply)
 
-  if [[ -f /tmp/nexa-locked ]]; then
-    log "Session is locked (/tmp/nexa-locked present). Deferring theme apply to prevent lockscreen reload."
+  RUNTIME_NEXA="${XDG_RUNTIME_DIR:-/tmp/nexa-${USER:-user}}/nexa"
+  if [[ -f "$RUNTIME_NEXA/locked" ]] || [[ -f /tmp/nexa-locked ]]; then
+    log "Session is locked. Deferring theme apply to prevent lockscreen reload."
+    mkdir -p "$RUNTIME_NEXA"
+    touch "$RUNTIME_NEXA/restart-pending"
     touch /tmp/nexa-restart-pending
     exit 0
   fi

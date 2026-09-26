@@ -216,8 +216,8 @@ pub fn sync_from_system() -> SettingsState {
 // ============================================================
 
 pub fn restore_all(force: bool) -> Result<(), String> {
-    let flag_path = PathBuf::from("/tmp/nexa-state-restored");
-    if !force && flag_path.exists() {
+    let flag_path = crate::lock::runtime_dir().join("state-restored");
+    if !force && (flag_path.exists() || std::path::Path::new("/tmp/nexa-state-restored").exists()) {
         println!("settings_state=already_restored_this_boot");
         return Ok(());
     }

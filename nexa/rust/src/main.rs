@@ -2,7 +2,6 @@
 mod appLauncher;
 #[allow(non_snake_case)]
 mod screenTemp;
-
 #[allow(non_snake_case)]
 mod screenFilter;
 mod weather;
@@ -27,258 +26,95 @@ mod state;
 mod shelf;
 mod slideshow;
 mod media;
+mod display;
 
 use std::env;
-
 
 fn print_usage() {
     eprintln!(
         "Usage:
-  nexad wallpaper list
-  nexad wallpaper search <query>
-  nexad wallpaper refresh
-
-  nexad wallpaper lock-set <path>
-  nexad wallpaper lock-info
-
-  nexad search refresh
-  nexad search query <query>
-  nexad search open <id>
-
-
-  nexad workspace info
-  nexad workspace switch <1-10>
-  nexad workspace focus <address>
-  nexad workspace special <name>
-
-  nexad command run <command>
-
-  nexad island search
-  nexad island command
-
-  nexad shelf list
-  nexad shelf add <path-or-uri>
-  nexad shelf remove <id>
-  nexad shelf clear
-  nexad shelf copy-all
-  nexad shelf toggle
-  nexad shelf open
-  nexad shelf close
-
-  nexad network wifi info
-  nexad network wifi scan
-  nexad network wifi refresh
-  nexad network wifi on|off
-  nexad network wifi connect <ssid> [password]
-  nexad network wifi disconnect
-  nexad network wifi forget <ssid>
-
-  nexad network bluetooth info
-  nexad network bluetooth on|off
-  nexad network bluetooth scan on|off
-  nexad network bluetooth pair <address>
-  nexad network bluetooth connect <address>
-  nexad network bluetooth disconnect <address>
-  nexad network bluetooth forget <address>
-
-  nexad appLauncher list
-  nexad appLauncher search <query>
-  nexad appLauncher launch <id>
-  nexad appLauncher refresh
-  
+  nexad wallpaper list | search <query> | refresh | lock-set <path> | lock-info | apply <path> [monitor] | slideshow [status|next|set]
+  nexad search refresh | query <query> | open <id>
+  nexad workspace info | switch <1-10> | focus <address> | special <name>
+  nexad command run <command> | query <query>
+  nexad island search | command
+  nexad shelf list | add <path>... | remove <id> | clear | copy-all | copy-item <id> | toggle | open | close
+  nexad network wifi info | scan | refresh | on | off | connect <ssid> [password] | disconnect | forget <ssid>
+  nexad network bluetooth info | on | off | scan on|off | pair <addr> | connect <addr> | disconnect <addr> | forget <addr>
+  nexad appLauncher list | search <query> | launch <id> | refresh
   nexad screenshot capture
   nexad snipping capture
-
-  nexad recorder start
-  nexad recorder pause
-  nexad recorder resume
-  nexad recorder stop
-  nexad recorder toggle
-  nexad recorder status
-
-  nexad clipboard list
-  nexad clipboard search <query>
-  nexad clipboard copy <id>
-  nexad clipboard delete <id>
-  nexad clipboard clear
-  nexad clipboard get <id>
-
-  nexad screenTemp info
-  nexad screenTemp enable
-  nexad screenTemp disable
-  nexad screenTemp toggle
-
-  nexad screenTemp mode manual
-  nexad screenTemp mode wallpaper
-  nexad screenTemp mode night
-
-  nexad screenTemp set <kelvin>
-  nexad screenTemp wallpaper-set <kelvin>
-  nexad screenTemp night-set <kelvin>
-
-  nexad screenTemp apply
-  nexad screenTemp reset
-
-  nexad notifications daemon
-  nexad notifications list
-  nexad notifications dismiss ID
-  nexad notifications clear
-  nexad notifications read
-  nexad notifications action
-  nexad notifications dnd info
-  nexad notifications dnd on
-  nexad notifications dnd off
-  nexad notifications dnd toggle
-
-  nexad power lock
-  nexad power suspend
-  nexad power logout
-  nexad power reboot
-  nexad power shutdown
-
-  nexad lock auth
-  
-  nexad audio info
-  nexad audio set <0-100>
-  nexad audio mute
-  nexad audio unmute
-  nexad audio toggle-mute
-
-  nexad brightness info
-  nexad brightness set <1-100>
-  nexad brightness up [amount]
-  nexad brightness down [amount]
-
-  nexad system airplane info
-  nexad system airplane on
-  nexad system airplane off
-  nexad system airplane toggle
-
-  nexad system vpn info
-  nexad system vpn connect <profile>
-  nexad system vpn disconnect
-  nexad system vpn toggle
-
-  nexad screenFilter info
-  nexad screenFilter set chroma
-  nexad screenFilter set grayscale
-  nexad screenFilter set hdr-boost
-  nexad screenFilter set high-contrast
-  nexad screenFilter set invert
-  nexad screenFilter set sepia
-  nexad screenFilter off
-  nexad screenFilter apply
-
-  "
+  nexad recorder start | pause | resume | stop | toggle | status
+  nexad clipboard list | search <query> | copy <id> | pin <id> | unpin <id> | delete <id> | get <id> | clear
+  nexad screenTemp info | enable | disable | toggle | mode <manual|wallpaper|night> | set <k> | apply | reset
+  nexad notifications daemon | list | dismiss <id> | clear | read <id> | read-all | action <id> <key> | dnd <info|on|off|toggle>
+  nexad power lock | suspend | logout | reboot | shutdown
+  nexad lock auth | status
+  nexad audio info | set <0-100> | mute | unmute | toggle-mute
+  nexad brightness info | set <1-100> | up [amount] | down [amount]
+  nexad system airplane info|on|off|toggle | vpn info|connect|disconnect|toggle
+  nexad screenFilter info | set <filter> | off | apply
+  nexad weather info | refresh | set <location>
+  nexad display info | mode <internal-only|external-only|extend|mirror> | restore | save [name] | daemon
+  nexad state restore | save"
     );
 }
 
-
 fn main() {
-    let args: Vec<String> =
-        env::args().collect();
-
-
+    let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         print_usage();
         return;
     }
 
-
     match args[1].as_str() {
-
-        // ========================================================
-        // WALLPAPER
-        // ========================================================
-
         "wallpaper" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
-
             match args[2].as_str() {
-
-                "list" => {
-                    wallpaper::print_list();
-                }
-
-
+                "list" => wallpaper::print_list(),
                 "search" => {
                     if args.len() < 4 {
                         eprintln!("Missing search query");
                         return;
                     }
-
-                    let query =
-                        args[3..].join(" ");
-
-                    wallpaper::print_search(
-                        &query
-                    );
+                    wallpaper::print_search(&args[3..].join(" "));
                 }
-
                 "lock-set" => {
                     if args.len() < 4 {
-                        eprintln!(
-                            "Missing lock wallpaper path"
-                        );
-
+                        eprintln!("Missing lock wallpaper path");
                         return;
                     }
-
-
-                    let path =
-                        args[3..].join(" ");
-
-
-                    if let Err(error) =
-                        wallpaper::set_lock(&path)
-                    {
-                        eprintln!("{error}");
+                    if let Err(e) = wallpaper::set_lock(&args[3..].join(" ")) {
+                        eprintln!("{e}");
                     }
                 }
-
-
                 "lock-info" => {
-                    if let Err(error) =
-                        wallpaper::print_lock_info()
-                    {
-                        eprintln!("{error}");
+                    if let Err(e) = wallpaper::print_lock_info() {
+                        eprintln!("{e}");
                     }
                 }
-
-
                 "apply" | "set" => {
                     if args.len() < 4 {
                         eprintln!("Missing wallpaper path");
                         return;
                     }
-
                     let path = &args[3];
                     let monitor = args.get(4).map(String::as_str);
-
-                    if let Err(error) =
-                        wallpaper::apply_desktop(path, monitor)
-                    {
-                        eprintln!("{error}");
+                    if let Err(e) = wallpaper::apply_desktop(path, monitor) {
+                        eprintln!("{e}");
                     }
                 }
-
-                "refresh" => {
-                    wallpaper::refresh();
-                }
-
+                "refresh" => wallpaper::refresh(),
                 "slideshow" => {
                     if args.len() < 4 {
                         slideshow::print_status();
                         return;
                     }
                     match args[3].as_str() {
-                        "status" => {
-                            slideshow::print_status();
-                        }
+                        "status" => slideshow::print_status(),
                         "next" => {
                             if let Err(e) = slideshow::next() {
                                 eprintln!("{e}");
@@ -289,162 +125,81 @@ fn main() {
                                 eprintln!("{e}");
                             }
                         }
-                        _ => {
-                            eprintln!("Unknown slideshow command: {}", args[3]);
-                        }
+                        _ => eprintln!("Unknown slideshow command: {}", args[3]),
                     }
                 }
-
-                _ => {
-                    print_usage();
-                }
+                _ => print_usage(),
             }
         }
-
-
-        // ========================================================
-        // SEARCH
-        // ========================================================
 
         "search" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
-
             match args[2].as_str() {
-
-                "refresh" => {
-                    search::refresh();
-                }
-
-
+                "refresh" => search::refresh(),
                 "query" => {
                     if args.len() < 4 {
-                        eprintln!(
-                            "Missing search query"
-                        );
-
+                        eprintln!("Missing search query");
                         return;
                     }
-
-
-                    let query =
-                        args[3..].join(" ");
-
-
-                    search::query(
-                        &query
-                    );
+                    search::query(&args[3..].join(" "));
                 }
-
-
                 "open" => {
                     if args.len() < 4 {
-                        eprintln!(
-                            "Missing search result target"
-                        );
-
+                        eprintln!("Missing search result target");
                         return;
                     }
-
-                    let target = args[3..].join(" ");
-                    search::open(&target);
+                    search::open(&args[3..].join(" "));
                 }
-
-
-                _ => {
-                    print_usage();
-                }
+                _ => print_usage(),
             }
         }
-
-        // ========================================================
-        // APP LAUNCHER
-        // ========================================================
 
         "appLauncher" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
             match args[2].as_str() {
-                "list" => {
-                    appLauncher::list();
-                }
-
+                "list" => appLauncher::list(),
                 "search" => {
                     if args.len() < 4 {
                         eprintln!("Missing app search query");
                         return;
                     }
-
-                    let query =
-                        args[3..].join(" ");
-
-                    appLauncher::search(
-                        &query
-                    );
+                    appLauncher::search(&args[3..].join(" "));
                 }
-
                 "launch" => {
                     if args.len() < 4 {
                         eprintln!("Missing application id");
                         return;
                     }
-
-                    appLauncher::launch(
-                        &args[3]
-                    );
+                    appLauncher::launch(&args[3]);
                 }
-
-                "refresh" => {
-                    appLauncher::refresh();
-                }
-
-                _ => {
-                    print_usage();
-                }
+                "refresh" => appLauncher::refresh(),
+                _ => print_usage(),
             }
         }
-
-        // ========================================================
-        // ISLAND
-        // ========================================================
 
         "island" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
             match args[2].as_str() {
-                "search" => {
-                    island::open_search();
-                }
-
-                "command" => {
-                    island::open_command();
-                }
-
-                _ => {
-                    print_usage();
-                }
+                "search" => island::open_search(),
+                "command" => island::open_command(),
+                _ => print_usage(),
             }
         }
-
-        // ========================================================
-        // SHELF / TRAY
-        // ========================================================
 
         "shelf" | "tray" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
             match args[2].as_str() {
                 "list" => {
                     let items = shelf::list();
@@ -453,13 +208,11 @@ fn main() {
                         Err(e) => eprintln!("Error serializing shelf items: {e}"),
                     }
                 }
-
                 "add" => {
                     if args.len() < 4 {
                         eprintln!("Usage: nexad shelf add <path-or-uri> [path-or-uri ...]");
                         return;
                     }
-                    // Accept one or many paths in a single atomic operation
                     let paths: Vec<&str> = args[3..].iter().map(|s| s.as_str()).collect();
                     match shelf::add_many(&paths) {
                         Ok(items) => {
@@ -472,7 +225,6 @@ fn main() {
                         Err(e) => eprintln!("Error adding to shelf: {e}"),
                     }
                 }
-
                 "remove" => {
                     if args.len() < 4 {
                         eprintln!("Usage: nexad shelf remove <id>");
@@ -484,7 +236,6 @@ fn main() {
                         println!("{{\"success\":true}}");
                     }
                 }
-
                 "clear" => {
                     if let Err(e) = shelf::clear() {
                         eprintln!("Error clearing shelf: {e}");
@@ -492,14 +243,10 @@ fn main() {
                         println!("{{\"success\":true}}");
                     }
                 }
-
-                "copy-all" | "copy" => {
-                    match shelf::copy_all() {
-                        Ok(msg) => println!("{{\"success\":true,\"message\":\"{msg}\"}}"),
-                        Err(e) => eprintln!("Error copying shelf files: {e}"),
-                    }
-                }
-
+                "copy-all" | "copy" => match shelf::copy_all() {
+                    Ok(msg) => println!("{{\"success\":true,\"message\":\"{msg}\"}}"),
+                    Err(e) => eprintln!("Error copying shelf files: {e}"),
+                },
                 "copy-item" => {
                     if args.len() < 4 {
                         eprintln!("Usage: nexad shelf copy-item <id>");
@@ -510,928 +257,443 @@ fn main() {
                         Err(e) => eprintln!("Error copying item: {e}"),
                     }
                 }
-
                 "toggle" => {
                     if let Err(e) = shelf::call_quickshell("toggle") {
                         eprintln!("Error toggling file shelf: {e}");
                     }
                 }
-
                 "open" => {
                     if let Err(e) = shelf::call_quickshell("open") {
                         eprintln!("Error opening file shelf: {e}");
                     }
                 }
-
                 "close" => {
                     if let Err(e) = shelf::call_quickshell("close") {
                         eprintln!("Error closing file shelf: {e}");
                     }
                 }
-
-                _ => {
-                    print_usage();
-                }
+                _ => print_usage(),
             }
         }
-
-
-        // ========================================================
-        // NETWORK
-        // ========================================================
 
         "network" => {
             if args.len() < 4 {
                 print_usage();
                 return;
             }
-
             let service = network::NetworkService::new();
-
             match args[2].as_str() {
-
-                // ------------------------------------------------
-                // WIFI
-                // ------------------------------------------------
-
-                "wifi" => {
-                    match args[3].as_str() {
-
-                        "info" => {
-                            match service.wifi_info() {
-                                Ok(info) => {
-                                    println!(
-                                        "{}",
-                                        serde_json::to_string(&info).unwrap()
-                                    );
-                                }
-
-                                Err(error) => {
-                                    eprintln!("{error}");
-                                }
-                            }
-                        }
-
-
-                        "scan" => {
-                            match service.wifi_scan(false) {
-                                Ok(networks) => {
-                                    println!(
-                                        "{}",
-                                        serde_json::to_string(&networks).unwrap()
-                                    );
-                                }
-
-                                Err(error) => {
-                                    eprintln!("{error}");
-                                }
-                            }
-                        }
-
-
-                        "refresh" => {
-                            match service.wifi_refresh() {
-                                Ok(networks) => {
-                                    println!(
-                                        "{}",
-                                        serde_json::to_string(&networks).unwrap()
-                                    );
-                                }
-
-                                Err(error) => {
-                                    eprintln!("{error}");
-                                }
-                            }
-                        }
-
-
-                        "on" => {
-                            if let Err(error) =
-                                service.wifi_set_enabled(true)
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        "off" => {
-                            if let Err(error) =
-                                service.wifi_set_enabled(false)
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        "connect" => {
-                            if args.len() < 5 {
-                                eprintln!("Missing SSID");
-                                return;
-                            }
-
-                            let ssid = &args[4];
-
-                            let password =
-                                args.get(5)
-                                    .map(String::as_str);
-
-                            if let Err(error) =
-                                service.wifi_connect(
-                                    ssid,
-                                    password
-                                )
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        "disconnect" => {
-                            if let Err(error) =
-                                service.wifi_disconnect()
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        "forget" => {
-                            if args.len() < 5 {
-                                eprintln!("Missing SSID");
-                                return;
-                            }
-
-                            if let Err(error) =
-                                service.wifi_forget(&args[4])
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        _ => {
-                            print_usage();
+                "wifi" => match args[3].as_str() {
+                    "info" => match service.wifi_info() {
+                        Ok(info) => println!("{}", serde_json::to_string(&info).unwrap()),
+                        Err(e) => eprintln!("{e}"),
+                    },
+                    "scan" => match service.wifi_scan(false) {
+                        Ok(net) => println!("{}", serde_json::to_string(&net).unwrap()),
+                        Err(e) => eprintln!("{e}"),
+                    },
+                    "refresh" => match service.wifi_refresh() {
+                        Ok(net) => println!("{}", serde_json::to_string(&net).unwrap()),
+                        Err(e) => eprintln!("{e}"),
+                    },
+                    "on" => {
+                        if let Err(e) = service.wifi_set_enabled(true) {
+                            eprintln!("{e}");
                         }
                     }
-                }
-
-
-                // ------------------------------------------------
-                // BLUETOOTH
-                // ------------------------------------------------
-
-                "bluetooth" => {
-                    match args[3].as_str() {
-
-                        "info" => {
-                            match service.bluetooth_info() {
-                                Ok(info) => {
-                                    println!(
-                                        "{}",
-                                        serde_json::to_string(&info).unwrap()
-                                    );
-                                }
-
-                                Err(error) => {
-                                    eprintln!("{error}");
-                                }
-                            }
-                        }
-
-
-                        "on" => {
-                            if let Err(error) =
-                                service.bluetooth_set_enabled(true)
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        "off" => {
-                            if let Err(error) =
-                                service.bluetooth_set_enabled(false)
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        "scan" => {
-                            if args.len() < 5 {
-                                eprintln!("Missing scan state");
-                                return;
-                            }
-
-                            let enabled =
-                                args[4].as_str() == "on";
-
-                            if let Err(error) =
-                                service.bluetooth_scan(enabled)
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        "pair" => {
-                            if args.len() < 5 {
-                                eprintln!("Missing device address");
-                                return;
-                            }
-
-                            if let Err(error) =
-                                service.bluetooth_pair(&args[4])
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        "connect" => {
-                            if args.len() < 5 {
-                                eprintln!("Missing device address");
-                                return;
-                            }
-
-                            if let Err(error) =
-                                service.bluetooth_connect(&args[4])
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        "disconnect" => {
-                            if args.len() < 5 {
-                                eprintln!("Missing device address");
-                                return;
-                            }
-
-                            if let Err(error) =
-                                service.bluetooth_disconnect(&args[4])
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        "forget" => {
-                            if args.len() < 5 {
-                                eprintln!("Missing device address");
-                                return;
-                            }
-
-                            if let Err(error) =
-                                service.bluetooth_forget(&args[4])
-                            {
-                                eprintln!("{error}");
-                            }
-                        }
-
-
-                        _ => {
-                            print_usage();
+                    "off" => {
+                        if let Err(e) = service.wifi_set_enabled(false) {
+                            eprintln!("{e}");
                         }
                     }
-                }
-
-
-                _ => {
-                    print_usage();
-                }
+                    "connect" => {
+                        if args.len() < 5 {
+                            eprintln!("Missing SSID");
+                            return;
+                        }
+                        let password = args.get(5).map(String::as_str);
+                        if let Err(e) = service.wifi_connect(&args[4], password) {
+                            eprintln!("{e}");
+                        }
+                    }
+                    "disconnect" => {
+                        if let Err(e) = service.wifi_disconnect() {
+                            eprintln!("{e}");
+                        }
+                    }
+                    "forget" => {
+                        if args.len() < 5 {
+                            eprintln!("Missing SSID");
+                            return;
+                        }
+                        if let Err(e) = service.wifi_forget(&args[4]) {
+                            eprintln!("{e}");
+                        }
+                    }
+                    _ => print_usage(),
+                },
+                "bluetooth" => match args[3].as_str() {
+                    "info" => match service.bluetooth_info() {
+                        Ok(info) => println!("{}", serde_json::to_string(&info).unwrap()),
+                        Err(e) => eprintln!("{e}"),
+                    },
+                    "on" => {
+                        if let Err(e) = service.bluetooth_set_enabled(true) {
+                            eprintln!("{e}");
+                        }
+                    }
+                    "off" => {
+                        if let Err(e) = service.bluetooth_set_enabled(false) {
+                            eprintln!("{e}");
+                        }
+                    }
+                    "scan" => {
+                        if args.len() < 5 {
+                            eprintln!("Missing scan state");
+                            return;
+                        }
+                        let enabled = args[4].as_str() == "on";
+                        if let Err(e) = service.bluetooth_scan(enabled) {
+                            eprintln!("{e}");
+                        }
+                    }
+                    "pair" => {
+                        if args.len() < 5 {
+                            eprintln!("Missing device address");
+                            return;
+                        }
+                        if let Err(e) = service.bluetooth_pair(&args[4]) {
+                            eprintln!("{e}");
+                        }
+                    }
+                    "connect" => {
+                        if args.len() < 5 {
+                            eprintln!("Missing device address");
+                            return;
+                        }
+                        if let Err(e) = service.bluetooth_connect(&args[4]) {
+                            eprintln!("{e}");
+                        }
+                    }
+                    "disconnect" => {
+                        if args.len() < 5 {
+                            eprintln!("Missing device address");
+                            return;
+                        }
+                        if let Err(e) = service.bluetooth_disconnect(&args[4]) {
+                            eprintln!("{e}");
+                        }
+                    }
+                    "forget" => {
+                        if args.len() < 5 {
+                            eprintln!("Missing device address");
+                            return;
+                        }
+                        if let Err(e) = service.bluetooth_forget(&args[4]) {
+                            eprintln!("{e}");
+                        }
+                    }
+                    _ => print_usage(),
+                },
+                _ => print_usage(),
             }
         }
 
-
-        // ========================================================
-        // COMMAND
-        // ========================================================
-
-        "command" => {
+        "command" | "commandSearch" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
             match args[2].as_str() {
                 "run" => {
                     if args.len() < 4 {
                         eprintln!("Missing command to run");
                         return;
                     }
-                    let command = args[3..].join(" ");
-                    commandSearch::run(&command);
+                    commandSearch::run(&args[3..].join(" "));
                 }
-
                 "query" | "search" => {
                     if args.len() < 4 {
                         eprintln!("Missing command search query");
                         return;
                     }
-                    let query = args[3..].join(" ");
-                    commandSearch::query(&query);
-                }
-
-                _ => {
-                    print_usage();
-                }
-            }
-        }
-
-        "commandSearch" => {
-            if args.len() < 3 {
-                print_usage();
-                return;
-            }
-            match args[2].as_str() {
-                "query" | "search" => {
-                    let query = args[3..].join(" ");
-                    commandSearch::query(&query);
-                }
-                "run" => {
-                    let command = args[3..].join(" ");
-                    commandSearch::run(&command);
+                    commandSearch::query(&args[3..].join(" "));
                 }
                 _ => print_usage(),
             }
         }
-
-        // ========================================================
-        // SCREENSHOT
-        // ========================================================
-
-
 
         "screenshot" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
             match args[2].as_str() {
-                "capture" => {
-                    screenshot::capture();
-                }
-
-                _ => {
-                    print_usage();
-                }
+                "capture" => screenshot::capture(),
+                _ => print_usage(),
             }
         }
-
-        // ========================================================
-        // SNIPPING
-        // ========================================================
-
 
         "snipping" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
             match args[2].as_str() {
-                "capture" => {
-                    snipping::capture();
-                }
-
-                _ => {
-                    print_usage();
-                }
+                "capture" => snipping::capture(),
+                _ => print_usage(),
             }
         }
-        
-        // ========================================================
-        // WORKSPACE
-        // ========================================================
 
         "workspace" => {
-            if let Err(error) =
-                workspace::handle(
-                    &args[2..]
-                )
-            {
+            if let Err(error) = workspace::handle(&args[2..]) {
                 eprintln!("{error}");
             }
         }
-        // ========================================================
-        // SCREEN RECORDER
-        // ========================================================
 
         "recorder" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
             match args[2].as_str() {
-                "start" => {
-                    recorder::start();
-                }
-
-                "pause" => {
-                    recorder::pause();
-                }
-
-                "resume" => {
-                    recorder::resume();
-                }
-
-                "stop" => {
-                    recorder::stop();
-                }
-
-                "toggle" => {
-                    recorder::toggle();
-                }
-
-                "status" => {
-                    recorder::status();
-                }
-
-                _ => {
-                    print_usage();
-                }
+                "start" => recorder::start(),
+                "pause" => recorder::pause(),
+                "resume" => recorder::resume(),
+                "stop" => recorder::stop(),
+                "toggle" => recorder::toggle(),
+                "status" => recorder::status(),
+                _ => print_usage(),
             }
         }
-
-        // ========================================================
-        // MEDIA
-        // ========================================================
 
         "media" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
             match args[2].as_str() {
                 "fetch" => {
                     let title = if args.len() > 3 { args[3].as_str() } else { "" };
                     let artist = if args.len() > 4 { args[4].as_str() } else { "" };
                     media::run_fetch(title, artist);
                 }
-
-                "info" => {
-                    media::run_info();
-                }
-
-                "watch" => {
-                    media::watch_daemon();
-                }
-
-                "toggle" | "play-pause" => {
-                    media::run_toggle();
-                }
-
-                "next" => {
-                    media::run_next();
-                }
-
-                "prev" | "previous" => {
-                    media::run_prev();
-                }
-
-                _ => {
-                    print_usage();
-                }
+                "info" => media::run_info(),
+                "watch" => media::watch_daemon(),
+                "toggle" | "play-pause" => media::run_toggle(),
+                "next" => media::run_next(),
+                "prev" | "previous" => media::run_prev(),
+                _ => print_usage(),
             }
         }
-
-        // ========================================================
-        // CLIPBOARD
-        // ========================================================
 
         "clipboard" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
             match args[2].as_str() {
-                "list" => {
-                    clipboard::list();
-                }
-
+                "list" => clipboard::list(),
                 "search" => {
                     if args.len() < 4 {
                         eprintln!("Missing clipboard search query");
                         return;
                     }
-
-                    let query =
-                        args[3..].join(" ");
-
-                    clipboard::search(&query);
+                    clipboard::search(&args[3..].join(" "));
                 }
-
                 "copy" => {
                     if args.len() < 4 {
                         eprintln!("Missing clipboard id");
                         return;
                     }
-
                     clipboard::copy(&args[3]);
                 }
-
                 "pin" => {
                     if args.len() < 4 {
                         eprintln!("Missing clipboard id");
                         return;
                     }
-
                     clipboard::pin(&args[3]);
                 }
-
                 "unpin" => {
                     if args.len() < 4 {
                         eprintln!("Missing clipboard id");
                         return;
                     }
-
                     clipboard::unpin(&args[3]);
                 }
-
                 "delete" => {
                     if args.len() < 4 {
                         eprintln!("Missing clipboard id");
                         return;
                     }
-
                     clipboard::delete(&args[3]);
                 }
-
                 "get" => {
                     if args.len() < 4 {
                         eprintln!("Missing clipboard id");
                         return;
                     }
-
                     clipboard::get(&args[3]);
                 }
-
-                "clear" => {
-                    clipboard::clear();
-                }
-
-                _ => {
-                    print_usage();
-                }
+                "clear" => clipboard::clear(),
+                _ => print_usage(),
             }
         }
-
-
-        // ========================================================
-        // notifications
-        // ========================================================
-
 
         "notifications" => {
-            let action = args
-                .get(2)
-                .cloned()
-                .unwrap_or_else(|| "list".to_string());
-
-            match action.as_str() {
-
+            let action = args.get(2).map(String::as_str).unwrap_or("list");
+            match action {
                 "daemon" => {
-                    if let Err(error) =
-                        async_io::block_on(
-                            notifications::run_daemon()
-                        )
-                    {
-                        eprintln!(
-                            "notification daemon error: {error}"
-                        );
+                    if let Err(e) = async_io::block_on(notifications::run_daemon()) {
+                        eprintln!("notification daemon error: {e}");
                     }
                 }
-
-
-                "list" => {
-                    notifications::list();
-                }
-
-
+                "list" => notifications::list(),
                 "dismiss" => {
-                    let Some(id) = args.get(3) else {
-                        eprintln!(
-                            "usage: nexad notifications \
-                            <daemon|list|dismiss|clear|read|read-all|action>"
-                            );
-
+                    let Some(id_str) = args.get(3) else {
+                        eprintln!("usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>");
                         return;
                     };
-
-
-                    match id.parse::<u32>() {
-
+                    match id_str.parse::<u32>() {
                         Ok(id) => {
-                            if let Err(error) =
-                                async_io::block_on(
-                                    notifications::dismiss(id)
-                                )
-                            {
-                                eprintln!(
-                                    "failed to dismiss notification: {error}"
-                                );
+                            if let Err(e) = async_io::block_on(notifications::dismiss(id)) {
+                                eprintln!("failed to dismiss notification: {e}");
                             }
                         }
-
-
-                        Err(_) => {
-                            eprintln!(
-                                "invalid notification id"
-                            );
-                        }
+                        Err(_) => eprintln!("invalid notification id"),
                     }
                 }
-
-
                 "clear" => {
-                    if let Err(error) =
-                        async_io::block_on(
-                            notifications::clear()
-                        )
-                    {
-                        eprintln!(
-                            "failed to clear notifications: {error}"
-                        );
+                    if let Err(e) = async_io::block_on(notifications::clear()) {
+                        eprintln!("failed to clear notifications: {e}");
                     }
                 }
-
-
                 "read" => {
-                    let Some(id) = args.get(3) else {
-                        eprintln!(
-                            "usage: nexad notifications \
-                            <daemon|list|dismiss|clear|read|read-all|action>"                        
-                            );
+                    let Some(id_str) = args.get(3) else {
+                        eprintln!("usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>");
                         return;
                     };
-
-                    let id = match id.parse::<u32>() {
+                    let id = match id_str.parse::<u32>() {
                         Ok(id) => id,
-
                         Err(_) => {
                             eprintln!("invalid notification id");
                             return;
                         }
                     };
-
-                    if let Err(error) =
-                        async_io::block_on(
-                            notifications::read(id)
-                        )
-                    {
-                        eprintln!(
-                            "failed to mark notification read: {error}"
-                        );
+                    if let Err(e) = async_io::block_on(notifications::read(id)) {
+                        eprintln!("failed to mark notification read: {e}");
                     }
                 }
-
                 "read-all" => {
-                    if let Err(error) =
-                        async_io::block_on(
-                            notifications::read_all()
-                        )
-                    {
-                        eprintln!(
-                            "failed to mark notifications read: {error}"
-                        );
+                    if let Err(e) = async_io::block_on(notifications::read_all()) {
+                        eprintln!("failed to mark notifications read: {e}");
                     }
                 }
-
                 "action" => {
-                    let Some(id) = args.get(3) else {
-                        eprintln!(
-                            "usage: nexad notifications \
-                            <daemon|list|dismiss|clear|read|read-all|action>"                        
-                            );
+                    let (Some(id_str), Some(action_key)) = (args.get(3), args.get(4)) else {
+                        eprintln!("usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>");
                         return;
                     };
-
-                    let Some(action_key) = args.get(4) else {
-                        eprintln!(
-                            "usage: nexad notifications \
-                            <daemon|list|dismiss|clear|read|read-all|action>"                        
-                            );
-                        return;
-                    };
-
-                    let id = match id.parse::<u32>() {
+                    let id = match id_str.parse::<u32>() {
                         Ok(id) => id,
-
                         Err(_) => {
                             eprintln!("invalid notification id");
                             return;
                         }
                     };
-
-                    if let Err(error) =
-                        async_io::block_on(
-                            notifications::action(
-                                id,
-                                action_key.clone(),
-                            )
-                        )
-                    {
-                        eprintln!(
-                            "failed to invoke notification action: {error}"
-                        );
+                    if let Err(e) = async_io::block_on(notifications::action(id, action_key.clone())) {
+                        eprintln!("failed to invoke notification action: {e}");
                     }
                 }
-                
-
                 "dnd" => {
-                    let dnd_action =
-                        args
-                            .get(3)
-                            .map(
-                                String::as_str
-                            )
-                            .unwrap_or(
-                                "info"
-                            );
-
-
-                    match dnd_action {
-                        "info" => {
-                            notifications::dnd_info();
-                        }
-
-                        "on" => {
-                            notifications::dnd_on();
-                        }
-
-                        "off" => {
-                            notifications::dnd_off();
-                        }
-
-                        "toggle" => {
-                            notifications::dnd_toggle();
-                        }
-
-                        _ => {
-                            eprintln!(
-                                "usage: nexad notifications dnd <info|on|off|toggle>"
-                            );
-                        }
+                    match args.get(3).map(String::as_str).unwrap_or("info") {
+                        "info" => notifications::dnd_info(),
+                        "on" => notifications::dnd_on(),
+                        "off" => notifications::dnd_off(),
+                        "toggle" => notifications::dnd_toggle(),
+                        _ => eprintln!("usage: nexad notifications dnd <info|on|off|toggle>"),
                     }
                 }
-                
-                _ => {
-                    eprintln!(
-                            "usage: nexad notifications \
-                            <daemon|list|dismiss|clear|read|read-all|action>"
-                    );
-                }
+                _ => eprintln!("usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>"),
             }
         }
-
-
-        // ========================================================
-        // SCREEN TEMPERATURE
-        // ========================================================
 
         "screenTemp" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
-            if let Err(error) =
-                screenTemp::handle(&args[2..])
-            {
+            if let Err(error) = screenTemp::handle(&args[2..]) {
                 eprintln!("{error}");
             }
         }
-
-        // ========================================================
-        // LOCK SCREEN
-        // ========================================================
 
         "lock" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
-            if let Err(error) =
-                lock::handle(&args[2..])
-            {
+            if let Err(error) = lock::handle(&args[2..]) {
                 eprintln!("{error}");
             }
         }
-
-
-        // ========================================================
-        // AUDIO
-        // ========================================================
 
         "audio" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
-            if let Err(error) =
-                audio::handle(&args[2..])
-            {
+            if let Err(error) = audio::handle(&args[2..]) {
                 eprintln!("{error}");
             }
         }
-
-
-        // ========================================================
-        // BRIGHTNESS
-        // ========================================================
 
         "brightness" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
-            if let Err(error) =
-                brightness::handle(&args[2..])
-            {
+            if let Err(error) = brightness::handle(&args[2..]) {
                 eprintln!("{error}");
             }
         }
-
-        // ========================================================
-        // SCREEN FILTER
-        // ========================================================
 
         "screenFilter" => {
-            if let Err(error) =
-                screenFilter::handle(
-                    &args[2..]
-                )
-            {
+            if let Err(error) = screenFilter::handle(&args[2..]) {
                 eprintln!("{error}");
             }
         }
-       
-
-        // ========================================================
-        // WEATHER
-        // ========================================================
 
         "weather" => {
-            if let Err(error) =
-                weather::handle(
-                    &args[2..]
-                )
-            {
+            if let Err(error) = weather::handle(&args[2..]) {
                 eprintln!("{error}");
             }
         }
-
-        // ========================================================
-        // SYSTEM
-        // ========================================================
 
         "system" => {
-            system::handle(
-                &args[2..]
-            );
+            system::handle(&args[2..]);
         }
 
-
-        // ========================================================
-        // STATE
-        // ========================================================
-
         "state" => {
-            if let Err(error) =
-                state::handle(&args[2..])
-            {
+            if let Err(error) = state::handle(&args[2..]) {
                 eprintln!("{error}");
             }
         }
-
-        // ========================================================
-        // POWER
-        // ========================================================
 
         "power" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
-
-            if let Err(error) =
-                power::handle(&args[2..])
-            {
+            if let Err(error) = power::handle(&args[2..]) {
                 eprintln!("{error}");
             }
         }
 
-        // ========================================================
-        // UNKNOWN
-        // ========================================================
+        "display" => {
+            std::process::exit(display::run_cli(&args[1..]));
+        }
 
         _ => {
             print_usage();

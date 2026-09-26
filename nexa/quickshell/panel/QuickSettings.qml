@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
-import "../theme" as ThemeModule
+import "../theme" as Nexa
 import "../theme/components" as NexaUI
 
 import "../modules/audio" as AudioModule
@@ -20,7 +20,7 @@ import "../modules/battery" as BatteryModule
 Item {
     id: root
 
-    readonly property var theme: ThemeModule.Theme
+    readonly property var theme: Nexa.Theme
 
     property bool appsExpanded: false
     property bool screenFilterDropdownOpen: false
@@ -59,8 +59,8 @@ Item {
 
     AudioModule.Audio { id: audio; visible: root.visible }
     BrightnessModule.Brightness { id: brightness; visible: root.visible }
-    NetworkModule.Wifi { id: wifi; visible: false; width: 0; height: 0 }
-    NetworkModule.Bluetooth { id: bluetooth; visible: false; width: 0; height: 0 }
+    NetworkModule.Wifi { id: wifi; visible: false; width: 0; height: 0; enablePopup: false }
+    NetworkModule.Bluetooth { id: bluetooth; visible: false; width: 0; height: 0; enablePopup: false }
     AirplaneModule.Airplane { id: airplane; visible: root.visible }
     VpnModule.Vpn { id: vpn; visible: root.visible }
     NightLightModule.NightLight { id: nightLight; visible: root.visible }

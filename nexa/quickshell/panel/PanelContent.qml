@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 
 import "../theme" as Nexa
+import "../theme/components" as NexaUI
 import "../modules/notifications" as NotificationModule
 import "." as PanelModule
 import "../modules/weather" as WeatherModule
@@ -211,7 +212,7 @@ Item {
                 }
             }
 
-            Nexa.Components.ActiveIndicator {
+            NexaUI.NexaActiveIndicator {
                 y: navLayout.y + navLayout.height - height / 2
                 x: {
                     let activeBtn = root.currentPage === 0 ? navBtn0 :
