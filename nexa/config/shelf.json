@@ -1,16 +1,3 @@
 {
-  "items": [
-    {
-      "id": "18d8ea738a05083a",
-      "uri": "file:///home/shnx/Documents/PROJECTS/AG_PROJECTS/nexa/new_files/Files.zip",
-      "path": "/home/shnx/Documents/PROJECTS/AG_PROJECTS/nexa/new_files/Files.zip",
-      "name": "Files.zip",
-      "mime_type": "application/zip",
-      "category": "archive",
-      "icon_name": "application-zip",
-      "size_bytes": 20544,
-      "exists": true,
-      "thumbnail": null
-    }
-  ]
+  "items": []
 }

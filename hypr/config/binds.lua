@@ -408,9 +408,6 @@ hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tr
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 
--- Display Projection (Windows/macOS style Dynamic Island OSD)
-hl.bind(MOD .. " + SHIFT + D", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call displayProjection cycle"))
-
 -- Session Control
 -- hl.bind(MOD .. " + Escape", hl.dsp.exec_cmd("wlogout || hyprshutdown"))
 hl.bind(MOD .. " + Escape", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland togglePower"))

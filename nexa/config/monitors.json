@@ -91,31 +91,31 @@
       "auto": true,
       "lid": "open",
       "created_ms": 1790450011393,
-      "last_used_ms": 1790452683382
+      "last_used_ms": 1790866992714
     },
     {
       "name": "auto: 2 displays [393420]",
       "fingerprint": "GIGABYTETECHNOLOGYCOLTD_GS27QA_26032B000279+LenovoGroupLimited_0x9051",
-      "mode": "extend",
+      "mode": "external-only",
       "monitors": {
         "GIGABYTETECHNOLOGYCOLTD_GS27QA_26032B000279": {
           "enabled": true,
           "mode": "2560x1440@60",
-          "position": "1920x0",
+          "position": "0x0",
           "scale": 1.0,
           "transform": 0,
-          "primary": false,
+          "primary": true,
           "mirror_of": null,
           "vrr": false,
           "last_output": "HDMI-A-1"
         },
         "LenovoGroupLimited_0x9051": {
-          "enabled": true,
+          "enabled": false,
           "mode": "1920x1080@60.001",
-          "position": "0x0",
+          "position": "auto",
           "scale": 1.0,
           "transform": 0,
-          "primary": true,
+          "primary": false,
           "mirror_of": null,
           "vrr": false,
           "last_output": "eDP-1"
@@ -124,7 +124,7 @@
       "auto": true,
       "lid": "open",
       "created_ms": 1790450616134,
-      "last_used_ms": 1790452419825
+      "last_used_ms": 1790488500662
     }
   ]
 }

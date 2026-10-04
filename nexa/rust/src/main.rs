@@ -26,7 +26,6 @@ mod state;
 mod shelf;
 mod slideshow;
 mod media;
-mod display;
 
 use std::env;
 
@@ -55,7 +54,6 @@ fn print_usage() {
   nexad system airplane info|on|off|toggle | vpn info|connect|disconnect|toggle
   nexad screenFilter info | set <filter> | off | apply
   nexad weather info | refresh | set <location>
-  nexad display info | mode <internal-only|external-only|extend|mirror> | restore | save [name] | daemon
   nexad state restore | save"
     );
 }
@@ -689,10 +687,6 @@ fn main() {
             if let Err(error) = power::handle(&args[2..]) {
                 eprintln!("{error}");
             }
-        }
-
-        "display" => {
-            std::process::exit(display::run_cli(&args[1..]));
         }
 
         _ => {

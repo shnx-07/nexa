@@ -1,9 +1,9 @@
 {
-  "enabled": false,
+  "enabled": true,
   "paused": false,
-  "interval": "1h",
+  "interval": "15m",
   "type_filter": "All",
   "apply_target": "Background",
-  "last_wallpaper": "/home/shnx/Pictures/Wallpapers/Slideshow/Anime-Girl1.png",
-  "last_changed": 1790449666
+  "last_wallpaper": "/home/shnx/Pictures/Wallpapers/Slideshow/lantern-light-room.png",
+  "last_changed": 1791113549
 }

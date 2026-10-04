@@ -4944,8 +4944,29 @@ fn json_contains_string(v: &Value, needle: &str) -> bool {
     }
 }
 
+fn is_video_wallpaper() -> bool {
+    let conf_path = nexa_config_dir().join("config").join("wallpaper.conf");
+    if let Ok(content) = fs::read_to_string(&conf_path) {
+        for line in content.lines() {
+            let line = line.trim();
+            if let Some(rest) = line.strip_prefix("WALLPAPER_TYPE=") {
+                let val = rest.trim_matches('"').trim_matches('\'').to_lowercase();
+                return val == "video";
+            }
+        }
+    }
+    false
+}
+
+fn mpvpaper_running() -> bool {
+    run_cmd("pgrep", &["-x", "mpvpaper"], Duration::from_secs(2)).map(|o| o.success).unwrap_or(false)
+}
+
 /// Is the daemon running, answering, and bound to every active output?
 fn wallpaper_healthy(outputs: &[String]) -> bool {
+    if is_video_wallpaper() {
+        return mpvpaper_running();
+    }
     if !awww_daemon_running() {
         return false;
     }
@@ -5039,7 +5060,7 @@ fn restore_wallpaper_images() {
     let script = cfg.wallpaper_script_path();
     if script.is_file() {
         let s = script.to_string_lossy().to_string();
-        match run_cmd("sh", &[&s], Duration::from_secs(15)) {
+        match run_cmd("bash", &[&s], Duration::from_secs(15)) {
             Ok(o) if o.success => return,
             Ok(o) => log_warn(&format!("wallpaper script failed: {}", o.stderr.trim())),
             Err(e) => log_warn(&format!("wallpaper script: {e}")),
@@ -5053,6 +5074,7 @@ fn sync_wallpaper(force: bool, gen_id: u64) {
     if outputs.is_empty() {
         return;
     }
+    let is_video = is_video_wallpaper();
     let mut need_restart = force || !wallpaper_healthy(&outputs);
     let mut delay = Duration::from_millis(300);
     for attempt in 1..=WALLPAPER_RETRIES {
@@ -5064,12 +5086,16 @@ fn sync_wallpaper(force: bool, gen_id: u64) {
             return;
         }
         if need_restart {
-            log_info(&format!("restarting awww-daemon for {} (attempt {attempt})", outputs.join(", ")));
-            if let Err(e) = restart_awww_daemon() {
-                log_warn(&format!("awww-daemon restart failed: {e}"));
-                thread::sleep(delay);
-                delay *= 2;
-                continue;
+            if is_video {
+                log_info(&format!("syncing video wallpaper for {} (attempt {attempt})", outputs.join(", ")));
+            } else {
+                log_info(&format!("restarting awww-daemon for {} (attempt {attempt})", outputs.join(", ")));
+                if let Err(e) = restart_awww_daemon() {
+                    log_warn(&format!("awww-daemon restart failed: {e}"));
+                    thread::sleep(delay);
+                    delay *= 2;
+                    continue;
+                }
             }
         }
         restore_wallpaper_images();

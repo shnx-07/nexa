@@ -4,22 +4,22 @@
  */
 
 /* Standard GTK3 Theme Colors (for Nemo, Gedit, and classic GTK3 apps) */
-@define-color theme_bg_color #20181a;
-@define-color theme_fg_color #e7dadd;
-@define-color theme_base_color #20181a;
-@define-color theme_text_color #e7dadd;
-@define-color borders #422e33;
-@define-color wm_bg_color #302225;
-@define-color wm_title #e7dadd;
-@define-color wm_border #84626a;
-@define-color insens_bg_color #181012;
-@define-color insens_fg_color #c2adb2;
-@define-color insens_base_color #150e10;
+@define-color theme_bg_color #1c1016;
+@define-color theme_fg_color #f4dde5;
+@define-color theme_base_color #1c1016;
+@define-color theme_text_color #f4dde5;
+@define-color borders #524249;
+@define-color wm_bg_color #291c22;
+@define-color wm_title #f4dde5;
+@define-color wm_border #9f8c93;
+@define-color insens_bg_color #1c1016;
+@define-color insens_fg_color #d7c1c9;
+@define-color insens_base_color #160b10;
 
 /* Libadwaita & Modern GTK Colors */
-@define-color accent_color #ffb599;
-@define-color accent_bg_color #ffb599;
-@define-color accent_fg_color #5a1c00;
+@define-color accent_color #ffafd6;
+@define-color accent_bg_color #ffafd6;
+@define-color accent_fg_color #620043;
 
 @define-color destructive_color #f0757f;
 @define-color destructive_bg_color #f0757f;
@@ -37,42 +37,42 @@
 @define-color warning_bg_color #efc36c;
 @define-color warning_fg_color #372706;
 
-@define-color window_bg_color #20181a;
-@define-color window_fg_color #e7dadd;
+@define-color window_bg_color #1c1016;
+@define-color window_fg_color #f4dde5;
 
-@define-color view_bg_color #20181a;
-@define-color view_fg_color #e7dadd;
+@define-color view_bg_color #1c1016;
+@define-color view_fg_color #f4dde5;
 
-@define-color headerbar_bg_color #302225;
-@define-color headerbar_fg_color #e7dadd;
-@define-color headerbar_backdrop_color #20181a;
+@define-color headerbar_bg_color #291c22;
+@define-color headerbar_fg_color #f4dde5;
+@define-color headerbar_backdrop_color #1c1016;
 
-@define-color popover_bg_color #302225;
-@define-color popover_fg_color #e7dadd;
+@define-color popover_bg_color #291c22;
+@define-color popover_fg_color #f4dde5;
 
-@define-color card_bg_color #302225;
-@define-color card_fg_color #e7dadd;
+@define-color card_bg_color #291c22;
+@define-color card_fg_color #f4dde5;
 
-@define-color dialog_bg_color #20181a;
-@define-color dialog_fg_color #e7dadd;
+@define-color dialog_bg_color #1c1016;
+@define-color dialog_fg_color #f4dde5;
 
-@define-color overview_bg_color #302225;
-@define-color overview_fg_color #e7dadd;
+@define-color overview_bg_color #291c22;
+@define-color overview_fg_color #f4dde5;
 
-@define-color sidebar_bg_color #302225;
-@define-color sidebar_fg_color #e7dadd;
-@define-color sidebar_backdrop_color #20181a;
-@define-color sidebar_border_color #422e33;
+@define-color sidebar_bg_color #291c22;
+@define-color sidebar_fg_color #f4dde5;
+@define-color sidebar_backdrop_color #1c1016;
+@define-color sidebar_border_color #524249;
 
-@define-color secondary_sidebar_bg_color #20181a;
-@define-color secondary_sidebar_fg_color #e7dadd;
+@define-color secondary_sidebar_bg_color #1c1016;
+@define-color secondary_sidebar_fg_color #f4dde5;
 
-@define-color theme_selected_bg_color #ffb599;
-@define-color theme_selected_fg_color #5a1c00;
+@define-color theme_selected_bg_color #ffafd6;
+@define-color theme_selected_fg_color #620043;
 
-@define-color theme_unfocused_fg_color #c2adb2;
-@define-color theme_unfocused_text_color #c2adb2;
-@define-color theme_unfocused_bg_color #20181a;
-@define-color theme_unfocused_base_color #20181a;
-@define-color theme_unfocused_selected_bg_color #7f2b00;
-@define-color theme_unfocused_selected_fg_color #ffdbce;
+@define-color theme_unfocused_fg_color #d7c1c9;
+@define-color theme_unfocused_text_color #d7c1c9;
+@define-color theme_unfocused_bg_color #1c1016;
+@define-color theme_unfocused_base_color #1c1016;
+@define-color theme_unfocused_selected_bg_color #8a0060;
+@define-color theme_unfocused_selected_fg_color #ffd8e8;

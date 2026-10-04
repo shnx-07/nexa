@@ -21,5 +21,4 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("hyprpm reload")
 
 	hl.exec_cmd("hypridle")
-	--	hl.exec_cmd(os.getenv("HOME") .. "/.config/nexa/rust/target/release/nexad display daemon")
 end)

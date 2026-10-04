@@ -12,9 +12,6 @@ import "../modules/power" as PowerModule
 PanelWindow {
     id: root
 
-    required property var modelData
-    screen: modelData
-
     // ============================================================
     // NEXA TOP BAR
     //

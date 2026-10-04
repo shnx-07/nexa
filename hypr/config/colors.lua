@@ -12,12 +12,12 @@ CACHYWHITE  = "rgba(ffffffff)"
 CACHYGREY   = "rgba(ddddddff)"
 CACHYGRAY   = "rgba(798bb2ff)"
 
-local primary = "#f2c000"
-local secondary = "#d3c78e"
-local background = "#181306"
-local surface = "#181306"
-local outline = "#99907b"
-local outline_variant = "#4d4635"
+local primary = "#ffafd6"
+local secondary = "#f0b7c5"
+local background = "#1c1016"
+local surface = "#1c1016"
+local outline = "#9f8c93"
+local outline_variant = "#524249"
 local error = "#f0757f"
 
 local function to_rgba(hex, alpha)
