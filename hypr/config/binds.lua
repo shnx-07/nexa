@@ -244,6 +244,33 @@ hl.bind(MOD .. " + E", function()
 		hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(scratch_win.address) }))
 	end
 end)
+
+-- Auto-migrate child windows opened from the file manager scratchpad to regular workspace
+hl.on("window.open", function(win)
+	if not win then return end
+	local ws = win.workspace
+	local ws_name = tostring((type(ws) == "table" and (ws.name or ws.id)) or ws or "")
+	if ws_name:find("special:files") ~= nil and not is_file_manager_window(win) then
+		local target_ws = "1"
+		local cur_ws = hl.get_active_workspace()
+		local cur_name = tostring((cur_ws and (cur_ws.name or cur_ws.id)) or "")
+		if cur_name ~= "" and cur_name:find("special:") == nil then
+			target_ws = cur_name
+		elseif previous_files_window_addr then
+			local prev_win = hl.get_window({ address = tostring(previous_files_window_addr) })
+			if prev_win and prev_win.workspace and tostring(prev_win.workspace.name or ""):find("special:") == nil then
+				target_ws = tostring(prev_win.workspace.name or prev_win.workspace.id or target_ws)
+			end
+		end
+
+		hl.dispatch(hl.dsp.window.move({ workspace = target_ws, window = "address:" .. tostring(win.address) }))
+		if is_special_files_open() then
+			hl.dispatch(hl.dsp.workspace.toggle_special("files"))
+		end
+		hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(win.address) }))
+	end
+end)
+
 hl.bind(MOD .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(MOD .. " + M", hl.dsp.exec_cmd(music))
 

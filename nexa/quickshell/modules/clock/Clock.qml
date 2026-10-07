@@ -370,13 +370,17 @@ Item {
                 color: Nexa.Theme.divider
             }
 
-            Row {
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignRight
                 spacing: 6
 
+                Item {
+                    Layout.fillWidth: true
+                }
+
                 Text {
-                    anchors.verticalCenter: parent.verticalCenter
+                    Layout.alignment: Qt.AlignVCenter
                     text: root.focusMode === "focus" ? "󰪠" : "󰛨"
                     color: root.focusRunning ? Nexa.Theme.primary : Nexa.Theme.mutedText
                     font.family: Nexa.Theme.iconFontFamily
@@ -384,7 +388,7 @@ Item {
                 }
 
                 Text {
-                    anchors.verticalCenter: parent.verticalCenter
+                    Layout.alignment: Qt.AlignVCenter
                     text: root.focusText(root.focusRemaining)
                     color: root.focusRunning ? Nexa.Theme.primary : Nexa.Theme.text
                     font.family: Nexa.Theme.monoFontFamily

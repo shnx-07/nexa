@@ -5,6 +5,7 @@ import Quickshell.Wayland
 
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
+import "../appLauncher" as AppLauncher
 
 NexaUI.NexaCard {
     id: root
@@ -23,7 +24,7 @@ NexaUI.NexaCard {
 
     readonly property string appName: {
         if (!hasApp) return ""
-        return appId.charAt(0).toUpperCase() + appId.slice(1)
+        return AppLauncher.AppRegistry.cleanAppName(appId)
     }
 
     readonly property string windowTitle:
@@ -66,47 +67,7 @@ NexaUI.NexaCard {
     }
 
     function appIconSource(id) {
-        if (!id || id.length === 0) return ""
-
-        const lower = id.toLowerCase()
-        const appMap = {
-            "code": "file:///usr/share/pixmaps/vscode.png",
-            "code-url-handler": "file:///usr/share/pixmaps/vscode.png",
-            "visual-studio-code": "file:///usr/share/pixmaps/vscode.png",
-            "vscode": "file:///usr/share/pixmaps/vscode.png",
-            "alacritty": "file:///usr/share/pixmaps/Alacritty.svg",
-            "kitty": "file:///usr/share/pixmaps/kitty.png",
-            "nvim": "file:///usr/share/pixmaps/nvim.png",
-            "neovim": "file:///usr/share/pixmaps/nvim.png",
-            "telegramdesktop": "telegram",
-            "org.telegram.desktop": "telegram",
-            "org.gnome.nautilus": "org.gnome.Nautilus",
-            "dolphin": "system-file-manager"
-        }
-
-        if (appMap[lower]) {
-            const val = appMap[lower]
-            if (val.startsWith("file://") || val.startsWith("/")) {
-                return val.startsWith("file://") ? val : ("file://" + val)
-            }
-            if (Quickshell.hasThemeIcon(val)) {
-                return Quickshell.iconPath(val)
-            }
-        }
-
-        if (Quickshell.hasThemeIcon(id)) {
-            return Quickshell.iconPath(id)
-        }
-
-        if (Quickshell.hasThemeIcon(lower)) {
-            return Quickshell.iconPath(lower)
-        }
-
-        if (Quickshell.hasThemeIcon("application-x-executable")) {
-            return Quickshell.iconPath("application-x-executable")
-        }
-
-        return "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg"
+        return AppLauncher.AppRegistry.resolveAppIcon(id)
     }
 
     // ------------------------------------------------------------

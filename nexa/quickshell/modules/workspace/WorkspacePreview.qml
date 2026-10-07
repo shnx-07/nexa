@@ -5,6 +5,7 @@ import Quickshell.Hyprland
 
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
+import "../appLauncher" as AppLauncher
 
 PopupWindow {
     id: root
@@ -138,8 +139,7 @@ PopupWindow {
 
                         source: {
                             const appId = root.activeWindow ? (root.activeWindow.appId || "") : ""
-                            const iconPath = Quickshell.iconPath(appId.toLowerCase(), "application-x-executable")
-                            return iconPath !== "" ? iconPath : Quickshell.iconPath("application-x-executable")
+                            return AppLauncher.AppRegistry.resolveAppIcon(appId)
                         }
                     }
 
@@ -304,8 +304,7 @@ PopupWindow {
 
                                     source: {
                                         const appId = targetWinFrame.modelData ? (targetWinFrame.modelData.appId || "") : ""
-                                        const iconPath = Quickshell.iconPath(appId.toLowerCase(), "application-x-executable")
-                                        return iconPath !== "" ? iconPath : Quickshell.iconPath("application-x-executable")
+                                        return AppLauncher.AppRegistry.resolveAppIcon(appId)
                                     }
                                 }
 

@@ -47,6 +47,19 @@ ShellRoot {
 
         running: true
     }
+
+    Process {
+        id: desktopAppsIndexer
+
+        command: [
+            Quickshell.env("HOME")
+            + "/.config/nexa/rust/target/release/nexad",
+            "appLauncher",
+            "index"
+        ]
+
+        running: true
+    }
    
     Loader {
         id: workspaceLoader

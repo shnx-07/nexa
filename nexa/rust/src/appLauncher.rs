@@ -22,6 +22,8 @@ pub struct AppEntry {
     pub category_id: String,
     pub category_name: String,
     pub keywords: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub startup_wm_class: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -934,6 +936,12 @@ fn parse_app(
                 category_id,
                 category_name,
                 keywords,
+                startup_wm_class: value(
+                    &data,
+                    "StartupWMClass",
+                )
+                .map(unescape_desktop_value)
+                .filter(|v| !v.is_empty()),
             },
 
             desktop_file:
@@ -1850,6 +1858,8 @@ pub fn list() {
     let apps =
         discover_apps();
 
+    let _ = update_runtime_desktop_index();
+
     let payload =
         build_launcher_payload(
             &apps,
@@ -2041,6 +2051,8 @@ pub fn refresh() {
     let apps =
         discover_apps();
 
+    let _ = update_runtime_desktop_index();
+
     print_json(
         &ActionResponse {
             success:
@@ -2059,4 +2071,114 @@ pub fn refresh() {
                 ),
         },
     );
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AppIndexEntry {
+    pub name: String,
+    pub icon: String,
+}
+
+pub fn get_desktop_index() -> HashMap<String, AppIndexEntry> {
+    let apps = discover_apps();
+    let mut index = HashMap::new();
+
+    let mut pixmaps = HashSet::new();
+    if let Ok(entries) = fs::read_dir("/usr/share/pixmaps") {
+        for entry in entries.flatten() {
+            if let Ok(ft) = entry.file_type() {
+                if ft.is_file() {
+                    let file_name = entry.file_name().to_string_lossy().to_string();
+                    pixmaps.insert(file_name);
+                }
+            }
+        }
+    }
+
+    for item in apps {
+        let app = item.app;
+        let icon_val = match app.icon {
+            Some(ref ic) => {
+                if ic.starts_with('/') {
+                    format!("file://{ic}")
+                } else {
+                    let ic_png = format!("{ic}.png");
+                    let ic_svg = format!("{ic}.svg");
+                    let ic_xpm = format!("{ic}.xpm");
+                    if pixmaps.contains(&ic_png) {
+                        format!("file:///usr/share/pixmaps/{ic_png}")
+                    } else if pixmaps.contains(&ic_svg) {
+                        format!("file:///usr/share/pixmaps/{ic_svg}")
+                    } else if pixmaps.contains(&ic_xpm) {
+                        format!("file:///usr/share/pixmaps/{ic_xpm}")
+                    } else if pixmaps.contains(ic) {
+                        format!("file:///usr/share/pixmaps/{ic}")
+                    } else {
+                        ic.clone()
+                    }
+                }
+            }
+            None => continue,
+        };
+
+        let entry = AppIndexEntry {
+            name: app.name.clone(),
+            icon: icon_val,
+        };
+
+        // Key 1: app.id (e.g. "Alacritty.desktop")
+        index.insert(app.id.clone(), entry.clone());
+        index.insert(app.id.to_lowercase(), entry.clone());
+
+        // Key 2: app.id without ".desktop" (e.g. "Alacritty", "com.microsoft.VSCode")
+        let clean_id = app.id.strip_suffix(".desktop").unwrap_or(&app.id);
+        index.insert(clean_id.to_string(), entry.clone());
+        index.insert(clean_id.to_lowercase(), entry.clone());
+
+        // Key 3: if clean_id is reverse-DNS, also add the last segment (e.g. "vscode", "dolphin")
+        if let Some((_, last)) = clean_id.rsplit_once('.') {
+            index.entry(last.to_string()).or_insert_with(|| entry.clone());
+            index.entry(last.to_lowercase()).or_insert_with(|| entry.clone());
+        }
+
+        // Key 4: StartupWMClass (e.g. "com.microsoft.VSCode", "Alacritty")
+        if let Some(ref wm_class) = app.startup_wm_class {
+            index.insert(wm_class.clone(), entry.clone());
+            index.insert(wm_class.to_lowercase(), entry.clone());
+            if let Some((_, last)) = wm_class.rsplit_once('.') {
+                index.entry(last.to_string()).or_insert_with(|| entry.clone());
+                index.entry(last.to_lowercase()).or_insert_with(|| entry.clone());
+            }
+        }
+    }
+
+    index
+}
+
+pub fn update_runtime_desktop_index() -> Result<PathBuf, String> {
+    let index = get_desktop_index();
+    let runtime_dir = env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/run/user/1000".to_string());
+    let nexa_dir = PathBuf::from(runtime_dir).join("nexa");
+    fs::create_dir_all(&nexa_dir).map_err(|e| e.to_string())?;
+
+    let file_path = nexa_dir.join("desktop_apps.json");
+    let json = serde_json::to_string(&index).map_err(|e| e.to_string())?;
+    fs::write(&file_path, json).map_err(|e| e.to_string())?;
+
+    Ok(file_path)
+}
+
+pub fn index_cli() {
+    match update_runtime_desktop_index() {
+        Ok(path) => {
+            println!(
+                "{{\"success\":true,\"path\":{}}}",
+                serde_json::to_string(&path.to_string_lossy()).unwrap_or_default()
+            );
+        }
+        Err(e) => {
+            eprintln!("Failed to update desktop index: {e}");
+            std::process::exit(1);
+        }
+    }
 }

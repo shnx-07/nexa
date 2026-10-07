@@ -29,6 +29,20 @@ Item {
     property string presentation: "full"
 
     // ============================================================
+    // COMPACT CLOCK
+    // ============================================================
+
+    property date currentTime: new Date()
+
+    Timer {
+        id: compactClockTimer
+        interval: 1000
+        running: root.presentation === "compact" && root.visible
+        repeat: true
+        onTriggered: root.currentTime = new Date()
+    }
+
+    // ============================================================
     // MPRIS PLAYER - UNIVERSAL MULTI-APP TRACKER & DISPATCHER
     // ============================================================
 
@@ -778,6 +792,26 @@ Item {
                     else compactTickerAnim.stop()
                 }
             }
+
+            // Subtle Vertical Divider
+            Rectangle {
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: 14
+                Layout.alignment: Qt.AlignVCenter
+                color: Nexa.Theme.divider
+                opacity: 0.6
+            }
+
+            // Compact Clock
+            Text {
+                id: compactClockText
+                Layout.alignment: Qt.AlignVCenter
+                text: Qt.formatDateTime(root.currentTime, "hh:mm AP")
+                color: Nexa.Theme.text
+                font.family: Nexa.Theme.fontFamily
+                font.pixelSize: Nexa.Theme.fontSizeSm
+                font.weight: Nexa.Theme.fontWeightMedium
+            }
         }
     }
 
@@ -1188,44 +1222,68 @@ Item {
                             function onPresentationChanged() { if (root.presentation === "full") radialCanvas.requestPaint() }
                         }
 
+                        // Precomputed static trig table for 80 bars (zero Math.cos/sin overhead during animation)
+                        readonly property var trigTable: {
+                            const count = 80
+                            const table = []
+                            for (let i = 0; i < count; i++) {
+                                const a = (i / count) * Math.PI * 2
+                                table.push({ cos: Math.cos(a), sin: Math.sin(a), angle: a })
+                            }
+                            return table
+                        }
+
                         onPaint: {
                             const ctx = getContext("2d")
                             ctx.reset()
                             const cx = width / 2
                             const cy = height / 2
-                            const barCount = 40
+                            const barCount = 80
                             const baseR = 76
                             const isPlaying = root.playing && root.presentation === "full" && root.visible
                             const hasBins = root.spectrumBins && root.spectrumBins.length > 0
+                            const table = trigTable
 
-                            ctx.lineWidth = 2.8
+                            ctx.lineWidth = 2.0
                             ctx.lineCap = "round"
                             ctx.strokeStyle = Nexa.Theme.primary
 
+                            ctx.beginPath()
                             for (let i = 0; i < barCount; i++) {
-                                const angle = (i / barCount) * Math.PI * 2
-                                const binIdx = i < 20 ? i : (39 - i)
-                                const binVal = hasBins ? (root.spectrumBins[binIdx] || 0) : 0
+                                const entry = table[i]
+                                const cosA = entry.cos
+                                const sinA = entry.sin
+
+                                // Map 80 bars to 20 spectrum bins with smooth interpolation
+                                const half = 40
+                                const norm = (i < half ? i : (79 - i)) / (half - 1)
+                                const floatIdx = norm * 19.0
+                                const i0 = Math.floor(floatIdx)
+                                const i1 = Math.min(19, i0 + 1)
+                                const frac = floatIdx - i0
+                                const b0 = hasBins ? (root.spectrumBins[i0] || 0) : 0
+                                const b1 = hasBins ? (root.spectrumBins[i1] || 0) : 0
+                                const binVal = b0 + (b1 - b0) * frac
 
                                 let h = 3.5
                                 if (isPlaying) {
-                                    if (hasBins) {
+                                    if (hasBins && binVal > 0.01) {
                                         h = 3.5 + binVal * 22.0
                                     } else {
-                                        const wave = Math.sin(angle * 4 + root.audioPhase) * 6.0
+                                        const wave = Math.sin(entry.angle * 4 + root.audioPhase) * 6.0
                                         h = Math.max(3.5, 7.5 + wave)
                                     }
                                 }
-                                const x1 = cx + Math.cos(angle) * baseR
-                                const y1 = cy + Math.sin(angle) * baseR
-                                const x2 = cx + Math.cos(angle) * (baseR + h)
-                                const y2 = cy + Math.sin(angle) * (baseR + h)
 
-                                ctx.beginPath()
+                                const x1 = cx + cosA * baseR
+                                const y1 = cy + sinA * baseR
+                                const x2 = cx + cosA * (baseR + h)
+                                const y2 = cy + sinA * (baseR + h)
+
                                 ctx.moveTo(x1, y1)
                                 ctx.lineTo(x2, y2)
-                                ctx.stroke()
                             }
+                            ctx.stroke()
                         }
                     }
 

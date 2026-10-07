@@ -162,6 +162,7 @@ fn main() {
             }
             match args[2].as_str() {
                 "list" => appLauncher::list(),
+                "index" => appLauncher::index_cli(),
                 "search" => {
                     if args.len() < 4 {
                         eprintln!("Missing app search query");

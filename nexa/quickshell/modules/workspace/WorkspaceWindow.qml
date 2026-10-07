@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 
 import "../../theme" as Nexa
+import "../appLauncher" as AppLauncher
 
 
 Item {
@@ -177,10 +178,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: Math.max(20, Math.min(36, root.width * 0.3, root.height * 0.3))
                 height: width
-                source: Quickshell.iconPath(
-                    root.appClass !== "" ? root.appClass : "application-x-executable",
-                    "application-x-executable"
-                )
+                source: AppLauncher.AppRegistry.resolveAppIcon(root.appClass)
                 fillMode: Image.PreserveAspectFit
                 smooth: true
             }

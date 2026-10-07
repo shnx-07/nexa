@@ -147,6 +147,7 @@ hl.window_rule({
 	name = "terminal-scratchpad-geometry",
 	match = {
 		workspace = "special:terminal",
+		class = terminals,
 	},
 	float = true,
 	center = true,
@@ -158,6 +159,7 @@ hl.window_rule({
 	name = "files-scratchpad-geometry",
 	match = {
 		workspace = "special:files",
+		class = fileManagerApps,
 	},
 	float = true,
 	center = true,
@@ -199,6 +201,7 @@ hl.window_rule({
 
 hl.window_rule({
 	match = {
+		class = terminals,
 		title = "^(.*[Yy]azi.*)$",
 	},
 	float = true,
@@ -208,6 +211,7 @@ hl.window_rule({
 
 hl.window_rule({
 	match = {
+		class = terminals,
 		initial_title = "^(.*[Yy]azi.*)$",
 	},
 	float = true,

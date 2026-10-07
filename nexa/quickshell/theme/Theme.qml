@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "." as ThemeParts
+import "../modules/appLauncher" as AppLauncher
 
 
 QtObject {
@@ -895,4 +896,17 @@ QtObject {
     readonly property int zPopup: 500
     readonly property int zOverlay: 1000
     readonly property int zCritical: 2000
+
+    // ============================================================
+    // APPLICATION RESOLUTION DELEGATION
+    // (Application logic is separated into modules/appLauncher/AppRegistry)
+    // ============================================================
+
+    function resolveAppIcon(id) {
+        return AppLauncher.AppRegistry.resolveAppIcon(id)
+    }
+
+    function cleanAppName(id) {
+        return AppLauncher.AppRegistry.cleanAppName(id)
+    }
 }
