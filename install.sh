@@ -176,6 +176,7 @@ log_success "Official packages installed successfully."
 log_step "Installing AUR Packages via $AUR_HELPER"
 
 AUR_PACKAGES=(
+    auto-cpufreq
     quickshell-git
     matugen-bin
     awww-git
@@ -312,9 +313,10 @@ for conf_file in \
 done
 
 # Enable essential hardware system services
-log_info "Enabling essential hardware services (Bluetooth, Power Profiles)..."
-sudo systemctl enable bluetooth.service 2>/dev/null || true
-sudo systemctl enable power-profiles-daemon.service 2>/dev/null || true
+log_info "Enabling essential hardware services (Bluetooth, Power Profiles, Auto-CPUFreq)..."
+sudo systemctl enable --now bluetooth.service 2>/dev/null || true
+sudo systemctl enable --now power-profiles-daemon.service 2>/dev/null || true
+sudo systemctl enable --now auto-cpufreq.service 2>/dev/null || true
 
 # Ensure BlueZ respects user Bluetooth power state across reboots
 if [ -f /etc/bluetooth/main.conf ]; then
