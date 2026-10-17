@@ -15,7 +15,7 @@ RowLayout {
     property Item hoveredAnchorItem: null
 
     readonly property string nexad:
-        "/home/shnx/.config/nexa/rust/target/release/nexad"
+        Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
 
     // ------------------------------------------------------------
     // LIVE HYPRLAND WORKSPACES

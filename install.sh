@@ -96,6 +96,9 @@ PACMAN_PACKAGES=(
     gcc
     pkgconf
     cmake
+    meson
+    cpio
+    openssl
     python
 
     # Audio & Media
@@ -283,12 +286,35 @@ if [ -f "$DOTFILES_DIR/applications/yazi.desktop" ]; then
     fi
 fi
 
-# Pre-create required runtime directories
+# Pre-create required runtime directories and deploy default wallpaper
 mkdir -p "$HOME/.cache/nexa/theme"
 mkdir -p "$HOME/.cache/nexa/wallpapers"
 mkdir -p "$HOME/.cache/nexa/wallpapers/video"
 mkdir -p "$HOME/Pictures/Wallpapers"
 mkdir -p "$HOME/.local/share/color-schemes"
+
+if [ -d "$DOTFILES_DIR/wallpapers" ]; then
+    log_info "Deploying bundled wallpaper to ~/Pictures/Wallpapers..."
+    cp -n "$DOTFILES_DIR/wallpapers"/* "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
+fi
+
+# Fix any hardcoded username paths to match current user's $HOME
+log_info "Configuring user-specific paths for $(whoami)..."
+for conf_file in \
+    "$HOME/.config/nexa/config/wallpaper.conf" \
+    "$HOME/.config/nexa/config/lockscreen.conf" \
+    "$HOME/.config/nexa/config/slideshow.json" \
+    "$HOME/.config/qt5ct/qt5ct.conf" \
+    "$HOME/.config/qt6ct/qt6ct.conf"; do
+    if [ -f "$conf_file" ]; then
+        sed -i "s|/home/[^/]*|$HOME|g" "$conf_file" 2>/dev/null || true
+    fi
+done
+
+# Enable essential hardware system services
+log_info "Enabling essential hardware services (Bluetooth, Power Profiles)..."
+sudo systemctl enable bluetooth.service 2>/dev/null || true
+sudo systemctl enable power-profiles-daemon.service 2>/dev/null || true
 
 # Ensure BlueZ respects user Bluetooth power state across reboots
 if [ -f /etc/bluetooth/main.conf ]; then

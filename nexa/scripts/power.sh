@@ -139,14 +139,16 @@ show_status() {
 install_service() {
     elevate_if_needed "$@"
     echo "[*] Creating /etc/systemd/system/nexa-power-tune.service..."
-    cat << 'EOF' > /etc/systemd/system/nexa-power-tune.service
+    local script_path
+    script_path="$(realpath "${BASH_SOURCE[0]}")"
+    cat << EOF > /etc/systemd/system/nexa-power-tune.service
 [Unit]
 Description=NEXA System Power & Battery Optimization
 After=multi-user.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c "/home/shnx/.config/nexa/scripts/power.sh optimize"
+ExecStart=/bin/bash -c "$script_path optimize"
 RemainAfterExit=yes
 
 [Install]

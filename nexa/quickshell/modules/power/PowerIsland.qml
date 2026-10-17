@@ -91,7 +91,7 @@ Item {
         )
 
         powerProcess.command = [
-            "/home/shnx/.config/nexa/rust/target/release/nexad",
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
             "power",
             action
         ]
