@@ -247,7 +247,9 @@ end)
 
 -- Auto-migrate child windows opened from the file manager scratchpad to regular workspace
 hl.on("window.open", function(win)
-	if not win then return end
+	if not win then
+		return
+	end
 	local ws = win.workspace
 	local ws_name = tostring((type(ws) == "table" and (ws.name or ws.id)) or ws or "")
 	if ws_name:find("special:files") ~= nil and not is_file_manager_window(win) then

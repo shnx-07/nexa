@@ -1274,8 +1274,7 @@ PanelWindow {
           : Nexa.Theme.islandBackground
 
 
-        border.width:
-            Nexa.Theme.borderThin
+        border.width: 0
 
         border.color:
           root.full
