@@ -154,6 +154,9 @@ hl.window_rule({
 	size = { "monitor_w*0.55", "monitor_h*0.52" },
 })
 
+-- File Managers regex pattern (Dolphin, Nemo, Thunar, Nautilus, Yazi)
+local fileManagerApps = "^(org\\.kde\\.dolphin|dolphin|nemo|Nemo|thunar|Thunar|nautilus|[Yy]azi)$"
+
 -- Scratchpad workspace file manager rules (centered compact popup)
 hl.window_rule({
 	name = "files-scratchpad-geometry",
@@ -178,16 +181,15 @@ hl.window_rule({ match = { class = "^(org\\.kde\\.keditfiletype)$" }, float = tr
 hl.window_rule({ match = { class = "^(org\\.kde\\.ark)$" }, size = { "max(monitor_w, monitor_h)*0.40", "min(monitor_w, monitor_h)*0.40" } })
 hl.window_rule({ match = { class = "^(.*satty.*)$", title = "^(Satty)$" }, min_size = { "max(monitor_w, monitor_h)*0.35", "min(monitor_w, monitor_h)*0.35" }, float = true })
 hl.window_rule({ match = { class = "^(dev\\.)?(noctalia\\.Noctalia(\\.Settings)?)$" }, float = true, size = { "monitor_w*0.70", "monitor_h*0.70" } })
--- File Managers (Dolphin, Nemo, Yazi): Centered horizontally, slightly shifted toward bottom
-local fileManagerApps = "^(org\\.kde\\.dolphin|dolphin|nemo|Nemo|yazi|[Yy]azi)$"
 
+-- File Managers (Dolphin, Nemo, Thunar, Yazi): Centered floating popup
 hl.window_rule({
 	match = {
 		class = fileManagerApps,
 	},
 	float = true,
-	size = { "monitor_w*0.50", "monitor_h*0.55" },
-	move = "monitor_w*0.25 monitor_h*0.30",
+	center = true,
+	size = { "monitor_w*0.55", "monitor_h*0.60" },
 })
 
 hl.window_rule({
@@ -195,8 +197,8 @@ hl.window_rule({
 		initial_class = fileManagerApps,
 	},
 	float = true,
-	size = { "monitor_w*0.50", "monitor_h*0.55" },
-	move = "monitor_w*0.25 monitor_h*0.30",
+	center = true,
+	size = { "monitor_w*0.55", "monitor_h*0.60" },
 })
 
 hl.window_rule({

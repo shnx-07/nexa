@@ -131,11 +131,31 @@ valid_mode() {
 set_gtk_color_preference() {
   local mode="$1"
   local prefer_dark=1
+  local color_scheme="prefer-dark"
+  local gtk_theme="adw-gtk3-dark"
 
-  [[ "$mode" == "light" ]] && prefer_dark=0
+  if [[ "$mode" == "light" ]]; then
+    prefer_dark=0
+    color_scheme="prefer-light"
+    gtk_theme="adw-gtk3"
+  fi
 
-  local gtk3_settings="$HOME/.config/gtk-3.0/settings.ini"
+  # 1. Update gsettings & dconf for xdg-desktop-portal (Firefox, Chrome, web pages)
+  if command -v gsettings >/dev/null 2>&1; then
+    gsettings set org.gnome.desktop.interface color-scheme "$color_scheme" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" 2>/dev/null || true
+  fi
 
+  if command -v dconf >/dev/null 2>&1; then
+    dconf write /org/gnome/desktop/interface/color-scheme "'$color_scheme'" 2>/dev/null || true
+    dconf write /org/gnome/desktop/interface/gtk-theme "'$gtk_theme'" 2>/dev/null || true
+  fi
+
+  local gtk3_dir="$HOME/.config/gtk-3.0"
+  local gtk4_dir="$HOME/.config/gtk-4.0"
+
+  # 2. Update ~/.config/gtk-3.0/settings.ini
+  local gtk3_settings="$gtk3_dir/settings.ini"
   if [[ -f "$gtk3_settings" ]]; then
     if grep -q '^gtk-application-prefer-dark-theme=' "$gtk3_settings"; then
       sed -i \
@@ -145,9 +165,124 @@ set_gtk_color_preference() {
       printf '\ngtk-application-prefer-dark-theme=%s\n' \
         "$prefer_dark" >>"$gtk3_settings"
     fi
+    if grep -q '^gtk-theme-name=' "$gtk3_settings"; then
+      sed -i \
+        "s/^gtk-theme-name=.*/gtk-theme-name=$gtk_theme/" \
+        "$gtk3_settings"
+    else
+      printf '\ngtk-theme-name=%s\n' \
+        "$gtk_theme" >>"$gtk3_settings"
+    fi
   fi
 
-  log "GTK dark preference set to: $prefer_dark"
+  # 3. Update ~/.config/gtk-4.0/settings.ini
+  local gtk4_settings="$gtk4_dir/settings.ini"
+  if [[ -f "$gtk4_settings" ]]; then
+    if grep -q '^gtk-application-prefer-dark-theme=' "$gtk4_settings"; then
+      sed -i \
+        "s/^gtk-application-prefer-dark-theme=.*/gtk-application-prefer-dark-theme=$prefer_dark/" \
+        "$gtk4_settings"
+    else
+      printf '\ngtk-application-prefer-dark-theme=%s\n' \
+        "$prefer_dark" >>"$gtk4_settings"
+    fi
+    if grep -q '^gtk-theme-name=' "$gtk4_settings"; then
+      sed -i \
+        "s/^gtk-theme-name=.*/gtk-theme-name=$gtk_theme/" \
+        "$gtk4_settings"
+    else
+      printf '\ngtk-theme-name=%s\n' \
+        "$gtk_theme" >>"$gtk4_settings"
+    fi
+  fi
+
+  # 4. Ensure GTK 3.0 imports nexa-colors.css and removes any conflicting noctalia import
+  local gtk3_css="$gtk3_dir/gtk.css"
+  if [[ -f "$gtk3_css" ]]; then
+    sed -i '/^[[:space:]]*@import[[:space:]]\+url("noctalia\.css");/d' "$gtk3_css"
+    if ! grep -q 'nexa-colors.css' "$gtk3_css"; then
+      printf '\n@import "nexa-colors.css";\n' >>"$gtk3_css"
+    fi
+  else
+    mkdir -p "$gtk3_dir"
+    printf '/*\n * NEXA GTK 3.0 Theme\n */\n\n@import "nexa-colors.css";\n@import "thunar.css";\n' >"$gtk3_css"
+  fi
+
+  # 5. Ensure GTK 4.0 imports nexa-colors.css and removes any conflicting noctalia import
+  local gtk4_css="$gtk4_dir/gtk.css"
+  if [[ -f "$gtk4_css" ]]; then
+    sed -i '/^[[:space:]]*@import[[:space:]]\+url("noctalia\.css");/d' "$gtk4_css"
+    if ! grep -q 'nexa-colors.css' "$gtk4_css"; then
+      printf '\n@import "nexa-colors.css";\n' >>"$gtk4_css"
+    fi
+  else
+    mkdir -p "$gtk4_dir"
+    printf '/*\n * NEXA GTK 4.0 Theme\n */\n\n@import "nexa-colors.css";\n@import url("libadwaita.css");\n' >"$gtk4_css"
+  fi
+
+  log "GTK dark preference set: mode=$mode color_scheme=$color_scheme gtk_theme=$gtk_theme"
+}
+
+sync_chrome_theme() {
+  local palette="$1"
+  local mode="$2"
+
+  python3 - <<'PY' "$palette" "$mode"
+import sys, os, json, glob, struct
+
+palette_file = sys.argv[1]
+mode = sys.argv[2] if len(sys.argv) > 2 else "dark"
+
+primary_hex = None
+if os.path.isfile(palette_file):
+    with open(palette_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("PRIMARY="):
+                primary_hex = line.split("=", 1)[1].strip('"\'')
+                break
+
+if not primary_hex:
+    sys.exit(0)
+
+hex_clean = primary_hex.lstrip('#')
+try:
+    argb = int("FF" + hex_clean, 16)
+    if argb >= (1 << 31):
+        sk_color = argb - (1 << 32)
+    else:
+        sk_color = argb
+except ValueError:
+    sys.exit(0)
+
+color_scheme = 2 if mode == "dark" else 1
+
+patterns = [
+    os.path.expanduser("~/.config/google-chrome/*/Preferences"),
+    os.path.expanduser("~/.config/chromium/*/Preferences"),
+    os.path.expanduser("~/.config/BraveSoftware/Brave-Browser/*/Preferences"),
+]
+
+for pat in patterns:
+    for pref_path in glob.glob(pat):
+        try:
+            with open(pref_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            if "browser" not in data:
+                data["browser"] = {}
+            if "theme" not in data["browser"]:
+                data["browser"]["theme"] = {}
+            
+            data["browser"]["theme"]["user_color2"] = sk_color
+            data["browser"]["theme"]["color_scheme2"] = color_scheme
+            data["browser"]["theme"]["color_variant2"] = 1
+            data["browser"]["theme"]["saved_local_theme"] = "CAAQAEgB"
+            
+            with open(pref_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, separators=(',', ':'))
+        except Exception:
+            pass
+PY
 }
 
 # -----------------------------------------------------------------------------
@@ -664,6 +799,8 @@ render_canonical() {
     log "Canonical palette output was not generated: $PALETTE_FILE"
     return 1
   fi
+
+  sync_chrome_theme "$PALETTE_FILE" "${MODE:-dark}"
 
   return 0
 }

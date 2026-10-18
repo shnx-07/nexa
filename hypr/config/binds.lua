@@ -2,11 +2,11 @@
 
 local MOD = "SUPER"
 
--- Applications
-local terminal = TERMINAL or "kitty"
-local fileManager = FILE_MANAGER or "dolphin"
-local browser = BROWSER or "firefox"
-local music = MUSIC or "spotify"
+-- Applications   check variable.lua for change
+local terminal = TERMINAL
+local fileManager = FILE_MANAGER
+local browser = BROWSER
+local music = MUSIC
 
 -- ============================================================
 -- Terminal & Floating Scratchpad Controls (Universal Terminal Support)
@@ -127,23 +127,6 @@ end)
 -- File Manager & Floating Scratchpad Controls
 -- ============================================================
 
-local previous_files_window_addr = nil
-
-local function is_special_files_open()
-	local active_special = hl.get_active_special_workspace()
-	if active_special then
-		local name = tostring(active_special.name or active_special)
-		if name:find("files") ~= nil then
-			return true
-		end
-	end
-	local cur_win = hl.get_active_window()
-	if cur_win and cur_win.workspace and tostring(cur_win.workspace.name or ""):find("special:files") ~= nil then
-		return true
-	end
-	return false
-end
-
 local function is_file_manager_window(win)
 	if not win then
 		return false
@@ -162,115 +145,33 @@ local function is_file_manager_window(win)
 		or icls:find("thunar") ~= nil
 end
 
+-- Floating File Manager toggle (Super + E) on current workspace
 hl.bind(MOD .. " + E", function()
-	-- 1. If special:files scratchpad is currently open on screen:
-	if is_special_files_open() then
-		-- Close / Hide the scratchpad file manager
-		hl.dispatch(hl.dsp.workspace.toggle_special("files"))
-
-		-- Restore focus back to previous active window
-		if previous_files_window_addr then
-			hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(previous_files_window_addr) }))
-			previous_files_window_addr = nil
-		end
-		return
-	end
-
-	-- 2. Check if a file manager is open on the CURRENT active regular workspace
 	local cur_win = hl.get_active_window()
 	local active_ws = hl.get_active_workspace()
 	local active_ws_id = active_ws and (active_ws.id or active_ws)
 
-	-- If the currently focused window is a file manager on this workspace, hide it by sending to special:files
+	-- 1. If currently focused on a file manager on this workspace, close/dismiss it
 	if cur_win and is_file_manager_window(cur_win) then
 		local win_ws_id = cur_win.workspace and (cur_win.workspace.id or cur_win.workspace.name or cur_win.workspace)
 		if win_ws_id == active_ws_id then
-			hl.dispatch(hl.dsp.window.move({ workspace = "special:files" }))
+			hl.dispatch(hl.dsp.window.close())
 			return
 		end
 	end
 
-	-- Check if any window on current regular workspace is a file manager
+	-- 2. Check if a file manager is already open on the current workspace: focus it
 	local wins = hl.get_windows() or {}
 	for _, w in ipairs(wins) do
 		local win_ws_id = w.workspace and (w.workspace.id or w.workspace.name or w.workspace)
 		if win_ws_id == active_ws_id and is_file_manager_window(w) then
 			hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(w.address) }))
-			hl.dispatch(hl.dsp.window.move({ workspace = "special:files" }))
 			return
 		end
 	end
 
-	-- 3. OPENING / SUMMONING SCRATCHPAD:
-	-- Remember the currently focused window (only if regular window)
-	if cur_win and cur_win.address then
-		local ws_name = tostring((cur_win.workspace and cur_win.workspace.name) or "")
-		if ws_name:find("special:") == nil then
-			previous_files_window_addr = cur_win.address
-		end
-	end
-
-	-- Check if a file manager window already exists in special:files
-	local scratch_win = nil
-	for _, w in ipairs(wins) do
-		if w.workspace and w.workspace.name == "special:files" and is_file_manager_window(w) then
-			scratch_win = w
-			break
-		end
-	end
-
-	-- If not running yet, launch it on special:files
-	if not scratch_win then
-		hl.exec_cmd("[workspace special:files] " .. (fileManager or "dolphin"))
-
-		for _, delay in ipairs({ 80, 160, 260, 400, 600 }) do
-			hl.timer(function()
-				local current_wins = hl.get_windows() or {}
-				for _, w in ipairs(current_wins) do
-					if w.workspace and w.workspace.name == "special:files" and is_file_manager_window(w) then
-						hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(w.address) }))
-						break
-					end
-				end
-			end, { timeout = delay, type = "oneshot" })
-		end
-	end
-
-	-- Toggle special workspace into view
-	hl.dispatch(hl.dsp.workspace.toggle_special("files"))
-
-	-- Focus the scratchpad file manager immediately if already mapped
-	if scratch_win then
-		hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(scratch_win.address) }))
-	end
-end)
-
--- Auto-migrate child windows opened from the file manager scratchpad to regular workspace
-hl.on("window.open", function(win)
-	if not win then
-		return
-	end
-	local ws = win.workspace
-	local ws_name = tostring((type(ws) == "table" and (ws.name or ws.id)) or ws or "")
-	if ws_name:find("special:files") ~= nil and not is_file_manager_window(win) then
-		local target_ws = "1"
-		local cur_ws = hl.get_active_workspace()
-		local cur_name = tostring((cur_ws and (cur_ws.name or cur_ws.id)) or "")
-		if cur_name ~= "" and cur_name:find("special:") == nil then
-			target_ws = cur_name
-		elseif previous_files_window_addr then
-			local prev_win = hl.get_window({ address = tostring(previous_files_window_addr) })
-			if prev_win and prev_win.workspace and tostring(prev_win.workspace.name or ""):find("special:") == nil then
-				target_ws = tostring(prev_win.workspace.name or prev_win.workspace.id or target_ws)
-			end
-		end
-
-		hl.dispatch(hl.dsp.window.move({ workspace = target_ws, window = "address:" .. tostring(win.address) }))
-		if is_special_files_open() then
-			hl.dispatch(hl.dsp.workspace.toggle_special("files"))
-		end
-		hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(win.address) }))
-	end
+	-- 3. Otherwise, launch file manager on the current regular workspace (rules.lua floats and centers it)
+	hl.exec_cmd(fileManager or "nemo")
 end)
 
 hl.bind(MOD .. " + B", hl.dsp.exec_cmd(browser))

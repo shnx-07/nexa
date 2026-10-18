@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import QtMultimedia
+import Qt.labs.folderlistmodel
 
 import Quickshell
 import Quickshell.Io
@@ -69,6 +70,9 @@ PanelWindow {
     property string slideshowInterval: "10m"
     property string slideshowType: "All"
     property string slideshowTarget: "Background"
+    property string slideshowLastWallpaper: ""
+    readonly property string slideshowFolder:
+        wallpaperDir + "/Slideshow"
 
     property bool slideshowTimerMenuOpen: false
     property bool slideshowTypeMenuOpen: false
@@ -92,6 +96,52 @@ PanelWindow {
 
     readonly property real itemSpacing: 10
     readonly property real skewFactor: -0.35
+
+    // ---------------------------------------------------------
+    // Fluid Spring & Jiggle Physics Engine
+    // ---------------------------------------------------------
+
+    property real jiggleOffset: 0.0
+    property real jiggleVelocity: 0.0
+
+    readonly property real jiggleStiffness: 140.0
+    readonly property real jiggleDamping: 8.5
+
+    property real lastContentX: 0.0
+
+    function triggerJiggle(direction) {
+        jiggleVelocity += direction * 9.0
+        jigglePhysics.running = true
+    }
+
+    FrameAnimation {
+        id: jigglePhysics
+        running: false
+
+        onTriggered: {
+            const dt = Math.min(frameTime, 0.04)
+            if (dt <= 0.0001)
+                return
+
+            const currentX = view.contentX
+            const contentDx = currentX - root.lastContentX
+            root.lastContentX = currentX
+
+            if (view.moving && Math.abs(contentDx) > 0.3) {
+                root.jiggleVelocity += (-contentDx / dt) * 0.0006
+            }
+
+            const springForce = (-root.jiggleStiffness * root.jiggleOffset) - (root.jiggleDamping * root.jiggleVelocity)
+            root.jiggleVelocity += springForce * dt
+            root.jiggleOffset += root.jiggleVelocity * dt
+
+            if (Math.abs(root.jiggleOffset) < 0.0005 && Math.abs(root.jiggleVelocity) < 0.003 && !view.moving) {
+                root.jiggleOffset = 0.0
+                root.jiggleVelocity = 0.0
+                running = false
+            }
+        }
+    }
 
     // ---------------------------------------------------------
     // Helpers
@@ -309,8 +359,10 @@ PanelWindow {
                 direction
             )
 
-        if (next >= 0)
+        if (next >= 0) {
+            triggerJiggle(direction)
             view.currentIndex = next
+        }
     }
 
     function applyCurrent() {
@@ -448,9 +500,38 @@ PanelWindow {
             if (data.interval) root.slideshowInterval = data.interval
             if (data.type_filter) root.slideshowType = data.type_filter
             if (data.apply_target) root.slideshowTarget = data.apply_target
+            if (data.last_wallpaper) root.slideshowLastWallpaper = data.last_wallpaper
         } catch (e) {
             console.log("[WallpaperView] Error parsing slideshow config:", e)
         }
+    }
+
+    function applySlideshowWallpaper(filePath) {
+        if (applying || !filePath)
+            return
+
+        applying = true
+        const wName = fileName(filePath)
+        statusText = "Applying " + wName + " (" + slideshowTarget + ")..."
+
+        if (slideshowTarget === "Background" || slideshowTarget === "Both") {
+            Quickshell.execDetached([
+                applyScript,
+                filePath
+            ])
+        }
+
+        if (slideshowTarget === "Lock Screen" || slideshowTarget === "Both") {
+            Quickshell.execDetached([
+                nexad,
+                "wallpaper",
+                "lock-set",
+                filePath
+            ])
+        }
+
+        slideshowLastWallpaper = filePath
+        closeTimer.restart()
     }
 
     function saveSlideshowState(enabled, paused, interval, typeFilter, target) {
@@ -585,7 +666,8 @@ PanelWindow {
 
         enabled:
             root.visible &&
-            !root.applying
+            !root.applying &&
+            !root.slideshowEnabled
 
         onActivated:
             root.move(-1)
@@ -596,7 +678,8 @@ PanelWindow {
 
         enabled:
             root.visible &&
-            !root.applying
+            !root.applying &&
+            !root.slideshowEnabled
 
         onActivated:
             root.move(1)
@@ -607,7 +690,8 @@ PanelWindow {
 
         enabled:
             root.visible &&
-            !root.applying
+            !root.applying &&
+            !root.slideshowEnabled
 
         onActivated:
             root.applyCurrent()
@@ -659,10 +743,18 @@ PanelWindow {
         model:
             wallpaperModel
 
-        focus: true
-        clip: false
+        visible:
+            !root.slideshowEnabled
+
+        opacity:
+            root.slideshowEnabled ? 0.0 : 1.0
+
+        Behavior on opacity {
+            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+        }
 
         interactive:
+            !root.slideshowEnabled &&
             !root.applying &&
             wallpaperModel.count > 0
 
@@ -693,8 +785,50 @@ PanelWindow {
                 / 2
             )
 
-        highlightMoveDuration: 420
+        highlightMoveDuration: 340
         highlightMoveVelocity: -1
+
+        Connections {
+            target: view
+            function onMovingChanged() {
+                if (view.moving) {
+                    root.lastContentX = view.contentX
+                    jigglePhysics.running = true
+                }
+            }
+            function onContentXChanged() {
+                if (view.moving && !jigglePhysics.running) {
+                    jigglePhysics.running = true
+                }
+            }
+        }
+
+        WheelHandler {
+            id: carouselWheel
+            orientation: Qt.Vertical
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            property real accumulatedDelta: 0
+
+            onWheel: (event) => {
+                let dy = event.angleDelta.y !== 0 ? event.angleDelta.y : event.angleDelta.x
+                accumulatedDelta += dy
+                if (Math.abs(accumulatedDelta) >= 80) {
+                    let dir = accumulatedDelta < 0 ? 1 : -1
+                    accumulatedDelta = 0
+                    root.move(dir)
+                }
+                wheelResetTimer.restart()
+            }
+        }
+
+        Timer {
+            id: wheelResetTimer
+            interval: 160
+            repeat: false
+            onTriggered: {
+                carouselWheel.accumulatedDelta = 0
+            }
+        }
 
         header: Item {
             width:
@@ -734,6 +868,13 @@ PanelWindow {
             readonly property bool selected:
                 ListView.isCurrentItem &&
                 matches
+
+            readonly property int distFromSelected:
+                Math.abs(cardRoot.index - view.currentIndex)
+
+            // Dynamic wave propagation: center card has punchiest jiggle, neighbors ripple with soft decay
+            readonly property real cardJiggle:
+                root.jiggleOffset / (1.0 + (cardRoot.distFromSelected * 0.4))
 
             readonly property bool isImage:
                 wallType === "image"
@@ -783,15 +924,17 @@ PanelWindow {
 
             Behavior on width {
                 NumberAnimation {
-                    duration: 360
-                    easing.type: Easing.OutQuint
+                    duration: 340
+                    easing.type: cardRoot.selected ? Easing.OutBack : Easing.OutCubic
+                    easing.overshoot: 1.18
                 }
             }
 
             Behavior on height {
                 NumberAnimation {
-                    duration: 360
-                    easing.type: Easing.OutQuint
+                    duration: 340
+                    easing.type: cardRoot.selected ? Easing.OutBack : Easing.OutCubic
+                    easing.overshoot: 1.18
                 }
             }
 
@@ -840,7 +983,7 @@ PanelWindow {
                 transform:
                     Matrix4x4 {
                         property real skew:
-                            root.skewFactor
+                            root.skewFactor + (cardRoot.cardJiggle * 0.04)
 
                         matrix:
                             Qt.matrix4x4(
@@ -853,11 +996,9 @@ PanelWindow {
 
                 Behavior on scale {
                     NumberAnimation {
-                        duration:
-                            Nexa.Theme.animationFast
-
-                        easing.type:
-                            Nexa.Theme.easingEmphasized
+                        duration: 260
+                        easing.type: Easing.OutBack
+                        easing.overshoot: 1.35
                     }
                 }
 
@@ -1359,6 +1500,9 @@ PanelWindow {
                         Qt.PointingHandCursor
 
                     onClicked: {
+                        const dir = cardRoot.index > view.currentIndex ? 1 : (cardRoot.index < view.currentIndex ? -1 : 0)
+                        if (dir !== 0)
+                            root.triggerJiggle(dir)
                         view.currentIndex = cardRoot.index
                         cardRoot.clickScale = 0.95
                         pressReset.restart()
@@ -1372,6 +1516,46 @@ PanelWindow {
 
                     onTriggered:
                         cardRoot.clickScale = 1.0
+                }
+            }
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Slideshow Wallpaper Gallery (Loaded on-demand for 0% CPU & RAM when off)
+    // ---------------------------------------------------------
+
+    Loader {
+        id: slideshowLoader
+        anchors {
+            top: parent.top
+            topMargin: 48
+            left: parent.left
+            leftMargin: 56
+            right: parent.right
+            rightMargin: 56
+            bottom: bottomControlsRow.top
+            bottomMargin: 18
+        }
+        z: 400
+        active: root.slideshowEnabled
+        visible: root.slideshowEnabled
+        opacity: root.slideshowEnabled ? 1.0 : 0.0
+
+        Behavior on opacity {
+            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+        }
+
+        sourceComponent: Component {
+            SlideshowWallpaperView {
+                anchors.fill: parent
+                slideshowFolder: root.slideshowFolder
+                slideshowType: root.slideshowType
+                slideshowTarget: root.slideshowTarget
+                lastWallpaper: root.slideshowLastWallpaper
+
+                onApplyWallpaper: (filePath) => {
+                    root.applySlideshowWallpaper(filePath)
                 }
             }
         }
@@ -1418,11 +1602,12 @@ PanelWindow {
 
         Rectangle {
             id: filterBar
+            visible: !root.slideshowEnabled
 
-        height: 56
+            height: 56
 
-        width:
-            filterRow.implicitWidth + 24
+            width:
+                filterRow.implicitWidth + 24
 
         radius:
             Nexa.Theme.radiusLg
