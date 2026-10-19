@@ -233,6 +233,53 @@ ShellRoot {
         }
     }
 
+    Loader {
+        id: settingsLoader
+        active: false
+        source: "modules/settings/SettingsWindow.qml"
+        onLoaded: {
+            if (item) {
+                item.openWindow()
+            }
+        }
+    }
+
+    Connections {
+        target: settingsLoader.item
+        ignoreUnknownSignals: true
+        function onWindowAliveChanged() {
+            if (settingsLoader.item && !settingsLoader.item.windowAlive) {
+                settingsLoader.active = false
+            }
+        }
+    }
+
+    IpcHandler {
+        target: "lockSettings"
+
+        function open() {
+            if (!settingsLoader.active) {
+                settingsLoader.active = true
+            } else if (settingsLoader.item) {
+                settingsLoader.item.openWindow()
+            }
+        }
+
+        function close() {
+            if (settingsLoader.item) {
+                settingsLoader.item.closeWindow()
+            }
+        }
+
+        function toggle() {
+            if (!settingsLoader.active) {
+                settingsLoader.active = true
+            } else if (settingsLoader.item) {
+                settingsLoader.item.toggleWindow()
+            }
+        }
+    }
+
     LockScreenModule.LockScreen {
         id: lockScreen
     }

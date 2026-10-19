@@ -122,11 +122,11 @@ Item {
     IpcHandler {
         target: "wallpaperSlideshow"
 
-        function next(): void {
+        function next() {
             root.triggerNext()
         }
 
-        function reload(): void {
+        function reload() {
             configFile.reload()
         }
     }

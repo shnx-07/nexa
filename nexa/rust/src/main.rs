@@ -13,6 +13,7 @@ mod network;
 mod system;
 mod search;
 mod wallpaper;
+mod palette;
 mod screenshot;
 mod snipping;
 mod recorder;
@@ -73,6 +74,13 @@ fn main() {
             }
             match args[2].as_str() {
                 "list" => wallpaper::print_list(),
+                "info" => {
+                    if args.len() < 4 {
+                        eprintln!("Missing wallpaper path");
+                        return;
+                    }
+                    palette::print_info(&args[3]);
+                }
                 "search" => {
                     if args.len() < 4 {
                         eprintln!("Missing search query");

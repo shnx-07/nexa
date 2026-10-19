@@ -1,0 +1,15 @@
+# qmldir for arcade
+AchievementToasts 1.0 AchievementToasts.qml
+ArcadeClock 1.0 ArcadeClock.qml
+ArcadeSurface 1.0 ArcadeSurface.qml
+HudCorners 1.0 HudCorners.qml
+HudPanel 1.0 HudPanel.qml
+LockBackdrop 1.0 LockBackdrop.qml
+LockMedia 1.0 LockMedia.qml
+LockTransition 1.0 LockTransition.qml
+PasscodeBar 1.0 PasscodeBar.qml
+PlayerCard 1.0 PlayerCard.qml
+SessionStatus 1.0 SessionStatus.qml
+SystemMenu 1.0 SystemMenu.qml
+SystemStatus 1.0 SystemStatus.qml
+TrophyStrip 1.0 TrophyStrip.qml

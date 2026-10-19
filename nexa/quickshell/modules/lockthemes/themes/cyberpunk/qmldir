@@ -1,0 +1,4 @@
+# qmldir for cyberpunk
+CyberpunkSurface 1.0 CyberpunkSurface.qml
+singleton Neon 1.0 Neon.qml
+NeonText 1.0 NeonText.qml

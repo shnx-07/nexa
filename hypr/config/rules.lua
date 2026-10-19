@@ -169,6 +169,27 @@ hl.window_rule({
 	size = { "monitor_w*0.55", "monitor_h*0.55" },
 })
 
+hl.window_rule({
+	name = "files-scratchpad-geometry-initial",
+	match = {
+		workspace = "special:files",
+		initial_class = fileManagerApps,
+	},
+	float = true,
+	center = true,
+	size = { "monitor_w*0.55", "monitor_h*0.55" },
+})
+
+hl.window_rule({
+	name = "files-floating-geometry",
+	match = {
+		class = fileManagerApps,
+		float = true,
+	},
+	center = true,
+	size = { "monitor_w*0.55", "monitor_h*0.55" },
+})
+
 -- ------------------------------------------------------------
 -- Specific Application Floating & Sizing Rules
 -- ------------------------------------------------------------
@@ -182,24 +203,6 @@ hl.window_rule({ match = { class = "^(org\\.kde\\.ark)$" }, size = { "max(monito
 hl.window_rule({ match = { class = "^(.*satty.*)$", title = "^(Satty)$" }, min_size = { "max(monitor_w, monitor_h)*0.35", "min(monitor_w, monitor_h)*0.35" }, float = true })
 hl.window_rule({ match = { class = "^(dev\\.)?(noctalia\\.Noctalia(\\.Settings)?)$" }, float = true, size = { "monitor_w*0.70", "monitor_h*0.70" } })
 
--- File Managers (Dolphin, Nemo, Thunar, Yazi): Centered floating popup
-hl.window_rule({
-	match = {
-		class = fileManagerApps,
-	},
-	float = true,
-	center = true,
-	size = { "monitor_w*0.55", "monitor_h*0.60" },
-})
-
-hl.window_rule({
-	match = {
-		initial_class = fileManagerApps,
-	},
-	float = true,
-	center = true,
-	size = { "monitor_w*0.55", "monitor_h*0.60" },
-})
 
 hl.window_rule({
 	match = {

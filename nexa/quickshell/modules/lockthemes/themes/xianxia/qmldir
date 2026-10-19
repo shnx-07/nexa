@@ -1,0 +1,5 @@
+# qmldir for xianxia
+Formation 1.0 Formation.qml
+IncenseSticks 1.0 IncenseSticks.qml
+singleton Xian 1.0 Xian.qml
+XianxiaSurface 1.0 XianxiaSurface.qml

@@ -1,0 +1,11 @@
+LockContext 1.0 LockContext.qml
+ThemeHost 1.0 ThemeHost.qml
+ScreenCapture 1.0 ScreenCapture.qml
+CaptureImage 1.0 CaptureImage.qml
+FallbackSurface 1.0 FallbackSurface.qml
+singleton LockTheme 1.0 LockTheme.qml
+RollDigit 1.0 RollDigit.qml
+Spark 1.0 Spark.qml
+Glyph 1.0 Glyph.qml
+HoldArea 1.0 HoldArea.qml
+LockInput 1.0 LockInput.qml

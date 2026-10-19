@@ -3,6 +3,8 @@ import Quickshell.Io
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import "../lockthemes" as LockThemesModule
+import "../../services" as Services
 
 
 Item {
@@ -26,6 +28,22 @@ Item {
     readonly property string pendingFlag: runtimeDir + "/restart-pending"
 
     property bool previewOpen: false
+    property string activeThemeId: Services.LockScreen.current
+
+    property real lastLockTime: 0
+
+    LockThemesModule.ScreenCapture {
+        id: capture
+    }
+
+    LockThemesModule.LockContext {
+        id: lockCtx
+        onReleased: {
+            if (root.activeThemeId !== "nexa") {
+                root.unlock()
+            }
+        }
+    }
 
     // ============================================================
     // LOCK CONTROL
@@ -33,30 +51,39 @@ Item {
     IpcHandler {
         target: "lockScreen"
 
-        function lock(): void {
+        function lock() {
             root.lock()
         }
 
-        function openPreview(): void {
+        function openPreview() {
             root.previewOpen = true
         }
 
-        function closePreview(): void {
+        function closePreview() {
             root.previewOpen = false
         }
     }
     function lock() {
-        if (sessionLock.locked) {
-            console.log(
-                "NEXA lockscreen: already locked"
-            )
+        const now = Date.now()
+        if (now - lastLockTime < 400) {
+            console.log("NEXA lockscreen: ignoring rapid duplicate lock request")
+            return
+        }
+        lastLockTime = now
 
+        if (sessionLock.locked) {
+            console.log("NEXA lockscreen: already locked")
             return
         }
 
-        console.log(
-            "NEXA lockscreen: lock requested"
-        )
+        console.log("NEXA lockscreen: lock requested")
+
+        activeThemeId = Services.LockScreen.pick()
+        Services.LockScreen.remember(activeThemeId)
+        if (activeThemeId !== "nexa") {
+            lockCtx.configure(Services.LockScreen.theme(activeThemeId))
+            lockCtx.begin()
+        }
 
         Quickshell.execDetached(["mkdir", "-p", root.runtimeDir])
         Quickshell.execDetached(["touch", root.lockFlag])
@@ -136,18 +163,33 @@ Item {
 
                 color: "black"
 
-                LockSurface {
-                    id: lockSurface
+                Loader {
+                    id: surfaceLoader
+                    anchors.fill: parent
+                    sourceComponent: (root.activeThemeId !== "nexa")
+                        ? themeHostComponent
+                        : nexaSurfaceComponent
+                }
 
-                    anchors.fill:
-                        parent
+                Component {
+                    id: themeHostComponent
+                    LockThemesModule.ThemeHost {
+                        anchors.fill: parent
+                        ctx: lockCtx
+                        themeId: root.activeThemeId
+                        shot: capture.urlFor(lockWindow.screen)
+                        shown: lockWindow.visible
+                    }
+                }
 
-                    onAuthenticationSucceeded: {
-                        console.log(
-                            "NEXA lockscreen: PAM accepted"
-                        )
-
-                        root.unlock()
+                Component {
+                    id: nexaSurfaceComponent
+                    LockSurface {
+                        id: lockSurface
+                        anchors.fill: parent
+                        onAuthenticationSucceeded: {
+                            root.unlock()
+                        }
                     }
                 }
             }

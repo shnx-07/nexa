@@ -18,3 +18,16 @@ if command -v fd >/dev/null 2>&1 && command -v vipsthumbnail >/dev/null 2>&1; th
     ' _ {}
 fi
 
+# Generate thumbnails for videos and GIFs using ffmpeg
+if command -v ffmpeg >/dev/null 2>&1; then
+    for f in "$WALLPAPER_DIR"/*.{mp4,mkv,webm,gif}; do
+        [ -f "$f" ] || continue
+        name="$(basename "$f")"
+        stem="${name%.*}"
+        target="${THUMB_DIR}/${stem}.jpg"
+        if [ ! -f "$target" ]; then
+            ffmpeg -loglevel error -ss 00:00:01 -i "$f" -frames:v 1 -vf "scale=480:-2" -q:v 3 -y "$target" 2>/dev/null || \
+            ffmpeg -loglevel error -i "$f" -frames:v 1 -vf "scale=480:-2" -q:v 3 -y "$target" 2>/dev/null || true
+        fi
+    done
+fi

@@ -11,6 +11,7 @@ import Quickshell.Services.UPower
 
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
+import "../../services" as Services
 
 
 Item {
@@ -19,6 +20,7 @@ Item {
     anchors.fill: parent
     focus: true
 
+    property bool still: false
     property bool unlocking: false
     // ============================================================
     // SIGNALS
@@ -441,15 +443,15 @@ Item {
 
         anchors.fill: parent
 
-        sourceSize.width: 1920
-        sourceSize.height: 1080
+        sourceSize.width: root.still ? 480 : 1920
+        sourceSize.height: root.still ? 270 : 1080
 
         source:
-            (root.visible && root.wallpaperType === "image")
-            ? root.fileUrl(
-                root.wallpaperPath
-            )
-            : ""
+            root.still
+            ? Services.LockScreen.wallpaperThumb
+            : ((root.visible && root.wallpaperType === "image")
+                ? root.fileUrl(root.wallpaperPath)
+                : "")
 
         fillMode:
             Image.PreserveAspectCrop
@@ -458,8 +460,8 @@ Item {
         cache: false
 
         visible:
-            root.wallpaperLoaded
-            && root.wallpaperType === "image"
+            root.still
+            || (root.wallpaperLoaded && root.wallpaperType === "image")
     }
 
 
@@ -473,7 +475,7 @@ Item {
         anchors.fill: parent
 
         source:
-            root.wallpaperType === "gif"
+            (!root.still && root.wallpaperType === "gif")
             ? root.fileUrl(
                 root.wallpaperPath
             )
@@ -486,10 +488,11 @@ Item {
         cache: true
 
         playing:
-            visible
+            !root.still && visible
 
         visible:
-            root.wallpaperLoaded
+            !root.still
+            && root.wallpaperLoaded
             && root.wallpaperType === "gif"
     }
 
@@ -502,7 +505,7 @@ Item {
         id: videoPlayer
 
         source:
-            root.wallpaperType === "video"
+            (!root.still && root.wallpaperType === "video")
             ? root.fileUrl(
                 root.wallpaperPath
             )
@@ -520,6 +523,23 @@ Item {
 
         videoOutput:
             videoOutput
+
+        function checkPlay() {
+            if (
+                root.visible
+                && !root.still
+                && root.wallpaperLoaded
+                && root.wallpaperType === "video"
+            ) {
+                if (playbackState !== MediaPlayer.PlayingState) {
+                    play()
+                }
+            } else if (!root.visible) {
+                stop()
+            }
+        }
+
+        onSourceChanged: checkPlay()
     }
 
 
@@ -532,7 +552,8 @@ Item {
             VideoOutput.PreserveAspectCrop
 
         visible:
-            root.wallpaperLoaded
+            !root.still
+            && root.wallpaperLoaded
             && root.wallpaperType === "video"
     }
 
@@ -541,29 +562,22 @@ Item {
         target: root
 
 
+        function onVisibleChanged() {
+            videoPlayer.checkPlay()
+        }
+
+
         function onWallpaperLoadedChanged() {
-            if (
-                root.wallpaperLoaded
-                && root.wallpaperType === "video"
-            ) {
-                videoPlayer.position = 0
-                videoPlayer.play()
-            } else {
-                videoPlayer.stop()
-            }
+            videoPlayer.checkPlay()
         }
 
 
         function onWallpaperTypeChanged() {
-            if (
-                root.wallpaperLoaded
-                && root.wallpaperType === "video"
-            ) {
-                videoPlayer.position = 0
-                videoPlayer.play()
-            } else {
-                videoPlayer.stop()
-            }
+            videoPlayer.checkPlay()
+        }
+
+        function onStillChanged() {
+            videoPlayer.checkPlay()
         }
     }
 

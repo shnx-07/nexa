@@ -1,0 +1,4 @@
+# qmldir for newspaper
+NewspaperSurface 1.0 NewspaperSurface.qml
+singleton Press 1.0 Press.qml
+singleton Clocks 1.0 Clocks.qml

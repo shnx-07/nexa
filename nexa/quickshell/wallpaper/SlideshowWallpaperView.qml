@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
+import QtMultimedia
 import Qt5Compat.GraphicalEffects
 import Qt.labs.folderlistmodel
 import Quickshell
@@ -13,6 +14,7 @@ Item {
     required property string slideshowType
     required property string slideshowTarget
     property string lastWallpaper: ""
+    property string searchQuery: ""
 
     readonly property string homeDir:
         Quickshell.env("HOME")
@@ -273,20 +275,38 @@ Item {
     // Apply Shortcuts
     Shortcut {
         sequence: "Return"
-        enabled: root.visible && folderModel.count > 0
+        enabled: root.visible && folderModel.count > 0 && !searchInput.activeFocus
         onActivated: root.applySelected()
     }
 
     Shortcut {
         sequence: "Enter"
-        enabled: root.visible && folderModel.count > 0
+        enabled: root.visible && folderModel.count > 0 && !searchInput.activeFocus
         onActivated: root.applySelected()
     }
 
     Shortcut {
         sequence: "Space"
-        enabled: root.visible && folderModel.count > 0
+        enabled: root.visible && folderModel.count > 0 && !searchInput.activeFocus
         onActivated: root.applySelected()
+    }
+
+    Shortcut {
+        sequence: "/"
+        enabled: root.visible && !searchInput.activeFocus
+        onActivated: {
+            searchInput.forceActiveFocus()
+            searchInput.selectAll()
+        }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+F"
+        enabled: root.visible
+        onActivated: {
+            searchInput.forceActiveFocus()
+            searchInput.selectAll()
+        }
     }
 
     // ---------------------------------------------------------
@@ -302,7 +322,7 @@ Item {
         height: 38
 
         Rectangle {
-            height: 34
+            height: 38
             radius: Nexa.Theme.radiusFull
             color: Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.88)
             border.width: 1
@@ -317,7 +337,7 @@ Item {
                 Text {
                     text: "󰋩"
                     color: Nexa.Theme.primary
-                    font.family: Nexa.Theme.iconFont
+                    font.family: Nexa.Theme.iconFontFamily
                     font.pixelSize: 15
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -339,8 +359,8 @@ Item {
                 }
 
                 Text {
-                    text: folderModel.count + " Wallpapers"
-                    color: Nexa.Theme.mutedText
+                    text: root.searchQuery.length > 0 ? (folderModel.count + " Found") : (folderModel.count + " Wallpapers")
+                    color: root.searchQuery.length > 0 ? Nexa.Theme.primary : Nexa.Theme.mutedText
                     font.family: Nexa.Theme.fontFamily
                     font.pixelSize: Nexa.Theme.fontSizeXs
                     anchors.verticalCenter: parent.verticalCenter
@@ -351,10 +371,12 @@ Item {
                     height: 14
                     anchors.verticalCenter: parent.verticalCenter
                     color: Nexa.Theme.outlineVariant
+                    visible: root.searchQuery.length === 0
                 }
 
                 Text {
-                    text: "Arrows to navigate • Enter to apply • Double-click"
+                    visible: root.searchQuery.length === 0
+                    text: "Arrows • Enter to apply • / to search"
                     color: Nexa.Theme.primary
                     font.family: Nexa.Theme.fontFamily
                     font.pixelSize: Nexa.Theme.fontSizeXs
@@ -365,6 +387,167 @@ Item {
         }
 
         Item { Layout.fillWidth: true }
+
+        // Top Search Capsule
+        Rectangle {
+            id: searchCapsule
+            height: 38
+            radius: Nexa.Theme.radiusFull
+            color: searchInput.activeFocus
+                ? Qt.rgba(Nexa.Theme.surfaceContainerHighest.r, Nexa.Theme.surfaceContainerHighest.g, Nexa.Theme.surfaceContainerHighest.b, 0.96)
+                : Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.88)
+            border.width: searchInput.activeFocus ? 2 : 1
+            border.color: searchInput.activeFocus ? Nexa.Theme.primary : (root.searchQuery.length > 0 ? Nexa.Theme.primary : Nexa.Theme.outlineVariant)
+            implicitWidth: searchInput.activeFocus || root.searchQuery.length > 0 ? 280 : 210
+
+            Behavior on implicitWidth {
+                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+            }
+            Behavior on border.color {
+                ColorAnimation { duration: 150 }
+            }
+            Behavior on color {
+                ColorAnimation { duration: 150 }
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 10
+                spacing: 8
+
+                Text {
+                    text: "󰍉"
+                    color: searchInput.activeFocus || root.searchQuery.length > 0 ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: 15
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: searchInput.text.length === 0
+                        text: "Search wallpapers... (/)"
+                        color: Nexa.Theme.mutedText
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeXs
+                        font.weight: Font.Normal
+                    }
+
+                    TextInput {
+                        id: searchInput
+                        anchors.fill: parent
+                        verticalAlignment: TextInput.AlignVCenter
+                        color: Nexa.Theme.text
+                        selectionColor: Nexa.Theme.primary
+                        selectedTextColor: Nexa.Theme.onPrimary
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeXs
+                        font.weight: Font.Medium
+                        clip: true
+
+                        onTextChanged: {
+                            root.searchQuery = text
+                        }
+
+                        Keys.onPressed: event => {
+                            if (event.key === Qt.Key_Escape) {
+                                if (text.length > 0) {
+                                    text = ""
+                                } else {
+                                    grid.forceActiveFocus()
+                                }
+                                event.accepted = true
+                                return
+                            }
+                            if (event.key === Qt.Key_Down) {
+                                grid.forceActiveFocus()
+                                event.accepted = true
+                                return
+                            }
+                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                if (folderModel.count > 0) {
+                                    root.applySelected()
+                                }
+                                grid.forceActiveFocus()
+                                event.accepted = true
+                                return
+                            }
+                        }
+                    }
+                }
+
+                // Clear button
+                Rectangle {
+                    visible: searchInput.text.length > 0
+                    width: 18
+                    height: 18
+                    radius: 9
+                    color: clearMouse.containsMouse ? Nexa.Theme.surfaceContainerHighest : "transparent"
+                    Layout.alignment: Qt.AlignVCenter
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰅖"
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: 12
+                        color: clearMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
+                    }
+
+                    MouseArea {
+                        id: clearMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            searchInput.text = ""
+                            searchInput.forceActiveFocus()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Top Floating Glass Inspector Capsule (Matugen Palette & Metadata)
+    // ---------------------------------------------------------
+    WallpaperInspectorCapsule {
+        id: inspectorCapsule
+        anchors {
+            horizontalCenter: parent.horizontalCenter
+            top: parent.top
+        }
+        height: 38
+        z: 60
+        visible: folderModel.count > 0 && parent.width >= 1150
+
+        wallpaperPath: {
+            if (grid.currentIndex >= 0 && grid.currentIndex < folderModel.count) {
+                const p = folderModel.get(grid.currentIndex, "filePath")
+                return p ? String(p) : ""
+            }
+            return ""
+        }
+
+        wallpaperTitle: {
+            if (grid.currentIndex >= 0 && grid.currentIndex < folderModel.count) {
+                const n = folderModel.get(grid.currentIndex, "fileName")
+                if (!n) return ""
+                let s = String(n)
+                const dot = s.lastIndexOf(".")
+                if (dot > 0) s = s.substring(0, dot)
+                s = s.replace(/[-_][a-z0-9]{8,}$/i, "")
+                s = s.replace(/[-_]/g, " ").trim()
+                return s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : String(n)
+            }
+            return ""
+        }
     }
 
     // ---------------------------------------------------------
@@ -374,15 +557,21 @@ Item {
         id: folderModel
         folder: "file://" + root.slideshowFolder
         nameFilters: {
+            const q = root.searchQuery.trim().replace(/\s+/g, "*")
+            const wildcard = q.length > 0 ? ("*" + q + "*") : "*"
             const t = root.slideshowType.toLowerCase()
             if (t === "image")
-                return ["*.jpg", "*.jpeg", "*.png", "*.webp"]
+                return [wildcard + ".jpg", wildcard + ".jpeg", wildcard + ".png", wildcard + ".webp"]
             if (t === "gif")
-                return ["*.gif"]
+                return [wildcard + ".gif"]
             if (t === "video")
-                return ["*.mp4", "*.mkv", "*.webm"]
-            return ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.gif", "*.mp4", "*.mkv", "*.webm"]
+                return [wildcard + ".mp4", wildcard + ".mkv", wildcard + ".webm"]
+            return [
+                wildcard + ".jpg", wildcard + ".jpeg", wildcard + ".png", wildcard + ".webp",
+                wildcard + ".gif", wildcard + ".mp4", wildcard + ".mkv", wildcard + ".webm"
+            ]
         }
+        caseSensitive: false
         showDirs: false
         showFiles: true
         sortField: FolderListModel.Name
@@ -399,6 +588,7 @@ Item {
             left: parent.left
             right: parent.right
             bottom: parent.bottom
+            bottomMargin: 6
         }
 
         clip: true
@@ -503,7 +693,7 @@ Item {
                     visible: false
 
                     onStatusChanged: {
-                        if (status === Image.Error && String(source) !== String(delegateRoot.itemFileURL)) {
+                        if (status === Image.Error && !delegateRoot.isVideoFile && String(source) !== String(delegateRoot.itemFileURL)) {
                             source = delegateRoot.itemFileURL
                         }
                     }
@@ -559,13 +749,13 @@ Item {
                     // Background placeholder
                     Rectangle {
                         anchors.fill: parent
-                        color: Qt.rgba(Nexa.Theme.surfaceContainerLowest.r, Nexa.Theme.surfaceContainerLowest.g, Nexa.Theme.surfaceContainerLowest.b, 0.92)
+                        color: Qt.rgba(Nexa.Theme.surfaceContainerLow.r, Nexa.Theme.surfaceContainerLow.g, Nexa.Theme.surfaceContainerLow.b, 0.92)
 
                         Text {
                             anchors.centerIn: parent
                             visible: thumb.status !== Image.Ready
                             text: delegateRoot.isVideoFile ? "󰕧" : (delegateRoot.isGifFile ? "󰵸" : "󰋩")
-                            font.family: Nexa.Theme.iconFont
+                            font.family: Nexa.Theme.iconFontFamily
                             font.pixelSize: 36
                             color: Qt.rgba(1, 1, 1, 0.25)
                         }
@@ -583,8 +773,56 @@ Item {
                         fillMode: Image.PreserveAspectCrop
 
                         onStatusChanged: {
-                            if (status === Image.Error && String(source) !== String(delegateRoot.itemFileURL)) {
-                                source = delegateRoot.itemFileURL
+                            if (status === Image.Error) {
+                                if (!delegateRoot.isVideoFile && String(source) !== String(delegateRoot.itemFileURL)) {
+                                    source = delegateRoot.itemFileURL
+                                } else if (delegateRoot.isVideoFile) {
+                                    const alt = root.homeDir + "/.cache/nexa/wallpapers/video/" + delegateRoot.fileBaseName + ".jpg"
+                                    if (String(source) !== "file://" + alt) {
+                                        source = "file://" + alt
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Animated GIF Live Preview (Plays when highlighted/selected)
+                    AnimatedImage {
+                        id: gifPlayer
+                        anchors.fill: parent
+                        source: delegateRoot.isGifFile ? delegateRoot.itemFileURL : ""
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        cache: true
+                        playing: delegateRoot.isGifFile && delegateRoot.isHighlighted
+                        visible: delegateRoot.isGifFile && delegateRoot.isHighlighted && status === AnimatedImage.Ready
+                    }
+
+                    // Live Video Preview (On-demand MediaPlayer when highlighted/selected)
+                    Loader {
+                        id: videoPlayerLoader
+                        anchors.fill: parent
+                        active: delegateRoot.isVideoFile && delegateRoot.isHighlighted
+                        visible: active
+                        sourceComponent: Component {
+                            Item {
+                                anchors.fill: parent
+
+                                MediaPlayer {
+                                    id: previewPlayer
+                                    source: delegateRoot.itemFileURL
+                                    loops: MediaPlayer.Infinite
+                                    audioOutput: AudioOutput { muted: true }
+                                    videoOutput: previewOutput
+                                    autoPlay: true
+                                }
+
+                                VideoOutput {
+                                    id: previewOutput
+                                    anchors.fill: parent
+                                    fillMode: VideoOutput.PreserveAspectCrop
+                                    visible: previewPlayer.playbackState === MediaPlayer.PlayingState
+                                }
                             }
                         }
                     }
@@ -646,7 +884,7 @@ Item {
                                 Text {
                                     text: "󰄲"
                                     color: Nexa.Theme.onPrimary
-                                    font.family: Nexa.Theme.iconFont
+                                    font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: 11
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
@@ -706,7 +944,7 @@ Item {
                         Text {
                             text: delegateRoot.isVideoFile ? "󰕧" : "󰵸"
                             color: "#ffffff"
-                            font.family: Nexa.Theme.iconFont
+                            font.family: Nexa.Theme.iconFontFamily
                             font.pixelSize: 11
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -743,7 +981,7 @@ Item {
                         Text {
                             text: "󰄬"
                             color: Nexa.Theme.onPrimary
-                            font.family: Nexa.Theme.iconFont
+                            font.family: Nexa.Theme.iconFontFamily
                             font.pixelSize: 12
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -819,18 +1057,66 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "󰋩"
-            font.family: Nexa.Theme.iconFont
+            text: root.searchQuery.length > 0 ? "󰍉" : "󰋩"
+            font.family: Nexa.Theme.iconFontFamily
             font.pixelSize: 48
             color: Nexa.Theme.mutedText
         }
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "No wallpapers found matching \"" + root.slideshowType + "\" in ~/Pictures/Wallpapers/Slideshow"
+            text: root.searchQuery.length > 0
+                ? ("No wallpapers match \"" + root.searchQuery + "\"")
+                : ("No wallpapers found matching \"" + root.slideshowType + "\" in ~/Pictures/Wallpapers/Slideshow")
             font.family: Nexa.Theme.fontFamily
             font.pixelSize: Nexa.Theme.fontSizeMd
             color: Nexa.Theme.mutedText
+        }
+
+        Rectangle {
+            visible: root.searchQuery.length > 0
+            anchors.horizontalCenter: parent.horizontalCenter
+            height: 32
+            radius: Nexa.Theme.radiusFull
+            color: clearEmptyMouse.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainer
+            border.width: 1
+            border.color: Nexa.Theme.outlineVariant
+            implicitWidth: clearEmptyRow.implicitWidth + 24
+
+            Row {
+                id: clearEmptyRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    text: "󰅖"
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: 13
+                    color: Nexa.Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "Clear search"
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: Nexa.Theme.fontSizeSm
+                    font.weight: Font.Medium
+                    color: Nexa.Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            MouseArea {
+                id: clearEmptyMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    root.searchQuery = ""
+                    searchInput.text = ""
+                    grid.forceActiveFocus()
+                }
+            }
         }
     }
 }

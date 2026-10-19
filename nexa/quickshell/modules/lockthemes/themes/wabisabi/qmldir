@@ -1,0 +1,4 @@
+# qmldir for wabisabi
+Enso 1.0 Enso.qml
+singleton Wabi 1.0 Wabi.qml
+WabisabiSurface 1.0 WabisabiSurface.qml

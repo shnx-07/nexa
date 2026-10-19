@@ -1429,12 +1429,12 @@ PanelWindow {
                             Text {
                                 text: "󰋩"
                                 color: Nexa.Theme.primary
-                                font.family: Nexa.Theme.iconFont
+                                font.family: Nexa.Theme.iconFontFamily
                                 font.pixelSize: 13
                             }
 
                             Text {
-                                text: cardRoot.wallName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")
+                                text: cardRoot.wallName ? cardRoot.wallName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ") : ""
                                 color: Nexa.Theme.text
                                 font.family: Nexa.Theme.fontFamily
                                 font.pixelSize: Nexa.Theme.fontSizeXs
@@ -1517,6 +1517,215 @@ PanelWindow {
                     onTriggered:
                         cardRoot.clickScale = 1.0
                 }
+
+                // -------------------------------------------------
+                // Matugen Color Palette & Wallpaper Info Baseplate
+                // (Directly below selected card, matching 3D skew in lockstep)
+                // -------------------------------------------------
+                Item {
+                    id: infoPlate
+                    visible: cardRoot.selected
+                    opacity: cardRoot.selected ? 1.0 : 0.0
+                    scale: cardRoot.selected ? 1.0 : 0.96
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 240; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on scale {
+                        NumberAnimation { duration: 240; easing.type: Easing.OutBack; easing.overshoot: 1.15 }
+                    }
+
+                    anchors {
+                        top: parent.bottom
+                        topMargin: 12
+                        left: parent.left
+                        right: parent.right
+                    }
+
+                    height: 44
+                    z: 20
+
+                    // Slanted Glass Plate (inherits parent skewContainer Matrix4x4)
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 8
+                        color: Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.92)
+                        border.width: 1
+                        border.color: Nexa.Theme.outlineVariant
+                    }
+
+                    // Counter-skewed upright container: ensures all text, icons, and swatches are perfectly upright and crisp
+                    Item {
+                        id: unskewContent
+                        anchors {
+                            fill: parent
+                            leftMargin: 16
+                            rightMargin: 24
+                        }
+
+                        transform: Matrix4x4 {
+                            property real skew: -(root.skewFactor + (cardRoot.cardJiggle * 0.04))
+                            matrix: Qt.matrix4x4(
+                                1, skew, 0, 0,
+                                0, 1, 0, 0,
+                                0, 0, 1, 0,
+                                0, 0, 0, 1
+                            )
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            spacing: 8
+
+                            // Format & Resolution Badge
+                            Row {
+                                spacing: 5
+                                Layout.alignment: Qt.AlignVCenter
+
+                                Text {
+                                    text: cardRoot.isVideo ? "󰕧" : (cardRoot.isGif ? "󰵸" : "󰋩")
+                                    color: Nexa.Theme.primary
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 12
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                Rectangle {
+                                    height: 20
+                                    radius: Nexa.Theme.radiusFull
+                                    color: Nexa.Theme.surfaceContainerHigh
+                                    implicitWidth: metaText.implicitWidth + 10
+                                    anchors.verticalCenter: parent.verticalCenter
+
+                                    Text {
+                                        id: metaText
+                                        anchors.centerIn: parent
+                                        text: {
+                                            if (!root.currentSelectedInfo) return cardRoot.wallType.toUpperCase()
+                                            let parts = []
+                                            if (root.currentSelectedInfo.format) parts.push(root.currentSelectedInfo.format)
+                                            if (root.currentSelectedInfo.width > 0 && root.currentSelectedInfo.height > 0) {
+                                                parts.push(root.currentSelectedInfo.width + "×" + root.currentSelectedInfo.height)
+                                            }
+                                            if (root.currentSelectedInfo.size) parts.push(root.currentSelectedInfo.size.replace(/\s+/g, ""))
+                                            return parts.length > 0 ? parts.join(" • ") : cardRoot.wallType.toUpperCase()
+                                        }
+                                        color: Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.monoFont
+                                        font.pixelSize: 8
+                                        font.weight: Font.Medium
+                                    }
+                                }
+                            }
+
+                            // Divider
+                            Rectangle {
+                                width: 1
+                                height: 14
+                                color: Nexa.Theme.outlineVariant
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+
+                            // 5 Matugen Swatches
+                            Row {
+                                spacing: 4
+                                Layout.alignment: Qt.AlignVCenter
+
+                                Repeater {
+                                    model: [
+                                        { label: "PRI", key: "primary" },
+                                        { label: "SEC", key: "secondary" },
+                                        { label: "TER", key: "tertiary" },
+                                        { label: "CON", key: "container" },
+                                        { label: "SUR", key: "surface" }
+                                    ]
+
+                                    delegate: Rectangle {
+                                        id: swatchPill
+                                        required property var modelData
+
+                                        readonly property string hexVal: {
+                                            if (root.currentSelectedInfo && root.currentSelectedInfo.palette && root.currentSelectedInfo.palette[modelData.key]) {
+                                                return String(root.currentSelectedInfo.palette[modelData.key]).toUpperCase()
+                                            }
+                                            return "#------"
+                                        }
+
+                                        readonly property color colorVal: hexVal !== "#------" ? hexVal : Nexa.Theme.surfaceContainerHighest
+                                        readonly property bool isCopied: root.copiedColorHex === hexVal
+
+                                        height: 22
+                                        radius: Nexa.Theme.radiusFull
+                                        color: isCopied
+                                            ? Nexa.Theme.primaryContainer
+                                            : (swatchMouse.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerLow)
+                                        border.width: 1
+                                        border.color: isCopied
+                                            ? Nexa.Theme.primary
+                                            : (swatchMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.outlineVariant)
+                                        implicitWidth: swatchRow.implicitWidth + 8
+                                        anchors.verticalCenter: parent.verticalCenter
+
+                                        scale: swatchMouse.containsMouse ? 1.04 : 1.0
+                                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+
+                                        Row {
+                                            id: swatchRow
+                                            anchors.centerIn: parent
+                                            spacing: 4
+
+                                            Rectangle {
+                                                width: 8
+                                                height: 8
+                                                radius: 4
+                                                color: swatchPill.colorVal
+                                                border.width: 1
+                                                border.color: Qt.rgba(255, 255, 255, 0.25)
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+
+                                            Text {
+                                                text: swatchPill.isCopied ? "COPIED" : swatchPill.modelData.label
+                                                color: swatchPill.isCopied ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                                font.family: Nexa.Theme.monoFont
+                                                font.pixelSize: 8
+                                                font.weight: Font.Bold
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+
+                                            Text {
+                                                text: swatchPill.hexVal
+                                                color: swatchMouse.containsMouse || swatchPill.isCopied ? Nexa.Theme.primary : Nexa.Theme.text
+                                                font.family: Nexa.Theme.monoFont
+                                                font.pixelSize: 8
+                                                font.weight: Font.DemiBold
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            id: swatchMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (swatchPill.hexVal !== "#------") {
+                                                    Quickshell.execDetached(["wl-copy", swatchPill.hexVal])
+                                                    root.copiedColorHex = swatchPill.hexVal
+                                                    copiedResetTimer.restart()
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -1573,6 +1782,67 @@ PanelWindow {
             root.applyMenuOpen = false
             root.closeAllSlideshowMenus()
         }
+    }
+
+    // ---------------------------------------------------------
+    // Matugen Palette & Wallpaper Metadata Fetcher
+    // ---------------------------------------------------------
+
+    property var currentSelectedInfo: null
+    property string copiedColorHex: ""
+
+    Timer {
+        id: copiedResetTimer
+        interval: 1600
+        repeat: false
+        onTriggered: {
+            root.copiedColorHex = ""
+        }
+    }
+
+    readonly property string currentSelectedWallpaperPath: {
+        if (view.currentIndex >= 0 && view.currentIndex < wallpaperModel.count) {
+            const item = wallpaperModel.get(view.currentIndex)
+            return item ? item.wallPath : ""
+        }
+        return ""
+    }
+
+    Process {
+        id: selectedWallpaperInfoProcess
+        command: [root.nexad, "wallpaper", "info", root.currentSelectedWallpaperPath]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!this.text || this.text.trim().length === 0) return
+                try {
+                    const parsed = JSON.parse(this.text.trim())
+                    if (parsed && parsed.palette) {
+                        root.currentSelectedInfo = parsed
+                    }
+                } catch (e) {
+                    console.log("[WallpaperView] Info parse error:", e)
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: selectedInfoDebounce
+        interval: 40
+        repeat: false
+        onTriggered: {
+            if (root.currentSelectedWallpaperPath.length > 0 && !root.slideshowEnabled) {
+                if (selectedWallpaperInfoProcess.running) {
+                    selectedWallpaperInfoProcess.running = false
+                }
+                selectedWallpaperInfoProcess.running = true
+            }
+        }
+    }
+
+    onCurrentSelectedWallpaperPathChanged: {
+        selectedInfoDebounce.restart()
     }
 
     // ---------------------------------------------------------

@@ -1,0 +1,3 @@
+# qmldir for cosmos
+Constellation 1.0 Constellation.qml
+CosmosSurface 1.0 CosmosSurface.qml
