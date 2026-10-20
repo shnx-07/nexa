@@ -106,9 +106,9 @@ Item {
         sourceComponent: Component {
             IpcHandler {
                 target: "wifi"
-                function toggle() { root.togglePopup() }
-                function open() { root.openPopup() }
-                function close() { root.closePopup() }
+                function toggle(): void { root.togglePopup() }
+                function open(): void { root.openPopup() }
+                function close(): void { root.closePopup() }
             }
         }
     }

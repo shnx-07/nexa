@@ -1,43 +1,80 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+
 import Quickshell
 import Quickshell.Io
+
 import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+
 
 PanelWindow {
     id: root
 
-    anchors { top: true; bottom: true; left: true; right: true }
+    // ============================================================
+    // WINDOW CONFIGURATION
+    // ============================================================
+
+    anchors {
+        top: true
+        bottom: true
+        left: true
+        right: true
+    }
+
     exclusionMode: ExclusionMode.Ignore
     aboveWindows: true
     focusable: true
     color: "transparent"
+
     visible: windowAlive
 
     property bool windowAlive: false
     property bool clipboardOpen: false
     property bool loading: false
+
     property bool confirmClear: false
     property bool confirmDelete: false
 
+    // ============================================================
+    // DATA & FILTER STATE
+    // ============================================================
+
     property var entries: []
     property var selectedEntry: null
+
     property string selectedContent: ""
     property int selectedSize: 0
     property string selectedType: ""
     property string selectedImageSource: ""
+
+    // Category filter: "all" | "text" | "image" | "link" | "code" | "pinned"
     property string activeFilter: "all"
 
+    // Toast notification state
     property string toastText: ""
     property bool toastVisible: false
 
-    readonly property string nexadPath: Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
+    // ============================================================
+    // BACKEND PATH
+    // ============================================================
+
+    readonly property string nexadPath:
+        Quickshell.env("HOME")
+        + "/.config/nexa/rust/target/release/nexad"
+
+    // ============================================================
+    // DIMENSIONS
+    // ============================================================
+
     readonly property int panelWidth: 920
     readonly property int panelHeight: 640
     readonly property int leftWidth: 350
     readonly property int outerPadding: 16
+
+    // ============================================================
+    // CONTENT CLASSIFICATION & FORMATTING HELPERS
+    // ============================================================
 
     function formatBytes(bytes) {
         if (!bytes || bytes <= 0) return "0 B"
@@ -75,33 +112,34 @@ PanelWindow {
         return "text"
     }
 
-    function getCategoryIcon(cat) {
-        switch (cat) {
+    function getCategoryIcon(category) {
+        switch (category) {
             case "image": return "󰋩"
-            case "link": return "󰌹"
-            case "code": return "󰘳"
-            default: return "󰅇"
+            case "link":  return "󰌹"
+            case "code":  return "󰘳"
+            default:      return "󰅇"
         }
     }
 
-    function getCategoryColor(cat) {
-        switch (cat) {
+    function getCategoryColor(category) {
+        switch (category) {
             case "image": return Nexa.Theme.tertiary
-            case "link": return Nexa.Theme.secondary
-            case "code": return Nexa.Theme.success
-            default: return Nexa.Theme.primary
+            case "link":  return Nexa.Theme.secondary
+            case "code":  return Nexa.Theme.success
+            default:      return Nexa.Theme.primary
         }
     }
 
-    function getCategoryLabel(cat) {
-        switch (cat) {
+    function getCategoryLabel(category) {
+        switch (category) {
             case "image": return "IMAGE"
-            case "link": return "LINK"
-            case "code": return "CODE"
-            default: return "TEXT"
+            case "link":  return "LINK"
+            case "code":  return "CODE"
+            default:      return "TEXT"
         }
     }
 
+    // Filtered entries according to active tab
     readonly property var currentList: {
         if (!entries || entries.length === 0) return []
         if (activeFilter === "all") return entries
@@ -113,94 +151,178 @@ PanelWindow {
         return entries
     }
 
+    // Category counts for filter tabs
     readonly property int countAll: entries ? entries.length : 0
     readonly property int countPinned: entries ? entries.filter(e => e.pinned === true).length : 0
     readonly property int countImages: entries ? entries.filter(e => e.type === "image").length : 0
     readonly property int countLinks: entries ? entries.filter(e => getItemCategory(e) === "link").length : 0
 
+    // Text stats for preview
     readonly property int textCharCount: selectedContent ? selectedContent.length : 0
     readonly property int textLineCount: selectedContent ? selectedContent.split("\n").length : 0
-    readonly property int textWordCount: (!selectedContent || selectedContent.trim().length === 0) ? 0 : selectedContent.trim().split(/\s+/).length
+    readonly property int textWordCount: {
+        if (!selectedContent || selectedContent.trim().length === 0) return 0
+        return selectedContent.trim().split(/\s+/).length
+    }
 
-    function triggerToast(msg) {
-        toastText = msg
+    // ============================================================
+    // TOAST FEEDBACK
+    // ============================================================
+
+    function triggerToast(message) {
+        toastText = message
         toastVisible = true
         toastTimer.restart()
     }
 
-    Timer { id: toastTimer; interval: 1300; repeat: false; onTriggered: root.toastVisible = false }
-    Timer { id: autoCloseTimer; interval: 140; repeat: false; onTriggered: root.closeClipboard() }
+    Timer {
+        id: toastTimer
+        interval: 1300
+        repeat: false
+        onTriggered: root.toastVisible = false
+    }
+
+    Timer {
+        id: autoCloseTimer
+        interval: 140
+        repeat: false
+        onTriggered: root.closeClipboard()
+    }
+
+    // ============================================================
+    // SELECTION & ACTIONS
+    // ============================================================
 
     function selectEntry(entry) {
         if (!entry || !entry.id) return
+
         selectedEntry = entry
         selectedContent = ""
         selectedImageSource = ""
         selectedType = entry.type || "text"
         selectedSize = entry.size_bytes || 0
-        getProcess.exec([nexadPath, "clipboard", "get", entry.id])
+
+        getProcess.exec([
+            nexadPath,
+            "clipboard",
+            "get",
+            entry.id
+        ])
     }
 
-    function refresh() { requestSearch(searchInput.text) }
+    function refresh() {
+        requestSearch(searchInput.text)
+    }
 
     function requestSearch(query) {
         const trimmed = query.trim()
         loading = true
+
         if (trimmed.length === 0) {
-            listProcess.exec([nexadPath, "clipboard", "list"])
-        } else {
-            searchProcess.exec([nexadPath, "clipboard", "search", trimmed])
+            listProcess.exec([
+                nexadPath,
+                "clipboard",
+                "list"
+            ])
+            return
         }
+
+        searchProcess.exec([
+            nexadPath,
+            "clipboard",
+            "search",
+            trimmed
+        ])
     }
 
     function copySelected(autoClose = false) {
         if (!selectedEntry) return
-        copyProcess.exec([nexadPath, "clipboard", "copy", selectedEntry.id])
+
+        copyProcess.exec([
+            nexadPath,
+            "clipboard",
+            "copy",
+            selectedEntry.id
+        ])
+
         triggerToast("Copied to clipboard!")
-        if (autoClose) autoCloseTimer.restart()
+
+        if (autoClose) {
+            autoCloseTimer.restart()
+        }
     }
 
     function moveSelection(delta) {
         const list = currentList
         if (!list || list.length === 0) return
-        let cur = -1
+
+        let currentIndex = -1
         if (selectedEntry && selectedEntry.id) {
             for (let i = 0; i < list.length; i++) {
-                if (list[i].id === selectedEntry.id) { cur = i; break }
+                if (list[i].id === selectedEntry.id) {
+                    currentIndex = i
+                    break
+                }
             }
         }
-        let next = cur + delta
-        if (next < 0) next = 0
-        if (next >= list.length) next = list.length - 1
-        if (next !== cur && list[next]) {
-            selectEntry(list[next])
-            historyList.positionViewAtIndex(next, ListView.Beginning)
+
+        let nextIndex = currentIndex + delta
+        if (nextIndex < 0) nextIndex = 0
+        if (nextIndex >= list.length) nextIndex = list.length - 1
+
+        if (nextIndex !== currentIndex && list[nextIndex]) {
+            selectEntry(list[nextIndex])
+            historyList.positionViewAtIndex(nextIndex, ListView.Beginning)
         }
     }
 
     function togglePinSelected(target = null) {
         const item = target || selectedEntry
         if (!item || !item.id) return
+
         const willPin = !item.pinned
+        const command = willPin ? "pin" : "unpin"
+
+        // Optimistically update in entries
         for (let i = 0; i < entries.length; i++) {
-            if (entries[i].id === item.id) { entries[i].pinned = willPin; break }
+            if (entries[i].id === item.id) {
+                entries[i].pinned = willPin
+                break
+            }
         }
         item.pinned = willPin
         if (selectedEntry && selectedEntry.id === item.id) {
             selectedEntry.pinned = willPin
             selectedEntryChanged()
         }
+
         triggerToast(willPin ? "Pinned clip" : "Unpinned clip")
-        pinProcess.exec([nexadPath, "clipboard", willPin ? "pin" : "unpin", String(item.id)])
+
+        pinProcess.exec([
+            nexadPath,
+            "clipboard",
+            command,
+            String(item.id)
+        ])
     }
 
     function deleteSelected() {
         if (!selectedEntry) return
-        deleteProcess.exec([nexadPath, "clipboard", "delete", selectedEntry.id])
+
+        deleteProcess.exec([
+            nexadPath,
+            "clipboard",
+            "delete",
+            selectedEntry.id
+        ])
     }
 
     function clearHistory() {
-        clearProcess.exec([nexadPath, "clipboard", "clear"])
+        clearProcess.exec([
+            nexadPath,
+            "clipboard",
+            "clear"
+        ])
     }
 
     function openSelectedUrl() {
@@ -212,21 +334,30 @@ PanelWindow {
         }
     }
 
+    // ============================================================
+    // OPEN / CLOSE LIFECYCLE
+    // ============================================================
+
     function openClipboard() {
         closeTimer.stop()
         autoCloseTimer.stop()
-        if (!windowAlive) windowAlive = true
+
+        if (!windowAlive)
+            windowAlive = true
+
         Qt.callLater(function() {
             clipboardOpen = true
             confirmClear = false
             confirmDelete = false
             toastVisible = false
             activeFilter = "all"
+
             selectedEntry = null
             selectedContent = ""
             selectedImageSource = ""
             selectedType = ""
             selectedSize = 0
+
             searchInput.text = ""
             requestSearch("")
             searchInput.forceActiveFocus()
@@ -235,58 +366,116 @@ PanelWindow {
 
     function closeClipboard() {
         if (!windowAlive) return
+
         clipboardOpen = false
         confirmClear = false
         confirmDelete = false
         toastVisible = false
+
         closeTimer.restart()
     }
 
     function toggleClipboard() {
-        if (clipboardOpen) closeClipboard()
-        else openClipboard()
+        if (clipboardOpen)
+            closeClipboard()
+        else
+            openClipboard()
     }
 
-    function handleEntriesPayload(rawText) {
-        try {
-            const payload = JSON.parse(rawText)
-            const targetId = root.selectedEntry ? root.selectedEntry.id : null
-            root.entries = payload || []
-            let reselected = null
-            if (targetId) {
-                for (let i = 0; i < root.currentList.length; i++) {
-                    if (root.currentList[i].id === targetId) { reselected = root.currentList[i]; break }
-                }
-            }
-            if (reselected) {
-                root.selectEntry(reselected)
-            } else if (root.currentList.length > 0) {
-                historyList.positionViewAtBeginning()
-                root.selectEntry(root.currentList[0])
-            } else {
-                root.selectedEntry = null
-                root.selectedContent = ""
-                root.selectedImageSource = ""
-                root.selectedType = ""
-                root.selectedSize = 0
-            }
-        } catch (e) {
-            console.error("[Clipboard]", e)
-            root.entries = []
-        }
-        root.loading = false
-    }
+    // ============================================================
+    // PROCESSES
+    // ============================================================
 
     Process {
         id: listProcess
-        stdout: StdioCollector { onStreamFinished: root.handleEntriesPayload(this.text) }
-        stderr: StdioCollector { onStreamFinished: { if (this.text.trim()) console.error("[Clipboard:list]", this.text.trim()) } }
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const payload = JSON.parse(this.text)
+                    const targetId = root.selectedEntry ? root.selectedEntry.id : null
+                    root.entries = payload || []
+
+                    let reselected = null
+                    if (targetId) {
+                        for (let i = 0; i < root.currentList.length; i++) {
+                            if (root.currentList[i].id === targetId) {
+                                reselected = root.currentList[i]
+                                break
+                            }
+                        }
+                    }
+
+                    if (reselected) {
+                        root.selectEntry(reselected)
+                    } else if (root.currentList.length > 0) {
+                        historyList.positionViewAtBeginning()
+                        root.selectEntry(root.currentList[0])
+                    } else {
+                        root.selectedEntry = null
+                        root.selectedContent = ""
+                        root.selectedImageSource = ""
+                        root.selectedType = ""
+                        root.selectedSize = 0
+                    }
+                } catch (error) {
+                    console.error("[Clipboard:list]", error)
+                    root.entries = []
+                }
+                root.loading = false
+            }
+        }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const value = this.text.trim()
+                if (value.length > 0) console.error("[Clipboard:list]", value)
+            }
+        }
     }
 
     Process {
         id: searchProcess
-        stdout: StdioCollector { onStreamFinished: root.handleEntriesPayload(this.text) }
-        stderr: StdioCollector { onStreamFinished: { if (this.text.trim()) console.error("[Clipboard:search]", this.text.trim()) } }
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const payload = JSON.parse(this.text)
+                    const targetId = root.selectedEntry ? root.selectedEntry.id : null
+                    root.entries = payload || []
+
+                    let reselected = null
+                    if (targetId) {
+                        for (let i = 0; i < root.currentList.length; i++) {
+                            if (root.currentList[i].id === targetId) {
+                                reselected = root.currentList[i]
+                                break
+                            }
+                        }
+                    }
+
+                    if (reselected) {
+                        root.selectEntry(reselected)
+                    } else if (root.currentList.length > 0) {
+                        historyList.positionViewAtBeginning()
+                        root.selectEntry(root.currentList[0])
+                    } else {
+                        root.selectedEntry = null
+                        root.selectedContent = ""
+                        root.selectedImageSource = ""
+                        root.selectedType = ""
+                        root.selectedSize = 0
+                    }
+                } catch (error) {
+                    console.error("[Clipboard:search]", error)
+                    root.entries = []
+                }
+                root.loading = false
+            }
+        }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const value = this.text.trim()
+                if (value.length > 0) console.error("[Clipboard:search]", value)
+            }
+        }
     }
 
     Process {
@@ -297,6 +486,7 @@ PanelWindow {
                     const payload = JSON.parse(this.text)
                     root.selectedType = payload.type || "text"
                     root.selectedSize = payload.size_bytes || 0
+
                     if (root.selectedType === "image") {
                         root.selectedContent = ""
                         root.selectedImageSource = payload.source || ""
@@ -304,21 +494,47 @@ PanelWindow {
                         root.selectedImageSource = ""
                         root.selectedContent = payload.content || ""
                     }
-                } catch (e) { console.error("[Clipboard:get]", e) }
+                } catch (error) {
+                    console.error("[Clipboard:get]", error)
+                }
             }
         }
-        stderr: StdioCollector { onStreamFinished: { if (this.text.trim()) console.error("[Clipboard:get]", this.text.trim()) } }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const value = this.text.trim()
+                if (value.length > 0) console.error("[Clipboard:get]", value)
+            }
+        }
     }
 
     Process {
         id: copyProcess
-        stderr: StdioCollector { onStreamFinished: { if (this.text.trim()) console.error("[Clipboard:copy]", this.text.trim()) } }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const value = this.text.trim()
+                if (value.length > 0) console.error("[Clipboard:copy]", value)
+            }
+        }
     }
 
     Process {
         id: pinProcess
-        stdout: StdioCollector { onStreamFinished: { try { JSON.parse(this.text); root.refresh() } catch (e) { console.error("[Clipboard:pin]", e) } } }
-        stderr: StdioCollector { onStreamFinished: { if (this.text.trim()) console.error("[Clipboard:pin]", this.text.trim()) } }
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    JSON.parse(this.text)
+                    root.refresh()
+                } catch (error) {
+                    console.error("[Clipboard:pin]", error)
+                }
+            }
+        }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const value = this.text.trim()
+                if (value.length > 0) console.error("[Clipboard:pin]", value)
+            }
+        }
     }
 
     Process {
@@ -334,7 +550,12 @@ PanelWindow {
                 root.refresh()
             }
         }
-        stderr: StdioCollector { onStreamFinished: { if (this.text.trim()) console.error("[Clipboard:delete]", this.text.trim()) } }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const value = this.text.trim()
+                if (value.length > 0) console.error("[Clipboard:delete]", value)
+            }
+        }
     }
 
     Process {
@@ -352,8 +573,17 @@ PanelWindow {
                 triggerToast("Clipboard cleared")
             }
         }
-        stderr: StdioCollector { onStreamFinished: { if (this.text.trim()) console.error("[Clipboard:clear]", this.text.trim()) } }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const value = this.text.trim()
+                if (value.length > 0) console.error("[Clipboard:clear]", value)
+            }
+        }
     }
+
+    // ============================================================
+    // TIMERS
+    // ============================================================
 
     Timer {
         id: searchDebounce
@@ -379,36 +609,60 @@ PanelWindow {
         }
     }
 
-    // Main Modal Overlay
+    // ============================================================
+    // ROOT OVERLAY & ENTRANCE ANIMATION
+    // ============================================================
+
     Item {
         anchors.fill: parent
+
         opacity: root.clipboardOpen ? Nexa.Theme.opacityFull : Nexa.Theme.opacityHidden
         scale: root.clipboardOpen ? 1.0 : 0.97
 
-        Behavior on opacity { NumberAnimation { duration: Nexa.Theme.animationFast; easing.type: Nexa.Theme.easingStandard } }
-        Behavior on scale { NumberAnimation { duration: Nexa.Theme.animationFast; easing.type: Nexa.Theme.easingStandard } }
+        Behavior on opacity {
+            NumberAnimation {
+                duration: root.clipboardOpen ? Nexa.Theme.animationNormal : Nexa.Theme.animationFast
+                easing.type: root.clipboardOpen ? Nexa.Theme.easingEnter : Nexa.Theme.easingExit
+            }
+        }
 
+        Behavior on scale {
+            NumberAnimation {
+                duration: root.clipboardOpen ? Nexa.Theme.animationNormal : Nexa.Theme.animationFast
+                easing.type: root.clipboardOpen ? Nexa.Theme.easingEnter : Nexa.Theme.easingExit
+            }
+        }
+
+        // Click outside closes clipboard
         MouseArea {
             anchors.fill: parent
-            hoverEnabled: false
-            Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.45) }
             onClicked: root.closeClipboard()
         }
 
-        // Dialog Panel
+        // ========================================================
+        // MAIN DIALOG PANEL
+        // ========================================================
+
         Rectangle {
             id: panel
+
             anchors.centerIn: parent
             width: Math.min(root.panelWidth, parent.width - 40)
             height: Math.min(root.panelHeight, parent.height - 60)
+
             radius: Nexa.Theme.radiusLg
             color: Nexa.Theme.panelBackground
             border.width: Nexa.Theme.borderThin
             border.color: Nexa.Theme.border
+
             clip: true
 
-            MouseArea { anchors.fill: parent }
+            // Stop click propagating to backdrop
+            MouseArea {
+                anchors.fill: parent
+            }
 
+            // Top glass edge highlight gradient
             Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -422,7 +676,10 @@ PanelWindow {
                 anchors.fill: parent
                 spacing: 0
 
-                // Main body
+                // =================================================
+                // MAIN BODY (LEFT COLUMN + PREVIEW)
+                // =================================================
+
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -432,15 +689,21 @@ PanelWindow {
                     Layout.bottomMargin: Nexa.Theme.spacingSm
                     spacing: Nexa.Theme.spacingLg
 
-                    // LEFT COLUMN
+                    // =============================================
+                    // LEFT COLUMN (HEADER, SEARCH, TABS, LIST)
+                    // =============================================
+
                     ColumnLayout {
                         Layout.preferredWidth: root.leftWidth
                         Layout.minimumWidth: root.leftWidth
                         Layout.maximumWidth: root.leftWidth
+                        Layout.fillWidth: false
                         Layout.fillHeight: true
                         spacing: Nexa.Theme.spacingMd
 
-                        // Header
+                        // -----------------------------------------
+                        // LEFT HEADER
+                        // -----------------------------------------
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Nexa.Theme.spacingSm
@@ -453,6 +716,7 @@ PanelWindow {
                                 font.weight: Nexa.Theme.fontWeightBold
                             }
 
+                            // Clips count badge
                             Rectangle {
                                 implicitWidth: countText.implicitWidth + 12
                                 implicitHeight: 20
@@ -460,6 +724,7 @@ PanelWindow {
                                 color: Nexa.Theme.surfaceContainerHigh
                                 border.width: Nexa.Theme.borderThin
                                 border.color: Nexa.Theme.borderSubtle
+
                                 Text {
                                     id: countText
                                     anchors.centerIn: parent
@@ -473,18 +738,65 @@ PanelWindow {
 
                             Item { Layout.fillWidth: true }
 
-                            HeaderBtn {
-                                icon: "󰑐"
-                                onClicked: root.refresh()
+                            // Refresh button
+                            Rectangle {
+                                width: 32
+                                height: 32
+                                radius: Nexa.Theme.radiusSm
+                                color: refreshMouse.containsMouse ? Nexa.Theme.hoverStrong : "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰑐"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                }
+
+                                MouseArea {
+                                    id: refreshMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.refresh()
+                                }
                             }
-                            HeaderBtn {
-                                icon: "󰆴"
-                                iconColor: hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
-                                onClicked: { root.confirmDelete = false; root.confirmClear = true }
+
+                            // Clear history button
+                            Rectangle {
+                                width: 32
+                                height: 32
+                                radius: Nexa.Theme.radiusSm
+                                color: clearMouse.containsMouse ? Nexa.Theme.hoverStrong : "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰆴"
+                                    color: clearMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+
+                                    Behavior on color {
+                                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: clearMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.confirmDelete = false
+                                        root.confirmClear = true
+                                    }
+                                }
                             }
                         }
 
-                        // Search box
+                        // -----------------------------------------
+                        // SEARCH BOX
+                        // -----------------------------------------
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 40
@@ -492,7 +804,10 @@ PanelWindow {
                             color: searchInput.activeFocus ? Nexa.Theme.inputBackgroundFocus : Nexa.Theme.inputBackground
                             border.width: searchInput.activeFocus ? Nexa.Theme.borderNormal : Nexa.Theme.borderThin
                             border.color: searchInput.activeFocus ? Nexa.Theme.focusBorder : Nexa.Theme.borderSubtle
-                            Behavior on border.color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+                            Behavior on border.color {
+                                ColorAnimation { duration: Nexa.Theme.animationFast }
+                            }
 
                             RowLayout {
                                 anchors.fill: parent
@@ -505,7 +820,10 @@ PanelWindow {
                                     color: searchInput.activeFocus ? Nexa.Theme.primary : Nexa.Theme.mutedText
                                     font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: Nexa.Theme.iconSm
-                                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+                                    Behavior on color {
+                                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                                    }
                                 }
 
                                 Item {
@@ -532,37 +850,60 @@ PanelWindow {
                                         font.family: Nexa.Theme.fontFamily
                                         font.pixelSize: Nexa.Theme.fontSizeSm
                                         clip: true
+
                                         onTextChanged: searchDebounce.restart()
 
-                                        Keys.onPressed: (event) => {
-                                            if (event.key === Qt.Key_Down) { root.moveSelection(1); event.accepted = true; return }
-                                            if (event.key === Qt.Key_Up) { root.moveSelection(-1); event.accepted = true; return }
-                                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                                                if (root.confirmClear) root.clearHistory()
-                                                else if (root.confirmDelete) root.deleteSelected()
-                                                else root.copySelected(true)
+                                        Keys.onPressed: event => {
+                                            if (event.key === Qt.Key_Down) {
+                                                root.moveSelection(1)
                                                 event.accepted = true
                                                 return
                                             }
+
+                                            if (event.key === Qt.Key_Up) {
+                                                root.moveSelection(-1)
+                                                event.accepted = true
+                                                return
+                                            }
+
+                                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                                if (root.confirmClear) {
+                                                    root.clearHistory()
+                                                } else if (root.confirmDelete) {
+                                                    root.deleteSelected()
+                                                } else {
+                                                    root.copySelected(true)
+                                                }
+                                                event.accepted = true
+                                                return
+                                            }
+
                                             if (event.key === Qt.Key_P && (event.modifiers & Qt.ControlModifier || event.modifiers & Qt.AltModifier)) {
                                                 root.togglePinSelected()
                                                 event.accepted = true
                                                 return
                                             }
-                                            if (event.key === Qt.Key_Delete && root.selectedEntry) {
-                                                root.confirmClear = false
-                                                root.confirmDelete = true
-                                                event.accepted = true
-                                                return
+
+                                            if (event.key === Qt.Key_Delete) {
+                                                if (root.selectedEntry) {
+                                                    root.confirmClear = false
+                                                    root.confirmDelete = true
+                                                    event.accepted = true
+                                                    return
+                                                }
                                             }
+
                                             if (event.key === Qt.Key_Escape) {
                                                 if (root.confirmClear || root.confirmDelete) {
-                                                    root.confirmClear = false; root.confirmDelete = false
-                                                    event.accepted = true; return
+                                                    root.confirmClear = false
+                                                    root.confirmDelete = false
+                                                    event.accepted = true
+                                                    return
                                                 }
                                                 if (searchInput.text.length > 0) {
                                                     searchInput.text = ""
-                                                    event.accepted = true; return
+                                                    event.accepted = true
+                                                    return
                                                 }
                                                 event.accepted = true
                                                 root.closeClipboard()
@@ -571,12 +912,14 @@ PanelWindow {
                                     }
                                 }
 
+                                // Clear search button
                                 Rectangle {
                                     visible: searchInput.text.length > 0
                                     width: 20
                                     height: 20
                                     radius: 10
                                     color: clearSearchMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
+
                                     Text {
                                         anchors.centerIn: parent
                                         text: "󰅖"
@@ -584,47 +927,109 @@ PanelWindow {
                                         font.family: Nexa.Theme.iconFontFamily
                                         font.pixelSize: Nexa.Theme.icon2Xs
                                     }
+
                                     MouseArea {
                                         id: clearSearchMouse
                                         anchors.fill: parent
                                         hoverEnabled: true
                                         cursorShape: Qt.PointingHandCursor
-                                        onClicked: { searchInput.text = ""; searchInput.forceActiveFocus() }
+                                        onClicked: {
+                                            searchInput.text = ""
+                                            searchInput.forceActiveFocus()
+                                        }
                                     }
                                 }
                             }
                         }
 
-                        // Filter pills
+                        // -----------------------------------------
+                        // FILTER TABS PILLS
+                        // -----------------------------------------
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 6
 
-                            FilterPill {
-                                label: "All"; count: root.countAll; active: root.activeFilter === "all"
-                                onClicked: root.applyFilter("all")
-                            }
-                            FilterPill {
-                                label: "Text"; count: -1; active: root.activeFilter === "text"
-                                onClicked: root.applyFilter("text")
-                            }
-                            FilterPill {
-                                label: "Images"; count: root.countImages; active: root.activeFilter === "image"
-                                onClicked: root.applyFilter("image")
-                            }
-                            FilterPill {
-                                label: "Links"; count: root.countLinks; active: root.activeFilter === "link"
-                                onClicked: root.applyFilter("link")
-                            }
-                            FilterPill {
-                                label: "Pinned"; count: root.countPinned; active: root.activeFilter === "pinned"
-                                onClicked: root.applyFilter("pinned")
+                            Repeater {
+                                model: [
+                                    { id: "all", label: "All", count: root.countAll },
+                                    { id: "text", label: "Text", count: -1 },
+                                    { id: "image", label: "Images", count: root.countImages },
+                                    { id: "link", label: "Links", count: root.countLinks },
+                                    { id: "pinned", label: "Pinned", count: root.countPinned }
+                                ]
+
+                                Rectangle {
+                                    id: filterPill
+                                    readonly property bool active: root.activeFilter === modelData.id
+                                    readonly property bool hovered: filterMouse.containsMouse
+
+                                    implicitHeight: 28
+                                    implicitWidth: pillRow.implicitWidth + 16
+                                    radius: Nexa.Theme.radiusPill
+
+                                    color: active ? Nexa.Theme.primarySurfaceStrong
+                                                  : hovered ? Nexa.Theme.hoverStrong
+                                                            : Nexa.Theme.surfaceContainerLow
+
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: active ? Nexa.Theme.primary : Nexa.Theme.borderSubtle
+
+                                    Behavior on color {
+                                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                                    }
+
+                                    Behavior on border.color {
+                                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                                    }
+
+                                    Row {
+                                        id: pillRow
+                                        anchors.centerIn: parent
+                                        spacing: 4
+
+                                        Text {
+                                            text: modelData.label
+                                            color: filterPill.active ? Nexa.Theme.primary : (filterPill.hovered ? Nexa.Theme.text : Nexa.Theme.mutedText)
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: Nexa.Theme.fontSizeXs
+                                            font.weight: filterPill.active ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightNormal
+                                        }
+
+                                        Text {
+                                            visible: modelData.count >= 0
+                                            text: modelData.count
+                                            color: filterPill.active ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                            opacity: filterPill.active ? 0.9 : 0.6
+                                            font.family: Nexa.Theme.monoFontFamily
+                                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: filterMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.activeFilter = modelData.id
+                                            if (root.currentList.length > 0) {
+                                                root.selectEntry(root.currentList[0])
+                                            } else {
+                                                root.selectedEntry = null
+                                                root.selectedContent = ""
+                                                root.selectedImageSource = ""
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             Item { Layout.fillWidth: true }
                         }
 
-                        // Clips List
+                        // -----------------------------------------
+                        // HISTORY LIST
+                        // -----------------------------------------
                         Item {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
@@ -632,20 +1037,14 @@ PanelWindow {
                             ListView {
                                 id: historyList
                                 anchors.fill: parent
-                                clip: true
-                                spacing: 6
+                                anchors.rightMargin: 6
                                 model: root.currentList
+                                spacing: 6
+                                clip: true
                                 boundsBehavior: Flickable.StopAtBounds
-
-                                ScrollBar.vertical: ScrollBar {
-                                    id: hlScrollBar
-                                    policy: ScrollBar.AsNeeded
-                                    contentItem: Rectangle {
-                                        implicitWidth: 4
-                                        radius: 2
-                                        color: Qt.rgba(Nexa.Theme.text.r, Nexa.Theme.text.g, Nexa.Theme.text.b, hlScrollBar.hovered ? 0.5 : 0.2)
-                                    }
-                                }
+                                flickDeceleration: Nexa.Theme.flickDeceleration
+                                maximumFlickVelocity: Nexa.Theme.flickVelocityMax
+                                pixelAligned: true
 
                                 delegate: Item {
                                     id: entryDelegate
@@ -655,23 +1054,35 @@ PanelWindow {
                                     width: historyList.width
                                     height: 64
 
-                                    readonly property bool selected: root.selectedEntry && root.selectedEntry.id === modelData.id
+                                    readonly property bool selected:
+                                        root.selectedEntry && root.selectedEntry.id === modelData.id
                                     readonly property string category: root.getItemCategory(modelData)
                                     readonly property color categoryColor: root.getCategoryColor(category)
                                     readonly property string categoryIcon: root.getCategoryIcon(category)
                                     readonly property string categoryLabel: root.getCategoryLabel(category)
 
+                                    // Card background container
                                     Rectangle {
                                         anchors.fill: parent
                                         radius: Nexa.Theme.radiusSm
-                                        color: entryDelegate.selected ? Nexa.Theme.selectedSurface
-                                            : (entryMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.cardBackground)
-                                        border.width: Nexa.Theme.borderThin
-                                        border.color: entryDelegate.selected ? Nexa.Theme.selectedBorder
-                                            : (modelData.pinned ? Nexa.Theme.primary : Nexa.Theme.borderSubtle)
-                                        Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
-                                        Behavior on border.color { ColorAnimation { duration: Nexa.Theme.animationFast } }
 
+                                        color: entryDelegate.selected
+                                            ? Nexa.Theme.selectedSurface
+                                            : (entryMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.cardBackground)
+
+                                        border.width: Nexa.Theme.borderThin
+                                        border.color: entryDelegate.selected
+                                            ? Nexa.Theme.selectedBorder
+                                            : (modelData.pinned ? Nexa.Theme.primary : Nexa.Theme.borderSubtle)
+
+                                        Behavior on color {
+                                            ColorAnimation { duration: Nexa.Theme.animationFast }
+                                        }
+                                        Behavior on border.color {
+                                            ColorAnimation { duration: Nexa.Theme.animationFast }
+                                        }
+
+                                        // Left vertical accent indicator bar
                                         Rectangle {
                                             anchors.left: parent.left
                                             anchors.verticalCenter: parent.verticalCenter
@@ -680,17 +1091,24 @@ PanelWindow {
                                             radius: 2
                                             color: Nexa.Theme.primary
                                             visible: entryDelegate.selected
-                                            Behavior on height { NumberAnimation { duration: Nexa.Theme.animationFast } }
+
+                                            Behavior on height {
+                                                NumberAnimation { duration: Nexa.Theme.animationFast }
+                                            }
                                         }
                                     }
 
+                                    // Background mouse area for whole card
                                     MouseArea {
                                         id: entryMouse
                                         anchors.fill: parent
                                         hoverEnabled: true
                                         cursorShape: Qt.PointingHandCursor
                                         onClicked: root.selectEntry(modelData)
-                                        onDoubleClicked: { root.selectEntry(modelData); root.copySelected(true) }
+                                        onDoubleClicked: {
+                                            root.selectEntry(modelData)
+                                            root.copySelected(true)
+                                        }
                                     }
 
                                     RowLayout {
@@ -699,6 +1117,7 @@ PanelWindow {
                                         anchors.rightMargin: 10
                                         spacing: 10
 
+                                        // Type Avatar Icon Box
                                         Rectangle {
                                             Layout.preferredWidth: 38
                                             Layout.preferredHeight: 38
@@ -716,10 +1135,12 @@ PanelWindow {
                                             }
                                         }
 
+                                        // Text Information
                                         ColumnLayout {
                                             Layout.fillWidth: true
                                             spacing: 3
 
+                                            // Title / Preview
                                             Text {
                                                 Layout.fillWidth: true
                                                 text: modelData.type === "image" ? "Image clip" : (modelData.preview || "")
@@ -729,18 +1150,24 @@ PanelWindow {
                                                 font.weight: Nexa.Theme.fontWeightDemiBold
                                                 elide: Text.ElideRight
                                                 maximumLineCount: 1
-                                                Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+                                                Behavior on color {
+                                                    ColorAnimation { duration: Nexa.Theme.animationFast }
+                                                }
                                             }
 
+                                            // Subtitle Row (Category Tag + Details)
                                             RowLayout {
                                                 Layout.fillWidth: true
                                                 spacing: 6
 
+                                                // Small Tag Chip
                                                 Rectangle {
                                                     implicitWidth: tagLabel.implicitWidth + 8
                                                     implicitHeight: 16
                                                     radius: 4
                                                     color: Qt.rgba(entryDelegate.categoryColor.r, entryDelegate.categoryColor.g, entryDelegate.categoryColor.b, 0.15)
+
                                                     Text {
                                                         id: tagLabel
                                                         anchors.centerIn: parent
@@ -752,6 +1179,7 @@ PanelWindow {
                                                     }
                                                 }
 
+                                                // Details text
                                                 Text {
                                                     Layout.fillWidth: true
                                                     text: modelData.type === "image"
@@ -765,6 +1193,7 @@ PanelWindow {
                                             }
                                         }
 
+                                        // Pin indicator or action icon
                                         Rectangle {
                                             z: 10
                                             visible: modelData.pinned === true || entryMouse.containsMouse
@@ -786,13 +1215,16 @@ PanelWindow {
                                                 anchors.fill: parent
                                                 hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.togglePinSelected(modelData)
+                                                onClicked: {
+                                                    root.togglePinSelected(modelData)
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
 
+                            // Empty state
                             Column {
                                 anchors.centerIn: parent
                                 visible: !root.loading && root.currentList.length === 0
@@ -806,6 +1238,7 @@ PanelWindow {
                                     font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: 36
                                 }
+
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: searchInput.text.length > 0 ? "No matches found" : "No clips in this filter"
@@ -817,26 +1250,37 @@ PanelWindow {
                         }
                     }
 
+                    // =============================================
                     // DIVIDER
+                    // =============================================
+
                     Rectangle {
                         Layout.fillHeight: true
                         Layout.preferredWidth: 1
                         Layout.minimumWidth: 1
-                        color: Nexa.Theme.borderSubtle
+                        Layout.maximumWidth: 1
+                        Layout.fillWidth: false
+                        color: Nexa.Theme.divider
                     }
 
-                    // RIGHT COLUMN (PREVIEW)
+                    // =============================================
+                    // RIGHT COLUMN (PREVIEW & ACTION PANE)
+                    // =============================================
+
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
                         Layout.fillHeight: true
                         spacing: Nexa.Theme.spacingMd
 
-                        // Preview Header
+                        // -----------------------------------------
+                        // PREVIEW HEADER
+                        // -----------------------------------------
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Nexa.Theme.spacingMd
 
+                            // Type icon badge
                             Rectangle {
                                 width: 40
                                 height: 40
@@ -856,6 +1300,7 @@ PanelWindow {
                                 }
                             }
 
+                            // Dynamic Title & Stats
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 2
@@ -865,8 +1310,8 @@ PanelWindow {
                                         if (!root.selectedEntry) return "Preview"
                                         const cat = root.getItemCategory(root.selectedEntry)
                                         if (cat === "image") return "Image Clip"
-                                        if (cat === "link") return "Web Link"
-                                        if (cat === "code") return "Code Snippet"
+                                        if (cat === "link")  return "Web Link"
+                                        if (cat === "code")  return "Code Snippet"
                                         return "Text Clip"
                                     }
                                     color: Nexa.Theme.text
@@ -885,6 +1330,7 @@ PanelWindow {
                                         font.family: Nexa.Theme.fontFamily
                                         font.pixelSize: Nexa.Theme.fontSizeXs
                                     }
+
                                     Text {
                                         visible: root.selectedType === "text" && root.textCharCount > 0
                                         text: "•  " + root.textCharCount + " chars"
@@ -892,6 +1338,7 @@ PanelWindow {
                                         font.family: Nexa.Theme.fontFamily
                                         font.pixelSize: Nexa.Theme.fontSizeXs
                                     }
+
                                     Text {
                                         visible: root.selectedType === "text" && root.textLineCount > 1
                                         text: "•  " + root.textLineCount + " lines"
@@ -899,6 +1346,7 @@ PanelWindow {
                                         font.family: Nexa.Theme.fontFamily
                                         font.pixelSize: Nexa.Theme.fontSizeXs
                                     }
+
                                     Text {
                                         visible: root.selectedType === "image" && previewImage.sourceSize.width > 0
                                         text: "•  " + previewImage.sourceSize.width + " × " + previewImage.sourceSize.height + " px"
@@ -909,40 +1357,96 @@ PanelWindow {
                                 }
                             }
 
-                            Item { Layout.fillWidth: true }
+                            // Spacer pushing buttons to the far right
+                            Item {
+                                Layout.fillWidth: true
+                            }
 
-                            HeaderBtn {
-                                btnSize: 34
-                                icon: "󰐃"
-                                iconColor: (root.selectedEntry && root.selectedEntry.pinned) ? Nexa.Theme.primary : Nexa.Theme.text
-                                enabled: root.selectedEntry !== null
-                                opacity: root.selectedEntry ? 1 : Nexa.Theme.opacityDisabled
-                                color: (root.selectedEntry && root.selectedEntry.pinned)
+                            // Pin Button
+                            Rectangle {
+                                Layout.preferredWidth: 34
+                                Layout.preferredHeight: 34
+                                radius: Nexa.Theme.radiusSm
+                                color: root.selectedEntry && root.selectedEntry.pinned
                                     ? Nexa.Theme.primarySurfaceStrong
-                                    : (hovered ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh)
-                                onClicked: root.togglePinSelected()
-                            }
-
-                            HeaderBtn {
-                                btnSize: 34
-                                icon: "󰆴"
-                                iconColor: hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
-                                enabled: root.selectedEntry !== null
+                                    : (pinMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh)
                                 opacity: root.selectedEntry ? 1 : Nexa.Theme.opacityDisabled
-                                color: hovered ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
-                                onClicked: { root.confirmClear = false; root.confirmDelete = true }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰐃"
+                                    color: root.selectedEntry && root.selectedEntry.pinned ? Nexa.Theme.primary : Nexa.Theme.text
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                }
+
+                                MouseArea {
+                                    id: pinMouse
+                                    anchors.fill: parent
+                                    enabled: root.selectedEntry !== null
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.togglePinSelected()
+                                }
                             }
 
-                            HeaderBtn {
-                                btnSize: 34
-                                icon: "󰅖"
-                                iconColor: Nexa.Theme.text
-                                color: hovered ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
-                                onClicked: root.closeClipboard()
+                            // Delete Button
+                            Rectangle {
+                                Layout.preferredWidth: 34
+                                Layout.preferredHeight: 34
+                                radius: Nexa.Theme.radiusSm
+                                color: deleteMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
+                                opacity: root.selectedEntry ? 1 : Nexa.Theme.opacityDisabled
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰆴"
+                                    color: deleteMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                }
+
+                                MouseArea {
+                                    id: deleteMouse
+                                    anchors.fill: parent
+                                    enabled: root.selectedEntry !== null
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.confirmClear = false
+                                        root.confirmDelete = true
+                                    }
+                                }
+                            }
+
+                            // Close Button
+                            Rectangle {
+                                Layout.preferredWidth: 34
+                                Layout.preferredHeight: 34
+                                radius: Nexa.Theme.radiusSm
+                                color: closeMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰅖"
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: Nexa.Theme.iconSm
+                                }
+
+                                MouseArea {
+                                    id: closeMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.closeClipboard()
+                                }
                             }
                         }
 
-                        // Preview Canvas
+                        // -----------------------------------------
+                        // PREVIEW CANVAS AREA
+                        // -----------------------------------------
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
@@ -952,10 +1456,12 @@ PanelWindow {
                             border.color: Nexa.Theme.borderSubtle
                             clip: true
 
+                            // Empty state
                             Column {
                                 anchors.centerIn: parent
                                 visible: root.selectedEntry === null
                                 spacing: 10
+
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: "󰅈"
@@ -964,6 +1470,7 @@ PanelWindow {
                                     font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: 48
                                 }
+
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: "Select a clip to view details"
@@ -973,6 +1480,7 @@ PanelWindow {
                                 }
                             }
 
+                            // Text / Code preview
                             Flickable {
                                 id: textPreview
                                 anchors.fill: parent
@@ -1009,6 +1517,7 @@ PanelWindow {
                                 }
                             }
 
+                            // Image preview
                             Item {
                                 anchors.fill: parent
                                 anchors.margins: 14
@@ -1036,12 +1545,15 @@ PanelWindow {
                             }
                         }
 
-                        // Preview Action Footer
+                        // -----------------------------------------
+                        // ACTION FOOTER (PREVIEW SPECIFIC)
+                        // -----------------------------------------
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 8
                             visible: root.selectedEntry !== null
 
+                            // Contextual: Open URL if it's a link
                             Rectangle {
                                 visible: root.selectedType === "text" && root.isLink(root.selectedContent)
                                 implicitHeight: 36
@@ -1055,15 +1567,32 @@ PanelWindow {
                                     id: openUrlContent
                                     anchors.centerIn: parent
                                     spacing: 6
-                                    Text { text: "󰌹"; color: Nexa.Theme.secondary; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: Nexa.Theme.iconSm }
-                                    Text { text: "Open in Browser"; color: Nexa.Theme.text; font.family: Nexa.Theme.fontFamily; font.pixelSize: Nexa.Theme.fontSizeSm; font.weight: Nexa.Theme.fontWeightMedium }
+
+                                    Text {
+                                        text: "󰌹"
+                                        color: Nexa.Theme.secondary
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: Nexa.Theme.iconSm
+                                    }
+                                    Text {
+                                        text: "Open in Browser"
+                                        color: Nexa.Theme.text
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
+                                        font.weight: Nexa.Theme.fontWeightMedium
+                                    }
                                 }
+
                                 MouseArea {
-                                    id: openUrlMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    id: openUrlMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
                                     onClicked: root.openSelectedUrl()
                                 }
                             }
 
+                            // Contextual: Open Image in external viewer
                             Rectangle {
                                 visible: root.selectedType === "image" && root.selectedImageSource.length > 0
                                 implicitHeight: 36
@@ -1077,35 +1606,80 @@ PanelWindow {
                                     id: openImgContent
                                     anchors.centerIn: parent
                                     spacing: 6
-                                    Text { text: "󰋩"; color: Nexa.Theme.tertiary; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: Nexa.Theme.iconSm }
-                                    Text { text: "Open in Viewer"; color: Nexa.Theme.text; font.family: Nexa.Theme.fontFamily; font.pixelSize: Nexa.Theme.fontSizeSm; font.weight: Nexa.Theme.fontWeightMedium }
+
+                                    Text {
+                                        text: "󰋩"
+                                        color: Nexa.Theme.tertiary
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: Nexa.Theme.iconSm
+                                    }
+                                    Text {
+                                        text: "Open in Viewer"
+                                        color: Nexa.Theme.text
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
+                                        font.weight: Nexa.Theme.fontWeightMedium
+                                    }
                                 }
+
                                 MouseArea {
-                                    id: openImgMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { Qt.openUrlExternally(root.selectedImageSource); root.closeClipboard() }
+                                    id: openImgMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        Qt.openUrlExternally(root.selectedImageSource)
+                                        root.closeClipboard()
+                                    }
                                 }
                             }
 
                             Item { Layout.fillWidth: true }
 
+                            // Hero Action: Copy Button
                             Rectangle {
                                 implicitHeight: 36
                                 implicitWidth: copyContent.implicitWidth + 24
                                 radius: Nexa.Theme.radiusSm
-                                color: copyBtnMouse.pressed ? Nexa.Theme.primarySurfaceStrong
+                                color: copyBtnMouse.pressed
+                                    ? Nexa.Theme.primarySurfaceStrong
                                     : (copyBtnMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.primaryContainer)
-                                Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+                                Behavior on color {
+                                    ColorAnimation { duration: Nexa.Theme.animationFast }
+                                }
 
                                 RowLayout {
                                     id: copyContent
                                     anchors.centerIn: parent
                                     spacing: 8
-                                    Text { text: "󰆏"; color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.primaryContainerText; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: Nexa.Theme.iconSm }
-                                    Text { text: "Copy to Clipboard"; color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.primaryContainerText; font.family: Nexa.Theme.fontFamily; font.pixelSize: Nexa.Theme.fontSizeSm; font.weight: Nexa.Theme.fontWeightDemiBold }
-                                    Text { text: "↵"; color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.mutedText; font.family: Nexa.Theme.monoFontFamily; font.pixelSize: Nexa.Theme.fontSizeXs }
+
+                                    Text {
+                                        text: "󰆏"
+                                        color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.primaryContainerText
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: Nexa.Theme.iconSm
+                                    }
+                                    Text {
+                                        text: "Copy to Clipboard"
+                                        color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.primaryContainerText
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeSm
+                                        font.weight: Nexa.Theme.fontWeightDemiBold
+                                    }
+                                    Text {
+                                        text: "↵"
+                                        color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.mutedText
+                                        font.family: Nexa.Theme.monoFontFamily
+                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                    }
                                 }
+
                                 MouseArea {
-                                    id: copyBtnMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    id: copyBtnMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
                                     onClicked: root.copySelected(true)
                                 }
                             }
@@ -1113,7 +1687,9 @@ PanelWindow {
                     }
                 }
 
-                // Keyboard Shortcuts Bar
+                // =================================================
+                // BOTTOM KEYBOARD SHORTCUTS BAR
+                // =================================================
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 32
@@ -1127,51 +1703,196 @@ PanelWindow {
                         anchors.rightMargin: root.outerPadding
                         spacing: 16
 
-                        KeyPill { keyText: "↑↓"; label: "Navigate" }
-                        KeyPill { keyText: "↵"; label: "Copy & Close"; keyColor: Nexa.Theme.primary }
-                        KeyPill { keyText: "P"; label: "Pin / Unpin" }
-                        KeyPill { keyText: "Del"; label: "Delete" }
+                        Row {
+                            spacing: 5
+                            Rectangle {
+                                width: 20
+                                height: 16
+                                radius: 3
+                                color: Nexa.Theme.surfaceContainerHigh
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "↑↓"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.monoFontFamily
+                                    font.pixelSize: 10
+                                }
+                            }
+                            Text {
+                                text: "Navigate"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        Row {
+                            spacing: 5
+                            Rectangle {
+                                width: 22
+                                height: 16
+                                radius: 3
+                                color: Nexa.Theme.surfaceContainerHigh
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "↵"
+                                    color: Nexa.Theme.primary
+                                    font.family: Nexa.Theme.monoFontFamily
+                                    font.pixelSize: 11
+                                    font.weight: Font.Bold
+                                }
+                            }
+                            Text {
+                                text: "Copy & Close"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        Row {
+                            spacing: 5
+                            Rectangle {
+                                width: 18
+                                height: 16
+                                radius: 3
+                                color: Nexa.Theme.surfaceContainerHigh
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "P"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.monoFontFamily
+                                    font.pixelSize: 10
+                                }
+                            }
+                            Text {
+                                text: "Pin / Unpin"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        Row {
+                            spacing: 5
+                            Rectangle {
+                                width: 24
+                                height: 16
+                                radius: 3
+                                color: Nexa.Theme.surfaceContainerHigh
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Del"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.monoFontFamily
+                                    font.pixelSize: 10
+                                }
+                            }
+                            Text {
+                                text: "Delete"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
                         Item { Layout.fillWidth: true }
-                        KeyPill { keyText: "ESC"; label: "Close" }
+
+                        Row {
+                            spacing: 5
+                            Rectangle {
+                                width: 26
+                                height: 16
+                                radius: 3
+                                color: Nexa.Theme.surfaceContainerHigh
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "ESC"
+                                    color: Nexa.Theme.mutedText
+                                    font.family: Nexa.Theme.monoFontFamily
+                                    font.pixelSize: 9
+                                }
+                            }
+                            Text {
+                                text: "Close"
+                                color: Nexa.Theme.mutedText
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
                     }
                 }
             }
 
-            // Floating Toast
+            // =====================================================
+            // FLOATING TOAST NOTIFICATION
+            // =====================================================
             Rectangle {
                 id: toastPill
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 46
+
                 implicitWidth: toastRow.implicitWidth + 24
                 implicitHeight: 34
                 radius: Nexa.Theme.radiusPill
+
                 color: Nexa.Theme.surfaceContainerHighest
                 border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.primary
+
                 opacity: root.toastVisible ? 1 : 0
                 scale: root.toastVisible ? 1 : 0.85
                 z: 800
 
-                Behavior on opacity { NumberAnimation { duration: 160 } }
-                Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
+                Behavior on opacity {
+                    NumberAnimation { duration: 160 }
+                }
+                Behavior on scale {
+                    NumberAnimation { duration: 160; easing.type: Easing.OutBack }
+                }
 
                 Row {
                     id: toastRow
                     anchors.centerIn: parent
                     spacing: 8
-                    Text { text: "󰄬"; color: Nexa.Theme.primary; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: Nexa.Theme.iconSm }
-                    Text { text: root.toastText; color: Nexa.Theme.text; font.family: Nexa.Theme.fontFamily; font.pixelSize: Nexa.Theme.fontSizeSm; font.weight: Nexa.Theme.fontWeightDemiBold }
+
+                    Text {
+                        text: "󰄬"
+                        color: Nexa.Theme.primary
+                        font.family: Nexa.Theme.iconFontFamily
+                        font.pixelSize: Nexa.Theme.iconSm
+                    }
+                    Text {
+                        text: root.toastText
+                        color: Nexa.Theme.text
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: Nexa.Theme.fontSizeSm
+                        font.weight: Nexa.Theme.fontWeightDemiBold
+                    }
                 }
             }
 
-            // Centered Confirmation Modal
+            // =====================================================
+            // CENTERED CONFIRMATION MODAL (CLEAR / DELETE)
+            // =====================================================
             Rectangle {
                 anchors.fill: parent
                 color: Qt.rgba(0, 0, 0, 0.6)
                 visible: root.confirmClear || root.confirmDelete
                 z: 900
 
+                // Dialog Card
                 Rectangle {
                     anchors.centerIn: parent
                     width: 380
@@ -1187,12 +1908,14 @@ PanelWindow {
                         anchors.margins: 20
                         spacing: 14
 
+                        // Warning Icon Circle
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                             width: 44
                             height: 44
                             radius: 22
                             color: Nexa.Theme.errorContainer
+
                             Text {
                                 anchors.centerIn: parent
                                 text: "󰆴"
@@ -1202,6 +1925,7 @@ PanelWindow {
                             }
                         }
 
+                        // Title
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.confirmClear ? "Clear Entire Clipboard?" : "Delete Clipboard Item?"
@@ -1211,6 +1935,7 @@ PanelWindow {
                             font.weight: Nexa.Theme.fontWeightBold
                         }
 
+                        // Subtitle
                         Text {
                             Layout.fillWidth: true
                             horizontalAlignment: Text.AlignHCenter
@@ -1225,152 +1950,75 @@ PanelWindow {
 
                         Item { Layout.preferredHeight: 6 }
 
+                        // Buttons Row
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 12
 
-                            NexaUI.NexaButton {
+                            // Cancel
+                            Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 36
-                                text: "Cancel"
-                                onClicked: { root.confirmClear = false; root.confirmDelete = false }
+                                radius: Nexa.Theme.radiusSm
+                                color: modalCancelMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
+                                border.width: Nexa.Theme.borderThin
+                                border.color: Nexa.Theme.borderSubtle
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Cancel"
+                                    color: Nexa.Theme.text
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeSm
+                                    font.weight: Nexa.Theme.fontWeightMedium
+                                }
+
+                                MouseArea {
+                                    id: modalCancelMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.confirmClear = false
+                                        root.confirmDelete = false
+                                    }
+                                }
                             }
 
-                            NexaUI.NexaButton {
+                            // Confirm
+                            Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 36
-                                text: root.confirmClear ? "Clear All" : "Delete"
-                                onClicked: {
-                                    if (root.confirmClear) root.clearHistory()
-                                    else root.deleteSelected()
+                                radius: Nexa.Theme.radiusSm
+                                color: modalConfirmMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.errorContainer
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.confirmClear ? "Clear All" : "Delete"
+                                    color: modalConfirmMouse.containsMouse ? Nexa.Theme.onError : Nexa.Theme.error
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: Nexa.Theme.fontSizeSm
+                                    font.weight: Nexa.Theme.fontWeightDemiBold
+                                }
+
+                                MouseArea {
+                                    id: modalConfirmMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (root.confirmClear) {
+                                            root.clearHistory()
+                                        } else {
+                                            root.deleteSelected()
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
-    }
-
-    function applyFilter(f) {
-        root.activeFilter = f
-        if (root.currentList.length > 0) {
-            root.selectEntry(root.currentList[0])
-        } else {
-            root.selectedEntry = null
-            root.selectedContent = ""
-            root.selectedImageSource = ""
-        }
-    }
-
-    // Subcomponents
-    component HeaderBtn: Rectangle {
-        id: hBtn
-        property string icon: ""
-        property color iconColor: Nexa.Theme.mutedText
-        property color hoverColor: Nexa.Theme.hoverStrong
-        property int btnSize: 32
-        readonly property bool hovered: hMouse.containsMouse
-        signal clicked()
-
-        width: btnSize
-        height: btnSize
-        radius: Nexa.Theme.radiusSm
-        color: hovered ? hoverColor : "transparent"
-
-        Text {
-            anchors.centerIn: parent
-            text: hBtn.icon
-            color: hBtn.iconColor
-            font.family: Nexa.Theme.iconFontFamily
-            font.pixelSize: Nexa.Theme.iconSm
-        }
-
-        MouseArea {
-            id: hMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: hBtn.clicked()
-        }
-    }
-
-    component FilterPill: Rectangle {
-        id: pillRoot
-        property string label: ""
-        property int count: -1
-        property bool active: false
-        signal clicked()
-
-        implicitHeight: 28
-        implicitWidth: pillRow.implicitWidth + 16
-        radius: Nexa.Theme.radiusPill
-        color: active ? Nexa.Theme.primarySurfaceStrong
-                      : pillMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerLow
-        border.width: Nexa.Theme.borderThin
-        border.color: active ? Nexa.Theme.primary : Nexa.Theme.borderSubtle
-        Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
-        Behavior on border.color { ColorAnimation { duration: Nexa.Theme.animationFast } }
-
-        Row {
-            id: pillRow
-            anchors.centerIn: parent
-            spacing: 4
-            Text {
-                text: pillRoot.label
-                color: pillRoot.active ? Nexa.Theme.primary : (pillMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText)
-                font.family: Nexa.Theme.fontFamily
-                font.pixelSize: Nexa.Theme.fontSizeXs
-                font.weight: pillRoot.active ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightNormal
-            }
-            Text {
-                visible: pillRoot.count >= 0
-                text: pillRoot.count
-                color: pillRoot.active ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                opacity: pillRoot.active ? 0.9 : 0.6
-                font.family: Nexa.Theme.monoFontFamily
-                font.pixelSize: Nexa.Theme.fontSize2Xs
-            }
-        }
-
-        MouseArea {
-            id: pillMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: pillRoot.clicked()
-        }
-    }
-
-    component KeyPill: Row {
-        id: kpRoot
-        property string keyText: ""
-        property string label: ""
-        property color keyColor: Nexa.Theme.mutedText
-        spacing: 5
-
-        Rectangle {
-            width: Math.max(18, keyLabel.implicitWidth + 8)
-            height: 16
-            radius: 3
-            color: Nexa.Theme.surfaceContainerHigh
-            anchors.verticalCenter: parent.verticalCenter
-            Text {
-                id: keyLabel
-                anchors.centerIn: parent
-                text: kpRoot.keyText
-                color: kpRoot.keyColor
-                font.family: Nexa.Theme.monoFontFamily
-                font.pixelSize: 10
-                font.weight: kpRoot.keyColor === Nexa.Theme.primary ? Font.Bold : Font.Normal
-            }
-        }
-        Text {
-            text: kpRoot.label
-            color: Nexa.Theme.mutedText
-            font.family: Nexa.Theme.fontFamily
-            font.pixelSize: Nexa.Theme.fontSizeXs
-            anchors.verticalCenter: parent.verticalCenter
         }
     }
 }

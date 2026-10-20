@@ -38,8 +38,8 @@ Item {
     property real workspaceHeight: 1
 
     // Scale from real monitor coordinates to workspace preview
-    property real previewScaleX: monitorData ? (workspaceWidth / Math.max(1, Number(monitorData.width))) : 0.1
-    property real previewScaleY: monitorData ? (workspaceHeight / Math.max(1, Number(monitorData.height))) : 0.1
+    property real previewScaleX: 1
+    property real previewScaleY: 1
 
     // ============================================================
     // WINDOW STATE
@@ -76,9 +76,8 @@ Item {
 
         const monitorX = Number(monitorData.x || 0)
         const windowX = Number(windowData.x || 0)
-        const relX = Math.max(0, windowX - monitorX) * previewScaleX
 
-        return workspaceX + Math.min(relX, Math.max(0, workspaceWidth - 32))
+        return workspaceX + Math.max(0, windowX - monitorX) * previewScaleX
     }
 
     readonly property real initY: {
@@ -87,9 +86,8 @@ Item {
 
         const monitorY = Number(monitorData.y || 0)
         const windowY = Number(windowData.y || 0)
-        const relY = Math.max(0, windowY - monitorY) * previewScaleY
 
-        return workspaceY + Math.min(relY, Math.max(0, workspaceHeight - 24))
+        return workspaceY + Math.max(0, windowY - monitorY) * previewScaleY
     }
 
     readonly property real targetWidth: {

@@ -13,6 +13,7 @@ import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
 import "../../services" as Services
 
+
 Item {
     id: root
 
@@ -30,15 +31,20 @@ Item {
     // the real WlSessionLock.
     signal authenticationSucceeded()
 
+
     // ============================================================
     // PATHS
     // ============================================================
 
-    readonly property string homeDir: Quickshell.env("HOME")
+    readonly property string homeDir:
+        Quickshell.env("HOME")
 
-    readonly property string nexad: homeDir + "/.config/nexa/rust/target/release/nexad"
+    readonly property string nexad:
+        homeDir + "/.config/nexa/rust/target/release/nexad"
 
-    readonly property string username: Quickshell.env("USER")
+    readonly property string username:
+        Quickshell.env("USER")
+
 
     // ============================================================
     // WALLPAPER STATE
@@ -48,6 +54,7 @@ Item {
     property string wallpaperType: ""
 
     property bool wallpaperLoaded: false
+
 
     // ============================================================
     // LOGIN / AUTH STATE
@@ -104,7 +111,8 @@ Item {
         return null
     }
 
-    readonly property bool hasLockMedia: lockPlayer !== null && (lockPlayer.trackTitle !== "" || lockPlayer.trackArtist !== "")
+    readonly property bool hasLockMedia:
+        lockPlayer !== null && (lockPlayer.trackTitle !== "" || lockPlayer.trackArtist !== "")
 
     // ============================================================
     // SYSTEM TELEMETRY (BATTERY / HOST)
@@ -125,6 +133,7 @@ Item {
         Quickshell.execDetached(["systemctl", "poweroff"])
     }
 
+
     // ============================================================
     // HELPERS
     // ============================================================
@@ -132,6 +141,7 @@ Item {
     function fileUrl(path) {
         return "file://" + encodeURI(path)
     }
+
 
     function loadLockWallpaper() {
         wallpaperLoaded = false
@@ -144,6 +154,7 @@ Item {
 
         lockInfoProcess.running = true
     }
+
 
     function parseLockInfo(output) {
         const text =
@@ -161,6 +172,7 @@ Item {
             return
         }
 
+
         wallpaperType =
             text.substring(
                 0,
@@ -174,12 +186,14 @@ Item {
 
         wallpaperLoaded = true
 
+
         console.log(
             "NEXA lockscreen wallpaper:",
             wallpaperType,
             wallpaperPath
         )
     }
+
 
     function showLogin() {
         if (!loginVisible)
@@ -193,6 +207,7 @@ Item {
                 passwordInput.forceActiveFocus()
         })
     }
+
 
     function hideLogin() {
         if (authenticating)
@@ -209,12 +224,14 @@ Item {
         root.forceActiveFocus()
     }
 
+
     function submitPassword() {
         if (authenticating)
             return
 
         if (passwordInput.text.length === 0)
             return
+
 
         authenticating = true
         authenticated = false
@@ -224,6 +241,7 @@ Item {
             "Checking password…"
 
         inactivityTimer.stop()
+
 
         // Start PAM process.
         //
@@ -239,11 +257,13 @@ Item {
         authProcess.running = true
     }
 
+
     function handleAuthResult(output) {
         const text =
             String(output).trim()
 
         authenticating = false
+
 
         if (text.length === 0) {
             authenticationFailure(
@@ -252,6 +272,7 @@ Item {
 
             return
         }
+
 
         let result
 
@@ -271,6 +292,7 @@ Item {
             return
         }
 
+
         if (result.success === true) {
             authenticationSuccess()
         } else {
@@ -279,6 +301,7 @@ Item {
             )
         }
     }
+
 
     function authenticationSuccess() {
         passwordInput.text = ""
@@ -306,9 +329,11 @@ Item {
 
         authMessage = message
 
+
         console.log(
             "NEXA lockscreen: authentication failed"
         )
+
 
         failureShake.restart()
 
@@ -319,6 +344,7 @@ Item {
         inactivityTimer.restart()
     }
 
+
     // ============================================================
     // WALLPAPER INFO PROCESS
     // ============================================================
@@ -327,11 +353,13 @@ Item {
         id: lockInfoProcess
 
         stdout: StdioCollector {
-            onStreamFinished: root.parseLockInfo(
+            onStreamFinished:
+                root.parseLockInfo(
                     this.text
                 )
         }
     }
+
 
     // ============================================================
     // PAM AUTH PROCESS
@@ -342,11 +370,14 @@ Item {
 
         stdinEnabled: true
 
+
         stdout: StdioCollector {
-            onStreamFinished: root.handleAuthResult(
+            onStreamFinished:
+                root.handleAuthResult(
                     this.text
                 )
         }
+
 
         stderr: StdioCollector {
             onStreamFinished: {
@@ -361,6 +392,7 @@ Item {
                 }
             }
         }
+
 
         onStarted: {
             /*
@@ -382,6 +414,7 @@ Item {
             passwordInput.text = ""
         }
 
+
         onExited: (exitCode, exitStatus) => {
             /*
              * Normally stdout handles the PAM result.
@@ -400,6 +433,7 @@ Item {
         }
     }
 
+
     // ============================================================
     // WALLPAPER - IMAGE
     // ============================================================
@@ -412,20 +446,24 @@ Item {
         sourceSize.width: root.still ? 480 : 1920
         sourceSize.height: root.still ? 270 : 1080
 
-        source: root.still
+        source:
+            root.still
             ? Services.LockScreen.wallpaperThumb
             : ((root.visible && root.wallpaperType === "image")
                 ? root.fileUrl(root.wallpaperPath)
                 : "")
 
-        fillMode: Image.PreserveAspectCrop
+        fillMode:
+            Image.PreserveAspectCrop
 
         asynchronous: true
         cache: false
 
-        visible: root.still
+        visible:
+            root.still
             || (root.wallpaperLoaded && root.wallpaperType === "image")
     }
+
 
     // ============================================================
     // WALLPAPER - GIF
@@ -443,7 +481,8 @@ Item {
             )
             : ""
 
-        fillMode: Image.PreserveAspectCrop
+        fillMode:
+            Image.PreserveAspectCrop
 
         asynchronous: true
         cache: true
@@ -456,6 +495,7 @@ Item {
             && root.wallpaperLoaded
             && root.wallpaperType === "gif"
     }
+
 
     // ============================================================
     // WALLPAPER - VIDEO
@@ -471,14 +511,18 @@ Item {
             )
             : ""
 
-        loops: MediaPlayer.Infinite
+        loops:
+            MediaPlayer.Infinite
+
 
         audioOutput:
             AudioOutput {
                 muted: true
             }
 
-        videoOutput: videoOutput
+
+        videoOutput:
+            videoOutput
 
         function checkPlay() {
             if (
@@ -498,12 +542,14 @@ Item {
         onSourceChanged: checkPlay()
     }
 
+
     VideoOutput {
         id: videoOutput
 
         anchors.fill: parent
 
-        fillMode: VideoOutput.PreserveAspectCrop
+        fillMode:
+            VideoOutput.PreserveAspectCrop
 
         visible:
             !root.still
@@ -511,16 +557,20 @@ Item {
             && root.wallpaperType === "video"
     }
 
+
     Connections {
         target: root
+
 
         function onVisibleChanged() {
             videoPlayer.checkPlay()
         }
 
+
         function onWallpaperLoadedChanged() {
             videoPlayer.checkPlay()
         }
+
 
         function onWallpaperTypeChanged() {
             videoPlayer.checkPlay()
@@ -531,6 +581,7 @@ Item {
         }
     }
 
+
     // ============================================================
     // BASE OVERLAY
     // ============================================================
@@ -538,7 +589,8 @@ Item {
     Rectangle {
         anchors.fill: parent
 
-        color: Qt.rgba(
+        color:
+            Qt.rgba(
                 Nexa.Theme.background.r,
                 Nexa.Theme.background.g,
                 Nexa.Theme.background.b,
@@ -547,7 +599,12 @@ Item {
                 : 0.25
             )
 
-        Behavior on color { ColorAnimation { duration: 220 } }
+
+        Behavior on color {
+            ColorAnimation {
+                duration: 220
+            }
+        }
     }
 
     // ============================================================
@@ -674,11 +731,14 @@ Item {
         id: clockArea
 
         anchors {
-            horizontalCenter: parent.horizontalCenter
+            horizontalCenter:
+                parent.horizontalCenter
 
-            top: parent.top
+            top:
+                parent.top
 
-            topMargin: root.loginVisible
+            topMargin:
+                root.loginVisible
                 ? 70
                 : 120
         }
@@ -692,27 +752,36 @@ Item {
 
         spacing: 7
 
+
         Text {
             id: clockText
 
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenter:
+                parent.horizontalCenter
 
-            text: Qt.formatDateTime(
+            text:
+                Qt.formatDateTime(
                     new Date(),
                     "hh:mm"
                 )
 
-            color: Nexa.Theme.text
+            color:
+                Nexa.Theme.text
+
 
             font {
-                family: Nexa.Theme.fontFamily
+                family:
+                    Nexa.Theme.fontFamily
 
-                pixelSize: root.loginVisible
+                pixelSize:
+                    root.loginVisible
                     ? 58
                     : 78
 
-                weight: Nexa.Theme.fontWeightDemiBold
+                weight:
+                    Nexa.Theme.fontWeightDemiBold
             }
+
 
             Behavior on font.pixelSize {
                 NumberAnimation {
@@ -722,27 +791,36 @@ Item {
             }
         }
 
+
         Text {
             id: dateText
 
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenter:
+                parent.horizontalCenter
 
-            text: Qt.formatDateTime(
+            text:
+                Qt.formatDateTime(
                     new Date(),
                     "dddd, d MMMM"
                 )
 
-            color: Nexa.Theme.mutedText
+            color:
+                Nexa.Theme.mutedText
+
 
             font {
-                family: Nexa.Theme.fontFamily
+                family:
+                    Nexa.Theme.fontFamily
 
-                pixelSize: Nexa.Theme.fontSizeMd
+                pixelSize:
+                    Nexa.Theme.fontSizeMd
 
-                weight: Nexa.Theme.fontWeightMedium
+                weight:
+                    Nexa.Theme.fontWeightMedium
             }
         }
     }
+
 
     // ============================================================
     // LOGIN PANEL
@@ -754,9 +832,11 @@ Item {
         z: 20
 
         anchors {
-            horizontalCenter: parent.horizontalCenter
+            horizontalCenter:
+                parent.horizontalCenter
 
-            verticalCenter: parent.verticalCenter
+            verticalCenter:
+                parent.verticalCenter
 
             verticalCenterOffset: 55
         }
@@ -764,16 +844,22 @@ Item {
         width: 340
         spacing: 16
 
+
         visible:
             opacity > 0
 
-        opacity: root.loginVisible
+
+        opacity:
+            root.loginVisible
             ? 1
             : 0
 
-        scale: root.loginVisible
+
+        scale:
+            root.loginVisible
             ? 1
             : 0.94
+
 
         transform:
             Translate {
@@ -782,6 +868,7 @@ Item {
                 x: 0
             }
 
+
         Behavior on opacity {
             NumberAnimation {
                 duration: 220
@@ -789,12 +876,14 @@ Item {
             }
         }
 
+
         Behavior on scale {
             NumberAnimation {
                 duration: 280
                 easing.type: Easing.OutQuint
             }
         }
+
 
         // ========================================================
         // ILLUMINATED AVATAR RING & PROFILE PICTURE
@@ -816,7 +905,9 @@ Item {
                     ? Nexa.Theme.primary
                     : Nexa.Theme.borderSubtle
 
-                Behavior on border.color { ColorAnimation { duration: 250 } }
+                Behavior on border.color {
+                    ColorAnimation { duration: 250 }
+                }
 
                 // Breathing glow animation when focused
                 SequentialAnimation on opacity {
@@ -880,25 +971,33 @@ Item {
             }
         }
 
+
         // ========================================================
         // USERNAME
         // ========================================================
 
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenter:
+                parent.horizontalCenter
 
-            text: root.username
+            text:
+                root.username
 
-            color: Nexa.Theme.text
+            color:
+                Nexa.Theme.text
+
 
             font {
-                family: Nexa.Theme.fontFamily
+                family:
+                    Nexa.Theme.fontFamily
 
                 pixelSize: 18
 
-                weight: Nexa.Theme.fontWeightMedium
+                weight:
+                    Nexa.Theme.fontWeightMedium
             }
         }
+
 
         // ========================================================
         // PASSWORD BOX
@@ -911,7 +1010,12 @@ Item {
             height: 50
             radius: 25
 
-            color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, passwordInput.activeFocus ? 0.90 : 0.70)
+            color: Qt.rgba(
+                Nexa.Theme.surface.r,
+                Nexa.Theme.surface.g,
+                Nexa.Theme.surface.b,
+                passwordInput.activeFocus ? 0.90 : 0.70
+            )
 
             border.width: 1
             border.color: root.authFailed
@@ -920,9 +1024,13 @@ Item {
                     ? Nexa.Theme.primary
                     : Nexa.Theme.borderSubtle
 
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color {
+                ColorAnimation { duration: 150 }
+            }
 
-            Behavior on border.color { ColorAnimation { duration: 150 } }
+            Behavior on border.color {
+                ColorAnimation { duration: 150 }
+            }
 
             Row {
                 anchors {
@@ -939,7 +1047,10 @@ Item {
                     font.family: Nexa.Theme.iconFontFamily
                     font.pixelSize: 16
 
-                    Behavior on color { ColorAnimation { duration: 150 } } }
+                    Behavior on color {
+                        ColorAnimation { duration: 150 }
+                    }
+                }
 
                 TextInput {
                     id: passwordInput
@@ -950,50 +1061,65 @@ Item {
                     enabled:
                         !root.authenticating
 
-                    verticalAlignment: TextInput.AlignVCenter
+                    verticalAlignment:
+                        TextInput.AlignVCenter
 
-                    color: Nexa.Theme.text
+                    color:
+                        Nexa.Theme.text
 
-                    selectionColor: Nexa.Theme.primary
+                    selectionColor:
+                        Nexa.Theme.primary
 
-                    selectedTextColor: Nexa.Theme.background
+                    selectedTextColor:
+                        Nexa.Theme.background
 
-                    echoMode: TextInput.Password
+                    echoMode:
+                        TextInput.Password
 
                     passwordCharacter:
                         "●"
 
                     clip: true
 
+
                     font {
-                        family: Nexa.Theme.fontFamily
+                        family:
+                            Nexa.Theme.fontFamily
 
                         pixelSize: 16
                     }
 
+
                     Text {
                         anchors {
-                            left: parent.left
+                            left:
+                                parent.left
 
-                            verticalCenter: parent.verticalCenter
+                            verticalCenter:
+                                parent.verticalCenter
                         }
 
                         visible:
                             passwordInput.text.length === 0
                             && !passwordInput.activeFocus
 
-                        text: root.authenticating
+                        text:
+                            root.authenticating
                             ? "Checking…"
                             : "Password"
 
-                        color: Nexa.Theme.mutedText
+                        color:
+                            Nexa.Theme.mutedText
+
 
                         font {
-                            family: Nexa.Theme.fontFamily
+                            family:
+                                Nexa.Theme.fontFamily
 
                             pixelSize: 14
                         }
                     }
+
 
                     onTextEdited: {
                         root.authFailed = false
@@ -1001,6 +1127,7 @@ Item {
 
                         inactivityTimer.restart()
                     }
+
 
                     Keys.onPressed: event => {
                         inactivityTimer.restart()
@@ -1015,6 +1142,7 @@ Item {
                         }
                     }
                 }
+
 
                 // =================================================
                 // UNLOCK / AUTH BUTTON
@@ -1033,36 +1161,43 @@ Item {
             }
         }
 
+
         // ========================================================
         // AUTH STATUS
         // ========================================================
 
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenter:
+                parent.horizontalCenter
 
             text:
                 root.authMessage.length > 0
                 ? root.authMessage
                 : "Enter password to unlock"
 
-            color: root.authFailed
+            color:
+                root.authFailed
                 ? Nexa.Theme.error
                 : root.authenticated
                     ? Nexa.Theme.primary
                     : Nexa.Theme.mutedText
 
+
             font {
-                family: Nexa.Theme.fontFamily
+                family:
+                    Nexa.Theme.fontFamily
 
                 pixelSize: 12
 
-                weight: root.authFailed
+                weight:
+                    root.authFailed
                     || root.authenticated
                     ? Nexa.Theme.fontWeightMedium
                     : Nexa.Theme.fontWeightRegular
             }
         }
     }
+
 
     // ============================================================
     // FAILURE SHAKE
@@ -1107,6 +1242,7 @@ Item {
         }
     }
 
+
     // ============================================================
     // AUTH SUCCESS RESET
     //
@@ -1116,6 +1252,7 @@ Item {
     // ============================================================
 
     
+
 
     // ============================================================
     // NOW PLAYING MINI CARD (BOTTOM LEFT)
@@ -1329,21 +1466,29 @@ Item {
         z: 20
 
         anchors {
-            horizontalCenter: parent.horizontalCenter
+            horizontalCenter:
+                parent.horizontalCenter
 
-            bottom: parent.bottom
+            bottom:
+                parent.bottom
 
             bottomMargin: 32
         }
 
-        width: previewText.implicitWidth + 28
+        width:
+            previewText.implicitWidth + 28
 
         height: 32
 
         radius: height / 2
 
         color:
-            Qt.rgba(Nexa.Theme.surfaceContainerLow.r, Nexa.Theme.surfaceContainerLow.g, Nexa.Theme.surfaceContainerLow.b, 0.68)
+            Qt.rgba(
+                Nexa.Theme.surfaceContainerLow.r,
+                Nexa.Theme.surfaceContainerLow.g,
+                Nexa.Theme.surfaceContainerLow.b,
+                0.68
+            )
 
         border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.borderSubtle
@@ -1370,22 +1515,28 @@ Item {
         Text {
             id: previewText
 
-            anchors.centerIn: parent
+            anchors.centerIn:
+                parent
 
-            text: root.loginVisible
+            text:
+                root.loginVisible
                 ? "NEXA Lock Screen · Secure"
                 : "Click or press any key to unlock"
 
-            color: Nexa.Theme.mutedText
+            color:
+                Nexa.Theme.mutedText
+
 
             font {
-                family: Nexa.Theme.fontFamily
+                family:
+                    Nexa.Theme.fontFamily
 
                 pixelSize: 12
                 weight: Nexa.Theme.fontWeightMedium
             }
         }
     }
+
 
     // ============================================================
     // BACKGROUND ACTIVITY DETECTOR
@@ -1396,11 +1547,14 @@ Item {
 
         z: 10
 
-        anchors.fill: parent
+        anchors.fill:
+            parent
 
         hoverEnabled: true
 
-        acceptedButtons: Qt.AllButtons
+        acceptedButtons:
+            Qt.AllButtons
+
 
         onPressed: mouse => {
             root.showLogin()
@@ -1408,11 +1562,13 @@ Item {
             mouse.accepted = false
         }
 
+
         onPositionChanged: {
             if (!root.authenticating)
                 root.showLogin()
         }
     }
+
 
     // ============================================================
     // KEYBOARD ACTIVITY
@@ -1427,6 +1583,7 @@ Item {
         }
     }
 
+
     // ============================================================
     // AUTO-HIDE LOGIN
     // ============================================================
@@ -1438,8 +1595,11 @@ Item {
 
         repeat: false
 
-        onTriggered: root.hideLogin()
+
+        onTriggered:
+            root.hideLogin()
     }
+
 
     // ============================================================
     // CLOCK UPDATE
@@ -1476,6 +1636,7 @@ Item {
         }
     }
 
+
     // ============================================================
     // STARTUP
     // ============================================================
@@ -1487,6 +1648,7 @@ Item {
         loadLockWallpaper()
         root.forceActiveFocus()
     }
+
 
     SequentialAnimation {
         id: unlockAnimation

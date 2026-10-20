@@ -17,7 +17,7 @@ NexaUI.NexaCard {
     readonly property var app: ToplevelManager.activeToplevel
 
     readonly property string appId:
-        (app && app.appId) ? app.appId : ""
+        app?.appId ?? ""
 
     readonly property bool hasApp:
         appId !== ""
@@ -28,7 +28,7 @@ NexaUI.NexaCard {
     }
 
     readonly property string windowTitle:
-        (app && app.title) ? app.title : ""
+        app?.title ?? ""
 
     readonly property string displayText: {
         if (!hasApp) return ""
