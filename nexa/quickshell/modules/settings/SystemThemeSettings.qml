@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import "../../theme" as Nexa
-import "../themeSettingSection" as ThemeViews
+import "./theme" as ThemeViews
 
 Item {
     id: root

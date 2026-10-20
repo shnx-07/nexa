@@ -1,7 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
-import "../../colors"
+import "../../theme/colors"
 
 // Palette and type for the lock screen HUD. The HUD always sits on a darkened
 // backdrop, so on a light matugen scheme the ink/base roles flip to their

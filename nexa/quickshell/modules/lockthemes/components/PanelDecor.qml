@@ -1,7 +1,7 @@
 // pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Shapes
-import "../../../colors"
+import "../../../theme/colors"
 import "../../../services" as Services
 
 // The desktop theme's frame on a panel's outer surface. Put it last inside

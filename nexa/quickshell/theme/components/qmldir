@@ -1,0 +1,13 @@
+NexaActiveIndicator 1.0 NexaActiveIndicator.qml
+NexaButton 1.0 NexaButton.qml
+NexaCard 1.0 NexaCard.qml
+NexaDropdown 1.0 NexaDropdown.qml
+NexaHeader 1.0 NexaHeader.qml
+NexaIconButton 1.0 NexaIconButton.qml
+NexaJsonProcess 1.0 NexaJsonProcess.qml
+NexaPopup 1.0 NexaPopup.qml
+NexaSection 1.0 NexaSection.qml
+NexaShadow 1.0 NexaShadow.qml
+NexaSlider 1.0 NexaSlider.qml
+NexaToggle 1.0 NexaToggle.qml
+NexaTooltip 1.0 NexaTooltip.qml

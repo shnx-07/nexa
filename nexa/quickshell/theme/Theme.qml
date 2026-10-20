@@ -591,6 +591,9 @@ QtObject {
     readonly property int fontWeightDemiBold:
         Font.DemiBold
 
+    readonly property int fontWeightSemiBold:
+        Font.DemiBold
+
     readonly property int fontWeightBold:
         Font.Bold
 

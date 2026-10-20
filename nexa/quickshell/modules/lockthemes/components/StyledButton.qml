@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls
-import "../../../colors"
+import "../../../theme/colors"
 
 // Button with the shell's background/label styling, replacing the hand-written
 // `background: Rectangle` + `contentItem: Text` pair.

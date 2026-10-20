@@ -12,7 +12,7 @@
 
 import QtQuick
 import "../../../services" as Services
-import "../../../colors"
+import "../../../theme/colors"
 import "."
 
 // GPU cava visualizer. The CPU only fills a tiny 1xN texture with bar heights;

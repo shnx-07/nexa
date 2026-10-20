@@ -34,17 +34,13 @@ PanelWindow {
     // Paths
     // ---------------------------------------------------------
 
-    readonly property string homeDir:
-        Quickshell.env("HOME")
+    readonly property string homeDir: Quickshell.env("HOME")
 
-    readonly property string wallpaperDir:
-        homeDir + "/Pictures/Wallpapers"
+    readonly property string wallpaperDir: homeDir + "/Pictures/Wallpapers"
 
-    readonly property string nexad:
-    homeDir + "/.config/nexa/rust/target/release/nexad"
+    readonly property string nexad: homeDir + "/.config/nexa/rust/target/release/nexad"
 
-    readonly property string applyScript:
-        homeDir + "/.config/nexa/scripts/wallpaper.sh"
+    readonly property string applyScript: homeDir + "/.config/nexa/scripts/wallpaper.sh"
 
     // ---------------------------------------------------------
     // State
@@ -62,8 +58,7 @@ PanelWindow {
     property bool applyMenuOpen: false
 
     // Slideshow state
-    readonly property string slideshowConfigFile:
-        homeDir + "/.config/nexa/config/slideshow.json"
+    readonly property string slideshowConfigFile: homeDir + "/.config/nexa/config/slideshow.json"
 
     property bool slideshowEnabled: false
     property bool slideshowPaused: false
@@ -71,8 +66,7 @@ PanelWindow {
     property string slideshowType: "All"
     property string slideshowTarget: "Background"
     property string slideshowLastWallpaper: ""
-    readonly property string slideshowFolder:
-        wallpaperDir + "/Slideshow"
+    readonly property string slideshowFolder: wallpaperDir + "/Slideshow"
 
     property bool slideshowTimerMenuOpen: false
     property bool slideshowTypeMenuOpen: false
@@ -85,14 +79,11 @@ PanelWindow {
     readonly property real cardWidth: 400
     readonly property real cardHeight: 420
 
-    readonly property real selectedWidth:
-        cardWidth * 1.5
+    readonly property real selectedWidth: cardWidth * 1.5
 
-    readonly property real sideWidth:
-        cardWidth * 0.5
+    readonly property real sideWidth: cardWidth * 0.5
 
-    readonly property real selectedHeight:
-        cardHeight + 30
+    readonly property real selectedHeight: cardHeight + 30
 
     readonly property real itemSpacing: 10
     readonly property real skewFactor: -0.35
@@ -163,8 +154,6 @@ PanelWindow {
         root.applying = false
         root.visible = false
     }
-
-
 
     function videoThumbnail(path) {
         return root.homeDir
@@ -387,7 +376,6 @@ PanelWindow {
               view.currentIndex
           )
 
-
       // =========================================================
       // BACKGROUND
       // =========================================================
@@ -400,15 +388,11 @@ PanelWindow {
               + entry.wallName
               + " to background..."
 
-          Quickshell.execDetached([
-              applyScript,
-              entry.wallPath
-          ])
+          Quickshell.execDetached([applyScript, entry.wallPath])
 
           closeTimer.restart()
           return
       }
-
 
       // =========================================================
       // LOCK SCREEN
@@ -422,17 +406,11 @@ PanelWindow {
               + entry.wallName
               + " to lock screen..."
 
-          Quickshell.execDetached([
-              nexad,
-              "wallpaper",
-              "lock-set",
-              entry.wallPath
-          ])
+          Quickshell.execDetached([nexad, "wallpaper", "lock-set", entry.wallPath])
 
           closeTimer.restart()
           return
       }
-
 
       // =========================================================
       // BOTH
@@ -446,22 +424,13 @@ PanelWindow {
               + entry.wallName
               + " to both..."
 
-          Quickshell.execDetached([
-              applyScript,
-              entry.wallPath
-          ])
+          Quickshell.execDetached([applyScript, entry.wallPath])
 
-          Quickshell.execDetached([
-              nexad,
-              "wallpaper",
-              "lock-set",
-              entry.wallPath
-          ])
+          Quickshell.execDetached([nexad, "wallpaper", "lock-set", entry.wallPath])
 
           closeTimer.restart()
       }
   }
-
 
     function activateFilter(name) {
         if (currentFilter === name)
@@ -515,19 +484,11 @@ PanelWindow {
         statusText = "Applying " + wName + " (" + slideshowTarget + ")..."
 
         if (slideshowTarget === "Background" || slideshowTarget === "Both") {
-            Quickshell.execDetached([
-                applyScript,
-                filePath
-            ])
+            Quickshell.execDetached([applyScript, filePath])
         }
 
         if (slideshowTarget === "Lock Screen" || slideshowTarget === "Both") {
-            Quickshell.execDetached([
-                nexad,
-                "wallpaper",
-                "lock-set",
-                filePath
-            ])
+            Quickshell.execDetached([nexad, "wallpaper", "lock-set", filePath])
         }
 
         slideshowLastWallpaper = filePath
@@ -541,27 +502,9 @@ PanelWindow {
         root.slideshowType = typeFilter
         root.slideshowTarget = target
 
-        Quickshell.execDetached([
-            nexad,
-            "wallpaper",
-            "slideshow",
-            "set",
-            "--enabled", enabled ? "true" : "false",
-            "--paused", paused ? "true" : "false",
-            "--interval", interval,
-            "--type", typeFilter,
-            "--target", target
-        ])
+        Quickshell.execDetached([nexad, "wallpaper", "slideshow", "set", "--enabled", enabled ? "true" : "false", "--paused", paused ? "true" : "false", "--interval", interval, "--type", typeFilter, "--target", target])
 
-        Quickshell.execDetached([
-            "quickshell",
-            "ipc",
-            "-p",
-            Quickshell.env("HOME") + "/.config/nexa/quickshell",
-            "call",
-            "wallpaperSlideshow",
-            "reload"
-        ])
+        Quickshell.execDetached(["quickshell", "ipc", "-p", Quickshell.env("HOME") + "/.config/nexa/quickshell", "call", "wallpaperSlideshow", "reload"])
     }
 
     function toggleSlideshowEnabled() {
@@ -585,12 +528,7 @@ PanelWindow {
         root.closeAllSlideshowMenus()
         root.statusText = "Switching slideshow wallpaper..."
         statusClearTimer.restart()
-        Quickshell.execDetached([
-            nexad,
-            "wallpaper",
-            "slideshow",
-            "next"
-        ])
+        Quickshell.execDetached([nexad, "wallpaper", "slideshow", "next"])
     }
 
     function handleEscape() {
@@ -749,9 +687,7 @@ PanelWindow {
         opacity:
             root.slideshowEnabled ? 0.0 : 1.0
 
-        Behavior on opacity {
-            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
-        }
+        Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
 
         interactive:
             !root.slideshowEnabled &&
@@ -859,31 +795,24 @@ PanelWindow {
             required property string wallThumb
             required property string wallName
 
-            readonly property bool matches:
-                root.matchesFilter(
+            readonly property bool matches: root.matchesFilter(
                     wallType,
                     wallName
                 )
 
-            readonly property bool selected:
-                ListView.isCurrentItem &&
+            readonly property bool selected: ListView.isCurrentItem &&
                 matches
 
-            readonly property int distFromSelected:
-                Math.abs(cardRoot.index - view.currentIndex)
+            readonly property int distFromSelected: Math.abs(cardRoot.index - view.currentIndex)
 
             // Dynamic wave propagation: center card has punchiest jiggle, neighbors ripple with soft decay
-            readonly property real cardJiggle:
-                root.jiggleOffset / (1.0 + (cardRoot.distFromSelected * 0.4))
+            readonly property real cardJiggle: root.jiggleOffset / (1.0 + (cardRoot.distFromSelected * 0.4))
 
-            readonly property bool isImage:
-                wallType === "image"
+            readonly property bool isImage: wallType === "image"
 
-            readonly property bool isGif:
-                wallType === "gif"
+            readonly property bool isGif: wallType === "gif"
 
-            readonly property bool isVideo:
-                wallType === "video"
+            readonly property bool isVideo: wallType === "video"
 
             property real clickScale: 1.0
 
@@ -982,8 +911,7 @@ PanelWindow {
 
                 transform:
                     Matrix4x4 {
-                        property real skew:
-                            root.skewFactor + (cardRoot.cardJiggle * 0.04)
+                        property real skew: root.skewFactor + (cardRoot.cardJiggle * 0.04)
 
                         matrix:
                             Qt.matrix4x4(
@@ -1013,12 +941,8 @@ PanelWindow {
                     opacity: cardRoot.selected ? 0.65 : (cardMouse.containsMouse ? 0.28 : 0.0)
                     scale: cardRoot.selected ? 1.03 : 0.98
 
-                    Behavior on opacity {
-                        NumberAnimation { duration: 420; easing.type: Easing.OutCubic }
-                    }
-                    Behavior on scale {
-                        NumberAnimation { duration: 420; easing.type: Easing.OutCubic }
-                    }
+                    Behavior on opacity { NumberAnimation { duration: 420; easing.type: Easing.OutCubic } }
+                    Behavior on scale { NumberAnimation { duration: 420; easing.type: Easing.OutCubic } }
 
                     Image {
                         id: auraSourceImg
@@ -1075,320 +999,87 @@ PanelWindow {
                     // -------------------------------------------------
 
                     // -------------------------------------------------
-                    // Static image
                     // -------------------------------------------------
-
-                    Image {
-                        anchors.centerIn: parent
-
-                        anchors.horizontalCenterOffset:
-                            skewContainer.height
-                            * root.skewFactor
-                            * 0.32
-
-                        width:
-                            skewContainer.width
-                            +
-                            (
-                                skewContainer.height
-                                * Math.abs(root.skewFactor)
-                            )
-                            + 100
-
-                        height:
-                            skewContainer.height + 20
-
-                        sourceSize.width: 640
-                        sourceSize.height: 480
-
-                        source:
-                            cardRoot.isImage
-                            ? root.fileUrl(cardRoot.wallThumb && cardRoot.wallThumb.length > 0 ? cardRoot.wallThumb : cardRoot.wallPath)
-                            : ""
-
-                        fillMode:
-                            Image.PreserveAspectCrop
-
-                        asynchronous: true
-                        cache: true
-
-                        visible:
-                            cardRoot.isImage
-
-                        transform: Matrix4x4 {
-                            property real skew:
-                                -root.skewFactor
-
-                            matrix:
-                                Qt.matrix4x4(
-                                    1, skew, 0, 0,
-                                    0, 1, 0, 0,
-                                    0, 0, 1, 0,
-                                    0, 0, 0, 1
-                                )
-                        }
-                    }
-
+                    // Slanted Media Deck (Shared geometry & counter-skew)
                     // -------------------------------------------------
-                    // GIF
-                    //
-                    // Side cards keep a still preview. Only the selected
-                    // card runs AnimatedImage, which keeps scrolling light.
-                    // -------------------------------------------------
-
-                    Image {
+                    Item {
+                        id: mediaDeck
                         anchors.centerIn: parent
-
-                        anchors.horizontalCenterOffset:
-                            skewContainer.height
-                            * root.skewFactor
-                            * 0.32
-
-                        width:
-                            skewContainer.width
-                            +
-                            (
-                                skewContainer.height
-                                * Math.abs(root.skewFactor)
-                            )
-                            + 100
-
-                        height:
-                            skewContainer.height + 20
-
-                        sourceSize.width: 800
-                        sourceSize.height: 600
-
-                        source:
-                            cardRoot.isGif
-                            ? root.fileUrl(cardRoot.wallPath)
-                            : ""
-
-                        fillMode:
-                            Image.PreserveAspectCrop
-
-                        asynchronous: true
-                        cache: true
-
-                        visible:
-                            cardRoot.isGif
-
+                        anchors.horizontalCenterOffset: skewContainer.height * root.skewFactor * 0.32
+                        width: skewContainer.width + (skewContainer.height * Math.abs(root.skewFactor)) + 100
+                        height: skewContainer.height + 20
                         transform: Matrix4x4 {
-                            property real skew:
-                                -root.skewFactor
-
-                            matrix:
-                                Qt.matrix4x4(
-                                    1, skew, 0, 0,
-                                    0, 1, 0, 0,
-                                    0, 0, 1, 0,
-                                    0, 0, 0, 1
-                                )
+                            property real skew: -root.skewFactor
+                            matrix: Qt.matrix4x4(1, skew, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1)
                         }
-                    }
 
-                    AnimatedImage {
-                        anchors.centerIn: parent
-
-                        anchors.horizontalCenterOffset:
-                            skewContainer.height
-                            * root.skewFactor
-                            * 0.32
-
-                        width:
-                            skewContainer.width
-                            +
-                            (
-                                skewContainer.height
-                                * Math.abs(root.skewFactor)
-                            )
-                            + 100
-
-                        height:
-                            skewContainer.height + 20
-
-                        source:
-                            cardRoot.isGif
-                            ? root.fileUrl(cardRoot.wallPath)
-                            : ""
-
-                        fillMode:
-                            Image.PreserveAspectCrop
-
-                        asynchronous: true
-                        cache: true
-
-                        playing:
-                            cardRoot.isGif &&
-                            cardRoot.selected
-
-                        visible:
-                            cardRoot.isGif &&
-                            cardRoot.selected
-
-                        transform: Matrix4x4 {
-                            property real skew:
-                                -root.skewFactor
-
-                            matrix:
-                                Qt.matrix4x4(
-                                    1, skew, 0, 0,
-                                    0, 1, 0, 0,
-                                    0, 0, 1, 0,
-                                    0, 0, 0, 1
-                                )
+                        Image {
+                            anchors.fill: parent
+                            sourceSize: Qt.size(640, 480)
+                            source: cardRoot.isImage ? root.fileUrl(cardRoot.wallThumb && cardRoot.wallThumb.length > 0 ? cardRoot.wallThumb : cardRoot.wallPath) : ""
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true; cache: true
+                            visible: cardRoot.isImage
                         }
-                    }
 
-                    // -------------------------------------------------
-                    // Video
-                    //
-                    // Thumbnail is permanently underneath the live video.
-                    // Therefore a video card never turns blank when it moves
-                    // from current -> side.
-                    // -------------------------------------------------
-
-                    Image {
-                        id: videoThumbnailImage
-
-                        anchors.centerIn: parent
-
-                        anchors.horizontalCenterOffset:
-                            skewContainer.height
-                            * root.skewFactor
-                            * 0.32
-
-                        width:
-                            skewContainer.width
-                            +
-                            (
-                                skewContainer.height
-                                * Math.abs(root.skewFactor)
-                            )
-                            + 100
-
-                        height:
-                            skewContainer.height + 20
-
-                        sourceSize.width: 640
-                        sourceSize.height: 480
-
-                        source:
-                            cardRoot.isVideo
-                            ? root.fileUrl(
-                                  cardRoot.wallThumb && cardRoot.wallThumb.length > 0
-                                  ? cardRoot.wallThumb
-                                  : root.videoThumbnail(cardRoot.wallPath)
-                              )
-                            : ""
-
-                        fillMode:
-                            Image.PreserveAspectCrop
-
-                        asynchronous: true
-                        cache: true
-
-                        visible:
-                            cardRoot.isVideo
-
-                        transform: Matrix4x4 {
-                            property real skew:
-                                -root.skewFactor
-
-                            matrix:
-                                Qt.matrix4x4(
-                                    1, skew, 0, 0,
-                                    0, 1, 0, 0,
-                                    0, 0, 1, 0,
-                                    0, 0, 0, 1
-                                )
+                        Image {
+                            anchors.fill: parent
+                            sourceSize: Qt.size(800, 600)
+                            source: cardRoot.isGif ? root.fileUrl(cardRoot.wallPath) : ""
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true; cache: true
+                            visible: cardRoot.isGif
                         }
-                    }
 
-                    MediaPlayer {
-                        id: previewPlayer
-
-                        source:
-                            cardRoot.isVideo
-                            ? root.fileUrl(cardRoot.wallPath)
-                            : ""
-
-                        loops:
-                            MediaPlayer.Infinite
-
-                        audioOutput:
-                            AudioOutput {
-                                muted: true
-                            }
-
-                        videoOutput:
-                            previewOutput
-
-                        autoPlay: false
-                    }
-
-                    VideoOutput {
-                        id: previewOutput
-
-                        anchors.centerIn: parent
-
-                        anchors.horizontalCenterOffset:
-                            skewContainer.height
-                            * root.skewFactor
-                            * 0.32
-
-                        width:
-                            skewContainer.width
-                            +
-                            (
-                                skewContainer.height
-                                * Math.abs(root.skewFactor)
-                            )
-                            + 100
-
-                        height:
-                            skewContainer.height + 20
-
-                        fillMode:
-                            VideoOutput.PreserveAspectCrop
-
-                        visible:
-                            cardRoot.isVideo &&
-                            cardRoot.selected &&
-                            previewPlayer.playbackState
-                            === MediaPlayer.PlayingState
-
-                        transform: Matrix4x4 {
-                            property real skew:
-                                -root.skewFactor
-
-                            matrix:
-                                Qt.matrix4x4(
-                                    1, skew, 0, 0,
-                                    0, 1, 0, 0,
-                                    0, 0, 1, 0,
-                                    0, 0, 0, 1
-                                )
+                        AnimatedImage {
+                            anchors.fill: parent
+                            source: cardRoot.isGif ? root.fileUrl(cardRoot.wallPath) : ""
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true; cache: true
+                            playing: cardRoot.isGif && cardRoot.selected
+                            visible: cardRoot.isGif && cardRoot.selected
                         }
-                    }
 
-                    Connections {
-                        target: cardRoot
+                        Image {
+                            id: videoThumbnailImage
+                            anchors.fill: parent
+                            sourceSize: Qt.size(640, 480)
+                            source: cardRoot.isVideo ? root.fileUrl(cardRoot.wallThumb && cardRoot.wallThumb.length > 0 ? cardRoot.wallThumb : root.videoThumbnail(cardRoot.wallPath)) : ""
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true; cache: true
+                            visible: cardRoot.isVideo
+                        }
 
-                        function onSelectedChanged() {
-                            if (!cardRoot.isVideo)
-                                return
+                        MediaPlayer {
+                            id: previewPlayer
+                            source: cardRoot.isVideo ? root.fileUrl(cardRoot.wallPath) : ""
+                            loops: MediaPlayer.Infinite
+                            audioOutput: AudioOutput { muted: true }
+                            videoOutput: previewOutput
+                            autoPlay: false
+                        }
 
-                            if (cardRoot.selected) {
-                                previewPlayer.position = 0
-                                previewPlayer.play()
-                            } else {
-                                previewPlayer.stop()
+                        VideoOutput {
+                            id: previewOutput
+                            anchors.fill: parent
+                            fillMode: VideoOutput.PreserveAspectCrop
+                            visible: cardRoot.isVideo && cardRoot.selected && previewPlayer.playbackState === MediaPlayer.PlayingState
+                        }
+
+                        Connections {
+                            target: cardRoot
+                            function onSelectedChanged() {
+                                if (!cardRoot.isVideo) return
+                                if (cardRoot.selected) {
+                                    previewPlayer.position = 0
+                                    previewPlayer.play()
+                                } else {
+                                    previewPlayer.stop()
+                                }
                             }
                         }
                     }
 
-                    // -------------------------------------------------
                     // Specular glass sheen highlight
                     // -------------------------------------------------
                     Rectangle {
@@ -1528,9 +1219,7 @@ PanelWindow {
                     opacity: cardRoot.selected ? 1.0 : 0.0
                     scale: cardRoot.selected ? 1.0 : 0.96
 
-                    Behavior on opacity {
-                        NumberAnimation { duration: 240; easing.type: Easing.OutCubic }
-                    }
+                    Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
                     Behavior on scale {
                         NumberAnimation { duration: 240; easing.type: Easing.OutBack; easing.overshoot: 1.15 }
                     }
@@ -1751,9 +1440,7 @@ PanelWindow {
         visible: root.slideshowEnabled
         opacity: root.slideshowEnabled ? 1.0 : 0.0
 
-        Behavior on opacity {
-            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
-        }
+        Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
 
         sourceComponent: Component {
             SlideshowWallpaperView {
@@ -1849,6 +1536,64 @@ PanelWindow {
     // Bottom floating controls row
     // ---------------------------------------------------------
 
+    component MenuPopover: Rectangle {
+        id: popover
+        property var items: []
+        property string currentValue: ""
+        property real itemHeight: 36
+        signal selected(string val)
+
+        radius: Nexa.Theme.radiusMd
+        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
+        border.width: 1
+        border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
+        z: 600
+
+        Column {
+            anchors { fill: parent; margins: 6 }
+            spacing: 2
+            Repeater {
+                model: popover.items
+                delegate: Rectangle {
+                    required property string modelData
+                    readonly property bool active: popover.currentValue === modelData
+                    width: parent.width
+                    height: popover.itemHeight
+                    radius: Nexa.Theme.radiusSm
+                    color: pMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
+                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+                    RowLayout {
+                        anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                        spacing: 8
+                        Text {
+                            text: modelData
+                            color: active ? Nexa.Theme.primary : Nexa.Theme.text
+                            font.family: Nexa.Theme.uiFont
+                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            font.weight: active ? Font.DemiBold : Font.Normal
+                            Layout.fillWidth: true
+                        }
+                        Text {
+                            visible: active
+                            text: "󰄲"
+                            color: Nexa.Theme.primary
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: Nexa.Theme.iconSm
+                        }
+                    }
+                    MouseArea {
+                        id: pMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: popover.selected(modelData)
+                    }
+                }
+            }
+        }
+    }
+
     Row {
         id: bottomControlsRow
 
@@ -1883,23 +1628,12 @@ PanelWindow {
             Nexa.Theme.radiusLg
 
         color:
-            Qt.rgba(
-                Nexa.Theme.surface.r,
-                Nexa.Theme.surface.g,
-                Nexa.Theme.surface.b,
-                0.92
-            )
+            Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.92)
 
         border.width: 1
 
         border.color:
-            Qt.rgba(
-                Nexa.Theme.outline.r,
-                Nexa.Theme.outline.g,
-                Nexa.Theme.outline.b,
-                0.55
-            )
-
+            Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
 
         Row {
             id: filterRow
@@ -1907,7 +1641,6 @@ PanelWindow {
             anchors.centerIn: parent
 
             spacing: 8
-
 
             // =====================================================
             // WALLPAPER TYPE FILTERS
@@ -1921,14 +1654,11 @@ PanelWindow {
                     "Video"
                 ]
 
-
                 delegate: Rectangle {
                     required property string modelData
 
-                    readonly property bool active:
-                        root.currentFilter
+                    readonly property bool active: root.currentFilter
                         === modelData
-
 
                     height: 40
 
@@ -1939,12 +1669,10 @@ PanelWindow {
                     radius:
                         Nexa.Theme.radiusSm
 
-
                     color:
                         active
                         ? Nexa.Theme.selectedOverlay
                         : (tabMouse.containsMouse ? Nexa.Theme.hover : "transparent")
-
 
                     border.width:
                         active ? 1 : 0
@@ -1957,13 +1685,7 @@ PanelWindow {
                         ? 0.95
                         : (tabMouse.containsMouse ? 1.03 : 1.0)
 
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration:
-                                Nexa.Theme.animationFast
-                        }
-                    }
+                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
 
                     Behavior on scale {
                         NumberAnimation {
@@ -1971,7 +1693,6 @@ PanelWindow {
                             easing.type: Nexa.Theme.easingEmphasized
                         }
                     }
-
 
                     Text {
                         id: filterText
@@ -1999,7 +1720,6 @@ PanelWindow {
                             : Font.Normal
                     }
 
-
                     MouseArea {
                         id: tabMouse
                         anchors.fill:
@@ -2022,7 +1742,6 @@ PanelWindow {
                 }
             }
 
-
             // =====================================================
             // DIVIDER
             // =====================================================
@@ -2035,14 +1754,8 @@ PanelWindow {
                 height: 24
 
                 color:
-                    Qt.rgba(
-                        Nexa.Theme.outline.r,
-                        Nexa.Theme.outline.g,
-                        Nexa.Theme.outline.b,
-                        0.35
-                    )
+                    Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.35)
             }
-
 
             // =====================================================
             // APPLY TARGET
@@ -2054,161 +1767,21 @@ PanelWindow {
                 width: 168
                 height: 40
 
-
                 // -------------------------------------------------
                 // DROP-UP MENU
                 // -------------------------------------------------
 
-                Rectangle {
+                MenuPopover {
                     id: applyMenu
-
-                    anchors {
-                        horizontalCenter:
-                            applyButton.horizontalCenter
-
-                        bottom:
-                            applyButton.top
-
-                        bottomMargin:
-                            8
-                    }
-
-                    z: 500
-
+                    anchors { horizontalCenter: applyButton.horizontalCenter; bottom: applyButton.top; bottomMargin: 8 }
                     width: 168
                     height: 132
-
-                    visible:
-                        root.applyMenuOpen
-
-                    radius:
-                        Nexa.Theme.radiusMd
-
-                    color:
-                        Qt.rgba(
-                            Nexa.Theme.surface.r,
-                            Nexa.Theme.surface.g,
-                            Nexa.Theme.surface.b,
-                            0.96
-                        )
-
-                    border.width: 1
-
-                    border.color:
-                        Qt.rgba(
-                            Nexa.Theme.outline.r,
-                            Nexa.Theme.outline.g,
-                            Nexa.Theme.outline.b,
-                            0.55
-                        )
-
-
-                    Column {
-                        anchors {
-                            fill: parent
-                            margins: 6
-                        }
-
-                        spacing: 2
-
-
-                        Repeater {
-                            model: [
-                                "Background",
-                                "Lock Screen",
-                                "Both"
-                            ]
-
-
-                            delegate: Rectangle {
-                                required property string modelData
-
-                                readonly property bool active:
-                                    root.applyTarget
-                                    === modelData
-
-
-                                width:
-                                    parent.width
-
-                                height: 38
-
-                                radius:
-                                    Nexa.Theme.radiusSm
-
-
-                                color:
-                                    targetMouse.containsMouse
-                                    ? Nexa.Theme.hover
-                                    : active
-                                        ? Nexa.Theme.selectedOverlay
-                                        : "transparent"
-
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration:
-                                            Nexa.Theme.animationFast
-                                    }
-                                }
-
-
-                                Text {
-                                    anchors {
-                                        left:
-                                            parent.left
-
-                                        verticalCenter:
-                                            parent.verticalCenter
-
-                                        leftMargin:
-                                            12
-                                    }
-
-                                    text:
-                                        modelData
-
-                                    color:
-                                        parent.active
-                                        ? Nexa.Theme.primary
-                                        : Nexa.Theme.text
-
-                                    font.family:
-                                        Nexa.Theme.uiFont
-
-                                    font.pixelSize:
-                                        Nexa.Theme.fontSizeSm
-
-                                    font.weight:
-                                        parent.active
-                                        ? Font.DemiBold
-                                        : Font.Normal
-                                }
-
-
-                                MouseArea {
-                                    id: targetMouse
-
-                                    anchors.fill:
-                                        parent
-
-                                    hoverEnabled:
-                                        true
-
-                                    cursorShape:
-                                        Qt.PointingHandCursor
-
-
-                                    onClicked:
-                                        root.activateApplyTarget(
-                                            modelData
-                                        )
-                                }
-                            }
-                        }
-                    }
+                    visible: root.applyMenuOpen
+                    items: ["Background", "Lock Screen", "Both"]
+                    currentValue: root.applyTarget
+                    itemHeight: 38
+                    onSelected: val => root.activateApplyTarget(val)
                 }
-
 
                 // -------------------------------------------------
                 // APPLY-TO BUTTON
@@ -2223,28 +1796,19 @@ PanelWindow {
                     radius:
                         Nexa.Theme.radiusSm
 
-
                     color:
                         applyMouse.containsMouse
                         || root.applyMenuOpen
                         ? Nexa.Theme.hover
                         : "transparent"
 
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration:
-                                Nexa.Theme.animationFast
-                        }
-                    }
-
+                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
 
                     Row {
                         anchors.centerIn:
                             parent
 
                         spacing: 7
-
 
                         Text {
                             text:
@@ -2259,7 +1823,6 @@ PanelWindow {
                             font.pixelSize:
                                 Nexa.Theme.fontSizeSm
                         }
-
 
                         Text {
                             text:
@@ -2280,7 +1843,6 @@ PanelWindow {
                                 Font.DemiBold
                         }
 
-
                         Text {
                             text:
                                 root.applyMenuOpen
@@ -2300,7 +1862,6 @@ PanelWindow {
                         }
                     }
 
-
                     MouseArea {
                         id: applyMouse
 
@@ -2312,7 +1873,6 @@ PanelWindow {
 
                         cursorShape:
                             Qt.PointingHandCursor
-
 
                         onClicked: {
                             root.closeAllSlideshowMenus()
@@ -2336,20 +1896,10 @@ PanelWindow {
             width: slideshowRow.implicitWidth + 24
             radius: Nexa.Theme.radiusLg
 
-            color: Qt.rgba(
-                Nexa.Theme.surface.r,
-                Nexa.Theme.surface.g,
-                Nexa.Theme.surface.b,
-                0.92
-            )
+            color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.92)
 
             border.width: 1
-            border.color: Qt.rgba(
-                Nexa.Theme.outline.r,
-                Nexa.Theme.outline.g,
-                Nexa.Theme.outline.b,
-                0.55
-            )
+            border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
 
             Row {
                 id: slideshowRow
@@ -2372,12 +1922,8 @@ PanelWindow {
 
                     scale: toggleMouse.pressed ? 0.95 : (toggleMouse.containsMouse ? 1.03 : 1.0)
 
-                    Behavior on color {
-                        ColorAnimation { duration: Nexa.Theme.animationFast }
-                    }
-                    Behavior on scale {
-                        NumberAnimation { duration: Nexa.Theme.animationFast; easing.type: Nexa.Theme.easingEmphasized }
-                    }
+                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                    Behavior on scale { NumberAnimation { duration: Nexa.Theme.animationFast; easing.type: Nexa.Theme.easingEmphasized } }
 
                     Row {
                         id: toggleContentRow
@@ -2427,58 +1973,19 @@ PanelWindow {
                     height: 40
 
                     // DROP-UP MENU
-                    Rectangle {
+                    MenuPopover {
                         id: timerMenu
-                        anchors {
-                            horizontalCenter: parent.horizontalCenter
-                            bottom: parent.top
-                            bottomMargin: 8
-                        }
-                        z: 600
+                        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.top; bottomMargin: 8 }
                         width: 108
                         height: 5 * 34 + 12
                         visible: root.slideshowTimerMenuOpen
-                        radius: Nexa.Theme.radiusMd
-                        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
-                        border.width: 1
-                        border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
-
-                        Column {
-                            anchors { fill: parent; margins: 6 }
-                            spacing: 2
-
-                            Repeater {
-                                model: ["5m", "10m", "15m", "30m", "1h"]
-                                delegate: Rectangle {
-                                    required property string modelData
-                                    readonly property bool active: root.slideshowInterval === modelData
-
-                                    width: parent.width
-                                    height: 32
-                                    radius: Nexa.Theme.radiusSm
-                                    color: itemMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: modelData
-                                        color: parent.active ? Nexa.Theme.primary : Nexa.Theme.text
-                                        font.family: Nexa.Theme.uiFont
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
-                                        font.weight: parent.active ? Font.DemiBold : Font.Normal
-                                    }
-
-                                    MouseArea {
-                                        id: itemMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, modelData, root.slideshowType, root.slideshowTarget)
-                                            root.slideshowTimerMenuOpen = false
-                                        }
-                                    }
-                                }
-                            }
+                        items: ["5m", "10m", "15m", "30m", "1h"]
+                        currentValue: root.slideshowInterval
+                        itemHeight: 32
+                        onSelected: val => {
+                            root.slideshowInterval = val
+                            root.slideshowTimerMenuOpen = false
+                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, val, root.slideshowType, root.slideshowTarget)
                         }
                     }
 
@@ -2598,9 +2105,7 @@ PanelWindow {
                         color: nextMouse.containsMouse ? Nexa.Theme.hover : "transparent"
                         scale: nextMouse.pressed ? 0.95 : 1.0
 
-                        Behavior on scale {
-                            NumberAnimation { duration: Nexa.Theme.animationFast; easing.type: Nexa.Theme.easingEmphasized }
-                        }
+                        Behavior on scale { NumberAnimation { duration: Nexa.Theme.animationFast; easing.type: Nexa.Theme.easingEmphasized } }
 
                         Row {
                             id: nextRow
@@ -2652,58 +2157,19 @@ PanelWindow {
                     height: 40
 
                     // DROP-UP MENU
-                    Rectangle {
+                    MenuPopover {
                         id: typeMenu
-                        anchors {
-                            horizontalCenter: parent.horizontalCenter
-                            bottom: parent.top
-                            bottomMargin: 8
-                        }
-                        z: 600
+                        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.top; bottomMargin: 8 }
                         width: 120
                         height: 4 * 34 + 12
                         visible: root.slideshowTypeMenuOpen
-                        radius: Nexa.Theme.radiusMd
-                        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
-                        border.width: 1
-                        border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
-
-                        Column {
-                            anchors { fill: parent; margins: 6 }
-                            spacing: 2
-
-                            Repeater {
-                                model: ["All", "Image", "GIF", "Video"]
-                                delegate: Rectangle {
-                                    required property string modelData
-                                    readonly property bool active: root.slideshowType === modelData
-
-                                    width: parent.width
-                                    height: 32
-                                    radius: Nexa.Theme.radiusSm
-                                    color: typeItemMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: modelData
-                                        color: parent.active ? Nexa.Theme.primary : Nexa.Theme.text
-                                        font.family: Nexa.Theme.uiFont
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
-                                        font.weight: parent.active ? Font.DemiBold : Font.Normal
-                                    }
-
-                                    MouseArea {
-                                        id: typeItemMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, root.slideshowInterval, modelData, root.slideshowTarget)
-                                            root.slideshowTypeMenuOpen = false
-                                        }
-                                    }
-                                }
-                            }
+                        items: ["All", "Image", "GIF", "Video"]
+                        currentValue: root.slideshowType
+                        itemHeight: 32
+                        onSelected: val => {
+                            root.slideshowType = val
+                            root.slideshowTypeMenuOpen = false
+                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, root.slideshowInterval, val, root.slideshowTarget)
                         }
                     }
 
@@ -2772,62 +2238,19 @@ PanelWindow {
                     height: 40
 
                     // DROP-UP MENU
-                    Rectangle {
+                    MenuPopover {
                         id: targetMenu
-                        anchors {
-                            horizontalCenter: parent.horizontalCenter
-                            bottom: parent.top
-                            bottomMargin: 8
-                        }
-                        z: 600
+                        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.top; bottomMargin: 8 }
                         width: 154
                         height: 3 * 38 + 12
                         visible: root.slideshowTargetMenuOpen
-                        radius: Nexa.Theme.radiusMd
-                        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
-                        border.width: 1
-                        border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
-
-                        Column {
-                            anchors { fill: parent; margins: 6 }
-                            spacing: 2
-
-                            Repeater {
-                                model: ["Background", "Lock Screen", "Both"]
-                                delegate: Rectangle {
-                                    required property string modelData
-                                    readonly property bool active: root.slideshowTarget === modelData
-
-                                    width: parent.width
-                                    height: 36
-                                    radius: Nexa.Theme.radiusSm
-                                    color: targetItemMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
-
-                                    Text {
-                                        anchors {
-                                            left: parent.left
-                                            verticalCenter: parent.verticalCenter
-                                            leftMargin: 12
-                                        }
-                                        text: modelData
-                                        color: parent.active ? Nexa.Theme.primary : Nexa.Theme.text
-                                        font.family: Nexa.Theme.uiFont
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
-                                        font.weight: parent.active ? Font.DemiBold : Font.Normal
-                                    }
-
-                                    MouseArea {
-                                        id: targetItemMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, root.slideshowInterval, root.slideshowType, modelData)
-                                            root.slideshowTargetMenuOpen = false
-                                        }
-                                    }
-                                }
-                            }
+                        items: ["Background", "Lock Screen", "Both"]
+                        currentValue: root.slideshowTarget
+                        itemHeight: 36
+                        onSelected: val => {
+                            root.slideshowTarget = val
+                            root.slideshowTargetMenuOpen = false
+                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, root.slideshowInterval, root.slideshowType, val)
                         }
                     }
 
@@ -2912,12 +2335,7 @@ PanelWindow {
             Nexa.Theme.radiusFull
 
         color:
-            Qt.rgba(
-                Nexa.Theme.surface.r,
-                Nexa.Theme.surface.g,
-                Nexa.Theme.surface.b,
-                0.82
-            )
+            Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.82)
 
         Text {
             id: statusLabel

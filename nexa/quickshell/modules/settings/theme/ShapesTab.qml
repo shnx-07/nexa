@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
-import "../../theme" as Nexa
+import "../../../theme" as Nexa
 
 RowLayout {
     id: root

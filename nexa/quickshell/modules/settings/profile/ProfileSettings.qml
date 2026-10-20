@@ -4,9 +4,9 @@ import QtQuick.Layouts
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
-import "../../theme" as Nexa
-import "../lockthemes/components"
-import "../../services" as Services
+import "../../../theme" as Nexa
+import "../../lockthemes/components"
+import "../../../services" as Services
 
 Item {
     id: root
@@ -132,7 +132,7 @@ Item {
         id: avatarFinder
         command: [
             "sh", "-c",
-            "for f in \"$HOME/.face\" \"$HOME/.config/nexa/avatar.png\" \"$HOME/.config/nexa/avatar.jpg\" \"$HOME/.config/nexa/avatar.svg\" \"$HOME/.config/nexa/avatar.webp\" \"$HOME/.config/nexa/config/avatars/cyber_neon.svg\" \"$HOME/.config/nexa/avatars/cyber_neon.svg\"; do " +
+            "for f in \"$HOME/.face\" \"$HOME/.config/nexa/avatar.png\" \"$HOME/.config/nexa/avatar.jpg\" \"$HOME/.config/nexa/avatar.svg\" \"$HOME/.config/nexa/avatar.webp\" \"$HOME/.config/nexa/config/avatars/cyber_neon.svg\"; do " +
             "  if [ -f \"$f\" ]; then echo \"$f\"; exit 0; fi; " +
             "done; exit 1"
         ]
@@ -577,195 +577,50 @@ Item {
                     rowSpacing: 10
                     columnSpacing: 10
 
-                    // Spec 1: Distro
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 64
-                        radius: root.rad(Nexa.Theme.radiusMd)
-                        color: Nexa.Theme.cardBackground
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
+                    Repeater {
+                        model: [
+                            { icon: "󰣇", color: Nexa.Theme.primary, title: "Distribution", value: root.osInfo !== "" ? root.osInfo : "Linux", bold: 13 },
+                            { icon: "󰒋", color: Nexa.Theme.secondary, title: "Kernel", value: root.kernelInfo !== "" ? root.kernelInfo : "Linux Kernel", bold: 12 },
+                            { icon: "󰍹", color: Nexa.Theme.tertiary, title: "Desktop Compositor", value: "Nexa • Hyprland", bold: 13 },
+                            { icon: "󰍛", color: Nexa.Theme.primary, title: "Processor (CPU)", value: root.cpuInfo !== "" ? root.cpuInfo : "Multi-core Processor", bold: 12 },
+                            { icon: "󰘚", color: Nexa.Theme.secondary, title: "Memory Usage (RAM)", value: root.memoryInfo !== "" ? root.memoryInfo : "RAM", bold: 13 },
+                            { icon: "󰞷", color: Nexa.Theme.tertiary, title: "User Shell", value: root.shellInfo !== "" ? ("/bin/" + root.shellInfo) : "/bin/bash", bold: 13 }
+                        ]
+                        delegate: Rectangle {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 64
+                            radius: root.rad(Nexa.Theme.radiusMd)
+                            color: Nexa.Theme.cardBackground
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.border
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 12
+                                spacing: 12
 
-                            Text {
-                                text: "󰣇"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 24
-                                color: Nexa.Theme.primary
-                            }
-
-                            Column {
-                                Layout.fillWidth: true
-                                spacing: 1
-
-                                StyledText { text: "Distribution"; font.pixelSize: 11; color: Nexa.Theme.mutedText }
-                                StyledText { text: root.osInfo !== "" ? root.osInfo : "Linux"; font.pixelSize: 13; font.weight: Font.Bold; color: Nexa.Theme.text }
-                            }
-                        }
-                    }
-
-                    // Spec 2: Kernel
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 64
-                        radius: root.rad(Nexa.Theme.radiusMd)
-                        color: Nexa.Theme.cardBackground
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
-
-                            Text {
-                                text: "󰒋"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 24
-                                color: Nexa.Theme.secondary
-                            }
-
-                            Column {
-                                Layout.fillWidth: true
-                                spacing: 1
-
-                                StyledText { text: "Kernel"; font.pixelSize: 11; color: Nexa.Theme.mutedText }
-                                StyledText { text: root.kernelInfo !== "" ? root.kernelInfo : "Linux Kernel"; font.pixelSize: 12; font.weight: Font.Bold; color: Nexa.Theme.text }
-                            }
-                        }
-                    }
-
-                    // Spec 3: Desktop Shell
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 64
-                        radius: root.rad(Nexa.Theme.radiusMd)
-                        color: Nexa.Theme.cardBackground
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
-
-                            Text {
-                                text: "󰍹"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 24
-                                color: Nexa.Theme.tertiary
-                            }
-
-                            Column {
-                                Layout.fillWidth: true
-                                spacing: 1
-
-                                StyledText { text: "Desktop Compositor"; font.pixelSize: 11; color: Nexa.Theme.mutedText }
-                                StyledText { text: "Nexa • Hyprland"; font.pixelSize: 13; font.weight: Font.Bold; color: Nexa.Theme.text }
-                            }
-                        }
-                    }
-
-                    // Spec 4: CPU
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 64
-                        radius: root.rad(Nexa.Theme.radiusMd)
-                        color: Nexa.Theme.cardBackground
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
-
-                            Text {
-                                text: "󰍛"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 24
-                                color: Nexa.Theme.primary
-                            }
-
-                            Column {
-                                Layout.fillWidth: true
-                                spacing: 1
-
-                                StyledText { text: "Processor (CPU)"; font.pixelSize: 11; color: Nexa.Theme.mutedText }
-                                StyledText {
-                                    text: root.cpuInfo !== "" ? root.cpuInfo : "Multi-core Processor"
-                                    font.pixelSize: 12
-                                    font.weight: Font.Bold
-                                    color: Nexa.Theme.text
-                                    elide: Text.ElideRight
-                                    width: parent.width
+                                Text {
+                                    text: modelData.icon
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 24
+                                    color: modelData.color
                                 }
-                            }
-                        }
-                    }
 
-                    // Spec 5: Memory
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 64
-                        radius: root.rad(Nexa.Theme.radiusMd)
-                        color: Nexa.Theme.cardBackground
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
+                                Column {
+                                    Layout.fillWidth: true
+                                    spacing: 1
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
-
-                            Text {
-                                text: "󰘚"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 24
-                                color: Nexa.Theme.secondary
-                            }
-
-                            Column {
-                                Layout.fillWidth: true
-                                spacing: 1
-
-                                StyledText { text: "Memory Usage (RAM)"; font.pixelSize: 11; color: Nexa.Theme.mutedText }
-                                StyledText { text: root.memoryInfo !== "" ? root.memoryInfo : "RAM"; font.pixelSize: 13; font.weight: Font.Bold; color: Nexa.Theme.text }
-                            }
-                        }
-                    }
-
-                    // Spec 6: Shell
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 64
-                        radius: root.rad(Nexa.Theme.radiusMd)
-                        color: Nexa.Theme.cardBackground
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
-
-                            Text {
-                                text: "󰞷"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 24
-                                color: Nexa.Theme.tertiary
-                            }
-
-                            Column {
-                                Layout.fillWidth: true
-                                spacing: 1
-
-                                StyledText { text: "User Shell"; font.pixelSize: 11; color: Nexa.Theme.mutedText }
-                                StyledText { text: root.shellInfo !== "" ? ("/bin/" + root.shellInfo) : "/bin/bash"; font.pixelSize: 13; font.weight: Font.Bold; color: Nexa.Theme.text }
+                                    StyledText { text: modelData.title; font.pixelSize: 11; color: Nexa.Theme.mutedText }
+                                    StyledText {
+                                        text: modelData.value
+                                        font.pixelSize: modelData.bold
+                                        font.weight: Font.Bold
+                                        color: Nexa.Theme.text
+                                        elide: Text.ElideRight
+                                        width: parent.width
+                                    }
+                                }
                             }
                         }
                     }

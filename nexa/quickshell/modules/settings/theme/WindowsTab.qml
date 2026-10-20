@@ -9,8 +9,8 @@ RowLayout {
 
     spacing: 14
 
-    property int windowRounding: 10
-    property int windowBorderSize: 0
+    property int windowRounding: Nexa.Theme.windowRounding
+    property int windowBorderSize: Nexa.Theme.windowBorderSize
     property bool windowGlow: true
     property real windowDim: 0.0
 

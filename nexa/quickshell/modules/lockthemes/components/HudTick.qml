@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import "../../../colors"
+import "../../../theme/colors"
 
 // Accent stroke along a HUD piece's top-left chamfer (desktop theme); pairs
 // with HudMask using the same `cut`.

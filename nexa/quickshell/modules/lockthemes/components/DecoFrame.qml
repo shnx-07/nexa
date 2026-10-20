@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import "../../../colors"
+import "../../../theme/colors"
 import "../../../services" as Services
 
 // Art Deco frame for shell pieces under the desktop theme: a fill with every

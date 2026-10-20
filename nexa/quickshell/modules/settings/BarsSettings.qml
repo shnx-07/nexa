@@ -4,23 +4,21 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 import "../../services" as Services
 
 Item {
     id: root
-
     anchors.fill: parent
-
     signal requestClose()
 
-    // Status feedback
     property string toastText: ""
     property bool toastVisible: false
 
     function showToast(msg) {
-        toastText = msg;
-        toastVisible = true;
-        toastTimer.restart();
+        toastText = msg
+        toastVisible = true
+        toastTimer.restart()
     }
 
     Timer {
@@ -43,9 +41,7 @@ Item {
             width: parent.width
             spacing: 16
 
-            // ────────────────────────────────────────────────────────────
             // 1. HEADER
-            // ────────────────────────────────────────────────────────────
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
@@ -55,7 +51,6 @@ Item {
                     height: 44
                     radius: 22
                     color: Nexa.Theme.primaryContainer
-
                     Text {
                         anchors.centerIn: parent
                         text: "󰈺"
@@ -68,63 +63,33 @@ Item {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-
                     Text {
                         text: "Status Bar & Panels"
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 16
-                        font.weight: Font.Bold
+                        font.family: Nexa.Theme.fontFamily; font.pixelSize: 16; font.weight: Font.Bold
                         color: Nexa.Theme.text
                     }
-
                     Text {
                         text: "Position the bar on any screen edge, toggle intelligent auto-hide and customize widgets"
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 12
+                        font.family: Nexa.Theme.fontFamily; font.pixelSize: 12
                         color: Nexa.Theme.mutedText
                     }
                 }
 
-                Rectangle {
-                    width: resetTxt.implicitWidth + 20
-                    height: 32
-                    radius: 6
-                    color: rHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh
-                    border.width: 1
-                    border.color: Nexa.Theme.border
-
-                    Text {
-                        id: resetTxt
-                        anchors.centerIn: parent
-                        text: "Reset Defaults"
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                        color: Nexa.Theme.text
-                    }
-
-                    MouseArea {
-                        id: rHover
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            Services.BarConfig.resetDefaults();
-                            root.showToast("Bar settings reset to default");
-                        }
+                NexaUI.NexaButton {
+                    text: "Reset Defaults"
+                    icon: "󰁯"
+                    onClicked: {
+                        Services.BarConfig.resetDefaults()
+                        root.showToast("Bar settings reset to default")
                     }
                 }
             }
 
-            // ────────────────────────────────────────────────────────────
-            // 2. LIVE BAR VISUALIZER (Faithful to actual Nexa desktop bar)
-            // ────────────────────────────────────────────────────────────
-            Rectangle {
+            // 2. LIVE BAR VISUALIZER
+            NexaUI.NexaCard {
                 Layout.fillWidth: true
-                height: 120
-                radius: 12
+                implicitHeight: 120
                 color: "#0a0c10"
-                border.width: 1
-                border.color: Nexa.Theme.border
                 clip: true
 
                 Item {
@@ -138,9 +103,7 @@ Item {
 
                         Text {
                             text: "Bar Layout Preview (" + Services.BarConfig.position.toUpperCase() + (Services.BarConfig.autohide ? " · AUTO-HIDE ON" : "") + ")"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 11
-                            font.weight: Font.DemiBold
+                            font.family: Nexa.Theme.fontFamily; font.pixelSize: 11; font.weight: Font.DemiBold
                             color: Nexa.Theme.mutedText
                         }
 
@@ -155,13 +118,11 @@ Item {
 
                         Text {
                             text: Services.BarConfig.autohide ? "Hidden until edge hover" : "Fixed reserve zone"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 10
+                            font.family: Nexa.Theme.fontFamily; font.pixelSize: 10
                             color: Nexa.Theme.mutedText
                         }
                     }
 
-                    // Simulated Screen & Bar
                     Rectangle {
                         anchors.bottom: parent.bottom
                         anchors.left: parent.left
@@ -172,7 +133,6 @@ Item {
                         border.width: 1
                         border.color: "#232832"
 
-                        // The Mock Bar
                         Rectangle {
                             anchors.fill: parent
                             anchors.margins: 6
@@ -182,12 +142,9 @@ Item {
                                 anchors.fill: parent
                                 spacing: 8
 
-                                // Left: Workspaces Pill & Window Title Pill
                                 Row {
                                     visible: Services.BarConfig.showWorkspaces
                                     spacing: 6
-
-                                    // Workspaces Pill
                                     Rectangle {
                                         height: 32
                                         width: wsRow.implicitWidth + 14
@@ -195,120 +152,73 @@ Item {
                                         color: "#282326"
                                         border.width: 1
                                         border.color: "#3f373d"
-
                                         Row {
                                             id: wsRow
                                             anchors.centerIn: parent
                                             spacing: 6
-
                                             Rectangle { width: 18; height: 10; radius: 5; color: "#ffb4ab" }
                                             Rectangle { width: 8; height: 8; radius: 4; color: "#4a454e" }
                                             Rectangle { width: 8; height: 8; radius: 4; color: "#4a454e" }
                                             Rectangle { width: 8; height: 8; radius: 4; color: "#4a454e" }
                                         }
                                     }
+                                }
 
-                                    // Window Title Pill
-                                    Rectangle {
-                                        visible: Services.BarConfig.showTitle
-                                        height: 32
-                                        width: titleRow.implicitWidth + 16
-                                        radius: 16
-                                        color: "#282326"
-                                        border.width: 1
-                                        border.color: "#3f373d"
-
-                                        Row {
-                                            id: titleRow
-                                            anchors.centerIn: parent
-                                            spacing: 6
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "󰨞"
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: 13
-                                                color: "#007acc"
-                                            }
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "Visual Studio Code · Welcome"
-                                                font.family: Nexa.Theme.fontFamily
-                                                font.pixelSize: 11
-                                                color: "#e2e2e8"
-                                            }
-                                        }
+                                Rectangle {
+                                    visible: Services.BarConfig.showTitle
+                                    height: 32
+                                    width: 130
+                                    radius: 16
+                                    color: "#282326"
+                                    border.width: 1
+                                    border.color: "#3f373d"
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 6
+                                        Text { text: "󰣇"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 13; color: "#ffb4ab" }
+                                        Text { text: "Arch Linux"; font.family: Nexa.Theme.fontFamily; font.pixelSize: 11; font.weight: Font.Medium; color: "#e2e2e8" }
                                     }
                                 }
 
                                 Item { Layout.fillWidth: true }
 
-                                // Center: Dynamic Island Clock
                                 Rectangle {
                                     visible: Services.BarConfig.showIsland
                                     height: 32
                                     width: 110
                                     radius: 16
-                                    color: "#1c181a"
+                                    color: "#1d191b"
                                     border.width: 1
                                     border.color: "#3f373d"
-
                                     Row {
                                         anchors.centerIn: parent
-                                        spacing: 4
-
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: "02:32 AM"
-                                            font.family: Nexa.Theme.fontFamily
-                                            font.pixelSize: 11
-                                            font.weight: Font.DemiBold
-                                            color: "#e2e2e8"
-                                        }
+                                        spacing: 6
+                                        Rectangle { width: 6; height: 6; radius: 3; color: "#ffb4ab" }
+                                        Text { text: "NEXA Island"; font.family: Nexa.Theme.fontFamily; font.pixelSize: 11; font.weight: Font.Bold; color: "#ffb4ab" }
                                     }
                                 }
 
                                 Item { Layout.fillWidth: true }
 
-                                // Right: Status Pills
-                                Row {
+                                RowLayout {
                                     spacing: 6
 
-                                    // Battery Pill
                                     Rectangle {
                                         visible: Services.BarConfig.showBattery
                                         height: 32
-                                        width: batRow.implicitWidth + 14
+                                        width: 64
                                         radius: 16
                                         color: "#282326"
                                         border.width: 1
                                         border.color: "#3f373d"
-
                                         Row {
-                                            id: batRow
                                             anchors.centerIn: parent
-                                            spacing: 5
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "󰁹"
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: 12
-                                                color: "#27c93f"
-                                            }
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "100%"
-                                                font.family: Nexa.Theme.fontFamily
-                                                font.pixelSize: 11
-                                                color: "#e2e2e8"
-                                            }
+                                            spacing: 4
+                                            Text { text: "󱐋"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 12; color: "#27c93f" }
+                                            Text { text: "100%"; font.family: Nexa.Theme.fontFamily; font.pixelSize: 11; color: "#e2e2e8" }
                                         }
                                     }
 
-                                    // Connectivity Pill
                                     Rectangle {
                                         visible: Services.BarConfig.showTray
                                         height: 32
@@ -317,35 +227,13 @@ Item {
                                         color: "#282326"
                                         border.width: 1
                                         border.color: "#3f373d"
-
                                         Row {
                                             id: netRow
                                             anchors.centerIn: parent
                                             spacing: 8
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "󰖩"
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: 12
-                                                color: "#e2e2e8"
-                                            }
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "󰂯"
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: 12
-                                                color: "#e2e2e8"
-                                            }
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "󰐥"
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: 12
-                                                color: "#ff5f56"
-                                            }
+                                            Text { text: "󰖩"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 12; color: "#e2e2e8" }
+                                            Text { text: "󰂯"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 12; color: "#e2e2e8" }
+                                            Text { text: "󰐥"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 12; color: "#ff5f56" }
                                         }
                                     }
                                 }
@@ -355,37 +243,23 @@ Item {
                 }
             }
 
-            // ────────────────────────────────────────────────────────────
-            // 3. MOVE BAR: POSITION SELECTOR (Top, Bottom, Left, Right)
-            // ────────────────────────────────────────────────────────────
-            Rectangle {
+            // 3. MOVE BAR: POSITION SELECTOR
+            NexaUI.NexaCard {
                 Layout.fillWidth: true
-                height: posCol.implicitHeight + 32
-                radius: 12
-                color: Nexa.Theme.cardBackground
-                border.width: 1
-                border.color: Nexa.Theme.border
+                padding: 16
 
                 ColumnLayout {
-                    id: posCol
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.margins: 16
+                    anchors.fill: parent
                     spacing: 12
 
                     Text {
-                        text: "Move Bar Placement"
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 14
-                        font.weight: Font.Bold
+                        text: "Screen Position (Move Bar)"
+                        font.family: Nexa.Theme.fontFamily; font.pixelSize: 14; font.weight: Font.Bold
                         color: Nexa.Theme.text
                     }
-
                     Text {
                         text: "Choose which edge of the screen the status bar attaches to. Windows rearrange automatically."
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 12
+                        font.family: Nexa.Theme.fontFamily; font.pixelSize: 12
                         color: Nexa.Theme.mutedText
                     }
 
@@ -401,19 +275,16 @@ Item {
                                 { id: "right", label: "Right", icon: "󰈹", desc: "Vertical right sidebar" }
                             ]
 
-                            Rectangle {
-                                id: posCard
+                            NexaUI.NexaCard {
                                 required property var modelData
-                                readonly property bool isSelected: Services.BarConfig.position === modelData.id
-
                                 Layout.fillWidth: true
-                                height: 72
-                                radius: 8
-                                color: isSelected
-                                    ? Nexa.Theme.primaryContainer
-                                    : (posHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainer)
-                                border.width: isSelected ? 1.5 : 1
-                                border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+                                implicitHeight: 72
+                                interactive: true
+                                selected: Services.BarConfig.position === modelData.id
+                                onClicked: {
+                                    Services.BarConfig.setPosition(modelData.id)
+                                    root.showToast("Bar moved to " + modelData.label)
+                                }
 
                                 Column {
                                     anchors.centerIn: parent
@@ -422,42 +293,24 @@ Item {
                                     Row {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         spacing: 6
-
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: posCard.modelData.icon
-                                            font.family: Nexa.Theme.iconFontFamily
-                                            font.pixelSize: 16
-                                            color: posCard.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                            text: modelData.icon
+                                            font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 16
+                                            color: Services.BarConfig.position === modelData.id ? Nexa.Theme.primary : Nexa.Theme.text
                                         }
-
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: posCard.modelData.label
-                                            font.family: Nexa.Theme.fontFamily
-                                            font.pixelSize: 13
-                                            font.weight: posCard.isSelected ? Font.Bold : Font.Medium
-                                            color: posCard.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                            text: modelData.label
+                                            font.family: Nexa.Theme.fontFamily; font.pixelSize: 13; font.weight: Font.DemiBold
+                                            color: Services.BarConfig.position === modelData.id ? Nexa.Theme.primary : Nexa.Theme.text
                                         }
                                     }
-
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        text: posCard.modelData.desc
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: 10
-                                        color: posCard.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.mutedText
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: posHover
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        Services.BarConfig.setPosition(posCard.modelData.id);
-                                        root.showToast("Bar moved to " + posCard.modelData.label);
+                                        text: modelData.desc
+                                        font.family: Nexa.Theme.fontFamily; font.pixelSize: 10
+                                        color: Nexa.Theme.mutedText
                                     }
                                 }
                             }
@@ -466,174 +319,88 @@ Item {
                 }
             }
 
-            // ────────────────────────────────────────────────────────────
-            // 4. AUTOMATIC HIDE SECTION (Hyprland + Quickshell)
-            // ────────────────────────────────────────────────────────────
-            Rectangle {
+            // 4. AUTOMATIC HIDE SECTION
+            NexaUI.NexaCard {
                 Layout.fillWidth: true
-                height: hideCol.implicitHeight + 32
-                radius: 12
-                color: Nexa.Theme.cardBackground
-                border.width: 1
-                border.color: Nexa.Theme.border
+                padding: 16
 
-                ColumnLayout {
-                    id: hideCol
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.margins: 16
-                    spacing: 14
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 12
 
-                    RowLayout {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 12
+                        spacing: 3
 
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 3
-
-                            Text {
-                                text: "Automatic Hide (Intelligent Auto-Hide)"
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 14
-                                font.weight: Font.Bold
-                                color: Nexa.Theme.text
-                            }
-
-                            Text {
-                                text: "Hides the bar and unreserves screen space in Hyprland, giving your windows maximum workspace. The bar reveals smoothly when moving your mouse to the screen edge."
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 12
-                                color: Nexa.Theme.mutedText
-                                wrapMode: Text.WordWrap
-                                Layout.fillWidth: true
-                            }
+                        Text {
+                            text: "Automatic Hide (Intelligent Auto-Hide)"
+                            font.family: Nexa.Theme.fontFamily; font.pixelSize: 14; font.weight: Font.Bold
+                            color: Nexa.Theme.text
                         }
+                        Text {
+                            text: "Hides the bar and unreserves screen space in Hyprland, giving your windows maximum workspace. The bar reveals smoothly when moving your mouse to the screen edge."
+                            font.family: Nexa.Theme.fontFamily; font.pixelSize: 12
+                            color: Nexa.Theme.mutedText
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                        }
+                    }
 
-                        Switch {
-                            checked: Services.BarConfig.autohide
-                            onToggled: {
-                                Services.BarConfig.setAutohide(checked);
-                                root.showToast(checked ? "Auto-hide enabled" : "Auto-hide disabled");
-                            }
+                    NexaUI.NexaToggle {
+                        checked: Services.BarConfig.autohide
+                        onToggled: isChecked => {
+                            Services.BarConfig.setAutohide(isChecked)
+                            root.showToast(isChecked ? "Auto-hide enabled" : "Auto-hide disabled")
                         }
                     }
                 }
             }
 
-            // ────────────────────────────────────────────────────────────
             // 5. COMPONENT VISIBILITY TOGGLES
-            // ────────────────────────────────────────────────────────────
-            Rectangle {
+            NexaUI.NexaCard {
                 Layout.fillWidth: true
-                height: compCol.implicitHeight + 32
-                radius: 12
-                color: Nexa.Theme.cardBackground
-                border.width: 1
-                border.color: Nexa.Theme.border
+                padding: 16
 
                 ColumnLayout {
-                    id: compCol
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.margins: 16
+                    anchors.fill: parent
                     spacing: 12
 
                     Text {
                         text: "Components & Widgets"
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 14
-                        font.weight: Font.Bold
+                        font.family: Nexa.Theme.fontFamily; font.pixelSize: 14; font.weight: Font.Bold
                         color: Nexa.Theme.text
                     }
 
-                    // Workspaces Pager
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Text {
-                            text: "Workspaces Pill"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 13
-                            color: Nexa.Theme.text
-                        }
-                        Item { Layout.fillWidth: true }
-                        Switch {
-                            checked: Services.BarConfig.showWorkspaces
-                            onToggled: Services.BarConfig.toggleComponent("workspaces")
-                        }
-                    }
+                    Repeater {
+                        model: [
+                            { label: "Workspaces Pill", id: "workspaces", getVal: () => Services.BarConfig.showWorkspaces },
+                            { label: "Active Application Title", id: "title", getVal: () => Services.BarConfig.showTitle },
+                            { label: "Dynamic Island Center Trigger", id: "island", getVal: () => Services.BarConfig.showIsland },
+                            { label: "Battery Status Pill", id: "battery", getVal: () => Services.BarConfig.showBattery },
+                            { label: "Connectivity & System Controls", id: "tray", getVal: () => Services.BarConfig.showTray }
+                        ]
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Nexa.Theme.border }
+                        ColumnLayout {
+                            required property var modelData
+                            required property int index
+                            Layout.fillWidth: true
+                            spacing: 8
 
-                    // Window Title
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Text {
-                            text: "Active Application Title"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 13
-                            color: Nexa.Theme.text
-                        }
-                        Item { Layout.fillWidth: true }
-                        Switch {
-                            checked: Services.BarConfig.showTitle
-                            onToggled: Services.BarConfig.toggleComponent("title")
-                        }
-                    }
+                            Rectangle { Layout.fillWidth: true; height: 1; color: Nexa.Theme.border; visible: index > 0 }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Nexa.Theme.border }
-
-                    // Dynamic Island Center
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Text {
-                            text: "Dynamic Island Center Trigger"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 13
-                            color: Nexa.Theme.text
-                        }
-                        Item { Layout.fillWidth: true }
-                        Switch {
-                            checked: Services.BarConfig.showIsland
-                            onToggled: Services.BarConfig.toggleComponent("island")
-                        }
-                    }
-
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Nexa.Theme.border }
-
-                    // Battery Indicator
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Text {
-                            text: "Battery Status Pill"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 13
-                            color: Nexa.Theme.text
-                        }
-                        Item { Layout.fillWidth: true }
-                        Switch {
-                            checked: Services.BarConfig.showBattery
-                            onToggled: Services.BarConfig.toggleComponent("battery")
-                        }
-                    }
-
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Nexa.Theme.border }
-
-                    // Connectivity (WiFi / Bluetooth / Power)
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Text {
-                            text: "Connectivity & System Controls"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 13
-                            color: Nexa.Theme.text
-                        }
-                        Item { Layout.fillWidth: true }
-                        Switch {
-                            checked: Services.BarConfig.showTray
-                            onToggled: Services.BarConfig.toggleComponent("tray")
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Text {
+                                    text: modelData.label
+                                    font.family: Nexa.Theme.fontFamily; font.pixelSize: 13
+                                    color: Nexa.Theme.text
+                                }
+                                Item { Layout.fillWidth: true }
+                                NexaUI.NexaToggle {
+                                    checked: modelData.getVal()
+                                    onToggled: Services.BarConfig.toggleComponent(modelData.id)
+                                }
+                            }
                         }
                     }
                 }
@@ -641,9 +408,7 @@ Item {
         }
     }
 
-    // ────────────────────────────────────────────────────────────
     // TOAST NOTIFICATION
-    // ────────────────────────────────────────────────────────────
     Rectangle {
         id: toast
         anchors.bottom: parent.bottom
@@ -658,29 +423,22 @@ Item {
         visible: root.toastVisible
         opacity: root.toastVisible ? 1.0 : 0.0
 
-        Behavior on opacity {
-            NumberAnimation { duration: 200 }
-        }
+        Behavior on opacity { NumberAnimation { duration: 200 } }
 
         Row {
             id: toastRow
             anchors.centerIn: parent
             spacing: 8
-
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "󰄬"
-                font.family: Nexa.Theme.iconFontFamily
-                font.pixelSize: 14
+                font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 14
                 color: Nexa.Theme.primary
             }
-
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.toastText
-                font.family: Nexa.Theme.fontFamily
-                font.pixelSize: 12
-                font.weight: Font.Medium
+                font.family: Nexa.Theme.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                 color: Nexa.Theme.text
             }
         }

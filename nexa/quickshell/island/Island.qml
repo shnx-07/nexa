@@ -8,13 +8,10 @@ import Quickshell.Networking
 
 import "../theme" as Nexa
 
-
 PanelWindow {
     id: root
 
-
-    readonly property bool notificationActive:
-        islandContent.notificationActive
+    readonly property bool notificationActive: islandContent.notificationActive
     property bool notificationEventInitialized: false
 
     // ============================================================
@@ -35,7 +32,6 @@ PanelWindow {
     // Clock / music / system / theme / notifications etc.
     // belong in IslandContent.qml or reusable modules.
     // ============================================================
-
 
     // ============================================================
     // WINDOW / WAYLAND SURFACE
@@ -71,7 +67,6 @@ PanelWindow {
     // Keyboard input is only accepted while the full Island is open.
     focusable: root.full || root.specialModeActive
 
-
     // ============================================================
     // STATE
     // ============================================================
@@ -82,20 +77,15 @@ PanelWindow {
     // True while the Theme section has a dropdown popup open.
     // Suppresses the outside-click close so the user can browse
     // presets without the Island collapsing.
-    readonly property bool themePopupOpen:
-        islandContent.themePopupOpen
-
+    readonly property bool themePopupOpen: islandContent.themePopupOpen
 
     // ============================================================
     // SIZE CONSTANTS
     // ============================================================
 
-    readonly property int compactWidth:
-        Nexa.Theme.islandCompactWidth
+    readonly property int compactWidth: Nexa.Theme.islandCompactWidth
 
-    readonly property int compactHeight:
-        Nexa.Theme.islandCompactHeight
-
+    readonly property int compactHeight: Nexa.Theme.islandCompactHeight
 
     // ============================================================
     // PERSISTENT CONTEXT SIZE
@@ -113,8 +103,7 @@ PanelWindow {
 
     readonly property int contextWidth: 420
 
-    readonly property int contextHeight:
-        root.compactHeight
+    readonly property int contextHeight: root.compactHeight
 
     // Confirmed hover dimensions.
     readonly property int hoverWidth: {
@@ -123,7 +112,6 @@ PanelWindow {
         return 420
     }
     readonly property int hoverHeight: 102
-
 
     // Confirmed full dimensions.
     readonly property int fullWidth: 720
@@ -321,7 +309,7 @@ PanelWindow {
         }
     }
 
-    function triggerVolumeUp(): void {
+    function triggerVolumeUp() {
         if (root.full || root.specialModeActive) return
         root.osdType = "volume"
         root.osdMuted = false
@@ -332,7 +320,7 @@ PanelWindow {
         volumeSyncTimer.restart()
     }
 
-    function triggerVolumeDown(): void {
+    function triggerVolumeDown() {
         if (root.full || root.specialModeActive) return
         root.osdType = "volume"
         root.osdValue = Math.max(0.0, root.osdValue - 0.05)
@@ -342,7 +330,7 @@ PanelWindow {
         volumeSyncTimer.restart()
     }
 
-    function triggerToggleMute(): void {
+    function triggerToggleMute() {
         if (root.full || root.specialModeActive) return
         root.osdType = "mute"
         root.osdMuted = !root.osdMuted
@@ -352,7 +340,7 @@ PanelWindow {
         volumeSyncTimer.restart()
     }
 
-    function triggerBrightnessUp(): void {
+    function triggerBrightnessUp() {
         if (root.full || root.specialModeActive) return
         root.osdType = "brightness"
         root.osdValue = Math.min(1.0, root.osdValue + 0.05)
@@ -362,7 +350,7 @@ PanelWindow {
         brightnessSyncTimer.restart()
     }
 
-    function triggerBrightnessDown(): void {
+    function triggerBrightnessDown() {
         if (root.full || root.specialModeActive) return
         root.osdType = "brightness"
         root.osdValue = Math.max(0.01, root.osdValue - 0.05)
@@ -401,7 +389,7 @@ PanelWindow {
         }
     }
 
-    function triggerToggleMicMute(): void {
+    function triggerToggleMicMute() {
         if (root.full || root.specialModeActive) return
         root.osdType = "mic"
         root.osdMicMuted = !root.osdMicMuted
@@ -412,7 +400,7 @@ PanelWindow {
         micSyncTimer.restart()
     }
 
-    function triggerToggleAirplane(): void {
+    function triggerToggleAirplane() {
         if (root.full || root.specialModeActive) return
         root.osdType = "airplane"
         root.osdAirplaneEnabled = !root.osdAirplaneEnabled
@@ -431,7 +419,7 @@ PanelWindow {
     property bool batteryInitialized: false
     property bool lowBatteryWarned: false
 
-    function triggerBatteryOsd(charging: bool, pct: int): void {
+    function triggerBatteryOsd(charging: bool, pct: int) {
         if (root.full || root.specialModeActive) return
         root.osdType = "battery"
         root.osdBatteryCharging = charging
@@ -443,7 +431,7 @@ PanelWindow {
         osdDismissTimer.restart()
     }
 
-    function triggerLowBatteryAlert(pct: int): void {
+    function triggerLowBatteryAlert(pct: int) {
         if (root.full || root.specialModeActive) return
         root.osdType = "battery_low"
         root.osdBatteryCharging = false
@@ -455,7 +443,7 @@ PanelWindow {
         osdDismissTimer.restart()
     }
 
-    function checkBatteryLevel(): void {
+    function checkBatteryLevel() {
         if (!root.batteryInitialized || !root.batteryReady) return
         const pct = Math.round(batteryDevice.percentage * 100)
 
@@ -469,7 +457,7 @@ PanelWindow {
         }
     }
 
-    function applyPowerState(onBat: bool): void {
+    function applyPowerState(onBat) {
         if (onBat) {
             Quickshell.execDetached(["powerprofilesctl", "set", "power-saver"])
             Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false } } })"])
@@ -517,7 +505,6 @@ PanelWindow {
         }
     }
 
-
     // ============================================================
     // BLUETOOTH DEVICE CONNECTION WATCHER
     // ============================================================
@@ -560,7 +547,7 @@ PanelWindow {
         }
     }
 
-    function triggerBluetoothOsd(device: var): void {
+    function triggerBluetoothOsd(device) {
         if (!device || root.full || root.specialModeActive) return
         root.osdType = "bluetooth"
         root.osdTitle = (device.name && device.name.length > 0) ? device.name : "Bluetooth Device"
@@ -599,8 +586,7 @@ PanelWindow {
         return null
     }
 
-    readonly property bool wifiConnected:
-        wifiDevice !== null && wifiDevice.connected
+    readonly property bool wifiConnected: wifiDevice !== null && wifiDevice.connected
 
     property bool wifiWasConnected: false
     property bool wifiWatcherReady: false
@@ -673,7 +659,7 @@ PanelWindow {
         root.wifiWasConnected = wifiConnected
     }
 
-    function triggerWifiOsd(ssid: string, strength: int, hasInternet: bool): void {
+    function triggerWifiOsd(ssid: string, strength: int, hasInternet: bool) {
         if (root.full || root.specialModeActive) return
         root.osdType = "wifi"
         root.osdTitle = (ssid && ssid.length > 0) ? ssid : "Wi-Fi Network"
@@ -688,7 +674,7 @@ PanelWindow {
     // KEYBOARD LOCK (CAPS LOCK / NUM LOCK) WATCHER
     // ============================================================
 
-    function triggerCapsLockOsd(enabled: bool): void {
+    function triggerCapsLockOsd(enabled: bool) {
         if (root.full || root.specialModeActive) return
         root.osdType = "capslock"
         root.osdTitle = "Caps Lock"
@@ -697,7 +683,7 @@ PanelWindow {
         osdDismissTimer.restart()
     }
 
-    function triggerNumLockOsd(enabled: bool): void {
+    function triggerNumLockOsd(enabled: bool) {
         if (root.full || root.specialModeActive) return
         root.osdType = "numlock"
         root.osdTitle = "Num Lock"
@@ -732,10 +718,9 @@ PanelWindow {
     property string specialMode: "none"
     // none | search | command | power | appLauncher | controlCenter
 
-    readonly property bool specialModeActive:
-        specialMode !== "none"
+    readonly property bool specialModeActive: specialMode !== "none"
 
-    function enterSpecialMode(mode: string): void {
+    function enterSpecialMode(mode) {
         root.osdActive = false
         root.osdType = "none"
         osdDismissTimer.stop()
@@ -748,14 +733,14 @@ PanelWindow {
         islandFocus.forceActiveFocus()
     }
 
-    function openControlCenter(page: int): void {
+    function openControlCenter(page: int) {
         root.enterSpecialMode("controlCenter")
         if (page !== undefined && page >= 0) {
             islandContent.setControlCenterPage(page)
         }
     }
 
-    function toggleControlCenter(): void {
+    function toggleControlCenter() {
         if (root.specialMode === "controlCenter") {
             root.closeIsland()
         } else {
@@ -763,11 +748,11 @@ PanelWindow {
         }
     }
 
-    function openShelf(): void {
+    function openShelf() {
         root.enterSpecialMode("shelf")
     }
 
-    function toggleShelf(): void {
+    function toggleShelf() {
         if (root.specialMode === "shelf") {
             root.closeIsland()
         } else {
@@ -775,11 +760,11 @@ PanelWindow {
         }
     }
 
-    function openQuickSettings(): void {
+    function openQuickSettings() {
         root.openControlCenter(0)
     }
 
-    function openNotifications(): void {
+    function openNotifications() {
         root.openControlCenter(1)
         Quickshell.execDetached([
             Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
@@ -791,23 +776,23 @@ PanelWindow {
     IpcHandler {
         target: "nexaIsland"
 
-        function triggerCapsLockOsd(enabled: bool): void {
+        function triggerCapsLockOsd(enabled: bool) {
             root.triggerCapsLockOsd(enabled)
         }
 
-        function triggerNumLockOsd(enabled: bool): void {
+        function triggerNumLockOsd(enabled: bool) {
             root.triggerNumLockOsd(enabled)
         }
 
-        function triggerBatteryOsd(charging: bool, pct: int): void {
+        function triggerBatteryOsd(charging: bool, pct: int) {
             root.triggerBatteryOsd(charging, pct)
         }
 
-        function triggerLowBatteryAlert(pct: int): void {
+        function triggerLowBatteryAlert(pct: int) {
             root.triggerLowBatteryAlert(pct || 22)
         }
 
-        function triggerBluetoothOsd(name: string, icon: string): void {
+        function triggerBluetoothOsd(name: string, icon: string) {
             root.triggerBluetoothOsd({
                 name: name || "AirPods Pro",
                 icon: icon || "audio-headset",
@@ -816,51 +801,51 @@ PanelWindow {
             })
         }
 
-        function triggerWifiOsd(ssid: string, strength: int, hasInternet: bool): void {
+        function triggerWifiOsd(ssid: string, strength: int, hasInternet: bool) {
             root.triggerWifiOsd(ssid || "Home_5G", strength || 92, hasInternet !== false)
         }
 
-        function volumeUp(): void {
+        function volumeUp() {
             root.triggerVolumeUp()
         }
 
-        function volumeDown(): void {
+        function volumeDown() {
             root.triggerVolumeDown()
         }
 
-        function toggleMute(): void {
+        function toggleMute() {
             root.triggerToggleMute()
         }
 
-        function toggleMicMute(): void {
+        function toggleMicMute() {
             root.triggerToggleMicMute()
         }
 
-        function brightnessUp(): void {
+        function brightnessUp() {
             root.triggerBrightnessUp()
         }
 
-        function brightnessDown(): void {
+        function brightnessDown() {
             root.triggerBrightnessDown()
         }
 
-        function toggleAirplane(): void {
+        function toggleAirplane() {
             root.triggerToggleAirplane()
         }
 
-        function openSearch(): void {
+        function openSearch() {
             root.enterSpecialMode("search")
         }
 
-        function openCommand(): void {
+        function openCommand() {
             root.enterSpecialMode("command")
         }
 
-        function openPower(): void {
+        function openPower() {
             root.enterSpecialMode("power")
         }
 
-        function togglePower(): void {
+        function togglePower() {
             if (root.specialMode === "power") {
                 root.closeIsland()
             } else {
@@ -868,11 +853,11 @@ PanelWindow {
             }
         }
 
-        function openAppLauncher(): void {
+        function openAppLauncher() {
             root.enterSpecialMode("appLauncher")
         }
 
-        function toggleAppLauncher(): void {
+        function toggleAppLauncher() {
             if (root.specialMode === "appLauncher") {
                 root.closeIsland()
             } else {
@@ -880,14 +865,14 @@ PanelWindow {
             }
         }
 
-        function openControlCenter(page: int): void {
+        function openControlCenter(page: int) {
             root.enterSpecialMode("controlCenter")
             if (page !== undefined && page >= 0) {
                 islandContent.setControlCenterPage(page)
             }
         }
 
-        function toggleControlCenter(): void {
+        function toggleControlCenter() {
             if (root.specialMode === "controlCenter") {
                 root.closeIsland()
             } else {
@@ -895,7 +880,7 @@ PanelWindow {
             }
         }
 
-        function openNotifications(): void {
+        function openNotifications() {
             root.openControlCenter(1)
             Quickshell.execDetached([
                 Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
@@ -904,22 +889,22 @@ PanelWindow {
             ])
         }
 
-        function openQuickSettings(): void {
+        function openQuickSettings() {
             root.openControlCenter(0)
         }
 
-        function openFullSection(name: string): void {
+        function openFullSection(name: string) {
             islandContent.section = name || "music"
             root.full = true
             root.hovered = false
             islandFocus.forceActiveFocus()
         }
 
-        function refreshRecorder(): void {
+        function refreshRecorder() {
             islandContent.refreshRecorder()
         }
 
-        function close(): void {
+        function close() {
             root.closeIsland()
         }
     }
@@ -927,7 +912,7 @@ PanelWindow {
     IpcHandler {
         target: "appLauncher"
 
-        function open(): void {
+        function open() {
             root.specialMode = "appLauncher"
             root.full = true
             root.hovered = false
@@ -935,12 +920,12 @@ PanelWindow {
             islandFocus.forceActiveFocus()
         }
 
-        function close(): void {
+        function close() {
             if (root.specialMode === "appLauncher")
                 root.closeIsland()
         }
 
-        function toggle(): void {
+        function toggle() {
             if (root.specialMode === "appLauncher") {
                 root.closeIsland()
             } else {
@@ -956,24 +941,24 @@ PanelWindow {
     IpcHandler {
         target: "controlCenter"
 
-        function open(): void {
+        function open() {
             root.openControlCenter(0)
         }
 
-        function close(): void {
+        function close() {
             if (root.specialMode === "controlCenter")
                 root.closeIsland()
         }
 
-        function toggle(): void {
+        function toggle() {
             root.toggleControlCenter()
         }
 
-        function openNotifications(): void {
+        function openNotifications() {
             root.openNotifications()
         }
 
-        function openQuickSettings(): void {
+        function openQuickSettings() {
             root.openQuickSettings()
         }
     }
@@ -981,24 +966,24 @@ PanelWindow {
     IpcHandler {
         target: "sidePanel"
 
-        function toggle(): void {
+        function toggle() {
             root.toggleControlCenter()
         }
 
-        function open(): void {
+        function open() {
             root.openControlCenter(0)
         }
 
-        function close(): void {
+        function close() {
             if (root.specialMode === "controlCenter")
                 root.closeIsland()
         }
 
-        function openNotifications(): void {
+        function openNotifications() {
             root.openNotifications()
         }
 
-        function openQuickSettings(): void {
+        function openQuickSettings() {
             root.openQuickSettings()
         }
     }
@@ -1006,20 +991,19 @@ PanelWindow {
     IpcHandler {
         target: "fileShelf"
 
-        function open(): void {
+        function open() {
             root.openShelf()
         }
 
-        function close(): void {
+        function close() {
             if (root.specialMode === "shelf")
                 root.closeIsland()
         }
 
-        function toggle(): void {
+        function toggle() {
             root.toggleShelf()
         }
     }
-
 
     // ============================================================
     // CONTENT-DERIVED STATE
@@ -1031,9 +1015,7 @@ PanelWindow {
     // Later media / recorder / timer can use the same concept.
     // ============================================================
 
-    readonly property bool persistentContext:
-        islandContent.persistentContext
-
+    readonly property bool persistentContext: islandContent.persistentContext
 
     
 
@@ -1141,7 +1123,6 @@ PanelWindow {
         return root.compactHeight
     }
 
-
     // ============================================================
     // ACTIONS
     // ============================================================
@@ -1150,12 +1131,10 @@ PanelWindow {
         if (root.full)
             return
 
-
         // Ask content which section makes sense for the
         // currently visible context.
         islandContent.section =
             islandContent.preferredFullSection()
-
 
         root.full = true
         root.hovered = false
@@ -1167,7 +1146,6 @@ PanelWindow {
             islandContent.section
         )
     }
-
 
     function closeFull() {
         if (!root.full)
@@ -1201,7 +1179,6 @@ PanelWindow {
         item: island
     }
 
-
     // ============================================================
     // OUTSIDE CLICK
     //
@@ -1229,7 +1206,6 @@ PanelWindow {
         }
     }
 
-
     // ============================================================
     // VISIBLE ISLAND SURFACE
     // ============================================================
@@ -1246,7 +1222,6 @@ PanelWindow {
         height: root.targetHeight
         clip: true
 
-
         // --------------------------------------------------------
         // SHAPE
         // --------------------------------------------------------
@@ -1261,13 +1236,11 @@ PanelWindow {
              ? Nexa.Theme.radiusLg
              : (root.osdActive ? Math.round(targetHeight / 2) : Nexa.Theme.radiusPill))
 
-
         // --------------------------------------------------------
         // SURFACE COLOR
         // --------------------------------------------------------
 
-        color:
-          root.full
+        color: root.full
           || root.specialModeActive
           || root.hovered
           || root.notificationActive
@@ -1275,17 +1248,14 @@ PanelWindow {
           ? Nexa.Theme.islandBackgroundExpanded
           : Nexa.Theme.islandBackground
 
-
         border.width: 0
 
-        border.color:
-          root.full
+        border.color: root.full
           || root.hovered
           || root.notificationActive
           || root.osdActive
           ? Nexa.Theme.borderStrong
           : Nexa.Theme.border
-
 
         // ========================================================
         // VISUAL ANIMATION
@@ -1301,14 +1271,12 @@ PanelWindow {
             }
         }
 
-
         Behavior on height {
             NumberAnimation {
                 duration: Nexa.Theme.animationNormal
                 easing.type: Nexa.Theme.easingDecelerate
             }
         }
-
 
         Behavior on radius {
             NumberAnimation {
@@ -1317,7 +1285,6 @@ PanelWindow {
             }
         }
 
-
         Behavior on color {
             ColorAnimation {
                 duration: Nexa.Theme.animationFast
@@ -1325,14 +1292,12 @@ PanelWindow {
             }
         }
 
-
         Behavior on border.color {
             ColorAnimation {
                 duration: Nexa.Theme.animationFast
                 easing.type: Easing.OutCubic
             }
         }
-
 
         // ========================================================
         // HOVER DETECTION
@@ -1365,7 +1330,6 @@ PanelWindow {
                 )
             }
         }
-
 
         // ========================================================
         // BACKGROUND OPEN AREA
@@ -1450,7 +1414,6 @@ PanelWindow {
             }
         }
 
-
         // ========================================================
         // CONTENT + KEYBOARD FOCUS
         // ========================================================
@@ -1496,7 +1459,6 @@ PanelWindow {
                 }
             }
 
-
             // ----------------------------------------------------
             // ACTUAL ISLAND CONTENT
             // ----------------------------------------------------
@@ -1504,54 +1466,37 @@ PanelWindow {
             IslandContent {
               id: islandContent
 
-              anchors.fill:
-                  parent
+              anchors.fill: parent
 
-              hovered:
-                  root.hovered
+              hovered: root.hovered
 
-              full:
-                  root.full
+              full: root.full
 
-              specialMode:
-                  root.specialMode
+              specialMode: root.specialMode
 
-              osdActive:
-                  root.osdActive
+              osdActive: root.osdActive
 
-              osdType:
-                  root.osdType
+              osdType: root.osdType
 
-              osdValue:
-                  root.osdValue
+              osdValue: root.osdValue
 
-              osdMuted:
-                  root.osdMuted
+              osdMuted: root.osdMuted
 
-              osdAirplaneEnabled:
-                  root.osdAirplaneEnabled
+              osdAirplaneEnabled: root.osdAirplaneEnabled
 
-              osdTitle:
-                  root.osdTitle
+              osdTitle: root.osdTitle
 
-              osdSubtitle:
-                  root.osdSubtitle
+              osdSubtitle: root.osdSubtitle
 
-              osdIcon:
-                  root.osdIcon
+              osdIcon: root.osdIcon
 
-              osdBatteryCharging:
-                  root.osdBatteryCharging
+              osdBatteryCharging: root.osdBatteryCharging
 
-              osdHasInternet:
-                  root.osdHasInternet
+              osdHasInternet: root.osdHasInternet
 
-              osdLockEnabled:
-                  root.osdLockEnabled
+              osdLockEnabled: root.osdLockEnabled
 
-              onRequestCloseSpecialMode:
-                  root.closeIsland()
-
+              onRequestCloseSpecialMode: root.closeIsland()
 
               onNotificationPreviewActivated: {
                   Quickshell.execDetached([

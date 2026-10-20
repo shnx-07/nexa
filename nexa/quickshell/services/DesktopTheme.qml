@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 import QtQuick
-import "../colors"
+import "../theme/colors"
 
 // Desktop themes: one coordinated look across the rice, still coloured by
 // the wallpaper. A theme touches three layers:

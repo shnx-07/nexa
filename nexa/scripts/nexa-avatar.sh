@@ -2,7 +2,7 @@
 # NEXA Avatar Manager
 # Allows quick switching and previewing of lockscreen profile pictures.
 
-AVATARS_DIR="$HOME/.config/nexa/avatars"
+AVATARS_DIR="$HOME/.config/nexa/config/avatars"
 CONFIG_DIR="$HOME/.config/nexa"
 
 case "$1" in

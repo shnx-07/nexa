@@ -1,52 +1,24 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-
 import Quickshell
 import Quickshell.Io
-
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
 
-
 Item {
     id: root
-
-    // ============================================================
-    // RESPONSIBILITY
-    //
-    // Dynamic Island-Native NEXA Application Launcher:
-    // - Full 760x620 workspace dimensions
-    // - Instant search & categorized filtering
-    // - IPC target for 'appLauncher' and keyboard shortcuts
-    // ============================================================
 
     signal requestClose()
     signal requestOpen()
 
     property bool loading: false
-
-    // ============================================================
-    // DATA
-    // ============================================================
-
     property var categories: []
     property var visibleApps: []
-
     property string selectedCategoryId: "all"
     property string selectedCategoryName: "All"
 
-    // ============================================================
-    // BACKEND
-    // ============================================================
-
-    readonly property string nexadPath:
-        Quickshell.env("HOME")
-        + "/.config/nexa/rust/target/release/nexad"
-
-    // ============================================================
-    // PUBLIC ACTIVATION & FOCUS
-    // ============================================================
+    readonly property string nexadPath: Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
 
     function activate() {
         selectedCategoryId = "all"
@@ -55,115 +27,54 @@ Item {
         categories = []
         searchInput.text = ""
         loading = true
-
-        listProcess.exec([
-            nexadPath,
-            "appLauncher",
-            "list"
-        ])
-
-        Qt.callLater(function() {
-            searchInput.forceActiveFocus()
-        })
+        listProcess.exec([nexadPath, "appLauncher", "list"])
+        Qt.callLater(() => searchInput.forceActiveFocus())
     }
 
-    onVisibleChanged: {
-        if (visible) {
-            activate()
-        }
-    }
-
-    // ============================================================
-    // CATEGORY ICONS
-    // ============================================================
+    onVisibleChanged: { if (visible) activate() }
 
     function categoryIcon(id, name) {
-        const key = (id || name || "").toLowerCase()
-
-        switch (key) {
-        case "all":
-            return "󰀻"
-        case "development":
-            return "󰅨"
-        case "internet":
-            return "󰖩"
-        case "media":
-            return "󰐊"
-        case "graphics":
-            return "󰏘"
-        case "office":
-            return "󰈙"
-        case "games":
-            return "󰊗"
-        case "system":
-            return "󰒓"
-        case "utilities":
-            return "󰒑"
-        case "education":
-            return "󰑴"
-        case "science":
-            return "󰙨"
-        default:
-            return "󰘔"
+        const icons = {
+            "all": "󰀻", "development": "󰅨", "internet": "󰖩", "media": "󰐊",
+            "graphics": "󰏘", "office": "󰈙", "games": "󰊗", "system": "󰒓",
+            "utilities": "󰒑", "education": "󰑴", "science": "󰙨"
         }
+        return icons[(id || name || "").toLowerCase()] || "󰘔"
     }
-
-    // ============================================================
-    // APP DESCRIPTION
-    // ============================================================
 
     function appDescription(app) {
         if (!app) return ""
-        if (app.generic_name && app.generic_name.length > 0) return app.generic_name
-        if (app.comment && app.comment.length > 0) return app.comment
-        if (app.category_name) return app.category_name
-        return ""
+        return app.generic_name || app.comment || app.category_name || ""
     }
-
-    // ============================================================
-    // CATEGORY SELECTION
-    // ============================================================
 
     function selectCategory(category) {
         if (!category) return
         searchDebounce.stop()
         searchInput.text = ""
-
         selectedCategoryId = category.id
         selectedCategoryName = category.name
-
         visibleApps = category.apps || []
         appGrid.currentIndex = 0
         appGrid.positionViewAtBeginning()
     }
 
     function restoreSelectedCategory() {
-        if (!categories || categories.length === 0) {
-            visibleApps = []
-            return
-        }
-
+        if (!categories || categories.length === 0) { visibleApps = []; return }
         for (let i = 0; i < categories.length; ++i) {
-            const category = categories[i]
-            if (category.id === selectedCategoryId) {
-                selectedCategoryName = category.name
-                visibleApps = category.apps || []
+            if (categories[i].id === selectedCategoryId) {
+                selectedCategoryName = categories[i].name
+                visibleApps = categories[i].apps || []
                 appGrid.currentIndex = 0
                 appGrid.positionViewAtBeginning()
                 return
             }
         }
-
         selectedCategoryId = "all"
         selectedCategoryName = "All"
         visibleApps = categories[0].apps || []
         appGrid.currentIndex = 0
         appGrid.positionViewAtBeginning()
     }
-
-    // ============================================================
-    // SEARCH
-    // ============================================================
 
     function requestSearch(query) {
         const trimmed = query.trim()
@@ -172,38 +83,18 @@ Item {
             loading = false
             return
         }
-
         loading = true
-        searchProcess.exec([
-            nexadPath,
-            "appLauncher",
-            "search",
-            trimmed
-        ])
+        searchProcess.exec([nexadPath, "appLauncher", "search", trimmed])
     }
-
-    // ============================================================
-    // LAUNCH
-    // ============================================================
 
     function launchApplication(app) {
         if (!app || !app.id) return
-        launchProcess.exec([
-            nexadPath,
-            "appLauncher",
-            "launch",
-            app.id
-        ])
+        launchProcess.exec([nexadPath, "appLauncher", "launch", app.id])
         root.requestClose()
     }
 
-    // ============================================================
-    // LIST PROCESS
-    // ============================================================
-
     Process {
         id: listProcess
-
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -211,37 +102,22 @@ Item {
                     root.categories = payload.categories || []
                     root.selectedCategoryId = "all"
                     root.selectedCategoryName = "All"
-
-                    if (root.categories.length > 0) {
-                        root.visibleApps = root.categories[0].apps || []
-                    } else {
-                        root.visibleApps = []
-                    }
-                } catch (error) {
-                    console.error("[AppLauncherIsland:list]", error)
+                    root.visibleApps = (root.categories.length > 0) ? (root.categories[0].apps || []) : []
+                } catch (e) {
+                    console.error("[AppLauncherIsland:list]", e)
                     root.categories = []
                     root.visibleApps = []
                 }
                 root.loading = false
             }
         }
-
         stderr: StdioCollector {
-            onStreamFinished: {
-                const text = this.text.trim()
-                if (text.length > 0)
-                    console.error("[AppLauncherIsland:list]", text)
-            }
+            onStreamFinished: { if (this.text.trim()) console.error("[AppLauncherIsland:list]", this.text.trim()) }
         }
     }
 
-    // ============================================================
-    // SEARCH PROCESS
-    // ============================================================
-
     Process {
         id: searchProcess
-
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -253,36 +129,22 @@ Item {
                         appGrid.currentIndex = 0
                         appGrid.positionViewAtBeginning()
                     }
-                } catch (error) {
-                    console.error("[AppLauncherIsland:search]", error)
+                } catch (e) {
+                    console.error("[AppLauncherIsland:search]", e)
                     root.visibleApps = []
                 }
                 root.loading = false
             }
         }
-
         stderr: StdioCollector {
-            onStreamFinished: {
-                const text = this.text.trim()
-                if (text.length > 0)
-                    console.error("[AppLauncherIsland:search]", text)
-            }
+            onStreamFinished: { if (this.text.trim()) console.error("[AppLauncherIsland:search]", this.text.trim()) }
         }
     }
 
-    // ============================================================
-    // LAUNCH PROCESS
-    // ============================================================
-
     Process {
         id: launchProcess
-
         stderr: StdioCollector {
-            onStreamFinished: {
-                const text = this.text.trim()
-                if (text.length > 0)
-                    console.error("[AppLauncherIsland:launch]", text)
-            }
+            onStreamFinished: { if (this.text.trim()) console.error("[AppLauncherIsland:launch]", this.text.trim()) }
         }
     }
 
@@ -293,31 +155,20 @@ Item {
         onTriggered: root.requestSearch(searchInput.text)
     }
 
-    // ============================================================
-    // MAIN LAUNCHER CONTENT
-    // ============================================================
-
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 18
         spacing: 14
 
-        // =========================================================
         // 1. TOP HEADER: SEARCH BAR
-        // =========================================================
-
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 50
-
             radius: Nexa.Theme.radiusMd
             color: Nexa.Theme.surfaceContainer
             border.width: searchInput.activeFocus ? Nexa.Theme.borderNormal : Nexa.Theme.borderThin
             border.color: searchInput.activeFocus ? Nexa.Theme.primary : Nexa.Theme.border
-
-            Behavior on border.color {
-                ColorAnimation { duration: Nexa.Theme.animationFast }
-            }
+            Behavior on border.color { ColorAnimation { duration: Nexa.Theme.animationFast } }
 
             RowLayout {
                 anchors.fill: parent
@@ -340,9 +191,7 @@ Item {
                         anchors.fill: parent
                         verticalAlignment: Text.AlignVCenter
                         visible: searchInput.text.length === 0
-                        text: root.selectedCategoryId === "all"
-                            ? "Search applications..."
-                            : "Search in " + root.selectedCategoryName + "..."
+                        text: root.selectedCategoryId === "all" ? "Search applications..." : "Search in " + root.selectedCategoryName + "..."
                         color: Nexa.Theme.mutedText
                         font.family: Nexa.Theme.fontFamily
                         font.pixelSize: Nexa.Theme.fontSizeMd
@@ -358,61 +207,44 @@ Item {
                         font.family: Nexa.Theme.fontFamily
                         font.pixelSize: Nexa.Theme.fontSizeMd
                         clip: true
-
                         onTextChanged: searchDebounce.restart()
 
-                        Keys.onEscapePressed: event => {
+                        Keys.onEscapePressed: (event) => {
                             event.accepted = true
-                            if (searchInput.text.length > 0) {
-                                searchInput.text = ""
-                            } else {
-                                root.requestClose()
-                            }
+                            if (searchInput.text.length > 0) searchInput.text = ""
+                            else root.requestClose()
                         }
-
-                        Keys.onLeftPressed: event => {
+                        Keys.onLeftPressed: (event) => {
                             if (appGrid.count > 0 && appGrid.currentIndex % 2 === 1) {
-                                event.accepted = true
-                                appGrid.currentIndex = Math.max(0, appGrid.currentIndex - 1)
-                                return
+                                event.accepted = true; appGrid.currentIndex = Math.max(0, appGrid.currentIndex - 1); return
                             }
                             if (root.categories.length > 0 && searchInput.text.length === 0) {
                                 event.accepted = true
-                                const currentIdx = root.categories.findIndex(c => c.id === root.selectedCategoryId)
-                                const prevIdx = currentIdx <= 0 ? root.categories.length - 1 : currentIdx - 1
-                                root.selectCategory(root.categories[prevIdx])
+                                const cur = root.categories.findIndex(c => c.id === root.selectedCategoryId)
+                                const prev = cur <= 0 ? root.categories.length - 1 : cur - 1
+                                root.selectCategory(root.categories[prev])
                             }
                         }
-
-                        Keys.onRightPressed: event => {
+                        Keys.onRightPressed: (event) => {
                             if (appGrid.count > 0 && appGrid.currentIndex % 2 === 0 && appGrid.currentIndex + 1 < appGrid.count) {
-                                event.accepted = true
-                                appGrid.currentIndex = appGrid.currentIndex + 1
-                                return
+                                event.accepted = true; appGrid.currentIndex += 1; return
                             }
                             if (root.categories.length > 0 && searchInput.text.length === 0) {
                                 event.accepted = true
-                                const currentIdx = root.categories.findIndex(c => c.id === root.selectedCategoryId)
-                                const nextIdx = (currentIdx + 1) % root.categories.length
-                                root.selectCategory(root.categories[nextIdx])
+                                const cur = root.categories.findIndex(c => c.id === root.selectedCategoryId)
+                                const next = (cur + 1) % root.categories.length
+                                root.selectCategory(root.categories[next])
                             }
                         }
-
-                        Keys.onDownPressed: event => {
+                        Keys.onDownPressed: (event) => {
                             event.accepted = true
-                            if (appGrid.count > 0) {
-                                appGrid.currentIndex = Math.min(appGrid.count - 1, appGrid.currentIndex + 2)
-                            }
+                            if (appGrid.count > 0) appGrid.currentIndex = Math.min(appGrid.count - 1, appGrid.currentIndex + 2)
                         }
-
-                        Keys.onUpPressed: event => {
+                        Keys.onUpPressed: (event) => {
                             event.accepted = true
-                            if (appGrid.count > 0) {
-                                appGrid.currentIndex = Math.max(0, appGrid.currentIndex - 2)
-                            }
+                            if (appGrid.count > 0) appGrid.currentIndex = Math.max(0, appGrid.currentIndex - 2)
                         }
-
-                        Keys.onReturnPressed: event => {
+                        Keys.onReturnPressed: (event) => {
                             event.accepted = true
                             if (appGrid.currentIndex >= 0 && appGrid.currentIndex < root.visibleApps.length) {
                                 root.launchApplication(root.visibleApps[appGrid.currentIndex])
@@ -421,14 +253,12 @@ Item {
                     }
                 }
 
-                // Clear button (✕)
                 Rectangle {
                     width: 26
                     height: 26
                     radius: 13
                     visible: searchInput.text.length > 0
                     color: clearMouse.containsMouse ? Nexa.Theme.hover : "transparent"
-
                     Text {
                         anchors.centerIn: parent
                         text: "󰅖"
@@ -436,25 +266,18 @@ Item {
                         font.family: Nexa.Theme.iconFontFamily
                         font.pixelSize: Nexa.Theme.iconSm
                     }
-
                     MouseArea {
                         id: clearMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            searchInput.text = ""
-                            searchInput.forceActiveFocus()
-                        }
+                        onClicked: { searchInput.text = ""; searchInput.forceActiveFocus() }
                     }
                 }
             }
         }
 
-        // =========================================================
         // 2. CATEGORY PILLS BAR
-        // =========================================================
-
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 38
@@ -474,30 +297,17 @@ Item {
 
                     Repeater {
                         model: root.categories
-
                         delegate: Rectangle {
                             id: catChip
                             required property var modelData
-
-                            readonly property bool active:
-                                searchInput.text.length === 0
-                                && root.selectedCategoryId === modelData.id
-
+                            readonly property bool active: searchInput.text.length === 0 && root.selectedCategoryId === modelData.id
                             implicitWidth: chipRow.implicitWidth + 24
                             implicitHeight: 36
                             radius: height / 2
-
-                            color: active
-                                ? Nexa.Theme.primary
-                                : chipMouse.containsMouse
-                                    ? Nexa.Theme.surfaceContainerHigh
-                                    : Nexa.Theme.surfaceContainer
-
+                            color: active ? Nexa.Theme.primary : (chipMouse.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainer)
                             border.width: active ? 0 : Nexa.Theme.borderThin
                             border.color: active ? "transparent" : Nexa.Theme.border
-
                             scale: chipMouse.pressed ? 0.96 : (chipMouse.containsMouse ? 1.02 : 1.0)
-
                             Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
                             Behavior on scale { NumberAnimation { duration: Nexa.Theme.animationFast } }
 
@@ -505,7 +315,6 @@ Item {
                                 id: chipRow
                                 anchors.centerIn: parent
                                 spacing: 6
-
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.categoryIcon(modelData.id, modelData.name)
@@ -513,7 +322,6 @@ Item {
                                     font.family: Nexa.Theme.iconFontFamily
                                     font.pixelSize: Nexa.Theme.iconSm
                                 }
-
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: modelData.name
@@ -537,14 +345,10 @@ Item {
             }
         }
 
-        // =========================================================
-        // 3. APPLICATION 2-COLUMN GRID VIEW
-        // =========================================================
-
+        // 3. APPLICATION GRID VIEW
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-
             radius: Nexa.Theme.radiusLg
             color: Nexa.Theme.surfaceContainer
             border.width: Nexa.Theme.borderThin
@@ -554,17 +358,12 @@ Item {
             GridView {
                 id: appGrid
                 anchors.fill: parent
-                anchors.topMargin: 10
-                anchors.bottomMargin: 10
-                anchors.leftMargin: 10
+                anchors.margins: 10
                 anchors.rightMargin: 18
-
                 cellWidth: width / 2
                 cellHeight: 70
-
                 model: root.visibleApps
                 clip: true
-
                 boundsBehavior: Flickable.StopAtBounds
                 flickDeceleration: Nexa.Theme.flickDeceleration
                 maximumFlickVelocity: Nexa.Theme.flickVelocityMax
@@ -572,34 +371,18 @@ Item {
                 ScrollBar.vertical: ScrollBar {
                     id: gridScrollBar
                     parent: appGrid.parent
-                    anchors.right: parent.right
-                    anchors.rightMargin: 5
-                    anchors.top: parent.top
-                    anchors.topMargin: 12
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 12
+                    anchors { right: parent.right; rightMargin: 5; top: parent.top; topMargin: 12; bottom: parent.bottom; bottomMargin: 12 }
                     policy: ScrollBar.AsNeeded
-
                     contentItem: Rectangle {
                         implicitWidth: 3
                         radius: 1.5
-                        color: Qt.rgba(
-                            Nexa.Theme.text.r,
-                            Nexa.Theme.text.g,
-                            Nexa.Theme.text.b,
-                            gridScrollBar.hovered ? 0.6 : 0.25
-                        )
+                        color: Qt.rgba(Nexa.Theme.text.r, Nexa.Theme.text.g, Nexa.Theme.text.b, gridScrollBar.hovered ? 0.6 : 0.25)
                         Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
                     }
                     background: Rectangle {
                         implicitWidth: 3
                         radius: 1.5
-                        color: Qt.rgba(
-                            Nexa.Theme.text.r,
-                            Nexa.Theme.text.g,
-                            Nexa.Theme.text.b,
-                            0.06
-                        )
+                        color: Qt.rgba(Nexa.Theme.text.r, Nexa.Theme.text.g, Nexa.Theme.text.b, 0.06)
                     }
                 }
 
@@ -607,32 +390,18 @@ Item {
                     id: appItem
                     required property var modelData
                     required property int index
-
                     width: appGrid.cellWidth
                     height: appGrid.cellHeight
-
                     readonly property bool isSelected: appGrid.currentIndex === index
 
                     Rectangle {
-                        id: cardBackground
                         anchors.fill: parent
                         anchors.margins: 4
-
                         radius: Nexa.Theme.radiusMd
-
-                        color: appItem.isSelected
-                            ? Nexa.Theme.primaryContainer
-                            : appMouse.containsMouse
-                                ? Nexa.Theme.surfaceContainerHigh
-                                : Nexa.Theme.surfaceContainerLow
-
+                        color: appItem.isSelected ? Nexa.Theme.primaryContainer : (appMouse.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainerLow)
                         border.width: appItem.isSelected ? Nexa.Theme.borderNormal : Nexa.Theme.borderThin
-                        border.color: appItem.isSelected
-                            ? Nexa.Theme.primary
-                            : (appMouse.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.border)
-
+                        border.color: appItem.isSelected ? Nexa.Theme.primary : (appMouse.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.border)
                         scale: appMouse.pressed ? 0.97 : (appMouse.containsMouse ? 1.01 : 1.0)
-
                         Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
                         Behavior on scale { NumberAnimation { duration: Nexa.Theme.animationFast } }
                         Behavior on border.color { ColorAnimation { duration: Nexa.Theme.animationFast } }
@@ -643,15 +412,10 @@ Item {
                             anchors.rightMargin: 10
                             spacing: 12
 
-                            // App Icon
                             Image {
                                 Layout.preferredWidth: 42
                                 Layout.preferredHeight: 42
-
-                                source: modelData.icon
-                                    ? Quickshell.iconPath(modelData.icon, "application-x-executable")
-                                    : Quickshell.iconPath("application-x-executable")
-
+                                source: modelData.icon ? Quickshell.iconPath(modelData.icon, "application-x-executable") : Quickshell.iconPath("application-x-executable")
                                 sourceSize.width: 42
                                 sourceSize.height: 42
                                 fillMode: Image.PreserveAspectFit
@@ -659,7 +423,6 @@ Item {
                                 smooth: true
                             }
 
-                            // App Title & Subtitle
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 2
@@ -707,7 +470,6 @@ Item {
                     anchors.centerIn: parent
                     spacing: 8
                     visible: !root.loading && root.visibleApps.length === 0
-
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "󰀻"
@@ -715,7 +477,6 @@ Item {
                         font.family: Nexa.Theme.iconFontFamily
                         font.pixelSize: 36
                     }
-
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: searchInput.text.length > 0 ? "No applications found" : "No applications"
@@ -738,18 +499,13 @@ Item {
             }
         }
 
-        // =========================================================
-        // 4. BOTTOM STATUS BAR & NAVIGATION HINTS
-        // =========================================================
-
+        // 4. BOTTOM STATUS BAR
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 24
 
-            // App count info
             Row {
                 spacing: 6
-
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: searchInput.text.length > 0 ? "󰍉" : "󰀻"
@@ -757,7 +513,6 @@ Item {
                     font.family: Nexa.Theme.iconFontFamily
                     font.pixelSize: Nexa.Theme.iconXs
                 }
-
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: searchInput.text.length > 0
@@ -772,61 +527,31 @@ Item {
 
             Item { Layout.fillWidth: true }
 
-            // Keyboard legend
             Row {
                 spacing: 12
-
-                Row {
-                    spacing: 4
-                    Text {
-                        text: "↑↓←→"
-                        color: Nexa.Theme.primary
-                        font.family: Nexa.Theme.monoFont
-                        font.pixelSize: Nexa.Theme.fontSizeXs
-                        font.weight: Nexa.Theme.fontWeightBold
-                    }
-                    Text {
-                        text: "Navigate"
-                        color: Nexa.Theme.mutedText
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeXs
-                    }
-                }
-
-                Row {
-                    spacing: 4
-                    Text {
-                        text: "↵"
-                        color: Nexa.Theme.primary
-                        font.family: Nexa.Theme.monoFont
-                        font.pixelSize: Nexa.Theme.fontSizeXs
-                        font.weight: Nexa.Theme.fontWeightBold
-                    }
-                    Text {
-                        text: "Launch"
-                        color: Nexa.Theme.mutedText
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeXs
-                    }
-                }
-
-                Row {
-                    spacing: 4
-                    Text {
-                        text: "ESC"
-                        color: Nexa.Theme.primary
-                        font.family: Nexa.Theme.monoFont
-                        font.pixelSize: Nexa.Theme.fontSizeXs
-                        font.weight: Nexa.Theme.fontWeightBold
-                    }
-                    Text {
-                        text: "Close"
-                        color: Nexa.Theme.mutedText
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeXs
-                    }
-                }
+                LegendItem { key: "↑↓←→"; label: "Navigate" }
+                LegendItem { key: "↵"; label: "Launch" }
+                LegendItem { key: "ESC"; label: "Close" }
             }
+        }
+    }
+
+    component LegendItem: Row {
+        property string key: ""
+        property string label: ""
+        spacing: 4
+        Text {
+            text: parent.key
+            color: Nexa.Theme.primary
+            font.family: Nexa.Theme.monoFontFamily
+            font.pixelSize: Nexa.Theme.fontSizeXs
+            font.weight: Nexa.Theme.fontWeightBold
+        }
+        Text {
+            text: parent.label
+            color: Nexa.Theme.mutedText
+            font.family: Nexa.Theme.fontFamily
+            font.pixelSize: Nexa.Theme.fontSizeXs
         }
     }
 }

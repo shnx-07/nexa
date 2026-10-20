@@ -11,7 +11,6 @@ import Quickshell
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
 
-
 Item {
     id: root
 
@@ -211,15 +210,12 @@ Item {
         }
     }
 
-    readonly property bool available:
-        player !== null
+    readonly property bool available: player !== null
 
-    readonly property bool playing:
-        available
+    readonly property bool playing: available
         && player.playbackState === MprisPlaybackState.Playing
 
-    readonly property bool paused:
-        available
+    readonly property bool paused: available
         && player.playbackState === MprisPlaybackState.Paused
 
     // ------------------------------------------------------------
@@ -252,36 +248,30 @@ Item {
         }
     }
 
-    readonly property bool contextActive:
-        available
+    readonly property bool contextActive: available
         && hasTrack
         && (playing || (paused && !pauseTimeoutExpired))
 
-    readonly property bool hasTrack:
-        available
+    readonly property bool hasTrack: available
         && (player.trackTitle !== "" || player.trackArtist !== "")
 
     // ============================================================
     // METADATA
     // ============================================================
 
-    readonly property string title:
-        available && player.trackTitle !== ""
+    readonly property string title: available && player.trackTitle !== ""
         ? player.trackTitle
         : "Nothing playing"
 
-    readonly property string artist:
-        available && player.trackArtist !== ""
+    readonly property string artist: available && player.trackArtist !== ""
         ? player.trackArtist
         : "Unknown artist"
 
-    readonly property string album:
-        available && player.trackAlbum !== ""
+    readonly property string album: available && player.trackAlbum !== ""
         ? player.trackAlbum
         : ""
 
-    readonly property string artwork:
-        available
+    readonly property string artwork: available
         ? player.trackArtUrl
         : ""
 
@@ -377,23 +367,15 @@ Item {
         if (!available || !player || !player.identity) return "Media Player"
         const raw = player.identity.trim()
         const lower = raw.toLowerCase()
-        if (lower.includes("firefox")) return "Firefox"
-        if (lower.includes("chromium")) return "Chromium"
-        if (lower.includes("chrome")) return "Chrome"
-        if (lower.includes("brave")) return "Brave"
-        if (lower.includes("zen")) return "Zen"
-        if (lower.includes("floorp")) return "Floorp"
-        if (lower.includes("waterfox")) return "Waterfox"
-        if (lower.includes("spotify")) return "Spotify"
-        if (lower.includes("cider")) return "Cider"
-        if (lower.includes("apple")) return "Apple Music"
-        if (lower.includes("amberol")) return "Amberol"
-        if (lower.includes("rhythmbox")) return "Rhythmbox"
-        if (lower.includes("vlc")) return "VLC"
-        if (lower.includes("mpv")) return "MPV"
-        if (lower.includes("celluloid")) return "Celluloid"
-        if (lower.includes("deezer")) return "Deezer"
-        if (lower.includes("tidal")) return "Tidal"
+        const map = {
+            "firefox": "Firefox", "chromium": "Chromium", "chrome": "Chrome", "brave": "Brave",
+            "zen": "Zen", "floorp": "Floorp", "waterfox": "Waterfox", "spotify": "Spotify",
+            "cider": "Cider", "apple": "Apple Music", "amberol": "Amberol", "rhythmbox": "Rhythmbox",
+            "vlc": "VLC", "mpv": "MPV", "celluloid": "Celluloid", "deezer": "Deezer", "tidal": "Tidal"
+        }
+        for (const [k, v] of Object.entries(map)) {
+            if (lower.includes(k)) return v
+        }
         return raw
     }
 
@@ -546,33 +528,26 @@ Item {
         const id = String(idName || "").toLowerCase()
         if (id.includes("spotify")) return "󰓇"
         if (id.includes("firefox") || id.includes("zen") || id.includes("floorp") || id.includes("waterfox") || id.includes("librewolf")) return "󰈹"
-        if (id.includes("chrome") || id.includes("chromium")) return "󰊯"
-        if (id.includes("brave")) return "󰊯"
+        if (id.includes("chrome") || id.includes("chromium") || id.includes("brave")) return "󰊯"
         if (id.includes("edge")) return "󰇩"
         if (id.includes("cider") || id.includes("apple")) return "󰀵"
-        if (id.includes("amberol")) return "󰎆"
-        if (id.includes("rhythmbox") || id.includes("clementine") || id.includes("strawberry") || id.includes("elisa") || id.includes("lollypop")) return "󰎆"
         if (id.includes("vlc")) return "󰕼"
         if (id.includes("mpv") || id.includes("celluloid") || id.includes("haruna")) return "󰐎"
-        if (id.includes("tidal") || id.includes("deezer") || id.includes("ytm") || id.includes("youtube")) return "󰎆"
         return "󰎆"
     }
 
     function playerBrandColor(idName) {
         const id = String(idName || "").toLowerCase()
-        if (id.includes("spotify")) return "#1DB954"
-        if (id.includes("firefox") || id.includes("zen") || id.includes("floorp")) return "#FF7139"
-        if (id.includes("waterfox")) return "#00B0F0"
-        if (id.includes("chrome") || id.includes("chromium")) return "#4285F4"
-        if (id.includes("brave")) return "#FB542B"
-        if (id.includes("edge")) return "#0078D7"
-        if (id.includes("cider") || id.includes("apple")) return "#FC3C44"
-        if (id.includes("amberol")) return "#E05A47"
-        if (id.includes("rhythmbox")) return "#2670E8"
-        if (id.includes("vlc")) return "#FF8800"
-        if (id.includes("mpv") || id.includes("celluloid")) return "#9C27B0"
-        if (id.includes("tidal")) return "#00FFFF"
-        if (id.includes("deezer")) return "#A238FF"
+        const colors = {
+            "spotify": "#1DB954", "firefox": "#FF7139", "zen": "#FF7139", "floorp": "#FF7139",
+            "waterfox": "#00B0F0", "chrome": "#4285F4", "chromium": "#4285F4", "brave": "#FB542B",
+            "edge": "#0078D7", "cider": "#FC3C44", "apple": "#FC3C44", "amberol": "#E05A47",
+            "rhythmbox": "#2670E8", "vlc": "#FF8800", "mpv": "#9C27B0", "celluloid": "#9C27B0",
+            "tidal": "#00FFFF", "deezer": "#A238FF"
+        }
+        for (const [k, c] of Object.entries(colors)) {
+            if (id.includes(k)) return c
+        }
         return Nexa.Theme.primary
     }
 
@@ -580,29 +555,24 @@ Item {
     // POSITION & DURATION
     // ============================================================
 
-    readonly property real duration:
-        available && player.lengthSupported
+    readonly property real duration: available && player.lengthSupported
         ? player.length
         : 0
 
-    readonly property real position:
-        available && player.positionSupported
+    readonly property real position: available && player.positionSupported
         ? player.position
         : 0
 
-    readonly property real progress:
-        duration > 0
+    readonly property real progress: duration > 0
         ? Math.max(0, Math.min(1, position / duration))
         : 0
 
     property bool seeking: false
     property real seekPosition: 0
 
-    readonly property real displayedPosition:
-        seeking ? seekPosition : position
+    readonly property real displayedPosition: seeking ? seekPosition : position
 
-    readonly property real displayedProgress:
-        duration > 0
+    readonly property real displayedProgress: duration > 0
         ? Math.max(0, Math.min(1, displayedPosition / duration))
         : 0
 
@@ -732,67 +702,14 @@ Item {
             }
 
             // Marquee Track & Artist Ticker
-            Item {
-                id: compactMarqueeBox
+            MarqueeText {
                 Layout.fillWidth: true
-                implicitHeight: 20
-                clip: true
-
-                readonly property string labelText: root.hasTrack
-                    ? root.title + "  •  " + root.artist
-                    : "Nothing playing"
-
-                readonly property real overflowDist: Math.max(0, compactTickerText.implicitWidth - width)
-                readonly property bool needsScroll: overflowDist > 4
-
-                Text {
-                    id: compactTickerText
-                    x: 0
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: compactMarqueeBox.labelText
-                    color: root.hasTrack ? Nexa.Theme.text : Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeSm
-                    font.weight: Nexa.Theme.fontWeightMedium
-                }
-
-                SequentialAnimation {
-                    id: compactTickerAnim
-                    running: compactMarqueeBox.needsScroll && root.presentation === "compact" && root.visible
-                    loops: Animation.Infinite
-
-                    PauseAnimation { duration: 1800 }
-                    NumberAnimation {
-                        target: compactTickerText
-                        property: "x"
-                        from: 0
-                        to: -compactMarqueeBox.overflowDist - 16
-                        duration: Math.max(1400, (compactMarqueeBox.overflowDist + 16) * 35)
-                        easing.type: Easing.InOutQuad
-                    }
-                    PauseAnimation { duration: 1500 }
-                    NumberAnimation {
-                        target: compactTickerText
-                        property: "x"
-                        to: 0
-                        duration: Math.max(1000, (compactMarqueeBox.overflowDist + 16) * 25)
-                        easing.type: Easing.InOutQuad
-                    }
-                }
-
-                onWidthChanged: {
-                    compactTickerText.x = 0
-                    if (needsScroll) compactTickerAnim.restart()
-                    else compactTickerAnim.stop()
-                }
-
-                onLabelTextChanged: {
-                    compactTickerText.x = 0
-                    if (needsScroll) compactTickerAnim.restart()
-                    else compactTickerAnim.stop()
-                }
+                text: root.hasTrack ? (root.title + "  •  " + root.artist) : "Nothing playing"
+                color: root.hasTrack ? Nexa.Theme.text : Nexa.Theme.mutedText
+                fontPixelSize: Nexa.Theme.fontSizeSm
+                fontWeight: Nexa.Theme.fontWeightMedium
+                active: root.presentation === "compact"
             }
-
             // Subtle Vertical Divider
             Rectangle {
                 Layout.preferredWidth: 1
@@ -871,65 +788,14 @@ Item {
                     spacing: 6
 
                     // Title Marquee Box
-                    Item {
-                        id: hoverTitleBox
+                    MarqueeText {
                         Layout.fillWidth: true
-                        implicitHeight: hoverTitleText.implicitHeight
-                        clip: true
-
-                        readonly property real overflowDist: Math.max(0, hoverTitleText.implicitWidth - width)
-                        readonly property bool needsScroll: overflowDist > 4
-
-                        Text {
-                            id: hoverTitleText
-                            x: 0
-                            text: root.title
-                            color: Nexa.Theme.text
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeSm
-                            font.weight: Nexa.Theme.fontWeightDemiBold
-                        }
-
-                        SequentialAnimation {
-                            id: hoverTitleAnim
-                            running: hoverTitleBox.needsScroll && root.presentation === "hover" && root.visible
-                            loops: Animation.Infinite
-
-                            PauseAnimation { duration: 1800 }
-                            NumberAnimation {
-                                target: hoverTitleText
-                                property: "x"
-                                from: 0
-                                to: -hoverTitleBox.overflowDist - 16
-                                duration: Math.max(1400, (hoverTitleBox.overflowDist + 16) * 35)
-                                easing.type: Easing.InOutQuad
-                            }
-                            PauseAnimation { duration: 1500 }
-                            NumberAnimation {
-                                target: hoverTitleText
-                                property: "x"
-                                to: 0
-                                duration: Math.max(1000, (hoverTitleBox.overflowDist + 16) * 25)
-                                easing.type: Easing.InOutQuad
-                            }
-                        }
-
-                        onWidthChanged: {
-                            hoverTitleText.x = 0
-                            if (needsScroll) hoverTitleAnim.restart()
-                            else hoverTitleAnim.stop()
-                        }
-
-                        Connections {
-                            target: root
-                            function onTitleChanged() {
-                                hoverTitleText.x = 0
-                                if (hoverTitleBox.needsScroll) hoverTitleAnim.restart()
-                                else hoverTitleAnim.stop()
-                            }
-                        }
+                        text: root.title
+                        color: Nexa.Theme.text
+                        fontPixelSize: Nexa.Theme.fontSizeSm
+                        fontWeight: Nexa.Theme.fontWeightDemiBold
+                        active: root.presentation === "hover"
                     }
-
                     Text {
                         text: root.formatTime(root.position) + " / " + root.formatTime(root.duration)
                         color: Nexa.Theme.mutedText
@@ -1002,9 +868,7 @@ Item {
 
         // Smooth opacity fade on appearance
         opacity: visible ? 1.0 : 0.0
-        Behavior on opacity {
-            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-        }
+        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
         onVisibleChanged: {
             if (visible) root.refreshPlayerStatus()
@@ -1049,9 +913,7 @@ Item {
                     smooth: true
                     opacity: (root.hasTrack && (root.artwork !== "" || root.highResArtwork !== "")) ? 0.45 : 0.0
 
-                    Behavior on opacity {
-                        NumberAnimation { duration: 400; easing.type: Easing.OutCubic }
-                    }
+                    Behavior on opacity { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
                 }
 
                 // 3. Frosted Glass Tint
@@ -1533,65 +1395,14 @@ Item {
                     }
 
                     // 2. Track Title Box (Bold, Smooth Marquee on Overflow)
-                    Item {
-                        id: fullTitleBox
+                    MarqueeText {
                         Layout.fillWidth: true
-                        implicitHeight: fullTitleText.implicitHeight
-                        clip: true
-
-                        readonly property real overflowDist: Math.max(0, fullTitleText.implicitWidth - width)
-                        readonly property bool needsScroll: overflowDist > 6
-
-                        Text {
-                            id: fullTitleText
-                            x: 0
-                            text: root.title
-                            color: Nexa.Theme.text
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 24
-                            font.weight: Nexa.Theme.fontWeightBold
-                        }
-
-                        SequentialAnimation {
-                            id: fullTitleAnim
-                            running: fullTitleBox.needsScroll && root.presentation === "full" && root.visible
-                            loops: Animation.Infinite
-
-                            PauseAnimation { duration: 2200 }
-                            NumberAnimation {
-                                target: fullTitleText
-                                property: "x"
-                                from: 0
-                                to: -fullTitleBox.overflowDist - 20
-                                duration: Math.max(1600, (fullTitleBox.overflowDist + 20) * 32)
-                                easing.type: Easing.InOutQuad
-                            }
-                            PauseAnimation { duration: 1800 }
-                            NumberAnimation {
-                                target: fullTitleText
-                                property: "x"
-                                to: 0
-                                duration: Math.max(1200, (fullTitleBox.overflowDist + 20) * 22)
-                                easing.type: Easing.InOutQuad
-                            }
-                        }
-
-                        onWidthChanged: {
-                            fullTitleText.x = 0
-                            if (needsScroll) fullTitleAnim.restart()
-                            else fullTitleAnim.stop()
-                        }
-
-                        Connections {
-                            target: root
-                            function onTitleChanged() {
-                                fullTitleText.x = 0
-                                if (fullTitleBox.needsScroll) fullTitleAnim.restart()
-                                else fullTitleAnim.stop()
-                            }
-                        }
+                        text: root.title
+                        color: Nexa.Theme.text
+                        fontPixelSize: 24
+                        fontWeight: Nexa.Theme.fontWeightBold
+                        active: root.presentation === "full"
                     }
-
                     // 3. Artist & Album Subtitle
                     RowLayout {
                         Layout.fillWidth: true
@@ -1772,7 +1583,7 @@ Item {
                         }
                     }
 
-                    // 5. Working Media Controls Row with Capsule Containers (Shuffle, Prev, Hero Pill, Next, Loop)
+                    // 5. Working Media Controls Row
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.topMargin: 4
@@ -1780,80 +1591,30 @@ Item {
 
                         Item { Layout.fillWidth: true }
 
-                        // 1. Shuffle Capsule Button
-                        Rectangle {
-                            implicitWidth: 40
-                            implicitHeight: 40
-                            radius: 20
-                            color: root.shuffleActive
-                                ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.22)
-                                : (shuffleMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh)
-                            border.width: 1
-                            border.color: root.shuffleActive ? Nexa.Theme.primary : Nexa.Theme.border
-                            scale: shuffleMouse.pressed ? 0.90 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 100 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰒝"
-                                color: root.shuffleActive ? Nexa.Theme.primary : Nexa.Theme.text
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                            }
-
-                            MouseArea {
-                                id: shuffleMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleShuffle()
-                            }
+                        CapsuleBtn {
+                            icon: "󰒝"
+                            iconSize: 18
+                            btnSize: 40
+                            active: root.shuffleActive
+                            onClicked: root.toggleShuffle()
                         }
 
-                        // 2. Previous Track Capsule Button
-                        Rectangle {
-                            implicitWidth: 44
-                            implicitHeight: 44
-                            radius: 22
-                            color: prevMouse.containsMouse
-                                ? Nexa.Theme.hoverStrong
-                                : Nexa.Theme.surfaceContainerHigh
-                            border.width: 1
-                            border.color: Nexa.Theme.border
-                            scale: prevMouse.pressed ? 0.90 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 100 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰒮"
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 22
-                            }
-
-                            MouseArea {
-                                id: prevMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.previous()
-                            }
+                        CapsuleBtn {
+                            icon: "󰒮"
+                            iconSize: 22
+                            btnSize: 44
+                            onClicked: root.previous()
                         }
 
-                        // 3. HERO Play / Pause Pill Button (Wide Accent Pill with Dark High-Contrast Icon)
+                        // Hero Play / Pause Pill Button
                         Rectangle {
                             id: heroPlayBtn
                             implicitWidth: 80
                             implicitHeight: 46
                             radius: 23
-                            color: playMouse.pressed
-                                ? Qt.darker(Nexa.Theme.primary, 1.25)
-                                : Nexa.Theme.primary
+                            color: playMouse.pressed ? Qt.darker(Nexa.Theme.primary, 1.25) : Nexa.Theme.primary
                             scale: playMouse.pressed ? 0.92 : playMouse.containsMouse ? 1.04 : 1.0
-
-                            Behavior on scale {
-                                NumberAnimation { duration: 150; easing.type: Easing.OutBack }
-                            }
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
 
                             Text {
                                 anchors.centerIn: parent
@@ -1872,70 +1633,114 @@ Item {
                             }
                         }
 
-                        // 4. Next Track Capsule Button
-                        Rectangle {
-                            implicitWidth: 44
-                            implicitHeight: 44
-                            radius: 22
-                            color: nextMouse.containsMouse
-                                ? Nexa.Theme.hoverStrong
-                                : Nexa.Theme.surfaceContainerHigh
-                            border.width: 1
-                            border.color: Nexa.Theme.border
-                            scale: nextMouse.pressed ? 0.90 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 100 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰒭"
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 22
-                            }
-
-                            MouseArea {
-                                id: nextMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.next()
-                            }
+                        CapsuleBtn {
+                            icon: "󰒭"
+                            iconSize: 22
+                            btnSize: 44
+                            onClicked: root.next()
                         }
 
-                        // 5. Repeat / Loop Capsule Button
-                        Rectangle {
-                            implicitWidth: 40
-                            implicitHeight: 40
-                            radius: 20
-                            color: root.loopStatus !== "None"
-                                ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.22)
-                                : (loopMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh)
-                            border.width: 1
-                            border.color: root.loopStatus !== "None" ? Nexa.Theme.primary : Nexa.Theme.border
-                            scale: loopMouse.pressed ? 0.90 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 100 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: root.loopStatus === "Track" ? "󰑘" : "󰑖"
-                                color: root.loopStatus !== "None" ? Nexa.Theme.primary : Nexa.Theme.text
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                            }
-
-                            MouseArea {
-                                id: loopMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.cycleLoop()
-                            }
+                        CapsuleBtn {
+                            icon: root.loopStatus === "Track" ? "󰑘" : "󰑖"
+                            iconSize: 18
+                            btnSize: 40
+                            active: root.loopStatus !== "None"
+                            onClicked: root.cycleLoop()
                         }
 
                         Item { Layout.fillWidth: true }
-                    }
-                }
+                    }                }
             }
         }
     }
+
+    // Capsule Control Button Component
+    component CapsuleBtn: Rectangle {
+        id: capBtn
+        property string icon: ""
+        property int iconSize: 20
+        property int btnSize: 44
+        property bool active: false
+        property color activeColor: Nexa.Theme.primary
+        property color textColor: active ? activeColor : Nexa.Theme.text
+        signal clicked()
+
+        implicitWidth: btnSize
+        implicitHeight: btnSize
+        radius: btnSize / 2
+        color: active
+            ? Qt.rgba(activeColor.r, activeColor.g, activeColor.b, 0.22)
+            : (capMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh)
+        border.width: 1
+        border.color: active ? activeColor : Nexa.Theme.border
+        scale: capMouse.pressed ? 0.90 : 1.0
+        Behavior on scale { NumberAnimation { duration: 100 } }
+
+        Text {
+            anchors.centerIn: parent
+            text: capBtn.icon
+            color: capBtn.textColor
+            font.family: Nexa.Theme.iconFontFamily
+            font.pixelSize: capBtn.iconSize
+        }
+
+        MouseArea {
+            id: capMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: capBtn.clicked()
+        }
+    }
+
+    component MarqueeText: Item {
+        id: marqueeItem
+        property string text: ""
+        property color color: Nexa.Theme.text
+        property int fontPixelSize: Nexa.Theme.fontSizeSm
+        property int fontWeight: Nexa.Theme.fontWeightRegular
+        property bool active: true
+
+        implicitHeight: mText.implicitHeight
+        clip: true
+        readonly property real overflowDist: Math.max(0, mText.implicitWidth - width)
+        readonly property bool needsScroll: overflowDist > 4
+
+        Text {
+            id: mText
+            x: 0
+            anchors.verticalCenter: parent.verticalCenter
+            text: marqueeItem.text
+            color: marqueeItem.color
+            font.family: Nexa.Theme.fontFamily
+            font.pixelSize: marqueeItem.fontPixelSize
+            font.weight: marqueeItem.fontWeight
+        }
+
+        SequentialAnimation {
+            id: marqueeAnim
+            running: marqueeItem.needsScroll && marqueeItem.active && root.visible
+            loops: Animation.Infinite
+            PauseAnimation { duration: 1800 }
+            NumberAnimation {
+                target: mText
+                property: "x"
+                from: 0
+                to: -marqueeItem.overflowDist - 16
+                duration: Math.max(1400, (marqueeItem.overflowDist + 16) * 35)
+                easing.type: Easing.InOutQuad
+            }
+            PauseAnimation { duration: 1500 }
+            NumberAnimation {
+                target: mText
+                property: "x"
+                to: 0
+                duration: Math.max(1000, (marqueeItem.overflowDist + 16) * 25)
+                easing.type: Easing.InOutQuad
+            }
+        }
+        onWidthChanged: { mText.x = 0; if (needsScroll && active) marqueeAnim.restart(); else marqueeAnim.stop() }
+        onTextChanged: { mText.x = 0; if (needsScroll && active) marqueeAnim.restart(); else marqueeAnim.stop() }
+    }
+
 }

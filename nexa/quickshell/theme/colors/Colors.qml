@@ -1,7 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
-import "../theme" as ThemeParts
+import ".." as ThemeParts
 
 Singleton {
     id: root

@@ -2,7 +2,7 @@
 import QtQuick
 import QtQuick.Effects
 import Quickshell
-import "../../colors"
+import "../../theme/colors"
 import "../../theme" as Nexa
 import "../lockthemes/components"
 import "../lockthemes"

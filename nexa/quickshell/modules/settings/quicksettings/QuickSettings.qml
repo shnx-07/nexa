@@ -1,0 +1,1384 @@
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
+import Quickshell
+import Quickshell.Io
+import "../../../theme" as Nexa
+import "../../../theme/components" as NexaUI
+
+import "../../audio" as AudioModule
+import "../../brightness" as BrightnessModule
+import "../../network" as NetworkModule
+import "../../airplane" as AirplaneModule
+import "../../vpn" as VpnModule
+import "../../nightlight" as NightLightModule
+import "../../screenfilter" as ScreenFilterModule
+import "../../notifications" as NotificationModule
+import "../../recorder" as RecorderModule
+import "../../battery" as BatteryModule
+
+Item {
+    id: root
+
+    readonly property var theme: Nexa.Theme
+
+    property bool appsExpanded: false
+    property bool screenFilterDropdownOpen: false
+    property bool sinkMenuOpen: false
+    property bool scheduleMenuOpen: false
+
+    function takeScreenshot() {
+        if (screenshotProcess.running) return
+        screenshotProcess.exec([
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "screenshot", "capture"
+        ])
+    }
+
+    function openClipboard() {
+        if (clipboardOpenProcess.running) return
+        clipboardOpenProcess.exec([
+            "qs", "-p", Quickshell.env("HOME") + "/.config/nexa/quickshell",
+            "ipc", "call", "clipboard", "open"
+        ])
+    }
+
+    function getFilterLabel(f) {
+        const labels = {
+            "chroma": "Chroma", "grayscale": "Grayscale", "hdr-boost": "HDR Boost",
+            "high-contrast": "High Contrast", "invert": "Invert Colors",
+            "sepia": "Sepia", "paper-mode": "Paper Mode"
+        }
+        return labels[f] || "Off"
+    }
+
+    AudioModule.Audio { id: audio; visible: root.visible }
+    BrightnessModule.Brightness { id: brightness; visible: root.visible }
+    NetworkModule.Wifi { id: wifi; visible: false; width: 0; height: 0; enablePopup: false }
+    NetworkModule.Bluetooth { id: bluetooth; visible: false; width: 0; height: 0; enablePopup: false }
+    AirplaneModule.Airplane { id: airplane; visible: root.visible }
+    VpnModule.Vpn { id: vpn; visible: root.visible }
+    NightLightModule.NightLight { id: nightLight; visible: root.visible }
+    ScreenFilterModule.ScreenFilter { id: screenFilter; visible: root.visible }
+    NotificationModule.Dnd { id: dnd; visible: root.visible }
+    RecorderModule.RecorderControl { id: recorderControl; visible: root.visible }
+
+    Process {
+        id: screenshotProcess
+        stdout: StdioCollector {}
+        stderr: StdioCollector {}
+    }
+    Process {
+        id: clipboardOpenProcess
+        stdout: StdioCollector {}
+        stderr: StdioCollector {}
+    }
+
+    Flickable {
+        id: qsFlickable
+        anchors.fill: parent
+        anchors.margins: 12
+        clip: true
+        contentWidth: width
+        contentHeight: Math.max(height, columnsRow.implicitHeight + 12)
+        boundsBehavior: Flickable.StopAtBounds
+
+        Row {
+            id: columnsRow
+            width: parent.width
+            spacing: root.theme.spacingLg
+
+            // ========================================================
+            // LEFT COLUMN (Audio, Display, Night Light, Screen Filter)
+            // ========================================================
+            Column {
+                width: (parent.width - root.theme.spacingLg) / 2
+                spacing: 10
+
+                // 1. AUDIO CARD
+                NexaUI.NexaCard {
+                    width: parent.width
+                    height: audioCardContent.implicitHeight + 16
+                    padding: 8
+
+                    Column {
+                        id: audioCardContent
+                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
+                        spacing: 7
+
+                        // Header row
+                        RowLayout {
+                            width: parent.width
+                            spacing: root.theme.spacingSm
+
+                            Text {
+                                text: audio.muted ? "󰝟" : (audio.volume > 50 ? "󰕾" : (audio.volume > 0 ? "󰖀" : "󰕿"))
+                                font.family: root.theme.iconFontFamily
+                                font.pixelSize: root.theme.iconSm
+                                color: audio.muted ? root.theme.error : root.theme.primary
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: audio.toggleMute()
+                                }
+                            }
+
+                            Text {
+                                text: "Output"
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                                font.weight: root.theme.fontWeightDemiBold
+                                color: root.theme.text
+                            }
+
+                            // Device Chip
+                            Rectangle {
+                                id: sinkChip
+                                implicitHeight: 22
+                                implicitWidth: Math.min(120, sinkChipRow.implicitWidth + 16)
+                                radius: 11
+                                color: root.sinkMenuOpen ? root.theme.primaryContainer
+                                    : (sinkChipMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
+                                border.width: root.theme.borderThin
+                                border.color: root.sinkMenuOpen ? root.theme.primary : root.theme.border
+
+                                Row {
+                                    id: sinkChipRow
+                                    anchors.centerIn: parent
+                                    spacing: 4
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: {
+                                            for (let i = 0; i < audio.sinks.length; ++i)
+                                                if (audio.sinks[i].active) return audio.sinks[i].icon
+                                            return "󰕾"
+                                        }
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: root.sinkMenuOpen ? root.theme.primaryContainerText : root.theme.primary
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: {
+                                            for (let i = 0; i < audio.sinks.length; ++i) {
+                                                if (audio.sinks[i].active) {
+                                                    const d = audio.sinks[i].description
+                                                    return d.length > 14 ? d.substring(0, 12) + "…" : d
+                                                }
+                                            }
+                                            return "Output"
+                                        }
+                                        font.family: root.theme.fontFamily
+                                        font.pixelSize: root.theme.fontSize2Xs
+                                        font.weight: root.theme.fontWeightMedium
+                                        color: root.sinkMenuOpen ? root.theme.primaryContainerText : root.theme.text
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: root.sinkMenuOpen ? "▴" : "▾"
+                                        font.pixelSize: root.theme.fontSize2Xs
+                                        color: root.sinkMenuOpen ? root.theme.primaryContainerText : root.theme.mutedText
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: sinkChipMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.sinkMenuOpen = !root.sinkMenuOpen
+                                        if (root.sinkMenuOpen) audio.refreshSinks()
+                                    }
+                                }
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            // Apps mixer toggle
+                            Rectangle {
+                                implicitWidth: 20
+                                implicitHeight: 20
+                                radius: 10
+                                color: root.appsExpanded ? root.theme.primaryContainer : (appsMouse.containsMouse ? root.theme.hover : "transparent")
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰅀"
+                                    rotation: root.appsExpanded ? 180 : 0
+                                    font.family: root.theme.iconFontFamily
+                                    font.pixelSize: root.theme.iconSm
+                                    color: root.appsExpanded ? root.theme.primaryContainerText : root.theme.mutedText
+                                    Behavior on rotation { NumberAnimation { duration: root.theme.animationFast } }
+                                }
+
+                                MouseArea {
+                                    id: appsMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.appsExpanded = !root.appsExpanded
+                                        if (root.appsExpanded) audio.refreshApps()
+                                    }
+                                }
+                            }
+
+                            Text {
+                                text: audio.volume + "%"
+                                font.family: root.theme.monoFontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                                color: root.theme.text
+                            }
+                        }
+
+                        // Expandable Audio Sinks List
+                        Column {
+                            width: parent.width
+                            visible: root.sinkMenuOpen && audio.sinks.length > 0
+                            spacing: root.theme.spacingXs
+
+                            Repeater {
+                                model: audio.sinks
+                                delegate: Rectangle {
+                                    width: parent.width
+                                    height: 32
+                                    radius: root.theme.radiusMd
+                                    color: modelData.active ? root.theme.primaryContainer
+                                        : (sinkItemMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
+                                    border.width: root.theme.borderThin
+                                    border.color: modelData.active ? root.theme.primary : root.theme.border
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: root.theme.spacingSm
+                                        anchors.rightMargin: root.theme.spacingSm
+                                        spacing: root.theme.spacingSm
+
+                                        Text {
+                                            text: modelData.icon || "󰕾"
+                                            font.family: root.theme.iconFontFamily
+                                            font.pixelSize: root.theme.iconSm
+                                            color: modelData.active ? root.theme.primaryContainerText : root.theme.primary
+                                        }
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.description
+                                            elide: Text.ElideRight
+                                            font.family: root.theme.fontFamily
+                                            font.pixelSize: root.theme.fontSizeXs
+                                            font.weight: modelData.active ? root.theme.fontWeightDemiBold : root.theme.fontWeightNormal
+                                            color: modelData.active ? root.theme.primaryContainerText : root.theme.text
+                                        }
+
+                                        Text {
+                                            visible: modelData.active
+                                            text: "󰄬"
+                                            font.family: root.theme.iconFontFamily
+                                            font.pixelSize: root.theme.iconSm
+                                            color: root.theme.primaryContainerText
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: sinkItemMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            audio.setSink(modelData.name)
+                                            root.sinkMenuOpen = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Master Volume Slider
+                        NexaUI.NexaSlider {
+                            width: parent.width
+                            sliderHeight: 18
+                            sliderRadius: 6
+                            from: 0
+                            to: 100
+                            value: audio.volume
+                            icon: ""
+                            onMoved: (val) => audio.setVolume(val)
+                            onReleased: (val) => audio.setVolumeImmediate(val)
+                        }
+
+                        // Expandable Per-App Volume Mixers
+                        Rectangle {
+                            width: parent.width
+                            height: root.appsExpanded ? Math.min(180, Math.max(48, appListView.contentHeight + 16)) : 0
+                            visible: height > 0
+                            opacity: root.appsExpanded ? 1.0 : 0.0
+                            radius: root.theme.radiusMd
+                            color: root.theme.cardBackgroundElevated
+                            border.width: root.theme.borderThin
+                            border.color: root.theme.border
+                            clip: true
+
+                            Behavior on height { NumberAnimation { duration: root.theme.animationNormal; easing.type: root.theme.easingStandard } }
+                            Behavior on opacity { NumberAnimation { duration: root.theme.animationFast } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                visible: !audio.appsLoading && audio.apps.length === 0
+                                text: "No active audio applications"
+                                color: root.theme.mutedText
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                visible: audio.appsLoading
+                                text: "Loading…"
+                                color: root.theme.mutedText
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                            }
+
+                            ListView {
+                                id: appListView
+                                anchors { fill: parent; margins: 8 }
+                                visible: !audio.appsLoading && audio.apps.length > 0
+                                clip: true
+                                spacing: root.theme.spacingSm
+                                model: audio.apps
+
+                                delegate: Column {
+                                    required property var modelData
+                                    width: ListView.view.width
+                                    spacing: root.theme.spacing2Xs
+
+                                    RowLayout {
+                                        width: parent.width
+                                        spacing: root.theme.spacingSm
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.name
+                                            elide: Text.ElideRight
+                                            color: root.theme.text
+                                            font.family: root.theme.fontFamily
+                                            font.pixelSize: root.theme.fontSizeXs
+                                        }
+
+                                        Text {
+                                            text: modelData.volume + "%"
+                                            color: root.theme.mutedText
+                                            font.family: root.theme.monoFontFamily
+                                            font.pixelSize: root.theme.fontSizeXs
+                                        }
+
+                                        Rectangle {
+                                            width: 24
+                                            height: 24
+                                            radius: root.theme.radiusSm
+                                            color: appMuteMouse.containsMouse ? root.theme.hoverStrong : "transparent"
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: modelData.muted ? "󰝟" : "󰕾"
+                                                color: modelData.muted ? root.theme.mutedText : root.theme.text
+                                                font.family: root.theme.iconFontFamily
+                                                font.pixelSize: root.theme.iconSm
+                                            }
+
+                                            MouseArea {
+                                                id: appMuteMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: audio.toggleAppMute(modelData.id)
+                                            }
+                                        }
+                                    }
+
+                                    NexaUI.NexaSlider {
+                                        width: parent.width
+                                        sliderHeight: 18
+                                        sliderRadius: 6
+                                        from: 0
+                                        to: 100
+                                        value: modelData.volume
+                                        icon: ""
+                                        onMoved: (val) => audio.setAppVolume(modelData.id, val)
+                                        onReleased: (val) => audio.setAppVolumeImmediate(modelData.id, val)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Divider
+                        Rectangle {
+                            width: parent.width
+                            height: root.theme.borderThin
+                            color: root.theme.divider
+                        }
+
+                        // Microphone Header
+                        RowLayout {
+                            width: parent.width
+                            spacing: root.theme.spacingSm
+
+                            Text {
+                                text: audio.inputMuted ? "󰍭" : "󰍬"
+                                font.family: root.theme.iconFontFamily
+                                font.pixelSize: root.theme.iconSm
+                                color: audio.inputMuted ? root.theme.error : root.theme.primary
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: audio.toggleInputMute()
+                                }
+                            }
+
+                            Text {
+                                text: "Microphone"
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                                font.weight: root.theme.fontWeightDemiBold
+                                color: root.theme.text
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: audio.toggleInputMute()
+                                }
+                            }
+
+                            Text {
+                                text: audio.inputMuted ? "Muted" : "Active"
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSize2Xs
+                                color: root.theme.mutedText
+                                opacity: 0.8
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Rectangle {
+                                implicitWidth: 20
+                                implicitHeight: 20
+                                radius: 10
+                                color: audio.inputMuted ? root.theme.errorContainer
+                                    : (micMuteHover.containsMouse ? root.theme.hoverStrong : root.theme.primaryContainer)
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: audio.inputMuted ? "󰍭" : "󰍬"
+                                    font.family: root.theme.iconFontFamily
+                                    font.pixelSize: 11
+                                    color: audio.inputMuted ? root.theme.error : root.theme.primaryContainerText
+                                }
+
+                                MouseArea {
+                                    id: micMuteHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: audio.toggleInputMute()
+                                }
+                            }
+
+                            Text {
+                                text: audio.inputVolume + "%"
+                                font.family: root.theme.monoFontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                                color: root.theme.text
+                            }
+                        }
+
+                        // Microphone Slider
+                        NexaUI.NexaSlider {
+                            width: parent.width
+                            sliderHeight: 18
+                            sliderRadius: 6
+                            from: 0
+                            to: 100
+                            value: audio.inputVolume
+                            icon: ""
+                            livePulse: !audio.inputMuted ? audio.micPeak : 0.0
+                            onMoved: (val) => audio.setInputVolume(val)
+                            onReleased: (val) => audio.setInputVolumeImmediate(val)
+                        }
+                    }
+                }
+
+                // 2. DISPLAY & NIGHT LIGHT CARD
+                NexaUI.NexaCard {
+                    width: parent.width
+                    height: displayCardContent.implicitHeight + 16
+                    padding: 8
+
+                    Column {
+                        id: displayCardContent
+                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
+                        spacing: 7
+
+                        // Brightness Header
+                        RowLayout {
+                            width: parent.width
+                            spacing: root.theme.spacingSm
+
+                            Text {
+                                text: "󰃠"
+                                font.family: root.theme.iconFontFamily
+                                font.pixelSize: root.theme.iconSm
+                                color: root.theme.primary
+                            }
+
+                            Text {
+                                text: "Brightness"
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                                font.weight: root.theme.fontWeightDemiBold
+                                color: root.theme.text
+                            }
+
+                            Text {
+                                text: "Backlight"
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSize2Xs
+                                color: root.theme.mutedText
+                                opacity: 0.8
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Text {
+                                text: brightness.brightness + "%"
+                                font.family: root.theme.monoFontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                                color: root.theme.text
+                            }
+                        }
+
+                        // Brightness Slider
+                        NexaUI.NexaSlider {
+                            width: parent.width
+                            sliderHeight: 18
+                            sliderRadius: 6
+                            from: 1
+                            to: 100
+                            value: brightness.brightness
+                            icon: ""
+                            onMoved: (val) => brightness.setBrightness(val)
+                            onReleased: (val) => brightness.setBrightnessImmediate(val)
+                        }
+
+                        // Divider
+                        Rectangle {
+                            width: parent.width
+                            height: root.theme.borderThin
+                            color: root.theme.divider
+                        }
+
+                        // Night Light Header
+                        RowLayout {
+                            width: parent.width
+                            spacing: root.theme.spacingSm
+
+                            Text {
+                                text: "󰖔"
+                                font.family: root.theme.iconFontFamily
+                                font.pixelSize: root.theme.iconMd
+                                color: nightLight.enabled ? root.theme.primary : root.theme.mutedText
+                            }
+
+                            Text {
+                                text: "Night Light"
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSizeXs
+                                font.weight: root.theme.fontWeightDemiBold
+                                color: root.theme.text
+                            }
+
+                            Text {
+                                text: nightLight.enabled ? (nightLight.activeTemperature + "K") : "Off"
+                                font.family: root.theme.fontFamily
+                                font.pixelSize: root.theme.fontSize2Xs
+                                color: root.theme.mutedText
+                                opacity: 0.8
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            // Schedule Dropdown Chip
+                            Rectangle {
+                                id: scheduleChip
+                                implicitHeight: 26
+                                implicitWidth: Math.min(140, scheduleChipRow.implicitWidth + 18)
+                                radius: 13
+                                color: root.scheduleMenuOpen ? root.theme.primaryContainer
+                                    : (scheduleChipMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
+                                border.width: root.theme.borderThin
+                                border.color: root.scheduleMenuOpen ? root.theme.primary : (nightLight.scheduleMode !== "off" ? root.theme.primary : root.theme.border)
+
+                                Row {
+                                    id: scheduleChipRow
+                                    anchors.centerIn: parent
+                                    spacing: 4
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: nightLight.scheduleMode === "sunset" ? "󰖔" : (nightLight.scheduleMode === "custom" ? "󰥔" : "󰔛")
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: root.scheduleMenuOpen ? root.theme.primaryContainerText : (nightLight.scheduleMode !== "off" ? root.theme.primary : root.theme.mutedText)
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: nightLight.scheduleMode === "off" ? "Schedule" : (nightLight.scheduleMode === "sunset" ? "Sunset" : "Custom")
+                                        font.family: root.theme.fontFamily
+                                        font.pixelSize: root.theme.fontSize2Xs
+                                        font.weight: root.theme.fontWeightMedium
+                                        color: root.scheduleMenuOpen ? root.theme.primaryContainerText : (nightLight.scheduleMode !== "off" ? root.theme.primary : root.theme.text)
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: root.scheduleMenuOpen ? "▴" : "▾"
+                                        font.pixelSize: root.theme.fontSize2Xs
+                                        color: root.scheduleMenuOpen ? root.theme.primaryContainerText : root.theme.mutedText
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: scheduleChipMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.scheduleMenuOpen = !root.scheduleMenuOpen
+                                }
+                            }
+
+                            // Night Light Toggle
+                            NexaUI.NexaToggle {
+                                checked: nightLight.enabled
+                                onToggled: (chk) => nightLight.toggle()
+                            }
+                        }
+
+                        // Expandable Schedule Menu
+                        Column {
+                            width: parent.width
+                            visible: root.scheduleMenuOpen
+                            spacing: root.theme.spacingXs
+
+                            // Option 1: Off
+                            Rectangle {
+                                width: parent.width
+                                height: 32
+                                radius: root.theme.radiusSm
+                                color: nightLight.scheduleMode === "off" ? root.theme.primaryContainer : (offMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
+                                border.width: root.theme.borderThin
+                                border.color: nightLight.scheduleMode === "off" ? root.theme.primary : root.theme.border
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 8
+
+                                    Text {
+                                        text: "󰔛"
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: nightLight.scheduleMode === "off" ? root.theme.primaryContainerText : root.theme.mutedText
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: "Manual Only (Off)"
+                                        font.family: root.theme.fontFamily
+                                        font.pixelSize: root.theme.fontSizeXs
+                                        font.weight: root.theme.fontWeightDemiBold
+                                        color: nightLight.scheduleMode === "off" ? root.theme.primaryContainerText : root.theme.text
+                                    }
+                                    Text {
+                                        visible: nightLight.scheduleMode === "off"
+                                        text: "󰄬"
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: root.theme.primaryContainerText
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: offMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        nightLight.setSchedule("off")
+                                        root.scheduleMenuOpen = false
+                                    }
+                                }
+                            }
+
+                            // Option 2: Sunset to Sunrise
+                            Rectangle {
+                                width: parent.width
+                                height: 38
+                                radius: root.theme.radiusSm
+                                color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainer : (sunsetMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
+                                border.width: root.theme.borderThin
+                                border.color: nightLight.scheduleMode === "sunset" ? root.theme.primary : root.theme.border
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 8
+
+                                    Text {
+                                        text: "󰖔"
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainerText : root.theme.mutedText
+                                    }
+                                    Column {
+                                        Layout.fillWidth: true
+                                        spacing: 1
+                                        Text {
+                                            text: "Sunset to Sunrise"
+                                            font.family: root.theme.fontFamily
+                                            font.pixelSize: root.theme.fontSizeXs
+                                            font.weight: root.theme.fontWeightDemiBold
+                                            color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainerText : root.theme.text
+                                        }
+                                        Text {
+                                            text: (nightLight.sunsetTime || "18:30") + " → " + (nightLight.sunriseTime || "06:00")
+                                            font.family: root.theme.monoFontFamily
+                                            font.pixelSize: root.theme.fontSize2Xs
+                                            color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainerText : root.theme.mutedText
+                                            opacity: 0.85
+                                        }
+                                    }
+                                    Text {
+                                        visible: nightLight.scheduleMode === "sunset"
+                                        text: "󰄬"
+                                        font.family: root.theme.iconFontFamily
+                                        font.pixelSize: root.theme.iconSm
+                                        color: root.theme.primaryContainerText
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: sunsetMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: nightLight.setSchedule("sunset")
+                                }
+                            }
+
+                            // Option 3: Custom Schedule
+                            Rectangle {
+                                width: parent.width
+                                height: nightLight.scheduleMode === "custom" ? 138 : 38
+                                radius: root.theme.radiusSm
+                                color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainer : (customMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
+                                border.width: root.theme.borderThin
+                                border.color: nightLight.scheduleMode === "custom" ? root.theme.primary : root.theme.border
+                                clip: true
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 6
+                                    spacing: 4
+
+                                    RowLayout {
+                                        width: parent.width
+                                        spacing: 8
+
+                                        Text {
+                                            text: "󰥔"
+                                            font.family: root.theme.iconFontFamily
+                                            font.pixelSize: root.theme.iconSm
+                                            color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainerText : root.theme.mutedText
+                                        }
+                                        Column {
+                                            Layout.fillWidth: true
+                                            spacing: 1
+                                            Text {
+                                                text: "Custom Schedule"
+                                                font.family: root.theme.fontFamily
+                                                font.pixelSize: root.theme.fontSizeXs
+                                                font.weight: root.theme.fontWeightDemiBold
+                                                color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainerText : root.theme.text
+                                            }
+                                            Text {
+                                                text: nightLight.formatTimeDisplay(nightLight.scheduleStart) + " → " + nightLight.formatTimeDisplay(nightLight.scheduleEnd)
+                                                font.family: root.theme.monoFontFamily
+                                                font.pixelSize: root.theme.fontSize2Xs
+                                                color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainerText : root.theme.mutedText
+                                                opacity: 0.85
+                                            }
+                                        }
+                                        Text {
+                                            visible: nightLight.scheduleMode === "custom"
+                                            text: "󰄬"
+                                            font.family: root.theme.iconFontFamily
+                                            font.pixelSize: root.theme.iconSm
+                                            color: root.theme.primaryContainerText
+                                        }
+                                    }
+
+                                    // Steppers
+                                    RowLayout {
+                                        width: parent.width
+                                        visible: nightLight.scheduleMode === "custom"
+                                        spacing: 6
+
+                                        TimeStepper {
+                                            title: "Turn On"
+                                            target: "start"
+                                            timeStr: nightLight.scheduleStart || "22:00"
+                                        }
+
+                                        TimeStepper {
+                                            title: "Turn Off"
+                                            target: "end"
+                                            timeStr: nightLight.scheduleEnd || "06:00"
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: customMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    z: -1
+                                    onClicked: nightLight.setSchedule("custom")
+                                }
+                            }
+                        }
+
+                        // Night Light Temperature Slider
+                        NexaUI.NexaSlider {
+                            width: parent.width
+                            sliderHeight: 18
+                            sliderRadius: 6
+                            from: nightLight.minimumTemperature
+                            to: nightLight.maximumTemperature
+                            stepSize: 50
+                            value: nightLight.activeTemperature
+                            enabled: nightLight.enabled && !nightLight.wallpaperMode
+                            opacity: enabled ? 1.0 : 0.4
+                            icon: ""
+                            onMoved: (val) => { if (nightLight.enabled) nightLight.setTemperature(val) }
+                        }
+
+                        // 3-Mode Switcher: Manual | Wallpaper | Night
+                        Row {
+                            width: parent.width
+                            spacing: 4
+
+                            Repeater {
+                                model: [
+                                    { mode: "manual", label: "Manual" },
+                                    { mode: "wallpaper", label: "Wallpaper" },
+                                    { mode: "night", label: "Night" }
+                                ]
+                                delegate: Rectangle {
+                                    width: (parent.width - 8) / 3
+                                    height: 28
+                                    radius: root.theme.radiusSm
+                                    color: nightLight.mode === modelData.mode ? root.theme.primaryContainer : (mMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
+                                    border.width: root.theme.borderThin
+                                    border.color: nightLight.mode === modelData.mode ? root.theme.primary : root.theme.border
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: modelData.label
+                                        font.family: root.theme.fontFamily
+                                        font.pixelSize: root.theme.fontSize2Xs
+                                        font.weight: nightLight.mode === modelData.mode ? root.theme.fontWeightDemiBold : root.theme.fontWeightNormal
+                                        color: nightLight.mode === modelData.mode ? root.theme.primaryContainerText : root.theme.text
+                                    }
+
+                                    MouseArea {
+                                        id: mMouse
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: nightLight.setMode(modelData.mode)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3. SCREEN FILTER CARD
+                NexaUI.NexaCard {
+                    width: parent.width
+                    height: filterCardContent.implicitHeight + 16
+                    padding: 8
+
+                    Column {
+                        id: filterCardContent
+                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
+                        spacing: 6
+
+                        Item {
+                            width: parent.width
+                            height: 26
+
+                            RowLayout {
+                                anchors.fill: parent
+                                spacing: root.theme.spacingSm
+
+                                Text {
+                                    text: "󰹑"
+                                    font.family: root.theme.iconFontFamily
+                                    font.pixelSize: root.theme.iconSm
+                                    color: screenFilter.filter !== "off" ? root.theme.primary : root.theme.mutedText
+                                }
+
+                                Column {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+                                    Text {
+                                        text: "Screen Filter"
+                                        font.family: root.theme.fontFamily
+                                        font.pixelSize: root.theme.fontSizeXs
+                                        font.weight: root.theme.fontWeightDemiBold
+                                        color: root.theme.text
+                                    }
+                                    Text {
+                                        text: screenFilter.label || "Off"
+                                        font.family: root.theme.fontFamily
+                                        font.pixelSize: root.theme.fontSize2Xs
+                                        color: root.theme.mutedText
+                                    }
+                                }
+
+                                Text {
+                                    text: root.screenFilterDropdownOpen ? "󰅃" : "󰅂"
+                                    font.family: root.theme.iconFontFamily
+                                    font.pixelSize: root.theme.iconSm
+                                    color: root.theme.mutedText
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.screenFilterDropdownOpen = !root.screenFilterDropdownOpen
+                            }
+                        }
+
+                        // Dropdown Shader Selector
+                        Column {
+                            width: parent.width
+                            visible: root.screenFilterDropdownOpen
+                            spacing: 4
+
+                            Repeater {
+                                model: screenFilter.available
+                                delegate: Rectangle {
+                                    width: parent.width
+                                    height: 26
+                                    radius: root.theme.radiusSm
+                                    color: modelData === screenFilter.filter ? root.theme.primaryContainer : (fItemMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 5
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: root.getFilterLabel(modelData)
+                                            font.family: root.theme.fontFamily
+                                            font.pixelSize: root.theme.fontSizeXs
+                                            color: modelData === screenFilter.filter ? root.theme.primaryContainerText : root.theme.text
+                                        }
+
+                                        Text {
+                                            visible: modelData === screenFilter.filter
+                                            text: "󰄬"
+                                            font.family: root.theme.iconFontFamily
+                                            font.pixelSize: root.theme.iconSm
+                                            color: root.theme.primaryContainerText
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: fItemMouse
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            screenFilter.setFilter(modelData)
+                                            root.screenFilterDropdownOpen = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ========================================================
+            // RIGHT COLUMN (Tiles: Connectivity & Actions)
+            // ========================================================
+            Column {
+                width: (parent.width - root.theme.spacingLg) / 2
+                spacing: 8
+
+                // CONNECTIVITY
+                Text {
+                    text: "Connectivity"
+                    color: root.theme.text
+                    font.family: root.theme.fontFamily
+                    font.pixelSize: root.theme.fontSizeXs
+                    font.weight: root.theme.fontWeightDemiBold
+                    opacity: 0.9
+                }
+
+                Grid {
+                    width: parent.width
+                    columns: 2
+                    columnSpacing: root.theme.spacingSm
+                    rowSpacing: root.theme.spacingSm
+
+                    QuickTile {
+                        icon: !wifi.enabled ? "󰤭" : (!wifi.connected ? "󰤭" : (wifi.strength >= 75 ? "󰤨" : (wifi.strength >= 50 ? "󰤥" : "󰤢")))
+                        title: "Wi-Fi"
+                        subtitle: !wifi.enabled ? "Off" : (wifi.connected ? wifi.ssid : "Disconnected")
+                        active: wifi.enabled
+                        onClicked: wifi.toggle()
+                    }
+
+                    QuickTile {
+                        icon: bluetooth.enabled ? (bluetooth.connected ? "󰂱" : "󰂯") : "󰂲"
+                        title: "Bluetooth"
+                        subtitle: !bluetooth.enabled ? "Off" : (bluetooth.connected ? (bluetooth.deviceName || "Connected") : "Disconnected")
+                        active: bluetooth.enabled
+                        onClicked: bluetooth.toggle()
+                    }
+
+                    QuickTile {
+                        icon: "󰀝"
+                        title: "Airplane Mode"
+                        subtitle: airplane.enabled ? "On" : "Off"
+                        active: airplane.enabled
+                        onClicked: airplane.toggle()
+                    }
+
+                    QuickTile {
+                        icon: "󰖂"
+                        title: "VPN"
+                        subtitle: vpn.connected ? (vpn.activeConnection || "Connected") : "Disconnected"
+                        active: vpn.connected
+                        onClicked: vpn.toggle()
+                    }
+                }
+
+                Item { width: parent.width; height: 6 }
+
+                // ACTIONS
+                Text {
+                    text: "Actions"
+                    color: root.theme.text
+                    font.family: root.theme.fontFamily
+                    font.pixelSize: root.theme.fontSizeXs
+                    font.weight: root.theme.fontWeightDemiBold
+                    opacity: 0.9
+                }
+
+                Grid {
+                    width: parent.width
+                    columns: 2
+                    columnSpacing: root.theme.spacingSm
+                    rowSpacing: root.theme.spacingSm
+
+                    QuickTile {
+                        icon: "󰂛"
+                        title: "DND"
+                        subtitle: dnd.enabled ? "On" : "Off"
+                        active: dnd.enabled
+                        onClicked: dnd.toggle()
+                    }
+
+                    QuickTile {
+                        icon: recorderControl.recording ? "󰑊" : "󰻂"
+                        title: "Recorder"
+                        subtitle: recorderControl.statusText
+                        active: recorderControl.recording
+                        onClicked: recorderControl.toggleRecording()
+                    }
+
+                    QuickTile {
+                        icon: "󰹑"
+                        title: "Screenshot"
+                        subtitle: "Capture"
+                        active: false
+                        onClicked: root.takeScreenshot()
+                    }
+
+                    QuickTile {
+                        icon: "󰅇"
+                        title: "Clipboard"
+                        subtitle: "Open"
+                        active: false
+                        onClicked: root.openClipboard()
+                    }
+
+                    QuickTile {
+                        icon: "󰈙"
+                        title: "Reading Mode"
+                        subtitle: screenFilter.filter === "paper-mode" ? "Paper Texture" : "Off"
+                        active: screenFilter.filter === "paper-mode"
+                        onClicked: {
+                            if (screenFilter.filter === "paper-mode") screenFilter.off()
+                            else screenFilter.setFilter("paper-mode")
+                        }
+                    }
+
+                    QuickTile {
+                        icon: "󰄲"
+                        title: "Monochrome"
+                        subtitle: screenFilter.filter === "grayscale" ? "Grayscale" : "Off"
+                        active: screenFilter.filter === "grayscale"
+                        onClicked: {
+                            if (screenFilter.filter === "grayscale") screenFilter.off()
+                            else screenFilter.setFilter("grayscale")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ========================================================
+    // REUSABLE SUBCOMPONENTS
+    // ========================================================
+
+    component QuickTile: Rectangle {
+        id: tileRoot
+        property string icon: ""
+        property string title: ""
+        property string subtitle: ""
+        property bool active: false
+        signal clicked()
+
+        width: (parent.width - root.theme.spacingSm) / 2
+        height: 58
+        radius: root.theme.radiusMd
+        clip: true
+        color: active ? root.theme.primaryContainer : (tileMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
+        border.width: root.theme.borderThin
+        border.color: active ? root.theme.primary : root.theme.border
+
+        Column {
+            anchors {
+                left: parent.left
+                right: parent.right
+                verticalCenter: parent.verticalCenter
+                leftMargin: 12
+                rightMargin: 12
+            }
+            spacing: 2
+
+            Item {
+                width: 18
+                height: 18
+                Text {
+                    anchors.centerIn: parent
+                    text: tileRoot.icon
+                    color: tileRoot.active ? root.theme.primaryContainerText : root.theme.mutedText
+                    font.family: root.theme.iconFontFamily
+                    font.pixelSize: root.theme.iconSm
+                }
+            }
+
+            Text {
+                width: parent.width
+                text: tileRoot.title
+                color: tileRoot.active ? root.theme.primaryContainerText : root.theme.text
+                elide: Text.ElideRight
+                font.family: root.theme.fontFamily
+                font.pixelSize: root.theme.fontSizeXs
+                font.weight: root.theme.fontWeightDemiBold
+            }
+
+            Text {
+                width: parent.width
+                text: tileRoot.subtitle
+                color: tileRoot.active ? root.theme.primaryContainerText : root.theme.mutedText
+                opacity: 0.8
+                elide: Text.ElideRight
+                font.family: root.theme.fontFamily
+                font.pixelSize: root.theme.fontSize2Xs
+            }
+        }
+
+        MouseArea {
+            id: tileMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: tileRoot.clicked()
+        }
+    }
+
+    component TimeStepper: Rectangle {
+        property string title: ""
+        property string target: ""
+        property string timeStr: ""
+        readonly property int hour24: parseInt((timeStr || "00:00").split(":")[0], 10) || 0
+        readonly property string minStr: (timeStr || "00:00").split(":")[1] || "00"
+        readonly property string hour12Str: {
+            let h12 = hour24 % 12
+            if (h12 === 0) h12 = 12
+            return h12 < 10 ? "0" + h12 : "" + h12
+        }
+
+        Layout.fillWidth: true
+        height: 84
+        radius: root.theme.radiusSm
+        color: root.theme.cardBackground
+        border.width: root.theme.borderThin
+        border.color: root.theme.border
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: 6
+            spacing: 5
+
+            Text {
+                text: title
+                font.family: root.theme.fontFamily
+                font.pixelSize: root.theme.fontSize2Xs
+                font.weight: root.theme.fontWeightBold
+                color: root.theme.mutedText
+            }
+
+            RowLayout {
+                width: parent.width
+                spacing: 3
+
+                Rectangle {
+                    width: 16; height: 22; radius: 3
+                    color: subHMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                    border.width: root.theme.borderThin; border.color: root.theme.border
+                    Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: root.theme.text }
+                    MouseArea {
+                        id: subHMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: nightLight.adjustScheduleHour(target, -1)
+                    }
+                }
+
+                Text {
+                    Layout.preferredWidth: 20
+                    horizontalAlignment: Text.AlignHCenter
+                    text: hour12Str
+                    font.family: root.theme.monoFontFamily
+                    font.pixelSize: root.theme.fontSizeXs
+                    font.weight: root.theme.fontWeightDemiBold
+                    color: root.theme.text
+                    MouseArea {
+                        anchors.fill: parent
+                        onWheel: (w) => {
+                            if (w.angleDelta.y > 0) nightLight.adjustScheduleHour(target, 1)
+                            else nightLight.adjustScheduleHour(target, -1)
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 16; height: 22; radius: 3
+                    color: addHMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                    border.width: root.theme.borderThin; border.color: root.theme.border
+                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: root.theme.text }
+                    MouseArea {
+                        id: addHMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: nightLight.adjustScheduleHour(target, 1)
+                    }
+                }
+
+                Text { text: ":"; font.family: root.theme.monoFontFamily; font.pixelSize: root.theme.fontSizeXs; font.bold: true; color: root.theme.mutedText }
+
+                Rectangle {
+                    width: 16; height: 22; radius: 3
+                    color: subMMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                    border.width: root.theme.borderThin; border.color: root.theme.border
+                    Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: root.theme.text }
+                    MouseArea {
+                        id: subMMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: nightLight.adjustScheduleMinute(target, -5)
+                    }
+                }
+
+                Text {
+                    Layout.preferredWidth: 20
+                    horizontalAlignment: Text.AlignHCenter
+                    text: minStr
+                    font.family: root.theme.monoFontFamily
+                    font.pixelSize: root.theme.fontSizeXs
+                    font.weight: root.theme.fontWeightDemiBold
+                    color: root.theme.text
+                    MouseArea {
+                        anchors.fill: parent
+                        onWheel: (w) => {
+                            if (w.angleDelta.y > 0) nightLight.adjustScheduleMinute(target, 1)
+                            else nightLight.adjustScheduleMinute(target, -1)
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 16; height: 22; radius: 3
+                    color: addMMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
+                    border.width: root.theme.borderThin; border.color: root.theme.border
+                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: root.theme.text }
+                    MouseArea {
+                        id: addMMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: nightLight.adjustScheduleMinute(target, 5)
+                    }
+                }
+            }
+
+            Item { width: 1; height: 3 }
+
+            Row {
+                spacing: 4
+                Rectangle {
+                    width: 28; height: 16; radius: 3
+                    color: hour24 < 12 ? root.theme.primary : root.theme.cardBackgroundElevated
+                    border.width: root.theme.borderThin; border.color: root.theme.primary
+                    Text {
+                        anchors.centerIn: parent; text: "AM"; font.pixelSize: 9; font.weight: Font.Bold
+                        color: hour24 < 12 ? root.theme.onPrimary : root.theme.primary
+                    }
+                    MouseArea {
+                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                        onClicked: { if (hour24 >= 12) nightLight.adjustScheduleHour(target, -12) }
+                    }
+                }
+                Rectangle {
+                    width: 28; height: 16; radius: 3
+                    color: hour24 >= 12 ? root.theme.primary : root.theme.cardBackgroundElevated
+                    border.width: root.theme.borderThin; border.color: root.theme.primary
+                    Text {
+                        anchors.centerIn: parent; text: "PM"; font.pixelSize: 9; font.weight: Font.Bold
+                        color: hour24 >= 12 ? root.theme.onPrimary : root.theme.primary
+                    }
+                    MouseArea {
+                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                        onClicked: { if (hour24 < 12) nightLight.adjustScheduleHour(target, 12) }
+                    }
+                }
+            }
+        }
+    }
+}

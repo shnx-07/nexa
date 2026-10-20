@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../theme" as Nexa
-import "../panel" as PanelModule
+import "../modules/settings/quicksettings" as QuickSettingsModule
 import "../modules/notifications" as NotificationModule
 import "../modules/weather" as WeatherModule
 import "../modules/battery" as BatteryModule
@@ -173,7 +173,7 @@ Item {
                     width: pageViewport.width
                     height: pageViewport.height
 
-                    PanelModule.QuickSettings {
+                    QuickSettingsModule.QuickSettings {
                         anchors.fill: parent
                         visible: root.visible && root.currentPage === 0
                     }

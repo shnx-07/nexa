@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import "../../../colors"
+import "../../../theme/colors"
 
 // Chamfered HUD background for shell pieces under the HUD desktop theme: a
 // fill and hairline with the top-left and bottom-right corners cut, and an
