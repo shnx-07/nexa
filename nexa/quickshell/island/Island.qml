@@ -1252,12 +1252,14 @@ PanelWindow {
         // --------------------------------------------------------
 
         radius:
-          root.full
-          || root.specialModeActive
-          || root.hovered
-          || root.notificationActive
-          ? Nexa.Theme.radiusLg
-          : (root.osdActive ? Math.round(targetHeight / 2) : Nexa.Theme.radiusPill)
+          Nexa.Theme.windowRounding === 0
+          ? 0
+          : (root.full
+             || root.specialModeActive
+             || root.hovered
+             || root.notificationActive
+             ? Nexa.Theme.radiusLg
+             : (root.osdActive ? Math.round(targetHeight / 2) : Nexa.Theme.radiusPill))
 
 
         // --------------------------------------------------------

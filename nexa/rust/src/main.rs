@@ -1,4 +1,6 @@
 #[allow(non_snake_case)]
+mod display;
+#[allow(non_snake_case)]
 mod appLauncher;
 #[allow(non_snake_case)]
 mod screenTemp;
@@ -55,7 +57,8 @@ fn print_usage() {
   nexad system airplane info|on|off|toggle | vpn info|connect|disconnect|toggle
   nexad screenFilter info | set <filter> | off | apply
   nexad weather info | refresh | set <location>
-  nexad state restore | save"
+  nexad state restore | save
+  nexad display [info|daemon|auto|cycle|mode|enable|disable|toggle|scale|res|rotate|mirror|primary|save|profiles] ..."
     );
 }
 
@@ -695,6 +698,13 @@ fn main() {
             }
             if let Err(error) = power::handle(&args[2..]) {
                 eprintln!("{error}");
+            }
+        }
+
+        "display" => {
+            let code = display::run_cli(&args[2..]);
+            if code != 0 {
+                std::process::exit(code);
             }
         }
 

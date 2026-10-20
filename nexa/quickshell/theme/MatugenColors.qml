@@ -41,7 +41,7 @@ QtObject {
 
     readonly property color inverseSurface: "#f4dde5"
     readonly property color inverse_on_surface: "#3b2c33"
-    readonly property color inversePrimary: "#b4007e"
+    readonly property color inversePrimary: "#b4007f"
 
     // Outline
     readonly property color outline: "#9f8c93"

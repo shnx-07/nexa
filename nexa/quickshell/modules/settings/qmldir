@@ -1,2 +1,6 @@
 SettingsWindow 1.0 SettingsWindow.qml
-LockSettingsPanel 1.0 LockSettingsPanel.qml
+SettingsPanel 1.0 SettingsPanel.qml
+LockSettingsPanel 1.0 SettingsPanel.qml
+LockScreenSettings 1.0 LockScreenSettings.qml
+SystemThemeSettings 1.0 SystemThemeSettings.qml
+BarsSettings 1.0 BarsSettings.qml

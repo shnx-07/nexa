@@ -1,5 +1,5 @@
 {
-  "volume": 100,
+  "volume": 85,
   "muted": true,
   "input_volume": 100,
   "input_muted": false,
@@ -8,7 +8,7 @@
   "wifi_enabled": true,
   "airplane_enabled": false,
   "nightlight_enabled": false,
-  "nightlight_mode": "night",
+  "nightlight_mode": "manual",
   "nightlight_temperature": 6500,
   "screen_filter": "off",
   "dnd": false

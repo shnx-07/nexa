@@ -114,22 +114,6 @@ Item {
                         anchors.fill: parent
                     }
                 }
-
-
-                // ====================================================
-                // PAGE 3 — PROFILE
-                // ====================================================
-
-                Item {
-                    width: pageViewport.width
-                    height: pageViewport.height
-
-
-                    PanelModule.Profile {
-                        anchors.fill: parent
-                    }
-                }
-
             }
         }
 
@@ -202,22 +186,13 @@ Item {
                     active: root.currentPage === 2
                     onClicked: root.currentPage = 2
                 }
-
-                NavButton {
-                    id: navBtn3
-                    Layout.fillWidth: true
-                    icon: ""
-                    active: root.currentPage === 3
-                    onClicked: root.currentPage = 3
-                }
             }
 
             NexaUI.NexaActiveIndicator {
                 y: navLayout.y + navLayout.height - height / 2
                 x: {
                     let activeBtn = root.currentPage === 0 ? navBtn0 :
-                                    root.currentPage === 1 ? navBtn1 :
-                                    root.currentPage === 2 ? navBtn2 : navBtn3;
+                                    root.currentPage === 1 ? navBtn1 : navBtn2;
                     return navLayout.x + activeBtn.x + activeBtn.width / 2 - width / 2;
                 }
             }

@@ -158,40 +158,45 @@ apply_static() {
     fi
   fi
 
-  # Multiple dynamic transition animations
-  local transitions=("wipe" "wave" "grow" "center" "any" "outer" "fade" "left" "right" "top" "bottom")
-  local rand_idx=$((RANDOM % ${#transitions[@]}))
-  local selected_trans="${transitions[$rand_idx]}"
-  local rand_angle=$(( (RANDOM % 8) * 45 )) # 0, 45, 90, 135, 180, 225, 270, 315
-
-  log "Applying wallpaper with transition: $selected_trans ($rand_angle deg) at ${fps}fps"
-
-  if [[ "$MONITOR" == "*" || "$MONITOR" == "ALL" ]]; then
-
-    if ! awww img "$WALLPAPER" \
-      --transition-type "$selected_trans" \
-      --transition-angle "$rand_angle" \
-      --transition-duration 1.2 \
-      --transition-fps "$fps" \
-      --transition-bezier .42,0,.58,1 \
-      -f Bilinear; then
-      log "awww failed to apply wallpaper."
-      return 1
+  if [[ "$OPT_RESTORE" == "true" ]]; then
+    log "Restoring wallpaper with instant transition (none)"
+    if [[ "$MONITOR" == "*" || "$MONITOR" == "ALL" ]]; then
+      awww img "$WALLPAPER" --transition-type none || return 1
+    else
+      awww img -o "$MONITOR" "$WALLPAPER" --transition-type none || return 1
     fi
-
   else
+    # Multiple dynamic transition animations
+    local transitions=("wipe" "wave" "grow" "center" "any" "outer" "fade" "left" "right" "top" "bottom")
+    local rand_idx=$((RANDOM % ${#transitions[@]}))
+    local selected_trans="${transitions[$rand_idx]}"
+    local rand_angle=$(( (RANDOM % 8) * 45 )) # 0, 45, 90, 135, 180, 225, 270, 315
 
-    if ! awww img -o "$MONITOR" "$WALLPAPER" \
-      --transition-type "$selected_trans" \
-      --transition-angle "$rand_angle" \
-      --transition-duration 1.2 \
-      --transition-fps "$fps" \
-      --transition-bezier .42,0,.58,1 \
-      -f Bilinear; then
-      log "awww failed to apply wallpaper on $MONITOR."
-      return 1
+    log "Applying wallpaper with transition: $selected_trans ($rand_angle deg) at ${fps}fps"
+
+    if [[ "$MONITOR" == "*" || "$MONITOR" == "ALL" ]]; then
+      if ! awww img "$WALLPAPER" \
+        --transition-type "$selected_trans" \
+        --transition-angle "$rand_angle" \
+        --transition-duration 1.2 \
+        --transition-fps "$fps" \
+        --transition-bezier .42,0,.58,1 \
+        -f Bilinear; then
+        log "awww failed to apply wallpaper."
+        return 1
+      fi
+    else
+      if ! awww img -o "$MONITOR" "$WALLPAPER" \
+        --transition-type "$selected_trans" \
+        --transition-angle "$rand_angle" \
+        --transition-duration 1.2 \
+        --transition-fps "$fps" \
+        --transition-bezier .42,0,.58,1 \
+        -f Bilinear; then
+        log "awww failed to apply wallpaper on $MONITOR."
+        return 1
+      fi
     fi
-
   fi
 
   return 0
@@ -360,10 +365,10 @@ else
 fi
 
 # ------------------------------------------------------------
-# Apply selected NEXA theme mode
+# Apply selected NEXA theme mode (skipped during restore)
 # ------------------------------------------------------------
 
-if [[ -f "$THEME_SCRIPT" ]]; then
+if [[ "$OPT_RESTORE" != "true" && -f "$THEME_SCRIPT" ]]; then
 
   log "Applying NEXA theme..."
   log "Theme script: $THEME_SCRIPT"

@@ -59,7 +59,6 @@ Item {
                         case 0: return "󰒓"
                         case 1: return "󰂚"
                         case 2: return "󰖐"
-                        case 3: return ""
                         default: return "󰕰"
                         }
                     }
@@ -77,7 +76,6 @@ Item {
                         case 0: return "Quick Settings"
                         case 1: return "Notifications"
                         case 2: return "Weather"
-                        case 3: return "Profile"
                         default: return "Control Center"
                         }
                     }
@@ -123,12 +121,6 @@ Item {
                         pageIndex: 2
                         icon: "󰖐"
                         label: "Weather"
-                    }
-
-                    NavTab {
-                        pageIndex: 3
-                        icon: ""
-                        label: "Profile"
                     }
                 }
             }
@@ -203,16 +195,6 @@ Item {
                     height: pageViewport.height
 
                     WeatherModule.Weather {
-                        anchors.fill: parent
-                    }
-                }
-
-                // Page 3 — Profile
-                Item {
-                    width: pageViewport.width
-                    height: pageViewport.height
-
-                    PanelModule.Profile {
                         anchors.fill: parent
                     }
                 }

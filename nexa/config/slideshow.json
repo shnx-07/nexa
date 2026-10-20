@@ -1,9 +1,9 @@
 {
-  "enabled": true,
+  "enabled": false,
   "paused": false,
-  "interval": "15m",
+  "interval": "30m",
   "type_filter": "All",
   "apply_target": "Background",
-  "last_wallpaper": "/home/shnx/Pictures/Wallpapers/Slideshow/lantern-light-room.png",
-  "last_changed": 1791113549
+  "last_wallpaper": "/home/shnx/Pictures/Wallpapers/Slideshow/krjef9fchcx61.png",
+  "last_changed": 1792442863
 }

@@ -14,7 +14,14 @@
   "internal_outputs": [],
   "ignore_outputs": [],
   "wallpaper_script": null,
-  "monitor_prefs": {},
+  "monitor_prefs": {
+    "LenovoGroupLimited_0x9051": {
+      "mode": "1920x1080@60",
+      "scale": 1.25,
+      "transform": 1,
+      "vrr": true
+    }
+  },
   "profiles": [
     {
       "name": "Laptop Display",
@@ -72,28 +79,6 @@
       "last_used_ms": 0
     },
     {
-      "name": "auto: 1 display [a3c751]",
-      "fingerprint": "LenovoGroupLimited_0x9051",
-      "mode": "internal-only",
-      "monitors": {
-        "LenovoGroupLimited_0x9051": {
-          "enabled": true,
-          "mode": "1920x1080@60.001",
-          "position": "0x0",
-          "scale": 1.0,
-          "transform": 0,
-          "primary": true,
-          "mirror_of": null,
-          "vrr": false,
-          "last_output": "eDP-1"
-        }
-      },
-      "auto": true,
-      "lid": "open",
-      "created_ms": 1790450011393,
-      "last_used_ms": 1790866992714
-    },
-    {
       "name": "auto: 2 displays [393420]",
       "fingerprint": "GIGABYTETECHNOLOGYCOLTD_GS27QA_26032B000279+LenovoGroupLimited_0x9051",
       "mode": "external-only",
@@ -125,6 +110,28 @@
       "lid": "open",
       "created_ms": 1790450616134,
       "last_used_ms": 1790488500662
+    },
+    {
+      "name": "auto: 1 display [a3c751]",
+      "fingerprint": "LenovoGroupLimited_0x9051",
+      "mode": "internal-only",
+      "monitors": {
+        "LenovoGroupLimited_0x9051": {
+          "enabled": true,
+          "mode": "1920x1080@60.001",
+          "position": "0x0",
+          "scale": 1.0,
+          "transform": 0,
+          "primary": true,
+          "mirror_of": null,
+          "vrr": false,
+          "last_output": "eDP-1"
+        }
+      },
+      "auto": true,
+      "lid": "open",
+      "created_ms": 1790450011393,
+      "last_used_ms": 1792474991554
     }
   ]
 }

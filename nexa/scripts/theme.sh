@@ -1272,11 +1272,18 @@ apply-style)
   require_runtime
 
   NEW_STYLE="${2:-}"
+  NEW_MODE="${3:-}"
 
   valid_style "$NEW_STYLE" ||
     fail "Invalid theme style: $NEW_STYLE"
 
   load_theme_config
+
+  if [[ -n "$NEW_MODE" ]]; then
+    valid_mode "$NEW_MODE" ||
+      fail "Invalid mode: $NEW_MODE"
+    MODE="$NEW_MODE"
+  fi
 
   STYLE="$NEW_STYLE"
 
@@ -1311,12 +1318,11 @@ STATE
 
 apply)
 
-  RUNTIME_NEXA="${XDG_RUNTIME_DIR:-/tmp/nexa-${USER:-user}}/nexa"
-  if [[ -f "$RUNTIME_NEXA/locked" ]] || [[ -f /tmp/nexa-locked ]]; then
+  RUNTIME_NEXA="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/nexa"
+  if [[ -f "$RUNTIME_NEXA/locked" ]]; then
     log "Session is locked. Deferring theme apply to prevent lockscreen reload."
     mkdir -p "$RUNTIME_NEXA"
     touch "$RUNTIME_NEXA/restart-pending"
-    touch /tmp/nexa-restart-pending
     exit 0
   fi
 

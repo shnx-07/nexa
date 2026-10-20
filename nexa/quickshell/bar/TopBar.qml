@@ -5,171 +5,275 @@ import Quickshell
 
 import "../theme" as Nexa
 import "../theme/components" as NexaUI
+import "../services" as Services
 import "../modules/workspace" as WorkspaceModule
 import "../modules/battery" as BatteryModule
 import "../modules/network" as NetworkModule
 import "../modules/power" as PowerModule
+
 PanelWindow {
     id: root
 
     // ============================================================
-    // NEXA TOP BAR
-    //
-    // Purpose:
-    // - Own the permanent Top Bar window and layout.
-    // - Compose feature modules.
-    //
-    // Important:
-    // - Feature logic does NOT belong here.
-    // - Dynamic Island is a separate window/entity.
-    // - Side Panel is not implemented in this phase.
+    // NEXA BAR (Supports Top, Bottom, Left, Right & Autohide)
     // ============================================================
 
+    readonly property string barPosition: Services.BarConfig.position || "top"
+    readonly property bool isVertical: barPosition === "left" || barPosition === "right"
+    readonly property bool isAutohide: Services.BarConfig.autohide || false
+    readonly property int effectiveSize: Services.BarConfig.height || Nexa.Theme.barHeight
 
-    // ------------------------------------------------------------
-    // Window
-    // ------------------------------------------------------------
+    property bool isHovered: false
+    property bool isRevealed: !isAutohide || isHovered
 
-    anchors {
-        top: true
-        left: true
-        right: true
+    Timer {
+        id: hideTimer
+        interval: 350
+        repeat: false
+        onTriggered: {
+            if (!root.isHovered && root.isAutohide) {
+                root.isRevealed = false;
+            }
+        }
     }
 
-    implicitHeight: Nexa.Theme.barHeight
+    // ------------------------------------------------------------
+    // Dynamic Window Anchors & Sizing
+    // ------------------------------------------------------------
+    anchors {
+        top: barPosition !== "bottom"
+        bottom: barPosition !== "top"
+        left: barPosition !== "right"
+        right: barPosition !== "left"
+    }
+
+    implicitHeight: isVertical ? 0 : effectiveSize
+    implicitWidth: isVertical ? effectiveSize : 0
 
     color: "transparent"
 
-    exclusionMode: ExclusionMode.Auto
-
+    // When autohide is enabled, ignore exclusion so Hyprland windows use full screen
+    exclusionMode: isAutohide ? ExclusionMode.Ignore : ExclusionMode.Auto
 
     // ============================================================
-    // BAR SURFACE
+    // BAR SURFACE WITH SLIDE ANIMATION
     // ============================================================
-
     Rectangle {
+        id: surfaceContainer
         anchors.fill: parent
-
         color: "transparent"
 
+        // Offset transitions for autohide
+        y: {
+            if (!root.isAutohide) return 0;
+            if (root.barPosition === "top") return root.isRevealed ? 0 : -(root.implicitHeight - 2);
+            if (root.barPosition === "bottom") return root.isRevealed ? 0 : (root.implicitHeight - 2);
+            return 0;
+        }
 
-        // ========================================================
-        // LEFT SECTION
-        //
-        // Final:
-        // [ Workspaces ] [ Current App ]
-        // ========================================================
+        x: {
+            if (!root.isAutohide) return 0;
+            if (root.barPosition === "left") return root.isRevealed ? 0 : -(root.implicitWidth - 2);
+            if (root.barPosition === "right") return root.isRevealed ? 0 : (root.implicitWidth - 2);
+            return 0;
+        }
 
-        RowLayout {
-            id: leftSection
+        Behavior on y {
+            NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+        }
 
-            anchors {
-                left: parent.left
-                leftMargin: Nexa.Theme.spacingMd
-                verticalCenter: parent.verticalCenter
+        Behavior on x {
+            NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+        }
+
+        // Mouse hover tracking
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            propagateComposedEvents: true
+            onEntered: {
+                hideTimer.stop();
+                root.isHovered = true;
+                root.isRevealed = true;
             }
-
-            spacing: Nexa.Theme.spacingSm
-
-
-            // ------------------------------------------------------------
-            // WORKSPACE SECTION
-            //
-            // Owns:
-            // - workspace buttons
-            // - active workspace state
-            // - current application section
-            //
-            // All workspace/current-app logic stays inside the module.
-            // ------------------------------------------------------------
-
-            WorkspaceModule.Workspace {
-                id: workspaceSection
+            onExited: {
+                root.isHovered = false;
+                if (root.isAutohide) hideTimer.restart();
             }
         }
 
-
         // ========================================================
-        // CENTER
-        //
-        // Intentionally empty.
-        //
-        // Dynamic Island is a separate PanelWindow and must remain
-        // independent from TopBar.qml.
+        // ON-DEMAND BAR LAYOUT (Only active layout is instantiated)
         // ========================================================
+        Loader {
+            anchors.fill: parent
+            active: !root.isVertical
+            visible: active
+            sourceComponent: horizontalLayoutComponent
+        }
 
+        Loader {
+            anchors.fill: parent
+            active: root.isVertical
+            visible: active
+            sourceComponent: verticalLayoutComponent
+        }
 
-        // ========================================================
-        // RIGHT SECTION
-        //
-        // Final:
-        // [ Battery ] [ Wi-Fi | BT ] [ Panel ] [ Power ]
-        // ========================================================
+        Component {
+            id: horizontalLayoutComponent
 
-        RowLayout {
-            id: rightSection
+            Item {
+                anchors.fill: parent
 
-            anchors {
-                right: parent.right
-                rightMargin: Nexa.Theme.spacingMd
-                verticalCenter: parent.verticalCenter
-            }
-
-            spacing: Nexa.Theme.spacingXs
-
-
-            // ----------------------------------------------------
-            // PILL 0 — MUSIC WAVEFORM
-            // ----------------------------------------------------
-
-            WaveformPill {
-                id: musicWaveformPill
-            }
-
-
-            // ----------------------------------------------------
-            // PILL 1 — BATTERY
-            // ----------------------------------------------------
-
-            component BarPill: Rectangle {
-                default property alias content: pillRow.data
-                property int contentSpacing: 0
-                property int extraWidth: Nexa.Theme.spacingMd
-
-                implicitHeight: Nexa.Theme.controlHeightSm
-                implicitWidth: pillRow.implicitWidth + extraWidth
-                radius: height / 2
-                color: Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
-
-                Behavior on color {
-                    ColorAnimation { duration: Nexa.Theme.animationFast }
+            // LEFT SECTION: Workspaces & Current App
+            RowLayout {
+                id: leftSection
+                anchors {
+                    left: parent.left
+                    leftMargin: Nexa.Theme.spacingMd
+                    verticalCenter: parent.verticalCenter
                 }
+                spacing: Nexa.Theme.spacingSm
+                visible: Services.BarConfig.showWorkspaces
 
-                Row {
-                    id: pillRow
-                    anchors.centerIn: parent
-                    spacing: contentSpacing
+                WorkspaceModule.Workspace {
+                    id: workspaceSection
                 }
             }
 
-            BarPill {
-                id: batteryPill
-                BatteryModule.Battery {}
-            }
+            // RIGHT SECTION: Music, Battery, Network, Power
+            RowLayout {
+                id: rightSection
+                anchors {
+                    right: parent.right
+                    rightMargin: Nexa.Theme.spacingMd
+                    verticalCenter: parent.verticalCenter
+                }
+                spacing: Nexa.Theme.spacingXs
 
-            BarPill {
-                id: networkPill
-                NetworkModule.Network {}
-            }
+                WaveformPill {
+                    id: musicWaveformPill
+                    visible: Services.BarConfig.showMusic
+                }
 
-            BarPill {
-                id: powerPill
-                extraWidth: 0
-                implicitWidth: Nexa.Theme.controlHeightSm
-                PowerModule.Power {}
+                component BarPill: Rectangle {
+                    default property alias content: pillRow.data
+                    property int contentSpacing: 0
+                    property int extraWidth: Nexa.Theme.spacingMd
+
+                    implicitHeight: Nexa.Theme.controlHeightSm
+                    implicitWidth: pillRow.implicitWidth + extraWidth
+                    radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
+                    color: Nexa.Theme.surfaceContainer
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.border
+
+                    Behavior on color {
+                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                    }
+
+                    Row {
+                        id: pillRow
+                        anchors.centerIn: parent
+                        spacing: contentSpacing
+                    }
+                }
+
+                BarPill {
+                    id: batteryPill
+                    visible: Services.BarConfig.showBattery
+                    BatteryModule.Battery {}
+                }
+
+                BarPill {
+                    id: networkPill
+                    visible: Services.BarConfig.showNetwork
+                    NetworkModule.Network {}
+                }
+
+                BarPill {
+                    id: powerPill
+                    visible: Services.BarConfig.showPower
+                    extraWidth: 0
+                    implicitWidth: Nexa.Theme.controlHeightSm
+                    PowerModule.Power {}
+                }
             }
         }
+
+        }
+
+        Component {
+            id: verticalLayoutComponent
+
+            Item {
+                anchors.fill: parent
+
+            ColumnLayout {
+                anchors {
+                    top: parent.top
+                    topMargin: Nexa.Theme.spacingMd
+                    horizontalCenter: parent.horizontalCenter
+                }
+                spacing: Nexa.Theme.spacingSm
+                visible: Services.BarConfig.showWorkspaces
+
+                WorkspaceModule.Workspace {
+                    id: verticalWorkspaceSection
+                }
+            }
+
+            ColumnLayout {
+                anchors {
+                    bottom: parent.bottom
+                    bottomMargin: Nexa.Theme.spacingMd
+                    horizontalCenter: parent.horizontalCenter
+                }
+                spacing: Nexa.Theme.spacingXs
+
+                Rectangle {
+                    visible: Services.BarConfig.showBattery
+                    width: Nexa.Theme.controlHeightSm
+                    height: Nexa.Theme.controlHeightSm
+                    radius: Nexa.Theme.windowRounding === 0 ? 0 : width / 2
+                    color: Nexa.Theme.surfaceContainer
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.border
+
+                    BatteryModule.Battery {
+                        anchors.centerIn: parent
+                    }
+                }
+
+                Rectangle {
+                    visible: Services.BarConfig.showNetwork
+                    width: Nexa.Theme.controlHeightSm
+                    height: Nexa.Theme.controlHeightSm
+                    radius: Nexa.Theme.windowRounding === 0 ? 0 : width / 2
+                    color: Nexa.Theme.surfaceContainer
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.border
+
+                    NetworkModule.Network {
+                        anchors.centerIn: parent
+                    }
+                }
+
+                Rectangle {
+                    visible: Services.BarConfig.showPower
+                    width: Nexa.Theme.controlHeightSm
+                    height: Nexa.Theme.controlHeightSm
+                    radius: Nexa.Theme.windowRounding === 0 ? 0 : width / 2
+                    color: Nexa.Theme.surfaceContainer
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.border
+
+                    PowerModule.Power {
+                        anchors.centerIn: parent
+                    }
+                }
+            }
+        }
+    }
     }
 }

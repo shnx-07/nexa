@@ -8,11 +8,16 @@ import "island"
 import "modules/lockscreen" as LockScreenModule
 import "modules/nightlight" as NightLightModule
 import "wallpaper" as WallpaperModule
+import "services" as Services
 
 ShellRoot {
+    Component.onCompleted: {
+        Services.DesktopTheme.manage = true
+    }
+
     Connections {
         target: Quickshell
-        function onReloadCompleted(): void {
+        function onReloadCompleted() {
             Quickshell.inhibitReloadPopup()
         }
     }
@@ -74,19 +79,19 @@ ShellRoot {
 
     IpcHandler {
         target: "workspaceManager"
-        function open(): void {
+        function open() {
             if (!workspaceLoader.active) {
                 workspaceLoader.active = true
             } else if (workspaceLoader.item) {
                 workspaceLoader.item.openManager()
             }
         }
-        function close(): void {
+        function close() {
             if (workspaceLoader.item) {
                 workspaceLoader.item.closeManager()
             }
         }
-        function toggle(): void {
+        function toggle() {
             if (!workspaceLoader.active) {
                 workspaceLoader.active = true
             } else if (workspaceLoader.item) {
@@ -132,7 +137,7 @@ ShellRoot {
 
     IpcHandler {
         target: "wallpaper"
-        function toggle(): void {
+        function toggle() {
             if (!wallpaperLoader.active) {
                 wallpaperLoader.active = true
             } else if (wallpaperLoader.item) {
@@ -144,7 +149,7 @@ ShellRoot {
                 wallpaperLoader.active = false
             }
         }
-        function open(): void {
+        function open() {
             if (!wallpaperLoader.active) {
                 wallpaperLoader.active = true
             } else if (wallpaperLoader.item) {
@@ -152,7 +157,7 @@ ShellRoot {
                 wallpaperLoader.item.forceActiveFocus()
             }
         }
-        function close(): void {
+        function close() {
             if (wallpaperLoader.item) {
                 wallpaperLoader.item.visible = false
             }
@@ -210,7 +215,7 @@ ShellRoot {
     IpcHandler {
         target: "clipboard"
 
-        function open(): void {
+        function open() {
             if (!clipboardLoader.active) {
                 clipboardLoader.active = true
             } else if (clipboardLoader.item) {
@@ -218,13 +223,13 @@ ShellRoot {
             }
         }
 
-        function close(): void {
+        function close() {
             if (clipboardLoader.item) {
                 clipboardLoader.item.closeClipboard()
             }
         }
 
-        function toggle(): void {
+        function toggle() {
             if (!clipboardLoader.active) {
                 clipboardLoader.active = true
             } else if (clipboardLoader.item) {
@@ -250,6 +255,32 @@ ShellRoot {
         function onWindowAliveChanged() {
             if (settingsLoader.item && !settingsLoader.item.windowAlive) {
                 settingsLoader.active = false
+            }
+        }
+    }
+
+    IpcHandler {
+        target: "settings"
+
+        function open() {
+            if (!settingsLoader.active) {
+                settingsLoader.active = true
+            } else if (settingsLoader.item) {
+                settingsLoader.item.openWindow()
+            }
+        }
+
+        function close() {
+            if (settingsLoader.item) {
+                settingsLoader.item.closeWindow()
+            }
+        }
+
+        function toggle() {
+            if (!settingsLoader.active) {
+                settingsLoader.active = true
+            } else if (settingsLoader.item) {
+                settingsLoader.item.toggleWindow()
             }
         }
     }

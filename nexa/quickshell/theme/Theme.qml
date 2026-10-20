@@ -28,6 +28,34 @@ QtObject {
         }
     }
 
+    // ============================================================
+    // SHAPES & CURVATURE PROFILE (System-wide Radii)
+    // ============================================================
+    property int windowRounding: 10
+    property int windowBorderSize: 0
+
+    property FileView _shapesWatcher: FileView {
+        path: Quickshell.env("HOME") + "/.config/nexa/config/shapes.json"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const data = JSON.parse(text())
+                if (data && data.rounding !== undefined) {
+                    root.windowRounding = data.rounding
+                }
+                if (data && data.border_size !== undefined) {
+                    root.windowBorderSize = data.border_size
+                }
+            } catch (e) {}
+        }
+    }
+
+    Component.onCompleted: {
+        _shapesWatcher.reload();
+        _glassWatcher.reload();
+    }
+
 
     // ============================================================
     // CORE PALETTE
@@ -582,17 +610,17 @@ QtObject {
 
 
     // ============================================================
-    // RADII
+    // RADII (Dynamically scaled from system windowRounding profile)
     // ============================================================
 
-    readonly property int radiusXs: 4
-    readonly property int radiusSm: 8
-    readonly property int radiusMd: 12
-    readonly property int radiusLg: 16
-    readonly property int radiusXl: 22
-    readonly property int radius2Xl: 28
+    readonly property int radiusXs: root.windowRounding === 0 ? 0 : Math.max(2, Math.round(root.windowRounding * 0.4))
+    readonly property int radiusSm: root.windowRounding === 0 ? 0 : Math.max(3, Math.round(root.windowRounding * 0.8))
+    readonly property int radiusMd: root.windowRounding === 0 ? 0 : Math.max(4, Math.round(root.windowRounding * 1.2))
+    readonly property int radiusLg: root.windowRounding === 0 ? 0 : Math.max(6, Math.round(root.windowRounding * 1.6))
+    readonly property int radiusXl: root.windowRounding === 0 ? 0 : Math.max(8, Math.round(root.windowRounding * 2.2))
+    readonly property int radius2Xl: root.windowRounding === 0 ? 0 : Math.max(10, Math.round(root.windowRounding * 2.8))
 
-    readonly property int radiusPill: 999
+    readonly property int radiusPill: root.windowRounding === 0 ? 0 : 999
 
 
     // ============================================================

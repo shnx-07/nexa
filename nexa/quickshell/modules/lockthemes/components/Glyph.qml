@@ -57,6 +57,7 @@ Item {
             "keyboard_capslock": "\uf102",
             "refresh": "\uf021",
             "settings": "\uf013",
+            "tune": "\udb81\ude35",
             "star": "\uf005",
             "star_border": "\uf006",
             "shield": "\uf132",

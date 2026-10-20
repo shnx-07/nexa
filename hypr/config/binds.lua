@@ -324,6 +324,7 @@ hl.bind(MOD .. " + SHIFT + D", hl.dsp.global("shnx-shell:utility-dock"))
 
 -- LockSCreen
 hl.bind("SUPER + L", hl.dsp.global("nexa:lock"))
+hl.bind(MOD .. " + ALT + L", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call lockSettings toggle"))
 -- Clipboard
 hl.bind(MOD .. " + V", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call clipboard toggle"))
 

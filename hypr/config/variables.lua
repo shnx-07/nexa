@@ -3,12 +3,13 @@
 -- ============================================================
 
 -- Default Applications
-TERMINAL     = "kitty"
+TERMINAL = "kitty"
 FILE_MANAGER = "dolphin"
-BROWSER      = "firefox"
-EDITOR       = "code"
-CALCULATOR   = "gnome-calculator"
-MUSIC        = "spotify"
+--FILE_MANAGER = "nemo"
+BROWSER = "firefox"
+EDITOR = "code"
+CALCULATOR = "gnome-calculator"
+MUSIC = "spotify"
 
 -- Workspaces
 NUM_WORKSPACES = 5

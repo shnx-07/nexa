@@ -6,7 +6,6 @@ import "../theme" as Nexa
 import "../modules/clock"
 import "../modules/media"
 import "../modules/systeminfo"
-import "../modules/theme"
 import "../modules/search"
 import "../modules/command"
 import "../modules/recorder"
@@ -127,18 +126,11 @@ Item {
 
     property string context: "idle"
 
-    // True while any ThemeIsland dropdown popup is open.
-    // Forwarded from the Loader item when the theme section is loaded.
-    readonly property bool themePopupOpen: {
-        if (root.section !== "theme")
-            return false
-
-        const item = sectionLoader.item
-        return item ? (item.themePopupOpen || false) : false
-    }
+    // Kept for backward compatibility with Island.qml bindings.
+    readonly property bool themePopupOpen: false
 
     readonly property bool shelfDragInProgress:
-        islandShelf ? islandShelf.dragInProgress : false
+        islandShelfLoader.item ? islandShelfLoader.item.dragInProgress : false
 
 
     // ============================================================
@@ -204,34 +196,20 @@ Item {
         specialMode !== "none"
 
     onSpecialModeChanged: {
-        if (root.specialMode === "search") {
-            Qt.callLater(
-                searchIsland.activate
-            )
+        if (root.specialMode === "search" && searchIslandLoader.item) {
+            Qt.callLater(searchIslandLoader.item.activate)
         }
-
-        if (root.specialMode === "command") {
-            Qt.callLater(
-                commandIsland.activate
-            )
+        if (root.specialMode === "command" && commandIslandLoader.item) {
+            Qt.callLater(commandIslandLoader.item.activate)
         }
-
-        if (root.specialMode === "power") {
-            Qt.callLater(
-                powerIsland.activate
-            )
+        if (root.specialMode === "power" && powerIslandLoader.item) {
+            Qt.callLater(powerIslandLoader.item.activate)
         }
-
-        if (root.specialMode === "appLauncher") {
-            Qt.callLater(
-                appLauncherIsland.activate
-            )
+        if (root.specialMode === "appLauncher" && appLauncherIslandLoader.item) {
+            Qt.callLater(appLauncherIslandLoader.item.activate)
         }
-
-        if (root.specialMode === "shelf") {
-            Qt.callLater(
-                islandShelf.refresh
-            )
+        if (root.specialMode === "shelf" && islandShelfLoader.item) {
+            Qt.callLater(islandShelfLoader.item.refresh)
         }
     }
 
@@ -299,32 +277,22 @@ Item {
     // TRANSIENT NOTIFICATION PREVIEW
     // ============================================================
 
-    NotificationIsland {
-        id: notificationIsland
-
-        anchors.fill:
-            parent
-
-        z:
-            200
-
-        visible:
-            root.notificationActive
-            && !root.osdActive
-            && !root.full
-            && !root.specialModeActive
-
-        notification:
-            root.notificationData
-
-
-        onActivated: {
-            root.notificationActive =
-                false
-
-            notificationTimer.stop()
-
-            root.notificationPreviewActivated()
+    Loader {
+        id: notificationIslandLoader
+        anchors.fill: parent
+        z: 200
+        active: root.notificationActive
+        visible: active && !root.osdActive && !root.full && !root.specialModeActive
+        source: active ? "../modules/notifications/NotificationIsland.qml" : ""
+        onLoaded: {
+            if (item) {
+                item.notification = Qt.binding(() => root.notificationData)
+                item.activated.connect(function() {
+                    root.notificationActive = false
+                    notificationTimer.stop()
+                    root.notificationPreviewActivated()
+                })
+            }
         }
     }    
 
@@ -730,11 +698,6 @@ Item {
                         name: "system",
                         icon: "󰍛",
                         label: "System"
-                    },
-                    {
-                        name: "theme",
-                        icon: "󰏘",
-                        label: "Theme"
                     }
                 ]
 
@@ -940,8 +903,6 @@ Item {
 
                     case "system":
                         return systemInfoComponent
-                    case "theme":
-                        return themeIslandComponent
 
                     default:
                         return null
@@ -953,105 +914,109 @@ Item {
 
 
 
-    SearchIsland {
-        id: searchIsland
+    property int pendingControlCenterPage: 0
 
+    Loader {
+        id: searchIslandLoader
         anchors.fill: parent
-
-        visible:
-            root.full
-            && root.specialMode === "search"
-
+        active: root.specialMode === "search"
+        visible: active && root.full
         z: 100
-
-        onAccepted:
-            root.requestCloseSpecialMode()
-
-        onRequestClose:
-            root.requestCloseSpecialMode()
+        source: active ? "../modules/search/SearchIsland.qml" : ""
+        onLoaded: {
+            if (item) {
+                item.accepted.connect(root.requestCloseSpecialMode)
+                item.requestClose.connect(root.requestCloseSpecialMode)
+                Qt.callLater(item.activate)
+            }
+        }
     }
 
-
-    CommandIsland {
-        id: commandIsland
-
+    Loader {
+        id: commandIslandLoader
         anchors.fill: parent
-
-        visible:
-            root.full
-            && root.specialMode === "command"
-
+        active: root.specialMode === "command"
+        visible: active && root.full
         z: 100
-
-        onRequestClose:
-            root.requestCloseSpecialMode()
+        source: active ? "../modules/command/CommandIsland.qml" : ""
+        onLoaded: {
+            if (item) {
+                item.requestClose.connect(root.requestCloseSpecialMode)
+                Qt.callLater(item.activate)
+            }
+        }
     }
 
-    PowerIsland {
-        id: powerIsland
-
+    Loader {
+        id: powerIslandLoader
         anchors.fill: parent
-
-        visible:
-            root.full
-            && root.specialMode === "power"
-
+        active: root.specialMode === "power"
+        visible: active && root.full
         z: 100
-
-        onRequestClose:
-            root.requestCloseSpecialMode()
+        source: active ? "../modules/power/PowerIsland.qml" : ""
+        onLoaded: {
+            if (item) {
+                item.requestClose.connect(root.requestCloseSpecialMode)
+                Qt.callLater(item.activate)
+            }
+        }
     }
 
-    AppLauncherIsland {
-        id: appLauncherIsland
-
+    Loader {
+        id: appLauncherIslandLoader
         anchors.fill: parent
-
-        visible:
-            root.full
-            && root.specialMode === "appLauncher"
-
+        active: root.specialMode === "appLauncher"
+        visible: active && root.full
         z: 100
-
-        onRequestClose:
-            root.requestCloseSpecialMode()
+        source: active ? "../modules/appLauncher/AppLauncherIsland.qml" : ""
+        onLoaded: {
+            if (item) {
+                item.requestClose.connect(root.requestCloseSpecialMode)
+                Qt.callLater(item.activate)
+            }
+        }
     }
 
-    ControlCenterIsland {
-        id: controlCenterIsland
-
+    Loader {
+        id: controlCenterIslandLoader
         anchors.fill: parent
-
-        visible:
-            root.full
-            && root.specialMode === "controlCenter"
-
+        active: root.specialMode === "controlCenter"
+        visible: active && root.full
         z: 100
-
-        onRequestClose:
-            root.requestCloseSpecialMode()
+        source: active ? "ControlCenterIsland.qml" : ""
+        onLoaded: {
+            if (item) {
+                item.currentPage = root.pendingControlCenterPage
+                item.requestClose.connect(root.requestCloseSpecialMode)
+            }
+        }
     }
 
-    IslandShelf {
-        id: islandShelf
-
+    Loader {
+        id: islandShelfLoader
         anchors.fill: parent
-
-        visible: root.full && root.specialMode === "shelf"
-
+        active: root.specialMode === "shelf"
+        visible: active && root.full
         z: 100
-
-        onRequestClose:
-            root.requestCloseSpecialMode()
+        source: active ? "IslandShelf.qml" : ""
+        onLoaded: {
+            if (item) {
+                item.requestClose.connect(root.requestCloseSpecialMode)
+                Qt.callLater(item.refresh)
+            }
+        }
     }
 
     function setControlCenterPage(page) {
-        controlCenterIsland.currentPage = page
+        root.pendingControlCenterPage = page
+        if (controlCenterIslandLoader.item) {
+            controlCenterIslandLoader.item.currentPage = page
+        }
     }
 
     function triggerPowerKey(keyNum) {
-        if (powerIsland) {
-            powerIsland.triggerKeyNumber(keyNum)
+        if (powerIslandLoader.item) {
+            powerIslandLoader.item.triggerKeyNumber(keyNum)
         }
     }
 
@@ -1071,26 +1036,4 @@ Item {
     }
 
 
-    // ============================================================
-    // TEMPORARY THEME ISLAND VIEW
-    //
-    // IMPORTANT:
-    //
-    // This DOES NOT become a modules/theme implementation.
-    //
-    // The real NEXA theme engine remains where it already belongs:
-    //
-    //     quickshell/theme/
-    //
-    // Later this area will only be an Island-specific frontend
-    // for the existing frozen theme/wallpaper system.
-    // ============================================================
-
-    Component {
-      id: themeIslandComponent
-
-      ThemeIsland {
-          anchors.fill: parent
-      }
-    }
 }

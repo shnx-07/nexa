@@ -41,13 +41,10 @@ PanelWindow {
         }
     }
 
-    Keys.onEscapePressed: {
-        closeWindow()
-    }
-
-    LockSettingsPanel {
+    SettingsPanel {
         id: panel
-        anchors.fill: parent
+        width: root.width
+        height: root.height
 
         Connections {
             target: panel

@@ -1,0 +1,14 @@
+{
+  "position": "top",
+  "autohide": false,
+  "floating": true,
+  "height": 38,
+  "show_workspaces": true,
+  "show_title": true,
+  "show_island": true,
+  "show_tray": true,
+  "show_battery": true,
+  "show_network": true,
+  "show_power": true,
+  "show_music": true
+}

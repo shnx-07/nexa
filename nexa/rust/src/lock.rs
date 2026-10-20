@@ -29,7 +29,7 @@ pub fn handle(args: &[String]) -> Result<(), String> {
     match args[0].as_str() {
         "auth" => authenticate_from_stdin(),
         "status" => {
-            let is_locked = lock_flag_path().exists() || std::path::Path::new("/tmp/nexa-locked").exists();
+            let is_locked = lock_flag_path().exists();
             println!("{}", json!({ "locked": is_locked }));
             Ok(())
         }

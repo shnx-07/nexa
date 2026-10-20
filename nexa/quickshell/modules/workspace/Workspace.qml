@@ -176,7 +176,7 @@ RowLayout {
             }
         }
 
-        radius: height / 2
+        radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
         color: Nexa.Theme.surfaceContainer
 
         MouseArea {
@@ -244,7 +244,7 @@ RowLayout {
                         // Directly tracks parent width for instant single-curve synchronization
                         width: parent.width - 4
                         height: 10
-                        radius: height / 2
+                        radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
 
                         color: {
                             if (workspaceButton.active) {
@@ -305,7 +305,7 @@ RowLayout {
         visible: root.activeSpecialWorkspaces.length > 0
         implicitHeight: Nexa.Theme.controlHeightSm
         implicitWidth: scratchpadRow.implicitWidth + 12
-        radius: height / 2
+        radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
         color: Nexa.Theme.surfaceContainer
 
         Behavior on implicitWidth {
@@ -335,7 +335,7 @@ RowLayout {
 
                     width: 26
                     height: 22
-                    radius: height / 2
+                    radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
 
                     color: {
                         if (isFocused) {
