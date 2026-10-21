@@ -420,9 +420,11 @@ Item {
                 Rectangle {
                     width: 26
                     height: 26
-                    radius: 13
+                    radius: Nexa.Theme.windowRounding === 0 ? 0 : 13
                     visible: searchInput.text.length > 0
                     color: clearMouse.containsMouse ? Nexa.Theme.hover : "transparent"
+                    border.width: (Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
+                    border.color: Nexa.Theme.borderSubtle
 
                     Text {
                         anchors.centerIn: parent
@@ -464,7 +466,7 @@ Item {
 
                 Row {
                     id: categoryRow
-                    spacing: 8
+                    spacing: 6
                     height: parent.height
 
                     Repeater {
@@ -478,9 +480,9 @@ Item {
                                 searchInput.text.length === 0
                                 && root.selectedCategoryId === modelData.id
 
-                            implicitWidth: chipRow.implicitWidth + 24
+                            implicitWidth: chipRow.implicitWidth + 20
                             implicitHeight: 36
-                            radius: height / 2
+                            radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
 
                             color: active
                                 ? Nexa.Theme.primary
@@ -488,8 +490,8 @@ Item {
                                     ? Nexa.Theme.surfaceContainerHigh
                                     : Nexa.Theme.surfaceContainer
 
-                            border.width: active ? 0 : Nexa.Theme.borderThin
-                            border.color: active ? "transparent" : Nexa.Theme.border
+                            border.width: Nexa.Theme.borderThin
+                            border.color: active ? Nexa.Theme.primary : Nexa.Theme.border
 
                             scale: chipMouse.pressed ? 0.96 : (chipMouse.containsMouse ? 1.02 : 1.0)
 

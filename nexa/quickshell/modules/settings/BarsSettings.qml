@@ -13,6 +13,46 @@ Item {
 
     signal requestClose()
 
+    function rad(n) {
+        if (Nexa.Theme.windowRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (Nexa.Theme.windowRounding / 10.0)));
+    }
+
+    component StyledSwitch: Switch {
+        id: sw
+        implicitWidth: 44
+        implicitHeight: 24
+
+        indicator: Rectangle {
+            implicitWidth: 44
+            implicitHeight: 24
+            radius: root.rad(12)
+            color: sw.checked ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest
+            border.width: Nexa.Theme.borderThin
+            border.color: sw.checked ? Nexa.Theme.primary : Nexa.Theme.border
+
+            Rectangle {
+                x: sw.checked ? parent.width - width - 3 : 3
+                anchors.verticalCenter: parent.verticalCenter
+                width: 18
+                height: 18
+                radius: root.rad(9)
+                color: sw.checked ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                border.width: root.rad(9) === 0 ? Nexa.Theme.borderThin : 0
+                border.color: Nexa.Theme.border
+                Behavior on x {
+                    NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+                }
+            }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            acceptedButtons: Qt.NoButton
+        }
+    }
+
     // Status feedback
     property string toastText: ""
     property bool toastVisible: false
@@ -53,8 +93,10 @@ Item {
                 Rectangle {
                     width: 44
                     height: 44
-                    radius: 22
+                    radius: root.rad(22)
                     color: Nexa.Theme.primaryContainer
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.border
 
                     Text {
                         anchors.centerIn: parent
@@ -88,9 +130,9 @@ Item {
                 Rectangle {
                     width: resetTxt.implicitWidth + 20
                     height: 32
-                    radius: 6
+                    radius: root.rad(6)
                     color: rHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh
-                    border.width: 1
+                    border.width: Nexa.Theme.borderThin
                     border.color: Nexa.Theme.border
 
                     Text {
@@ -121,9 +163,9 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 height: 120
-                radius: 12
+                radius: root.rad(12)
                 color: "#0a0c10"
-                border.width: 1
+                border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.border
                 clip: true
 
@@ -149,7 +191,7 @@ Item {
                         Rectangle {
                             width: 8
                             height: 8
-                            radius: 4
+                            radius: root.rad(4)
                             color: Services.BarConfig.autohide ? "#ff9800" : "#27c93f"
                         }
 
@@ -167,10 +209,10 @@ Item {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         height: 52
-                        radius: 8
+                        radius: root.rad(8)
                         color: "#12151b"
-                        border.width: 1
-                        border.color: "#232832"
+                        border.width: Nexa.Theme.borderThin
+                        border.color: Nexa.Theme.border
 
                         // The Mock Bar
                         Rectangle {
@@ -191,20 +233,20 @@ Item {
                                     Rectangle {
                                         height: 32
                                         width: wsRow.implicitWidth + 14
-                                        radius: 16
+                                        radius: root.rad(16)
                                         color: "#282326"
-                                        border.width: 1
-                                        border.color: "#3f373d"
+                                        border.width: Nexa.Theme.borderThin
+                                        border.color: Nexa.Theme.border
 
                                         Row {
                                             id: wsRow
                                             anchors.centerIn: parent
                                             spacing: 6
 
-                                            Rectangle { width: 18; height: 10; radius: 5; color: "#ffb4ab" }
-                                            Rectangle { width: 8; height: 8; radius: 4; color: "#4a454e" }
-                                            Rectangle { width: 8; height: 8; radius: 4; color: "#4a454e" }
-                                            Rectangle { width: 8; height: 8; radius: 4; color: "#4a454e" }
+                                            Rectangle { width: 18; height: 10; radius: root.rad(5); color: "#ffb4ab" }
+                                            Rectangle { width: 8; height: 8; radius: root.rad(4); color: "#4a454e" }
+                                            Rectangle { width: 8; height: 8; radius: root.rad(4); color: "#4a454e" }
+                                            Rectangle { width: 8; height: 8; radius: root.rad(4); color: "#4a454e" }
                                         }
                                     }
 
@@ -213,10 +255,10 @@ Item {
                                         visible: Services.BarConfig.showTitle
                                         height: 32
                                         width: titleRow.implicitWidth + 16
-                                        radius: 16
+                                        radius: root.rad(16)
                                         color: "#282326"
-                                        border.width: 1
-                                        border.color: "#3f373d"
+                                        border.width: Nexa.Theme.borderThin
+                                        border.color: Nexa.Theme.border
 
                                         Row {
                                             id: titleRow
@@ -249,10 +291,10 @@ Item {
                                     visible: Services.BarConfig.showIsland
                                     height: 32
                                     width: 110
-                                    radius: 16
+                                    radius: root.rad(16)
                                     color: "#1c181a"
-                                    border.width: 1
-                                    border.color: "#3f373d"
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: Nexa.Theme.border
 
                                     Row {
                                         anchors.centerIn: parent
@@ -280,10 +322,10 @@ Item {
                                         visible: Services.BarConfig.showBattery
                                         height: 32
                                         width: batRow.implicitWidth + 14
-                                        radius: 16
+                                        radius: root.rad(16)
                                         color: "#282326"
-                                        border.width: 1
-                                        border.color: "#3f373d"
+                                        border.width: Nexa.Theme.borderThin
+                                        border.color: Nexa.Theme.border
 
                                         Row {
                                             id: batRow
@@ -313,10 +355,10 @@ Item {
                                         visible: Services.BarConfig.showTray
                                         height: 32
                                         width: netRow.implicitWidth + 16
-                                        radius: 16
+                                        radius: root.rad(16)
                                         color: "#282326"
-                                        border.width: 1
-                                        border.color: "#3f373d"
+                                        border.width: Nexa.Theme.borderThin
+                                        border.color: Nexa.Theme.border
 
                                         Row {
                                             id: netRow
@@ -361,9 +403,9 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 height: posCol.implicitHeight + 32
-                radius: 12
+                radius: root.rad(12)
                 color: Nexa.Theme.cardBackground
-                border.width: 1
+                border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.border
 
                 ColumnLayout {
@@ -408,11 +450,11 @@ Item {
 
                                 Layout.fillWidth: true
                                 height: 72
-                                radius: 8
+                                radius: root.rad(8)
                                 color: isSelected
                                     ? Nexa.Theme.primaryContainer
                                     : (posHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainer)
-                                border.width: isSelected ? 1.5 : 1
+                                border.width: isSelected ? Math.max(1.5, Nexa.Theme.borderThin * 1.5) : Nexa.Theme.borderThin
                                 border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
 
                                 Column {
@@ -472,9 +514,9 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 height: hideCol.implicitHeight + 32
-                radius: 12
+                radius: root.rad(12)
                 color: Nexa.Theme.cardBackground
-                border.width: 1
+                border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.border
 
                 ColumnLayout {
@@ -511,7 +553,7 @@ Item {
                             }
                         }
 
-                        Switch {
+                        StyledSwitch {
                             checked: Services.BarConfig.autohide
                             onToggled: {
                                 Services.BarConfig.setAutohide(checked);
@@ -528,9 +570,9 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 height: compCol.implicitHeight + 32
-                radius: 12
+                radius: root.rad(12)
                 color: Nexa.Theme.cardBackground
-                border.width: 1
+                border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.border
 
                 ColumnLayout {
@@ -559,7 +601,7 @@ Item {
                             color: Nexa.Theme.text
                         }
                         Item { Layout.fillWidth: true }
-                        Switch {
+                        StyledSwitch {
                             checked: Services.BarConfig.showWorkspaces
                             onToggled: Services.BarConfig.toggleComponent("workspaces")
                         }
@@ -577,7 +619,7 @@ Item {
                             color: Nexa.Theme.text
                         }
                         Item { Layout.fillWidth: true }
-                        Switch {
+                        StyledSwitch {
                             checked: Services.BarConfig.showTitle
                             onToggled: Services.BarConfig.toggleComponent("title")
                         }
@@ -595,7 +637,7 @@ Item {
                             color: Nexa.Theme.text
                         }
                         Item { Layout.fillWidth: true }
-                        Switch {
+                        StyledSwitch {
                             checked: Services.BarConfig.showIsland
                             onToggled: Services.BarConfig.toggleComponent("island")
                         }
@@ -613,7 +655,7 @@ Item {
                             color: Nexa.Theme.text
                         }
                         Item { Layout.fillWidth: true }
-                        Switch {
+                        StyledSwitch {
                             checked: Services.BarConfig.showBattery
                             onToggled: Services.BarConfig.toggleComponent("battery")
                         }
@@ -631,7 +673,7 @@ Item {
                             color: Nexa.Theme.text
                         }
                         Item { Layout.fillWidth: true }
-                        Switch {
+                        StyledSwitch {
                             checked: Services.BarConfig.showTray
                             onToggled: Services.BarConfig.toggleComponent("tray")
                         }
@@ -651,9 +693,9 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         width: toastRow.implicitWidth + 28
         height: 38
-        radius: 19
+        radius: root.rad(19)
         color: Nexa.Theme.surfaceContainerHighest
-        border.width: 1
+        border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.primary
         visible: root.toastVisible
         opacity: root.toastVisible ? 1.0 : 0.0

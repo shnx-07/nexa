@@ -370,33 +370,39 @@ QtObject {
 
     readonly property color borderSubtle:
         glassMode
-            ? Qt.rgba(1, 1, 1, 0.15)
-            : Qt.rgba(
-                outline.r,
-                outline.g,
-                outline.b,
-                0.18
-            )
+            ? ((root.windowRounding === 0 || root.windowBorderSize > 0) ? Qt.rgba(primary.r, primary.g, primary.b, 0.40) : Qt.rgba(1, 1, 1, 0.15))
+            : ((root.windowRounding === 0 || root.windowBorderSize > 0)
+                ? Qt.rgba(primary.r, primary.g, primary.b, 0.45)
+                : Qt.rgba(
+                    outline.r,
+                    outline.g,
+                    outline.b,
+                    0.18
+                ))
 
     readonly property color border:
         glassMode
-            ? Qt.rgba(1, 1, 1, 0.22)
-            : Qt.rgba(
-                outline.r,
-                outline.g,
-                outline.b,
-                0.32
-            )
+            ? ((root.windowRounding === 0 || root.windowBorderSize > 0) ? Qt.rgba(primary.r, primary.g, primary.b, 0.70) : Qt.rgba(1, 1, 1, 0.22))
+            : ((root.windowRounding === 0 || root.windowBorderSize > 0)
+                ? Qt.rgba(primary.r, primary.g, primary.b, 0.85)
+                : Qt.rgba(
+                    outline.r,
+                    outline.g,
+                    outline.b,
+                    0.32
+                ))
 
     readonly property color borderStrong:
         glassMode
-            ? Qt.rgba(1, 1, 1, 0.38)
-            : Qt.rgba(
-                outline.r,
-                outline.g,
-                outline.b,
-                0.55
-            )
+            ? ((root.windowRounding === 0 || root.windowBorderSize > 0) ? primary : Qt.rgba(1, 1, 1, 0.38))
+            : ((root.windowRounding === 0 || root.windowBorderSize > 0)
+                ? primary
+                : Qt.rgba(
+                    outline.r,
+                    outline.g,
+                    outline.b,
+                    0.55
+                ))
 
     readonly property color focusBorder:
         primary
@@ -627,7 +633,7 @@ QtObject {
     // BORDER WIDTHS
     // ============================================================
 
-    readonly property real borderThin: 1
+    readonly property real borderThin: root.windowBorderSize > 0 ? root.windowBorderSize : 1
     readonly property real borderNormal: 1.5
     readonly property real borderStrongWidth: 2
 

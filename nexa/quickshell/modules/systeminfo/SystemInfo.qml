@@ -399,8 +399,10 @@ Item {
                             Rectangle {
                                 implicitWidth: cpuTempRow.implicitWidth + 10
                                 implicitHeight: 18
-                                radius: 9
+                                radius: Nexa.Theme.windowRounding === 0 ? 0 : 9
                                 color: root.cpuTemp > 75 ? Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.2) : (root.cpuTemp > 58 ? Qt.rgba(Nexa.Theme.warning.r, Nexa.Theme.warning.g, Nexa.Theme.warning.b, 0.2) : Nexa.Theme.surfaceContainerHighest)
+                                border.width: Nexa.Theme.borderThin
+                                border.color: Nexa.Theme.borderSubtle
 
                                 Row {
                                     id: cpuTempRow
@@ -784,7 +786,7 @@ Item {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 6
-                            radius: 3
+                            radius: Nexa.Theme.windowRounding === 0 ? 0 : 3
                             color: Nexa.Theme.surfaceContainerHighest
 
                             Rectangle {
@@ -854,8 +856,10 @@ Item {
                         Rectangle {
                             implicitWidth: 84
                             implicitHeight: 20
-                            radius: 10
+                            radius: Nexa.Theme.windowRounding === 0 ? 0 : 10
                             color: Nexa.Theme.surfaceContainerHighest
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.border
 
                             Row {
                                 anchors.centerIn: parent
@@ -865,8 +869,10 @@ Item {
                                 Rectangle {
                                     width: 38
                                     height: 16
-                                    radius: 8
+                                    radius: Nexa.Theme.windowRounding === 0 ? 0 : 8
                                     color: root.processTab === "cpu" ? Nexa.Theme.primary : "transparent"
+                                    border.width: root.processTab === "cpu" ? Nexa.Theme.borderThin : 0
+                                    border.color: Nexa.Theme.borderStrong
 
                                     Text {
                                         anchors.centerIn: parent
@@ -888,8 +894,10 @@ Item {
                                 Rectangle {
                                     width: 38
                                     height: 16
-                                    radius: 8
+                                    radius: Nexa.Theme.windowRounding === 0 ? 0 : 8
                                     color: root.processTab === "mem" ? Nexa.Theme.primary : "transparent"
+                                    border.width: root.processTab === "mem" ? Nexa.Theme.borderThin : 0
+                                    border.color: Nexa.Theme.borderStrong
 
                                     Text {
                                         anchors.centerIn: parent
@@ -922,8 +930,10 @@ Item {
                                 id: procRow
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 22
-                                radius: 4
+                                radius: Nexa.Theme.windowRounding === 0 ? 0 : 4
                                 color: hoverHandler.hovered ? Nexa.Theme.hover : "transparent"
+                                border.width: (hoverHandler.hovered && (Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0)) ? Nexa.Theme.borderThin : 0
+                                border.color: Nexa.Theme.border
 
                                 HoverHandler {
                                     id: hoverHandler
@@ -958,8 +968,10 @@ Item {
                                     Rectangle {
                                         implicitWidth: usageText.implicitWidth + 6
                                         implicitHeight: 15
-                                        radius: 3
+                                        radius: Nexa.Theme.windowRounding === 0 ? 0 : 3
                                         color: Nexa.Theme.surfaceContainerHighest
+                                        border.width: Nexa.Theme.borderThin
+                                        border.color: Nexa.Theme.borderSubtle
 
                                         Text {
                                             id: usageText
@@ -977,8 +989,10 @@ Item {
                                         id: killBtn
                                         implicitWidth: 16
                                         implicitHeight: 16
-                                        radius: 8
+                                        radius: Nexa.Theme.windowRounding === 0 ? 0 : 8
                                         color: killMouse.containsMouse ? Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.35) : "transparent"
+                                        border.width: (Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
+                                        border.color: Nexa.Theme.error
                                         visible: hoverHandler.hovered
 
                                         Text {

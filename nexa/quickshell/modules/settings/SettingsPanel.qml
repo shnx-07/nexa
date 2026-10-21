@@ -20,7 +20,7 @@ Item {
     Keys.forwardTo: [keys]
     Keys.onEscapePressed: root.close()
 
-    property string tab: "lock"
+    property string tab: "profile"
     readonly property var tabs: ["profile", "display", "bars", "lock", "system"]
     function rad(n) {
         if (Nexa.Theme.windowRounding === 0) return 0;
@@ -30,6 +30,7 @@ Item {
     readonly property bool shuffle: Services.LockScreen.shuffle
 
     function open() {
+        if (!tab || tab === "lock") tab = "profile";
         visible = true;
         keys.forceActiveFocus();
         closeAnim.stop();
@@ -52,7 +53,7 @@ Item {
         if (which === "system" || which === "profile" || which === "display" || which === "bars" || which === "lock")
             tab = which;
         else
-            tab = "lock";
+            tab = "profile";
         if (!visible)
             open();
     }
@@ -106,6 +107,12 @@ Item {
         clip: true
         opacity: 0
         scale: 0.94
+
+        MouseArea {
+            anchors.fill: parent
+            // Prevent clicks on empty panel area from propagating to scrim
+            onClicked: {}
+        }
 
         // Keyboard navigation
         Item {

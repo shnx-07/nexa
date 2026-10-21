@@ -1,6 +1,7 @@
 // pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell
 import "../../theme" as Nexa
 
@@ -73,9 +74,10 @@ RowLayout {
                     Repeater {
                         model: [
                             { label: "0px Sharp", val: 0 },
-                            { label: "8px Subtle", val: 8 },
-                            { label: "14px Modern", val: 14 },
-                            { label: "22px Round", val: 22 }
+                            { label: "6px Subtle", val: 6 },
+                            { label: "10px Standard", val: 10 },
+                            { label: "16px Modern", val: 16 },
+                            { label: "24px Round", val: 24 }
                         ]
 
                         Rectangle {
@@ -84,7 +86,7 @@ RowLayout {
                             Layout.fillWidth: true
                             height: 36
                             radius: Nexa.Theme.radiusSm
-                            readonly property bool isCurrent: root.windowRounding === roundPill.modelData.val
+                            readonly property bool isCurrent: root.windowRounding === roundPill.modelData.val || (root.windowRounding > 0 && Math.abs(root.windowRounding - roundPill.modelData.val) <= 1)
                             color: isCurrent ? Nexa.Theme.primaryContainer : (roundMouse.containsMouse ? Nexa.Theme.hover : Nexa.Theme.surfaceContainer)
                             border.width: isCurrent ? 1 : 0
                             border.color: isCurrent ? Nexa.Theme.primary : "transparent"
@@ -106,6 +108,40 @@ RowLayout {
                                 onClicked: root.setRoundingRequested(roundPill.modelData.val)
                             }
                         }
+                    }
+                }
+
+                // Fine-Grained Corner Radius Slider
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Text {
+                            text: "Corner Radius Size"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 11
+                            color: Nexa.Theme.mutedText
+                        }
+                        Item { Layout.fillWidth: true }
+                        Text {
+                            text: root.windowRounding + " px"
+                            font.family: Nexa.Theme.monoFontFamily || Nexa.Theme.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Nexa.Theme.fontWeightBold
+                            color: Nexa.Theme.primary
+                        }
+                    }
+
+                    Slider {
+                        id: radiusSlider
+                        Layout.fillWidth: true
+                        from: 0
+                        to: 32
+                        stepSize: 1
+                        value: root.windowRounding
+                        onMoved: root.setRoundingRequested(Math.round(value))
                     }
                 }
             }
@@ -174,6 +210,40 @@ RowLayout {
                                 onClicked: root.setBorderSizeRequested(borderPill.modelData.val)
                             }
                         }
+                    }
+                }
+
+                // Fine-Grained Border Width Slider
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Text {
+                            text: "Border Stroke Width"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 11
+                            color: Nexa.Theme.mutedText
+                        }
+                        Item { Layout.fillWidth: true }
+                        Text {
+                            text: root.windowBorderSize === 0 ? "0 px (Off)" : (root.windowBorderSize + " px")
+                            font.family: Nexa.Theme.monoFontFamily || Nexa.Theme.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Nexa.Theme.fontWeightBold
+                            color: Nexa.Theme.primary
+                        }
+                    }
+
+                    Slider {
+                        id: borderSlider
+                        Layout.fillWidth: true
+                        from: 0
+                        to: 8
+                        stepSize: 1
+                        value: root.windowBorderSize
+                        onMoved: root.setBorderSizeRequested(Math.round(value))
                     }
                 }
             }
@@ -383,8 +453,8 @@ RowLayout {
                     height: 160
                     radius: root.windowRounding
                     color: "#1e1e2e"
-                    border.width: root.windowBorderSize > 0 ? root.windowBorderSize : 1
-                    border.color: root.windowBorderSize > 0 ? Nexa.Theme.primary : Qt.rgba(1, 1, 1, 0.15)
+                    border.width: root.windowBorderSize > 0 ? root.windowBorderSize : (root.windowRounding === 0 ? 1 : 0)
+                    border.color: (root.windowBorderSize > 0 || root.windowRounding === 0) ? Nexa.Theme.primary : Qt.rgba(1, 1, 1, 0.15)
 
                     // Ambient glow / shadow simulator
                     Rectangle {

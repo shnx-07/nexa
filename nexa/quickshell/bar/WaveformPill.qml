@@ -99,7 +99,7 @@ Rectangle {
     visible: opacity > 0.01
     clip: true
 
-    radius: height / 2
+    radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
     color: Nexa.Theme.surfaceContainer
 
     // Multi-color audio-reactive border that pulses with the bass beat
@@ -154,7 +154,7 @@ Rectangle {
             Layout.preferredWidth: 24
             Layout.preferredHeight: 24
             Layout.alignment: Qt.AlignVCenter
-            radius: 12
+            radius: Nexa.Theme.windowRounding === 0 ? 0 : 12
             color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.14)
             border.width: 1
             border.color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.40)

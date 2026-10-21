@@ -467,6 +467,12 @@ PopupWindow {
                             color:
                                 Nexa.Theme.surfaceContainerHighest
 
+                            border.width:
+                                Nexa.Theme.borderThin
+
+                            border.color:
+                                Nexa.Theme.border
+
 
                             Column {
                                 anchors {
@@ -539,6 +545,12 @@ PopupWindow {
 
                             color:
                                 Nexa.Theme.surfaceContainerHighest
+
+                            border.width:
+                                Nexa.Theme.borderThin
+
+                            border.color:
+                                Nexa.Theme.border
 
 
                             Column {
@@ -692,6 +704,14 @@ PopupWindow {
                                     : profileMouse.containsMouse
                                         ? Nexa.Theme.hoverStrong
                                         : Nexa.Theme.surfaceContainerHighest
+
+                                border.width:
+                                    Nexa.Theme.borderThin
+
+                                border.color:
+                                    selected
+                                    ? Nexa.Theme.primary
+                                    : Nexa.Theme.border
 
 
                                 scale:

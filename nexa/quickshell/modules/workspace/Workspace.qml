@@ -178,6 +178,8 @@ RowLayout {
 
         radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
         color: Nexa.Theme.surfaceContainer
+        border.width: Nexa.Theme.borderThin
+        border.color: Nexa.Theme.border
 
         MouseArea {
             id: containerWheelArea
@@ -307,6 +309,8 @@ RowLayout {
         implicitWidth: scratchpadRow.implicitWidth + 12
         radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
         color: Nexa.Theme.surfaceContainer
+        border.width: Nexa.Theme.borderThin
+        border.color: Nexa.Theme.border
 
         Behavior on implicitWidth {
             NumberAnimation {
@@ -336,6 +340,8 @@ RowLayout {
                     width: 26
                     height: 22
                     radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
+                    border.width: isFocused ? Nexa.Theme.borderThin : 0
+                    border.color: Nexa.Theme.primary
 
                     color: {
                         if (isFocused) {

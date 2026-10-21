@@ -50,6 +50,11 @@ Item {
     property string toastMessage: ""
     property bool toastVisible: false
 
+    function rad(n) {
+        if (Nexa.Theme.windowRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (Nexa.Theme.windowRounding / 10.0)));
+    }
+
     function showToast(msg) {
         toastMessage = msg;
         toastVisible = true;
@@ -279,8 +284,10 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             width: countLabel.implicitWidth + 12
                             height: 20
-                            radius: 10
+                            radius: root.rad(10)
                             color: Nexa.Theme.surfaceContainerHighest
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.borderSubtle
 
                             Text {
                                 id: countLabel
@@ -299,8 +306,10 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             width: clamText.implicitWidth + 12
                             height: 20
-                            radius: 10
+                            radius: root.rad(10)
                             color: Qt.rgba(1, 0.6, 0.1, 0.2)
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Qt.rgba(1, 0.6, 0.1, 0.4)
 
                             Text {
                                 id: clamText
@@ -331,9 +340,9 @@ Item {
                     Rectangle {
                         width: autoRow.implicitWidth + 20
                         height: 32
-                        radius: 8
+                        radius: root.rad(8)
                         color: autoHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh
-                        border.width: 1
+                        border.width: Nexa.Theme.borderThin
                         border.color: Nexa.Theme.border
 
                         Row {
@@ -372,8 +381,10 @@ Item {
                     Rectangle {
                         width: saveRow.implicitWidth + 20
                         height: 32
-                        radius: 8
+                        radius: root.rad(8)
                         color: saveHover.containsMouse ? Qt.lighter(Nexa.Theme.primary, 1.08) : Nexa.Theme.primary
+                        border.width: (Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
+                        border.color: Nexa.Theme.borderStrong
 
                         Row {
                             id: saveRow
@@ -415,9 +426,9 @@ Item {
             Rectangle {
                 width: parent.width
                 height: 180
-                radius: 12
+                radius: root.rad(12)
                 color: Nexa.Theme.surfaceContainerLowest || Nexa.Theme.cardBackground
-                border.width: 1
+                border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.border
 
                 Item {
@@ -451,11 +462,11 @@ Item {
 
                                 width: Math.max(130, Math.min(220, (disp.width || 1920) / 14))
                                 height: 100
-                                radius: 10
+                                radius: root.rad(10)
                                 color: isSelected
                                     ? Nexa.Theme.surfaceContainerHighest
                                     : (screenHover.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainer)
-                                border.width: isSelected ? 2 : 1
+                                border.width: isSelected ? Math.max(2, Nexa.Theme.borderThin) : Nexa.Theme.borderThin
                                 border.color: isSelected
                                     ? Nexa.Theme.primary
                                     : (isPrimary ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.4) : Nexa.Theme.border)
@@ -507,7 +518,9 @@ Item {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         width: statusTxt.implicitWidth + 8
                                         height: 16
-                                        radius: 4
+                                        radius: root.rad(4)
+                                        border.width: Nexa.Theme.borderThin
+                                        border.color: Nexa.Theme.borderSubtle
                                         color: isDisabled
                                             ? Qt.rgba(0.5, 0.5, 0.5, 0.15)
                                             : (isPrimary ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.15) : Nexa.Theme.surfaceContainerHighest)
@@ -588,12 +601,12 @@ Item {
 
                             Layout.fillWidth: true
                             height: 48
-                            radius: 8
+                            radius: root.rad(8)
                             opacity: isAvailable ? 1.0 : 0.45
                             color: isCurrent
                                 ? Nexa.Theme.primaryContainer
                                 : (projHover.containsMouse && isAvailable ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.cardBackground)
-                            border.width: isCurrent ? 1.5 : 1
+                            border.width: isCurrent ? Math.max(1.5, Nexa.Theme.borderThin) : Nexa.Theme.borderThin
                             border.color: isCurrent ? Nexa.Theme.primary : Nexa.Theme.border
 
                             RowLayout {
@@ -635,9 +648,9 @@ Item {
             Rectangle {
                 width: parent.width
                 height: monitorSettingsCol.implicitHeight + 32
-                radius: 12
+                radius: root.rad(12)
                 color: Nexa.Theme.cardBackground
-                border.width: 1
+                border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.border
 
                 Column {
@@ -681,8 +694,10 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: connKindText.implicitWidth + 8
                                     height: 18
-                                    radius: 4
+                                    radius: root.rad(4)
                                     color: Nexa.Theme.surfaceContainerHighest
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: Nexa.Theme.borderSubtle
 
                                     Text {
                                         id: connKindText
@@ -710,10 +725,10 @@ Item {
                             readonly property bool canToggle: !isOn || (root.activeCount > 1)
                             width: 100
                             height: 32
-                            radius: 8
+                            radius: root.rad(8)
                             opacity: canToggle ? 1.0 : 0.6
                             color: isOn ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.15) : Nexa.Theme.surfaceContainerHighest
-                            border.width: 1
+                            border.width: Nexa.Theme.borderThin
                             border.color: isOn ? Nexa.Theme.primary : Nexa.Theme.border
 
                             Row {
@@ -769,9 +784,9 @@ Item {
                             readonly property bool isPrimary: root.selectedDisplay ? (root.selectedDisplay.is_primary === true) : false
                             width: primaryBtnTxt.implicitWidth + 24
                             height: 32
-                            radius: 8
+                            radius: root.rad(8)
                             color: isPrimary ? Nexa.Theme.primaryContainer : (primaryHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                            border.width: 1
+                            border.width: Nexa.Theme.borderThin
                             border.color: isPrimary ? Nexa.Theme.primary : Nexa.Theme.border
 
                             Text {
@@ -822,11 +837,11 @@ Item {
 
                                     width: 80
                                     height: 32
-                                    radius: 6
+                                    radius: root.rad(6)
                                     color: isCurrentScale
                                         ? Nexa.Theme.primary
                                         : (sHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: 1
+                                    border.width: Nexa.Theme.borderThin
                                     border.color: isCurrentScale ? Nexa.Theme.primary : Nexa.Theme.border
 
                                     Text {
@@ -883,11 +898,11 @@ Item {
 
                                     width: rotRow.implicitWidth + 20
                                     height: 32
-                                    radius: 6
+                                    radius: root.rad(6)
                                     color: isCurrentRot
                                         ? Nexa.Theme.primary
                                         : (rHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: 1
+                                    border.width: Nexa.Theme.borderThin
                                     border.color: isCurrentRot ? Nexa.Theme.primary : Nexa.Theme.border
 
                                     Row {
@@ -972,11 +987,11 @@ Item {
 
                                     width: resTxt.implicitWidth + 16
                                     height: 30
-                                    radius: 6
+                                    radius: root.rad(6)
                                     color: isCurrentMode
                                         ? Nexa.Theme.primaryContainer
                                         : (resHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: 1
+                                    border.width: Nexa.Theme.borderThin
                                     border.color: isCurrentMode ? Nexa.Theme.primary : Nexa.Theme.border
 
                                     Text {
@@ -1032,18 +1047,20 @@ Item {
                             readonly property bool vrrActive: root.selectedDisplay ? (root.selectedDisplay.vrr === true) : false
                             width: 72
                             height: 30
-                            radius: 15
+                            radius: root.rad(15)
                             color: vrrActive ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest
-                            border.width: 1
+                            border.width: Nexa.Theme.borderThin
                             border.color: vrrActive ? Nexa.Theme.primary : Nexa.Theme.border
 
                             Rectangle {
                                 width: 22
                                 height: 22
-                                radius: 11
+                                radius: root.rad(11)
                                 anchors.verticalCenter: parent.verticalCenter
                                 x: parent.vrrActive ? (parent.width - width - 4) : 4
                                 color: parent.vrrActive ? Nexa.Theme.onPrimary : Nexa.Theme.outline
+                                border.width: (Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
+                                border.color: Nexa.Theme.border
 
                                 Behavior on x {
                                     NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
@@ -1073,9 +1090,9 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         width: toastRow.implicitWidth + 28
         height: 38
-        radius: 19
+        radius: root.rad(19)
         color: Nexa.Theme.surfaceContainerHighest
-        border.width: 1
+        border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.primary
         visible: root.toastVisible
         opacity: root.toastVisible ? 1.0 : 0.0

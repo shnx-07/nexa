@@ -71,6 +71,32 @@ if [[ -z "$WALLPAPER" ]]; then
 fi
 
 # ------------------------------------------------------------
+# Support 'next', 'shuffle', or 'random'
+# ------------------------------------------------------------
+
+if [[ "$WALLPAPER" == "next" || "$WALLPAPER" == "shuffle" || "$WALLPAPER" == "random" ]]; then
+  WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
+  if [[ ! -d "$WALLPAPER_DIR" ]]; then
+    WALLPAPER_DIR="$HOME/.config/nexa/wallpapers"
+  fi
+  CURRENT_WP=""
+  if [[ -f "$WALLPAPER_CONFIG" ]]; then
+    CURRENT_WP=$(grep '^WALLPAPER=' "$WALLPAPER_CONFIG" 2>/dev/null | cut -d'=' -f2-)
+  fi
+  CANDIDATE=$(find "$WALLPAPER_DIR" -maxdepth 2 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.mp4" \) ! -path "*/.*" ! -path "*/thumbs/*" ! -path "*/slideshow_thumbs/*" 2>/dev/null | grep -F -v -x "$CURRENT_WP" | shuf -n 1)
+  if [[ -z "$CANDIDATE" ]]; then
+    CANDIDATE=$(find "$WALLPAPER_DIR" -maxdepth 2 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.mp4" \) ! -path "*/.*" 2>/dev/null | shuf -n 1)
+  fi
+  if [[ -n "$CANDIDATE" && -f "$CANDIDATE" ]]; then
+    WALLPAPER="$CANDIDATE"
+    log "Resolved shuffle/next wallpaper to: $WALLPAPER"
+  else
+    log "No wallpapers found in $WALLPAPER_DIR"
+    exit 1
+  fi
+fi
+
+# ------------------------------------------------------------
 # Resolve wallpaper path
 # ------------------------------------------------------------
 

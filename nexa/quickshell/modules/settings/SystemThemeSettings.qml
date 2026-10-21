@@ -233,14 +233,16 @@ Item {
         const val = parseInt(r) || 0
         root.windowRounding = val
         Nexa.Theme.windowRounding = val
-        Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { rounding = " + val + " } })"])
+        const script = Quickshell.env("HOME") + "/.config/nexa/scripts/apply-shapes.sh"
+        Quickshell.execDetached([script, val.toString(), root.windowBorderSize.toString(), "standard"])
     }
 
     function setBorderSize(b) {
         const val = parseInt(b) || 0
         root.windowBorderSize = val
         Nexa.Theme.windowBorderSize = val
-        Quickshell.execDetached(["hyprctl", "eval", "hl.config({ general = { border_size = " + val + " } })"])
+        const script = Quickshell.env("HOME") + "/.config/nexa/scripts/apply-shapes.sh"
+        Quickshell.execDetached([script, root.windowRounding.toString(), val.toString(), "standard"])
     }
 
     function setWindowGlow(on) {
@@ -424,8 +426,7 @@ Item {
                         model: [
                             { id: "presets", label: "Presets", icon: "󰏘" },
                             { id: "wallpaper", label: "Wallpaper & Material", icon: "󰸉" },
-                            { id: "windows", label: "Windows & Effects", icon: "󰍹" },
-                            { id: "shapes", label: "Shapes", icon: "󰏤" }
+                            { id: "windows", label: "Windows & Effects", icon: "󰍹" }
                         ]
 
                         Rectangle {
@@ -648,18 +649,6 @@ Item {
                 onSetBorderSizeRequested: b => root.setBorderSize(b)
                 onSetWindowGlowRequested: g => root.setWindowGlow(g)
                 onSetWindowDimRequested: d => root.setWindowDim(d)
-            }
-
-            // 4. Shapes View
-            ThemeViews.ShapesTab {
-                anchors.fill: parent
-                visible: root.activeSubTab === "shapes"
-
-                windowRounding: root.windowRounding
-                windowBorderSize: root.windowBorderSize
-
-                onSetRoundingRequested: r => root.setRounding(r)
-                onSetBorderSizeRequested: b => root.setBorderSize(b)
             }
         }
     }

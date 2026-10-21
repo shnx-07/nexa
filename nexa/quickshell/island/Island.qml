@@ -51,7 +51,7 @@ PanelWindow {
     // Doing that was causing compositor-side lag.
     //
     // The visible Rectangle inside this window is animated instead.
-    implicitWidth: 800
+    implicitWidth: 920
     implicitHeight: 660
 
     margins {
@@ -133,7 +133,7 @@ PanelWindow {
     // APP LAUNCHER DIMENSIONS
     // ============================================================
 
-    readonly property int launcherWidth: 760
+    readonly property int launcherWidth: 880
     readonly property int launcherHeight: 620
 
     // ============================================================
@@ -1276,15 +1276,17 @@ PanelWindow {
           : Nexa.Theme.islandBackground
 
 
-        border.width: 0
+        border.width: (root.full || root.hovered || Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
 
         border.color:
-          root.full
-          || root.hovered
-          || root.notificationActive
-          || root.osdActive
-          ? Nexa.Theme.borderStrong
-          : Nexa.Theme.border
+          (Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0)
+            ? Nexa.Theme.borderStrong
+            : (root.full
+                || root.hovered
+                || root.notificationActive
+                || root.osdActive
+                ? Nexa.Theme.borderStrong
+                : Nexa.Theme.border)
 
 
         // ========================================================
