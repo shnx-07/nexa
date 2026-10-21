@@ -1,9 +1,9 @@
 {
-  "volume": 85,
+  "volume": 80,
   "muted": true,
   "input_volume": 100,
   "input_muted": false,
-  "brightness": 100,
+  "brightness": 81,
   "bluetooth_enabled": false,
   "wifi_enabled": true,
   "airplane_enabled": false,

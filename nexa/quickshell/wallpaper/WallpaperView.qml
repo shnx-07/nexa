@@ -61,6 +61,29 @@ PanelWindow {
     property string applyTarget: "Background"
     property bool applyMenuOpen: false
 
+    // Current desktop wallpaper state
+    readonly property string wallpaperConfigFile:
+        homeDir + "/.config/nexa/config/wallpaper.conf"
+    property string currentWallpaperPath: ""
+
+    function parseWallpaperConfig(raw) {
+        if (!raw || String(raw).trim() === "")
+            return
+        const lines = String(raw).split("\n")
+        for (let i = 0; i < lines.length; ++i) {
+            const line = lines[i].trim()
+            if (line.startsWith("WALLPAPER=")) {
+                let val = line.substring("WALLPAPER=".length).trim()
+                if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                    val = val.substring(1, val.length - 1)
+                }
+                val = val.replace(/\\(.)/g, "$1")
+                root.currentWallpaperPath = val
+                break
+            }
+        }
+    }
+
     // Slideshow state
     readonly property string slideshowConfigFile:
         homeDir + "/.config/nexa/config/slideshow.json"
@@ -228,8 +251,8 @@ PanelWindow {
             for (let i = 0; i < newItems.length; ++i) {
                 wallpaperModel.append(newItems[i])
             }
-            updateVisibleSelection()
         }
+        updateVisibleSelection()
 
         loaded = true
 
@@ -332,18 +355,44 @@ PanelWindow {
         return count
     }
 
+    function findCurrentWallpaperIndex() {
+        if (!root.currentWallpaperPath || wallpaperModel.count <= 0)
+            return -1
+
+        const cur = root.currentWallpaperPath
+        const curName = root.fileName(cur)
+
+        for (let i = 0; i < wallpaperModel.count; ++i) {
+            const item = wallpaperModel.get(i)
+            if (!item)
+                continue
+
+            const p = item.wallPath
+            const name = item.wallName
+
+            if (p === cur || (p && cur.endsWith("/" + name)) || (name && name === curName)) {
+                if (matchesFilter(item.wallType, item.wallName)) {
+                    return i
+                }
+            }
+        }
+
+        return -1
+    }
+
     function updateVisibleSelection() {
-        const first = firstValidIndex()
+        let target = findCurrentWallpaperIndex()
+        if (target < 0) {
+            target = firstValidIndex()
+        }
 
-        view.currentIndex = first
+        if (target >= 0) {
+            view.highlightMoveDuration = 0
+            view.currentIndex = target
 
-        if (first >= 0) {
             Qt.callLater(() => {
-                view.positionViewAtIndex(
-                    first,
-                    ListView.Center
-                )
-
+                view.currentIndex = target
+                view.highlightMoveDuration = 340
                 view.forceActiveFocus()
             })
         }
@@ -394,6 +443,7 @@ PanelWindow {
 
       if (applyTarget === "Background") {
           applying = true
+          root.currentWallpaperPath = entry.wallPath
 
           statusText =
               "Applying "
@@ -440,6 +490,7 @@ PanelWindow {
 
       if (applyTarget === "Both") {
           applying = true
+          root.currentWallpaperPath = entry.wallPath
 
           statusText =
               "Applying "
@@ -654,6 +705,15 @@ PanelWindow {
         path: root.slideshowConfigFile
         onLoaded: {
             root.parseSlideshowConfig(text())
+        }
+    }
+
+    FileView {
+        id: wallpaperConfigFileView
+        path: root.wallpaperConfigFile
+        onLoaded: {
+            root.parseWallpaperConfig(text())
+            root.updateVisibleSelection()
         }
     }
 
@@ -884,6 +944,10 @@ PanelWindow {
 
             readonly property bool isVideo:
                 wallType === "video"
+
+            readonly property bool isCurrentWallpaper:
+                root.currentWallpaperPath.length > 0 &&
+                (wallPath === root.currentWallpaperPath || (wallPath && root.currentWallpaperPath.endsWith("/" + wallName)) || (wallName && wallName === root.fileName(root.currentWallpaperPath)))
 
             property real clickScale: 1.0
 
@@ -1478,6 +1542,45 @@ PanelWindow {
                             Text {
                                 text: cardRoot.isVideo ? "VIDEO" : (cardRoot.isGif ? "GIF" : "IMAGE")
                                 color: Nexa.Theme.text
+                                font.family: Nexa.Theme.monoFont
+                                font.pixelSize: Nexa.Theme.fontSize2Xs
+                                font.weight: Font.Bold
+                            }
+                        }
+                    }
+                    // -------------------------------------------------
+                    // Active Wallpaper Pill (Top-Left)
+                    // -------------------------------------------------
+                    Rectangle {
+                        visible: cardRoot.isCurrentWallpaper
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            margins: 18
+                        }
+                        height: 28
+                        width: activePillRow.implicitWidth + 20
+                        radius: Nexa.Theme.radiusFull
+                        color: Nexa.Theme.primary
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.25)
+                        z: 20
+
+                        RowLayout {
+                            id: activePillRow
+                            anchors.centerIn: parent
+                            spacing: 5
+
+                            Text {
+                                text: "󰄬"
+                                color: Nexa.Theme.onPrimary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 12
+                            }
+
+                            Text {
+                                text: "CURRENT"
+                                color: Nexa.Theme.onPrimary
                                 font.family: Nexa.Theme.monoFont
                                 font.pixelSize: Nexa.Theme.fontSize2Xs
                                 font.weight: Font.Bold
@@ -2949,6 +3052,12 @@ PanelWindow {
     // ---------------------------------------------------------
 
     Component.onCompleted: {
+        if (wallpaperConfigFileView.text()) {
+            root.parseWallpaperConfig(wallpaperConfigFileView.text())
+        }
+        if (slideshowConfigFileView.text()) {
+            root.parseSlideshowConfig(slideshowConfigFileView.text())
+        }
         Qt.callLater(
             () => view.forceActiveFocus()
         )
@@ -2961,11 +3070,17 @@ PanelWindow {
             return
         }
 
+        wallpaperConfigFileView.reload()
+        if (wallpaperConfigFileView.text()) {
+            root.parseWallpaperConfig(wallpaperConfigFileView.text())
+        }
+
         if (slideshowConfigFileView.text()) {
             root.parseSlideshowConfig(slideshowConfigFileView.text())
         }
 
         reload()
+        updateVisibleSelection()
 
         Qt.callLater(
             () => view.forceActiveFocus()
