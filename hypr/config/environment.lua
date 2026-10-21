@@ -12,3 +12,10 @@ hl.env("MOZ_ENABLE_WAYLAND", "1")
 hl.env("GDK_BACKEND", "wayland,x11,*")
 hl.env("SDL_VIDEODRIVER", "wayland")
 hl.env("CLUTTER_BACKEND", "wayland")
+
+-- CPU / GPU & Memory Cache Optimizations for AMD Ryzen & Radeon
+hl.env("LIBVA_DRIVER_NAME", "radeonsi")
+hl.env("VDPAU_DRIVER", "radeonsi")
+hl.env("mesa_glthread", "true")
+hl.env("QS_LOG", "warn")
+hl.env("MALLOC_CHECK_", "0")

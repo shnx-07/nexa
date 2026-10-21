@@ -23,9 +23,13 @@ PanelWindow {
     visible: windowAlive
     property bool windowAlive: false
 
-    function openWindow() {
+    function openWindow(initialTab) {
         windowAlive = true
-        panel.open()
+        if (initialTab && initialTab !== "") {
+            panel.openTab(initialTab)
+        } else {
+            panel.open()
+        }
         panel.forceActiveFocus()
     }
 

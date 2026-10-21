@@ -19,3 +19,10 @@ futures-lite = "2"
 
 hex = "0.4"
 openssl = "0.10"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

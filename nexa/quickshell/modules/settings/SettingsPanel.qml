@@ -9,6 +9,7 @@ import "../lockthemes"
 import "../../services" as Services
 import "../profile" as ProfileModule
 import "../display" as DisplayModule
+import "power" as PowerModule
 
 // SettingsPanel: Unified settings modal with left sidebar navigation.
 Item {
@@ -21,7 +22,7 @@ Item {
     Keys.onEscapePressed: root.close()
 
     property string tab: "profile"
-    readonly property var tabs: ["profile", "display", "bars", "lock", "system"]
+    readonly property var tabs: ["profile", "display", "power", "bars", "lock", "system"]
     function rad(n) {
         if (Nexa.Theme.windowRounding === 0) return 0;
         return Math.max(0, Math.round(n * (Nexa.Theme.windowRounding / 10.0)));
@@ -50,7 +51,7 @@ Item {
     }
 
     function openTab(which) {
-        if (which === "system" || which === "profile" || which === "display" || which === "bars" || which === "lock")
+        if (which === "system" || which === "profile" || which === "display" || which === "bars" || which === "lock" || which === "power")
             tab = which;
         else
             tab = "profile";
@@ -345,6 +346,46 @@ Item {
                         }
                     }
 
+                    // Nav Option 2.5: Power & Sleep
+                    ClickableRect {
+                        id: powerNavBtn
+                        anchors.left: parent.left
+                        anchors.leftMargin: 6
+                        width: parent.width - 26
+                        height: 42
+                        radius: root.rad(10)
+                        color: root.tab === "power"
+                            ? Nexa.Theme.primaryContainer
+                            : (powerNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
+                        border.width: root.tab === "power" ? 1.5 : 1
+                        border.color: root.tab === "power" ? Nexa.Theme.primary : (powerNavBtn.hovered ? Nexa.Theme.border : "transparent")
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.tab = "power"
+
+                        Row {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 12
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "󱐋"
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 18
+                                color: root.tab === "power" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                            }
+
+                            StyledText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Power & Sleep"
+                                font.pixelSize: 14
+                                font.weight: root.tab === "power" ? Font.Bold : Font.Medium
+                                color: root.tab === "power" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                            }
+                        }
+                    }
+
                     // Nav Option 3: Bars
                     ClickableRect {
                         id: barsNavBtn
@@ -512,6 +553,7 @@ Item {
                             text: {
                                 if (root.tab === "profile") return "Profile";
                                 if (root.tab === "display") return "Display Settings";
+                                if (root.tab === "power") return "Power & Sleep Settings";
                                 if (root.tab === "bars") return "Bars & Panels";
                                 if (root.tab === "system") return "System Themes";
                                 return "Lock Screen Themes";
@@ -525,6 +567,7 @@ Item {
                             text: {
                                 if (root.tab === "profile") return "User account & system identity";
                                 if (root.tab === "display") return "Display layout, resolution & scaling";
+                                if (root.tab === "power") return "Battery, screen backlight timeouts & sleep behaviors";
                                 if (root.tab === "bars") return "Status bar layout, components & appearance";
                                 if (root.tab === "system") return "Desktop customization and appearance";
                                 return (root.shuffle ? "Shuffle: each lock picks one of the selected themes" : "Pick the design used when you lock");
@@ -663,6 +706,7 @@ Item {
                         sourceComponent: {
                             if (root.tab === "profile") return profileTabComponent;
                             if (root.tab === "display") return displayTabComponent;
+                            if (root.tab === "power") return powerTabComponent;
                             if (root.tab === "bars") return barsTabComponent;
                             if (root.tab === "system") return systemTabComponent;
                             return lockTabComponent;
@@ -684,6 +728,13 @@ Item {
             onOpenLockTab: {
                 root.tab = "lock";
             }
+        }
+    }
+
+    Component {
+        id: powerTabComponent
+        PowerModule.PowerSettings {
+            onRequestClose: root.close()
         }
     }
 

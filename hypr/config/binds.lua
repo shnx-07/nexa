@@ -381,6 +381,82 @@ hl.bind(MOD .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 -- Special Workspace (Scratchpad)
 hl.bind(MOD .. " + S", hl.dsp.workspace.toggle_special("magic"))
 
+-- Show Desktop / Toggle Minimize All (Win+D)
+-- ============================================================
+-- Show Desktop / Toggle Minimize All (SUPER + D)
+-- ============================================================
+-- - On W1: press once hides all W1 windows into special:desktop
+-- - On W1: press again restores all W1 windows back to W1
+-- - If W1 is already hidden, switching to W2 and pressing SUPER + D:
+--   automatically restores W1 windows back to W1, and hides W2 windows.
+
+local hidden_desktop_workspace = nil
+local hidden_desktop_windows = {}
+
+hl.bind(MOD .. " + D", function()
+	local active_ws = hl.get_active_workspace()
+	if not active_ws or not active_ws.id then
+		return
+	end
+	local current_ws_id = tostring(active_ws.id)
+
+	-- CASE 1: Currently active workspace is already minimized -> RESTORE it!
+	if hidden_desktop_workspace == current_ws_id then
+		local last_addr = nil
+		for _, addr in ipairs(hidden_desktop_windows) do
+			hl.dispatch(hl.dsp.window.move({
+				workspace = current_ws_id,
+				window = "address:" .. tostring(addr),
+				silent = true,
+			}))
+			last_addr = addr
+		end
+		if last_addr then
+			hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(last_addr) }))
+		end
+		hidden_desktop_workspace = nil
+		hidden_desktop_windows = {}
+		return
+	end
+
+	-- CASE 2: Another workspace was minimized earlier -> RESTORE it first in background!
+	if hidden_desktop_workspace ~= nil and #hidden_desktop_windows > 0 then
+		for _, addr in ipairs(hidden_desktop_windows) do
+			hl.dispatch(hl.dsp.window.move({
+				workspace = hidden_desktop_workspace,
+				window = "address:" .. tostring(addr),
+				silent = true,
+			}))
+		end
+		hidden_desktop_workspace = nil
+		hidden_desktop_windows = {}
+	end
+
+	-- CASE 3: Minimize all windows on the CURRENT workspace into special:desktop
+	local wins = hl.get_windows() or {}
+	local to_hide = {}
+	for _, w in ipairs(wins) do
+		if w.workspace and tostring(w.workspace.id) == current_ws_id then
+			table.insert(to_hide, w.address)
+		end
+	end
+
+	if #to_hide > 0 then
+		hidden_desktop_workspace = current_ws_id
+		hidden_desktop_windows = to_hide
+		for _, addr in ipairs(to_hide) do
+			hl.dispatch(hl.dsp.window.move({
+				workspace = "99",
+				window = "address:" .. tostring(addr),
+				silent = true,
+			}))
+		end
+		-- Stay strictly on the current workspace showing empty desktop/wallpaper
+		hl.dispatch(hl.dsp.focus({ workspace = current_ws_id }))
+	end
+end)
+
+
 -- System Utilities
 hl.bind(MOD .. " + G", hl.dsp.exec_cmd("hyprctl dispatch workspaceopt allgaps toggle"))
 hl.bind(MOD .. " + N", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleControlCenter"))

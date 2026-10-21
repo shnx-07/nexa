@@ -262,12 +262,16 @@ ShellRoot {
     IpcHandler {
         target: "settings"
 
-        function open() {
+        function open(tabName) {
             if (!settingsLoader.active) {
                 settingsLoader.active = true
             } else if (settingsLoader.item) {
-                settingsLoader.item.openWindow()
+                settingsLoader.item.openWindow(tabName)
             }
+        }
+
+        function openTab(tabName) {
+            open(tabName)
         }
 
         function close() {
@@ -288,12 +292,16 @@ ShellRoot {
     IpcHandler {
         target: "lockSettings"
 
-        function open() {
+        function open(tabName) {
             if (!settingsLoader.active) {
                 settingsLoader.active = true
             } else if (settingsLoader.item) {
-                settingsLoader.item.openWindow()
+                settingsLoader.item.openWindow(tabName)
             }
+        }
+
+        function openTab(tabName) {
+            open(tabName)
         }
 
         function close() {

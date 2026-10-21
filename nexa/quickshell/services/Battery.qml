@@ -9,5 +9,8 @@ Singleton {
         return (dev && dev.ready) ? Math.round(dev.percentage * 100) : 50;
     }
     readonly property bool charging: UPower.displayDevice ? !UPower.onBattery : false
-}
 
+    onChargingChanged: {
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/scripts/power-sync.sh"])
+    }
+}
