@@ -54,3 +54,15 @@ output_path = "~/.config/hypr/config/colors.lua"
 [templates.alacritty]
 input_path = "~/.config/matugen/templates/alacritty-preset.toml"
 output_path = "~/.config/alacritty/themes/nexa.toml"
+
+[templates.neovim]
+input_path = "~/.config/matugen/templates/nvim-nexa.lua"
+output_path = "~/.config/nvim/colors/nexa.lua"
+
+[templates.vim]
+input_path = "~/.config/matugen/templates/vim-nexa.vim"
+output_path = "~/.vim/colors/nexa.vim"
+
+[templates.wezterm]
+input_path = "~/.config/matugen/templates/wezterm-preset.lua"
+output_path = "~/.config/wezterm/colors/custom.lua"

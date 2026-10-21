@@ -155,7 +155,7 @@ hl.window_rule({
 })
 
 -- File Managers regex pattern (Dolphin, Nemo, Thunar, Nautilus, Yazi)
-local fileManagerApps = "^(org\\.kde\\.dolphin|dolphin|nemo|Nemo|thunar|Thunar|nautilus|[Yy]azi)$"
+local fileManagerApps = "^(org\\.kde\\.dolphin|dolphin|nemo|Nemo|thunar|Thunar|nautilus|[Yy]azi.*)$"
 
 -- Scratchpad workspace file manager rules (centered compact popup)
 hl.window_rule({

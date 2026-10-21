@@ -1747,7 +1747,11 @@ fn launch_with_exec(
                 );
             }
 
-            let app_class = app.app.name.to_lowercase();
+            let app_class = if app.app.name.to_lowercase().starts_with("yazi") || app.app.id.to_lowercase().starts_with("yazi") {
+                "yazi".to_string()
+            } else {
+                app.app.name.to_lowercase().replace(' ', "-")
+            };
             command.arg("--class").arg(&app_class);
 
             if let Some(flag) =

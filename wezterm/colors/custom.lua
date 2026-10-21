@@ -1,94 +1,62 @@
--- A slightly altered version of catppucchin mocha
--- stylua: ignore
-local mocha = {
-   rosewater = '#f5e0dc',
-   flamingo  = '#f2cdcd',
-   pink      = '#f5c2e7',
-   mauve     = '#cba6f7',
-   red       = '#f38ba8',
-   maroon    = '#eba0ac',
-   peach     = '#fab387',
-   yellow    = '#f9e2af',
-   green     = '#a6e3a1',
-   teal      = '#94e2d5',
-   sky       = '#89dceb',
-   sapphire  = '#74c7ec',
-   blue      = '#89b4fa',
-   lavender  = '#b4befe',
-   text      = '#cdd6f4',
-   subtext1  = '#bac2de',
-   subtext0  = '#a6adc8',
-   overlay2  = '#9399b2',
-   overlay1  = '#7f849c',
-   overlay0  = '#6c7086',
-   surface2  = '#585b70',
-   surface1  = '#45475a',
-   surface0  = '#313244',
-   base      = '#1f1f28',
-   mantle    = '#181825',
-   crust     = '#11111b',
-}
+-- NEXA generated WezTerm theme
+-- Do not edit manually.
 
 local colorscheme = {
-   foreground = mocha.text,
-   background = mocha.base,
-   cursor_bg = mocha.rosewater,
-   cursor_border = mocha.rosewater,
-   cursor_fg = mocha.crust,
-   selection_bg = mocha.surface2,
-   selection_fg = mocha.text,
+   foreground = '#d7e5e7',
+   background = '#091517',
+   cursor_bg = '#00dbec',
+   cursor_border = '#00dbec',
+   cursor_fg = '#00363b',
+   selection_bg = '#004f56',
+   selection_fg = '#8af2ff',
    ansi = {
-      '#0C0C0C', -- black
-      '#C50F1F', -- red
-      '#13A10E', -- green
-      '#C19C00', -- yellow
-      '#0037DA', -- blue
-      '#881798', -- magenta/purple
-      '#3A96DD', -- cyan
-      '#CCCCCC', -- white
+      '#091517',
+      '#f0757f',
+      '#78e29c',
+      '#efc36c',
+      '#00dbec',
+      '#9dccf1',
+      '#79cfec',
+      '#d7e5e7',
    },
    brights = {
-      '#767676', -- black
-      '#E74856', -- red
-      '#16C60C', -- green
-      '#F9F1A5', -- yellow
-      '#3B78FF', -- blue
-      '#B4009E', -- magenta/purple
-      '#61D6D6', -- cyan
-      '#F2F2F2', -- white
+      '#869395',
+      '#f0757f',
+      '#78e29c',
+      '#efc36c',
+      '#00dbec',
+      '#9dccf1',
+      '#79cfec',
+      '#d7e5e7',
    },
    tab_bar = {
-      background = 'rgba(0, 0, 0, 0.4)',
+      background = '#091517',
       active_tab = {
-         bg_color = mocha.surface2,
-         fg_color = mocha.text,
+         bg_color = '#00dbec',
+         fg_color = '#00363b',
       },
       inactive_tab = {
-         bg_color = mocha.surface0,
-         fg_color = mocha.subtext1,
+         bg_color = '#152223',
+         fg_color = '#bbc9cb',
       },
       inactive_tab_hover = {
-         bg_color = mocha.surface0,
-         fg_color = mocha.text,
+         bg_color = '#202c2e',
+         fg_color = '#d7e5e7',
       },
       new_tab = {
-         bg_color = mocha.base,
-         fg_color = mocha.text,
+         bg_color = '#152223',
+         fg_color = '#d7e5e7',
       },
       new_tab_hover = {
-         bg_color = mocha.mantle,
-         fg_color = mocha.text,
+         bg_color = '#00dbec',
+         fg_color = '#00363b',
          italic = true,
       },
    },
-   visual_bell = mocha.red,
-   indexed = {
-      [16] = mocha.peach,
-      [17] = mocha.rosewater,
-   },
-   scrollbar_thumb = mocha.surface2,
-   split = mocha.overlay0,
-   compose_cursor = mocha.flamingo,
+   visual_bell = '#f0757f',
+   scrollbar_thumb = '#3c494b',
+   split = '#869395',
+   compose_cursor = '#9dccf1',
 }
 
 return colorscheme

@@ -28,7 +28,8 @@ Item {
     property string primaryName: ""
     property var projectionModes: []
     property var displays: []
-    property var profiles: []
+    property var wallpapers: ({})
+    property string extendDirection: "right"
 
     // Busy debounce guard to prevent overlapping dispatches
     property bool busy: false
@@ -50,6 +51,11 @@ Item {
     property string toastMessage: ""
     property bool toastVisible: false
 
+    // 15-Second Safe Confirmation Modal
+    property bool showConfirmationModal: false
+    property int revertCountdown: 15
+    property string pendingActionDescription: "Display settings changed"
+
     function rad(n) {
         if (Nexa.Theme.windowRounding === 0) return 0;
         return Math.max(0, Math.round(n * (Nexa.Theme.windowRounding / 10.0)));
@@ -63,9 +69,92 @@ Item {
 
     Timer {
         id: toastTimer
-        interval: 2200
+        interval: 2400
         repeat: false
         onTriggered: root.toastVisible = false
+    }
+
+    // Safety Countdown Timer
+    Timer {
+        id: revertTimer
+        interval: 1000
+        repeat: true
+        running: root.showConfirmationModal
+        onTriggered: {
+            if (root.revertCountdown > 1) {
+                root.revertCountdown -= 1;
+            } else {
+                root.revertCountdown = 0;
+                root.showConfirmationModal = false;
+                root.revertNow();
+            }
+        }
+    }
+
+    function startSafetyCountdown(desc) {
+        root.pendingActionDescription = desc || "Display settings changed";
+        root.revertCountdown = 15;
+        root.showConfirmationModal = true;
+    }
+
+    function keepChanges() {
+        root.showConfirmationModal = false;
+        showToast("✓ Display settings kept");
+    }
+
+    function revertNow() {
+        root.showConfirmationModal = false;
+        showToast("Reverting to safe display settings...");
+        Quickshell.execDetached([root.nexadBin, "display", "emergency"]);
+        refreshTimer.restart();
+    }
+
+    // ============================================================
+    // DISPLAY DATA HELPERS
+    // ============================================================
+    function getDispWidth(d) {
+        if (!d) return 1920;
+        if (d.current_mode && d.current_mode.width) return d.current_mode.width;
+        return d.width || 1920;
+    }
+
+    function getDispHeight(d) {
+        if (!d) return 1080;
+        if (d.current_mode && d.current_mode.height) return d.current_mode.height;
+        return d.height || 1080;
+    }
+
+    function getDispRefresh(d) {
+        if (!d) return 60;
+        if (d.current_mode && d.current_mode.refresh_hz) return Math.round(d.current_mode.refresh_hz);
+        return Math.round(d.refresh_rate || 60);
+    }
+
+    function getDispFormattedMode(d) {
+        if (!d) return "1920x1080@60.00";
+        if (d.current_mode && d.current_mode.formatted) return d.current_mode.formatted;
+        return getDispWidth(d) + "x" + getDispHeight(d) + "@" + getDispRefresh(d) + ".00";
+    }
+
+    function isDispInternal(d) {
+        if (!d) return false;
+        return d.connector_type === "internal" || d.is_internal === true;
+    }
+
+    function getDispTitle(d) {
+        if (!d) return "Display";
+        if (d.make && d.model) return d.make + " " + d.model;
+        if (d.description) return d.description;
+        return d.name;
+    }
+
+    function getMonitorIcon(disp) {
+        if (!disp) return "󰍹";
+        if (isDispInternal(disp)) return "󰌢";
+        const n = (disp.name || "").toLowerCase();
+        if (n.startsWith("hdmi")) return "󰡁";
+        if (n.startsWith("dp")) return "󰾴";
+        return "󰍹";
     }
 
     // ============================================================
@@ -107,10 +196,19 @@ Item {
                     root.lidState = d.lid_state || "open";
                     root.daemonRunning = d.daemon_running || false;
                     root.restartPending = d.restart_pending || false;
-                    root.primaryName = d.primary || "";
+                    root.primaryName = d.primary || d.primary_name || "";
                     root.projectionModes = d.projection_modes || [];
                     root.displays = d.displays || [];
-                    root.profiles = d.profiles || [];
+                    root.wallpapers = d.wallpapers || ({});
+
+                    // Update extendDirection from projectionModes if present
+                    if (d.projection_modes) {
+                        for (let i = 0; i < d.projection_modes.length; i++) {
+                            if (d.projection_modes[i].mode === "extend" && d.projection_modes[i].direction) {
+                                root.extendDirection = d.projection_modes[i].direction;
+                            }
+                        }
+                    }
 
                     // Ensure selectedDisplayName points to a valid display
                     if (!root.selectedDisplayName && root.displays.length > 0) {
@@ -141,34 +239,17 @@ Item {
     // ============================================================
     // SAFE COMMAND DISPATCHERS
     // ============================================================
-    function applyProjection(modeId) {
+    function applyProjection(modeId, direction) {
         if (!modeId || root.busy) return;
-        if (modeId === root.currentMode) return;
+        const dir = direction || root.extendDirection || "right";
         root.busy = true;
-        showToast("Applying projection: " + modeId);
-        Quickshell.execDetached([root.nexadBin, "display", "mode", modeId]);
-        refreshTimer.restart();
-    }
-
-    function toggleDisplay(name) {
-        if (!name || root.busy) return;
-        const disp = root.selectedDisplay;
-        if (disp && !disp.disabled && root.activeCount <= 1) {
-            showToast("Cannot disable the only active screen");
-            return;
+        showToast("Applying " + modeId + " mode...");
+        if (modeId === "extend") {
+            Quickshell.execDetached([root.nexadBin, "display", "mode", "extend", dir]);
+        } else {
+            Quickshell.execDetached([root.nexadBin, "display", "mode", modeId]);
         }
-        root.busy = true;
-        showToast("Toggling display: " + name);
-        Quickshell.execDetached([root.nexadBin, "display", "toggle", name]);
-        refreshTimer.restart();
-    }
-
-    function setPrimaryDisplay(name) {
-        if (!name || root.busy) return;
-        if (root.primaryName === name) return;
-        root.busy = true;
-        showToast("Setting primary: " + name);
-        Quickshell.execDetached([root.nexadBin, "display", "primary", name]);
+        startSafetyCountdown("Applied " + modeId + " mode");
         refreshTimer.restart();
     }
 
@@ -178,6 +259,7 @@ Item {
         root.busy = true;
         showToast("Setting scale " + Math.round(scaleVal * 100) + "% on " + name);
         Quickshell.execDetached([root.nexadBin, "display", "scale", name, scaleVal.toString()]);
+        startSafetyCountdown("Display scale changed to " + Math.round(scaleVal * 100) + "%");
         refreshTimer.restart();
     }
 
@@ -186,6 +268,7 @@ Item {
         root.busy = true;
         showToast("Setting resolution " + modeStr + " on " + name);
         Quickshell.execDetached([root.nexadBin, "display", "res", name, modeStr]);
+        startSafetyCountdown("Resolution set to " + modeStr);
         refreshTimer.restart();
     }
 
@@ -193,44 +276,19 @@ Item {
         if (!name || root.busy) return;
         if (root.selectedDisplay && (root.selectedDisplay.transform || 0) === rot) return;
         root.busy = true;
-        showToast("Rotating " + name + " to " + (rot * 90) + "°");
-        Quickshell.execDetached([root.nexadBin, "display", "rotate", name, rot.toString()]);
+        const deg = rot === 1 ? 90 : rot === 2 ? 180 : rot === 3 ? 270 : 0;
+        showToast("Rotating " + name + " to " + deg + "°");
+        Quickshell.execDetached([root.nexadBin, "display", "rotate", name, deg.toString()]);
+        startSafetyCountdown("Display rotation set to " + deg + "°");
         refreshTimer.restart();
     }
 
-    function autoDetect() {
+    function emergencyReset() {
         if (root.busy) return;
         root.busy = true;
-        showToast("Auto-detecting and arranging displays...");
-        Quickshell.execDetached([root.nexadBin, "display", "auto"]);
+        showToast("Triggering Emergency Fallback (Internal screen @ 1080p)...");
+        Quickshell.execDetached([root.nexadBin, "display", "emergency"]);
         refreshTimer.restart();
-    }
-
-    function saveProfile() {
-        if (root.busy) return;
-        showToast("Saved current display configuration");
-        Quickshell.execDetached([root.nexadBin, "display", "save"]);
-        refreshTimer.restart();
-    }
-
-    function toggleVrr(name, currentVrr) {
-        if (!name || root.busy) return;
-        root.busy = true;
-        const next = currentVrr ? "off" : "on";
-        showToast("Setting VRR " + next + " on " + name);
-        Quickshell.execDetached([root.nexadBin, "display", "vrr", name, next]);
-        refreshTimer.restart();
-    }
-
-    // Icon helper
-    function getMonitorIcon(disp) {
-        if (!disp) return "󰍹";
-        if (disp.is_internal) return "󰌢";
-        const k = (disp.connector_kind || "").toLowerCase();
-        if (k === "hdmi") return "󰡁";
-        if (k === "dp" || k === "displayport") return "󰾴";
-        if (k === "usb-c" || k === "thunderbolt") return "󰒡";
-        return "󰍹";
     }
 
     // ============================================================
@@ -241,7 +299,7 @@ Item {
         anchors.fill: parent
         anchors.margins: 16
         contentWidth: width
-        contentHeight: contentCol.implicitHeight + 24
+        contentHeight: contentCol.implicitHeight + 40
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
@@ -273,18 +331,18 @@ Item {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Monitors & Layout"
+                            text: "Displays"
                             font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 15
+                            font.pixelSize: 16
                             font.weight: Font.Bold
                             color: Nexa.Theme.text
                         }
 
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: countLabel.implicitWidth + 12
-                            height: 20
-                            radius: root.rad(10)
+                            width: countLabel.implicitWidth + 14
+                            height: 22
+                            radius: root.rad(11)
                             color: Nexa.Theme.surfaceContainerHighest
                             border.width: Nexa.Theme.borderThin
                             border.color: Nexa.Theme.borderSubtle
@@ -305,16 +363,16 @@ Item {
                             visible: root.lidClosed
                             anchors.verticalCenter: parent.verticalCenter
                             width: clamText.implicitWidth + 12
-                            height: 20
-                            radius: root.rad(10)
-                            color: Qt.rgba(1, 0.6, 0.1, 0.2)
+                            height: 22
+                            radius: root.rad(11)
+                            color: Qt.rgba(1, 0.6, 0.1, 0.18)
                             border.width: Nexa.Theme.borderThin
                             border.color: Qt.rgba(1, 0.6, 0.1, 0.4)
 
                             Text {
                                 id: clamText
                                 anchors.centerIn: parent
-                                text: "Lid Closed (Clamshell)"
+                                text: "󰌢 Lid Closed (Clamshell)"
                                 font.family: Nexa.Theme.fontFamily
                                 font.pixelSize: 11
                                 font.weight: Font.DemiBold
@@ -324,29 +382,29 @@ Item {
                     }
 
                     Text {
-                        text: "Arrange screens, customize resolution, scaling and external projection"
+                        text: "Manage arrangement, projection mode, resolution, orientation, and scaling"
                         font.family: Nexa.Theme.fontFamily
                         font.pixelSize: 12
                         color: Nexa.Theme.mutedText
                     }
                 }
 
-                // Action buttons
+                // Header actions
                 Row {
                     spacing: 8
                     Layout.alignment: Qt.AlignVCenter
 
-                    // Auto-Detect Button
+                    // Refresh Button
                     Rectangle {
-                        width: autoRow.implicitWidth + 20
+                        width: refRow.implicitWidth + 16
                         height: 32
                         radius: root.rad(8)
-                        color: autoHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh
+                        color: refHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh
                         border.width: Nexa.Theme.borderThin
                         border.color: Nexa.Theme.border
 
                         Row {
-                            id: autoRow
+                            id: refRow
                             anchors.centerIn: parent
                             spacing: 6
 
@@ -360,7 +418,7 @@ Item {
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "Auto-Detect"
+                                text: "Refresh"
                                 font.family: Nexa.Theme.fontFamily
                                 font.pixelSize: 12
                                 font.weight: Font.Medium
@@ -369,63 +427,63 @@ Item {
                         }
 
                         MouseArea {
-                            id: autoHover
+                            id: refHover
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.autoDetect()
+                            onClicked: root.refreshInfo()
                         }
                     }
 
-                    // Save Profile Button
+                    // Emergency Fallback Reset Button
                     Rectangle {
-                        width: saveRow.implicitWidth + 20
+                        width: emRow.implicitWidth + 16
                         height: 32
                         radius: root.rad(8)
-                        color: saveHover.containsMouse ? Qt.lighter(Nexa.Theme.primary, 1.08) : Nexa.Theme.primary
-                        border.width: (Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
-                        border.color: Nexa.Theme.borderStrong
+                        color: emHover.containsMouse ? Qt.rgba(0.9, 0.2, 0.2, 0.25) : Qt.rgba(0.9, 0.2, 0.2, 0.12)
+                        border.width: Nexa.Theme.borderThin
+                        border.color: Qt.rgba(0.9, 0.2, 0.2, 0.35)
 
                         Row {
-                            id: saveRow
+                            id: emRow
                             anchors.centerIn: parent
                             spacing: 6
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "󰆓"
+                                text: "󰀦"
                                 font.family: Nexa.Theme.iconFontFamily
                                 font.pixelSize: 13
-                                color: Nexa.Theme.onPrimary
+                                color: "#ff5252"
                             }
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "Save Setup"
+                                text: "Emergency Reset"
                                 font.family: Nexa.Theme.fontFamily
                                 font.pixelSize: 12
-                                font.weight: Font.DemiBold
-                                color: Nexa.Theme.onPrimary
+                                font.weight: Font.Medium
+                                color: "#ff5252"
                             }
                         }
 
                         MouseArea {
-                            id: saveHover
+                            id: emHover
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.saveProfile()
+                            onClicked: root.emergencyReset()
                         }
                     }
                 }
             }
 
             // ────────────────────────────────────────────────────────────
-            // 2. INTERACTIVE MONITOR ARRANGEMENT CANVAS
+            // 2. VISUAL MONITOR ARRANGEMENT CANVAS (macOS / Win 11 style)
             // ────────────────────────────────────────────────────────────
             Rectangle {
                 width: parent.width
-                height: 180
+                height: 175
                 radius: root.rad(12)
                 color: Nexa.Theme.surfaceContainerLowest || Nexa.Theme.cardBackground
                 border.width: Nexa.Theme.borderThin
@@ -433,21 +491,35 @@ Item {
 
                 Item {
                     anchors.fill: parent
-                    anchors.margins: 12
+                    anchors.margins: 14
 
-                    Text {
-                        anchors.left: parent.left
+                    RowLayout {
                         anchors.top: parent.top
-                        text: "Select a monitor to configure:"
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                        color: Nexa.Theme.mutedText
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+
+                        Text {
+                            text: "Display Arrangement"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 12
+                            font.weight: Font.SemiBold
+                            color: Nexa.Theme.text
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        Text {
+                            text: "Click a screen below to configure"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 11
+                            color: Nexa.Theme.mutedText
+                        }
                     }
 
                     // Centered monitors flow
                     Row {
                         anchors.centerIn: parent
+                        anchors.verticalCenterOffset: 8
                         spacing: 16
 
                         Repeater {
@@ -457,11 +529,13 @@ Item {
                                 id: screenBox
                                 readonly property var disp: modelData
                                 readonly property bool isSelected: root.selectedDisplayName === disp.name
-                                readonly property bool isPrimary: disp.is_primary === true
-                                readonly property bool isDisabled: disp.disabled === true
+                                readonly property bool isPrimary: root.primaryName === disp.name
+                                readonly property bool isEnabled: disp.enabled !== false
+                                readonly property int dispW: root.getDispWidth(disp)
+                                readonly property int dispH: root.getDispHeight(disp)
 
-                                width: Math.max(130, Math.min(220, (disp.width || 1920) / 14))
-                                height: 100
+                                width: Math.max(130, Math.min(210, dispW / 14))
+                                height: 96
                                 radius: root.rad(10)
                                 color: isSelected
                                     ? Nexa.Theme.surfaceContainerHighest
@@ -469,7 +543,7 @@ Item {
                                 border.width: isSelected ? Math.max(2, Nexa.Theme.borderThin) : Nexa.Theme.borderThin
                                 border.color: isSelected
                                     ? Nexa.Theme.primary
-                                    : (isPrimary ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.4) : Nexa.Theme.border)
+                                    : (isPrimary ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.45) : Nexa.Theme.border)
 
                                 Column {
                                     anchors.centerIn: parent
@@ -484,33 +558,33 @@ Item {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: root.getMonitorIcon(disp)
                                             font.family: Nexa.Theme.iconFontFamily
-                                            font.pixelSize: 18
-                                            color: isDisabled ? Nexa.Theme.mutedText : Nexa.Theme.primary
+                                            font.pixelSize: 16
+                                            color: isEnabled ? Nexa.Theme.primary : Nexa.Theme.mutedText
                                         }
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: disp.name
                                             font.family: Nexa.Theme.fontFamily
-                                            font.pixelSize: 13
+                                            font.pixelSize: 12
                                             font.weight: Font.Bold
-                                            color: isDisabled ? Nexa.Theme.mutedText : Nexa.Theme.text
+                                            color: isEnabled ? Nexa.Theme.text : Nexa.Theme.mutedText
                                         }
 
                                         Text {
                                             visible: isPrimary
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: "★"
-                                            font.pixelSize: 11
+                                            font.pixelSize: 10
                                             color: Nexa.Theme.primary
                                         }
                                     }
 
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        text: (disp.width || 0) + "×" + (disp.height || 0) + " (" + (disp.refresh_rate ? disp.refresh_rate.toFixed(0) : "60") + "Hz)"
+                                        text: dispW + "×" + dispH + " (" + root.getDispRefresh(disp) + "Hz)"
                                         font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: 11
+                                        font.pixelSize: 10
                                         color: Nexa.Theme.mutedText
                                     }
 
@@ -521,18 +595,18 @@ Item {
                                         radius: root.rad(4)
                                         border.width: Nexa.Theme.borderThin
                                         border.color: Nexa.Theme.borderSubtle
-                                        color: isDisabled
+                                        color: !isEnabled
                                             ? Qt.rgba(0.5, 0.5, 0.5, 0.15)
                                             : (isPrimary ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.15) : Nexa.Theme.surfaceContainerHighest)
 
                                         Text {
                                             id: statusTxt
                                             anchors.centerIn: parent
-                                            text: isDisabled ? "Off" : (isPrimary ? "Main Screen" : "Active")
+                                            text: !isEnabled ? "Disabled" : (isPrimary ? "Main Screen" : "Active")
                                             font.family: Nexa.Theme.fontFamily
                                             font.pixelSize: 9
                                             font.weight: Font.SemiBold
-                                            color: isDisabled ? Nexa.Theme.mutedText : (isPrimary ? Nexa.Theme.primary : Nexa.Theme.text)
+                                            color: !isEnabled ? Nexa.Theme.mutedText : (isPrimary ? Nexa.Theme.primary : Nexa.Theme.text)
                                         }
                                     }
                                 }
@@ -551,7 +625,7 @@ Item {
             }
 
             // ────────────────────────────────────────────────────────────
-            // 3. PROJECTION MODES (External Display Quick Switcher)
+            // 3. PROJECTION MODES & EXTEND DIRECTION
             // ────────────────────────────────────────────────────────────
             Column {
                 width: parent.width
@@ -640,6 +714,63 @@ Item {
                         }
                     }
                 }
+
+                // Extend Direction Pills (Shown when in Extend Mode)
+                RowLayout {
+                    visible: root.currentMode === "extend" && root.externalCount > 0
+                    width: parent.width
+                    spacing: 8
+
+                    Text {
+                        text: "Extend placement:"
+                        font.family: Nexa.Theme.fontFamily
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
+                        color: Nexa.Theme.mutedText
+                    }
+
+                    Repeater {
+                        model: [
+                            { id: "right", label: "Right 󰄼" },
+                            { id: "left", label: "󰄼 Left" },
+                            { id: "above", label: "Above 󰄿" },
+                            { id: "below", label: "Below 󰄽" }
+                        ]
+
+                        delegate: Rectangle {
+                            id: dirChip
+                            readonly property var item: modelData
+                            readonly property bool isSelected: root.extendDirection === item.id
+
+                            width: dirTxt.implicitWidth + 16
+                            height: 26
+                            radius: root.rad(6)
+                            color: isSelected ? Nexa.Theme.primary : (dirHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
+                            border.width: Nexa.Theme.borderThin
+                            border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+
+                            Text {
+                                id: dirTxt
+                                anchors.centerIn: parent
+                                text: item.label
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 11
+                                font.weight: isSelected ? Font.Bold : Font.Normal
+                                color: isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                            }
+
+                            MouseArea {
+                                id: dirHover
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    root.extendDirection = item.id;
+                                    root.applyProjection("extend", item.id);
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // ────────────────────────────────────────────────────────────
@@ -683,7 +814,7 @@ Item {
                                 spacing: 8
 
                                 Text {
-                                    text: root.selectedDisplay ? (root.selectedDisplay.description || root.selectedDisplay.name) : "Display"
+                                    text: root.getDispTitle(root.selectedDisplay)
                                     font.family: Nexa.Theme.fontFamily
                                     font.pixelSize: 14
                                     font.weight: Font.Bold
@@ -702,7 +833,7 @@ Item {
                                     Text {
                                         id: connKindText
                                         anchors.centerIn: parent
-                                        text: root.selectedDisplay ? (root.selectedDisplay.connector_kind ? root.selectedDisplay.connector_kind.toUpperCase() : "DISPLAY") : ""
+                                        text: root.selectedDisplay ? (root.isDispInternal(root.selectedDisplay) ? "INTERNAL" : "EXTERNAL") : ""
                                         font.family: Nexa.Theme.fontFamily
                                         font.pixelSize: 10
                                         font.weight: Font.SemiBold
@@ -712,99 +843,10 @@ Item {
                             }
 
                             Text {
-                                text: root.selectedDisplay ? ("Connector: " + root.selectedDisplay.name + (root.selectedDisplay.is_internal ? " (Built-in Display)" : " (External Display)")) : ""
+                                text: root.selectedDisplay ? ("Port: " + root.selectedDisplay.name + (root.isDispInternal(root.selectedDisplay) ? " (Built-in Display)" : " (External Display)")) : ""
                                 font.family: Nexa.Theme.fontFamily
                                 font.pixelSize: 11
                                 color: Nexa.Theme.mutedText
-                            }
-                        }
-
-                        // On/Off Switch Button
-                        Rectangle {
-                            readonly property bool isOn: root.selectedDisplay ? !root.selectedDisplay.disabled : false
-                            readonly property bool canToggle: !isOn || (root.activeCount > 1)
-                            width: 100
-                            height: 32
-                            radius: root.rad(8)
-                            opacity: canToggle ? 1.0 : 0.6
-                            color: isOn ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.15) : Nexa.Theme.surfaceContainerHighest
-                            border.width: Nexa.Theme.borderThin
-                            border.color: isOn ? Nexa.Theme.primary : Nexa.Theme.border
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 6
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: isOn ? "󰐥 Enabled" : "󰐥 Disabled"
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: 12
-                                    font.weight: Font.Medium
-                                    color: isOn ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: parent.canToggle ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                                onClicked: if (root.selectedDisplay) root.toggleDisplay(root.selectedDisplay.name)
-                            }
-                        }
-                    }
-
-                    Rectangle { width: parent.width; height: 1; color: Nexa.Theme.border }
-
-                    // Make Primary Button
-                    RowLayout {
-                        width: parent.width
-                        spacing: 12
-
-                        Column {
-                            Layout.fillWidth: true
-                            spacing: 2
-
-                            Text {
-                                text: "Make this my primary display"
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 13
-                                font.weight: Font.Medium
-                                color: Nexa.Theme.text
-                            }
-
-                            Text {
-                                text: "Primary display holds default workspace and system panels"
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
-                            }
-                        }
-
-                        Rectangle {
-                            readonly property bool isPrimary: root.selectedDisplay ? (root.selectedDisplay.is_primary === true) : false
-                            width: primaryBtnTxt.implicitWidth + 24
-                            height: 32
-                            radius: root.rad(8)
-                            color: isPrimary ? Nexa.Theme.primaryContainer : (primaryHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                            border.width: Nexa.Theme.borderThin
-                            border.color: isPrimary ? Nexa.Theme.primary : Nexa.Theme.border
-
-                            Text {
-                                id: primaryBtnTxt
-                                anchors.centerIn: parent
-                                text: isPrimary ? "✓ Primary Screen" : "Set as Primary"
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 12
-                                font.weight: isPrimary ? Font.Bold : Font.Medium
-                                color: isPrimary ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            MouseArea {
-                                id: primaryHover
-                                anchors.fill: parent
-                                enabled: !parent.isPrimary && !root.busy
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: if (root.selectedDisplay) root.setPrimaryDisplay(root.selectedDisplay.name)
                             }
                         }
                     }
@@ -816,12 +858,25 @@ Item {
                         width: parent.width
                         spacing: 8
 
-                        Text {
-                            text: "Display Scale"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 13
-                            font.weight: Font.Medium
-                            color: Nexa.Theme.text
+                        RowLayout {
+                            width: parent.width
+                            Text {
+                                text: "Display Scale"
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 13
+                                font.weight: Font.Medium
+                                color: Nexa.Theme.text
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Text {
+                                text: root.selectedDisplay ? Math.round((root.selectedDisplay.scale || 1.0) * 100) + "%" : "100%"
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                                color: Nexa.Theme.primary
+                            }
                         }
 
                         Row {
@@ -835,7 +890,7 @@ Item {
                                     readonly property real sVal: modelData
                                     readonly property bool isCurrentScale: root.selectedDisplay && Math.abs((root.selectedDisplay.scale || 1.0) - sVal) < 0.05
 
-                                    width: 80
+                                    width: 76
                                     height: 32
                                     radius: root.rad(6)
                                     color: isCurrentScale
@@ -960,29 +1015,29 @@ Item {
                             Item { Layout.fillWidth: true }
 
                             Text {
-                                text: root.selectedDisplay ? (root.selectedDisplay.width + "×" + root.selectedDisplay.height + " @ " + (root.selectedDisplay.refresh_rate ? root.selectedDisplay.refresh_rate.toFixed(1) : "60") + "Hz") : ""
+                                text: root.selectedDisplay ? (root.getDispWidth(root.selectedDisplay) + "×" + root.getDispHeight(root.selectedDisplay) + " @ " + root.getDispRefresh(root.selectedDisplay) + "Hz") : ""
                                 font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 font.weight: Font.DemiBold
                                 color: Nexa.Theme.primary
                             }
                         }
 
-                        // Flow of common modes
+                        // Flow of available modes
                         Flow {
                             width: parent.width
                             spacing: 8
 
                             Repeater {
-                                model: root.selectedDisplay && root.selectedDisplay.available_modes ? root.selectedDisplay.available_modes.slice(0, 8) : []
+                                model: root.selectedDisplay && root.selectedDisplay.available_modes ? root.selectedDisplay.available_modes.slice(0, 10) : []
 
                                 delegate: Rectangle {
                                     id: resChip
                                     readonly property string mStr: modelData
                                     readonly property bool isCurrentMode: {
                                         if (!root.selectedDisplay) return false;
-                                        const cur = root.selectedDisplay.width + "x" + root.selectedDisplay.height;
-                                        return mStr.startsWith(cur);
+                                        const curFormatted = root.getDispFormattedMode(root.selectedDisplay);
+                                        return mStr === curFormatted || mStr.startsWith(root.getDispWidth(root.selectedDisplay) + "x" + root.getDispHeight(root.selectedDisplay));
                                     }
 
                                     width: resTxt.implicitWidth + 16
@@ -1015,66 +1070,136 @@ Item {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
 
-                    Rectangle { width: parent.width; height: 1; color: Nexa.Theme.border }
+    // ────────────────────────────────────────────────────────────
+    // 5. 15-SECOND SAFE "KEEP CHANGES" CONFIRMATION MODAL
+    // ────────────────────────────────────────────────────────────
+    Rectangle {
+        id: confirmationModal
+        visible: root.showConfirmationModal
+        opacity: root.showConfirmationModal ? 1.0 : 0.0
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 24
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: Math.min(parent.width - 32, 460)
+        height: 72
+        radius: root.rad(14)
+        color: Nexa.Theme.surfaceContainerHighest || Nexa.Theme.cardBackground
+        border.width: Nexa.Theme.borderThin
+        border.color: Nexa.Theme.primary
+        z: 100
 
-                    // Variable Refresh Rate (VRR / Adaptive Sync)
-                    RowLayout {
-                        width: parent.width
-                        spacing: 12
+        Behavior on opacity {
+            NumberAnimation { duration: 180 }
+        }
 
-                        Column {
-                            Layout.fillWidth: true
-                            spacing: 2
+        // Live countdown progress bar
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 3
+            radius: root.rad(2)
+            color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.2)
 
-                            Text {
-                                text: "Variable Refresh Rate (VRR / Adaptive-Sync)"
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 13
-                                font.weight: Font.Medium
-                                color: Nexa.Theme.text
-                            }
+            Rectangle {
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: parent.width * (root.revertCountdown / 15.0)
+                color: Nexa.Theme.primary
 
-                            Text {
-                                text: "Reduces stuttering and screen tearing in games and high framerate content"
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
-                            }
-                        }
+                Behavior on width {
+                    NumberAnimation { duration: 950; easing.type: Easing.Linear }
+                }
+            }
+        }
 
-                        Rectangle {
-                            readonly property bool vrrActive: root.selectedDisplay ? (root.selectedDisplay.vrr === true) : false
-                            width: 72
-                            height: 30
-                            radius: root.rad(15)
-                            color: vrrActive ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest
-                            border.width: Nexa.Theme.borderThin
-                            border.color: vrrActive ? Nexa.Theme.primary : Nexa.Theme.border
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 12
 
-                            Rectangle {
-                                width: 22
-                                height: 22
-                                radius: root.rad(11)
-                                anchors.verticalCenter: parent.verticalCenter
-                                x: parent.vrrActive ? (parent.width - width - 4) : 4
-                                color: parent.vrrActive ? Nexa.Theme.onPrimary : Nexa.Theme.outline
-                                border.width: (Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
-                                border.color: Nexa.Theme.border
+            Text {
+                text: "󰀦"
+                font.family: Nexa.Theme.iconFontFamily
+                font.pixelSize: 22
+                color: Nexa.Theme.primary
+            }
 
-                                Behavior on x {
-                                    NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
-                                }
-                            }
+            Column {
+                Layout.fillWidth: true
+                spacing: 2
 
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: !root.busy
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: if (root.selectedDisplay) root.toggleVrr(root.selectedDisplay.name, root.selectedDisplay.vrr)
-                            }
-                        }
-                    }
+                Text {
+                    text: "Keep these display settings?"
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 13
+                    font.weight: Font.Bold
+                    color: Nexa.Theme.text
+                }
+
+                Text {
+                    text: "Reverting automatically in " + root.revertCountdown + "s..."
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 11
+                    color: Nexa.Theme.mutedText
+                }
+            }
+
+            // Keep Changes Button
+            Rectangle {
+                width: keepTxt.implicitWidth + 20
+                height: 34
+                radius: root.rad(8)
+                color: Nexa.Theme.primary
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.primary
+
+                Text {
+                    id: keepTxt
+                    anchors.centerIn: parent
+                    text: "Keep (" + root.revertCountdown + "s)"
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 12
+                    font.weight: Font.Bold
+                    color: Nexa.Theme.onPrimary
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.keepChanges()
+                }
+            }
+
+            // Revert Now Button
+            Rectangle {
+                width: revTxt.implicitWidth + 20
+                height: 34
+                radius: root.rad(8)
+                color: Nexa.Theme.surfaceContainerHigh
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.border
+
+                Text {
+                    id: revTxt
+                    anchors.centerIn: parent
+                    text: "Revert"
+                    font.family: Nexa.Theme.fontFamily
+                    font.pixelSize: 12
+                    font.weight: Font.Medium
+                    color: Nexa.Theme.text
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.revertNow()
                 }
             }
         }
@@ -1086,7 +1211,7 @@ Item {
     Rectangle {
         id: toast
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 24
+        anchors.bottomMargin: root.showConfirmationModal ? 104 : 24
         anchors.horizontalCenter: parent.horizontalCenter
         width: toastRow.implicitWidth + 28
         height: 38

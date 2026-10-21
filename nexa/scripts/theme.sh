@@ -801,6 +801,20 @@ render_canonical() {
   fi
 
   sync_chrome_theme "$PALETTE_FILE" "${MODE:-dark}"
+  touch "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null || true
+  # Live reload GTK3 & GTK4 apps across all machines without patched packages
+  if command -v gsettings >/dev/null 2>&1; then
+    (
+      curr_theme=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")
+      if [[ -n "$curr_theme" ]]; then
+        dummy_theme="Adwaita"
+        [[ "$curr_theme" == "Adwaita" ]] && dummy_theme="HighContrast"
+        gsettings set org.gnome.desktop.interface gtk-theme "$dummy_theme" 2>/dev/null || true
+        sleep 0.05
+        gsettings set org.gnome.desktop.interface gtk-theme "$curr_theme" 2>/dev/null || true
+      fi
+    ) &
+  fi
 
   return 0
 }
