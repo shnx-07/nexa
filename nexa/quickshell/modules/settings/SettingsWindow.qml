@@ -13,7 +13,7 @@ PanelWindow {
     }
 
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.namespace: "quickshell:settings"
+    WlrLayershell.namespace: "quickshell"
     WlrLayershell.keyboardFocus: windowAlive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore
     aboveWindows: true

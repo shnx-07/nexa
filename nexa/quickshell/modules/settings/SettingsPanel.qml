@@ -67,7 +67,7 @@ Item {
     Rectangle {
         id: scrim
         anchors.fill: parent
-        color: Nexa.Theme.scrim
+        color: Nexa.Theme.glassMode ? Qt.rgba(0, 0, 0, 0.22) : Nexa.Theme.scrim
         opacity: 0
         enabled: opacity > 0.01
 
@@ -80,7 +80,7 @@ Item {
 
     ParallelAnimation {
         id: openAnim
-        NumberAnimation { target: scrim; property: "opacity"; to: 0.55; duration: 240; easing.type: Easing.OutCubic }
+        NumberAnimation { target: scrim; property: "opacity"; to: Nexa.Theme.glassMode ? 0.35 : 0.55; duration: 240; easing.type: Easing.OutCubic }
         NumberAnimation { target: panel; property: "opacity"; to: 1; duration: 240; easing.type: Easing.OutCubic }
         NumberAnimation { target: panel; property: "scale"; to: 1; duration: 320; easing.type: Easing.OutBack }
     }
@@ -161,6 +161,27 @@ Item {
                     }
                     event.accepted = true;
                 }
+            }
+        }
+
+        // Top glass specular edge highlight
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: 1
+            color: Nexa.Theme.edgeHighlightStrong
+            z: 10
+        }
+
+        // Static continuous-corner glass gradient highlight
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: parent.border.width
+            radius: Math.max(0, parent.radius - parent.border.width)
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlight }
+                GradientStop { position: 0.35; color: "transparent" }
             }
         }
 
