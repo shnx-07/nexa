@@ -114,6 +114,36 @@ fn application_dirs() -> Vec<PathBuf> {
     dirs
 }
 
+/// Discovers directories where portable or folder-based applications (macOS-style app bundles) are placed.
+fn folder_app_dirs() -> Vec<PathBuf> {
+    let home = home_dir();
+    let candidates = [
+        home.join("Applications"),
+        home.join("Application"),
+        home.join("Apps"),
+        home.join(".local/share/applications"),
+        PathBuf::from("/Applications"),
+        PathBuf::from("/opt"),
+    ];
+
+    let mut dirs = Vec::new();
+    let mut seen = HashSet::new();
+
+    for p in candidates {
+        if p.is_dir() {
+            if let Ok(can) = p.canonicalize() {
+                if seen.insert(can.clone()) {
+                    dirs.push(can);
+                }
+            } else if seen.insert(p.clone()) {
+                dirs.push(p);
+            }
+        }
+    }
+
+    dirs
+}
+
 /// Discovers directories where AppImages are typically placed.
 fn appimage_dirs() -> Vec<PathBuf> {
     let home = home_dir();
@@ -328,6 +358,314 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
     })
 }
 
+fn is_executable_file(path: &Path) -> bool {
+    if !path.is_file() {
+        return false;
+    }
+    if let Ok(metadata) = fs::metadata(path) {
+        if metadata.permissions().mode() & 0o111 != 0 {
+            return true;
+        }
+    }
+    if let Ok(mut f) = fs::File::open(path) {
+        use std::io::Read;
+        let mut magic = [0u8; 4];
+        if f.read_exact(&mut magic).is_ok() {
+            if magic == [0x7f, b'E', b'L', b'F'] {
+                return true;
+            }
+            if &magic[0..2] == b"#!" {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+fn is_helper_binary(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    lower.contains("sandbox")
+        || lower.contains("crashpad")
+        || lower.contains("reporter")
+        || lower.contains("updater")
+        || lower.ends_with(".so")
+        || lower.contains(".so.")
+        || lower.ends_with(".dll")
+        || lower.ends_with(".dylib")
+        || lower.starts_with("lib")
+        || lower == "ld-linux"
+        || lower.starts_with("ld-linux")
+}
+
+fn clean_folder_app_name(raw_name: &str) -> String {
+    let mut name = raw_name.trim();
+    if let Some(stripped) = name.strip_suffix(".app") {
+        name = stripped;
+    }
+    if let Some(stripped) = name.strip_suffix(".App") {
+        name = stripped;
+    }
+    name.replace(['-', '_'], " ").trim().to_string()
+}
+
+fn find_folder_app_executable(app_dir: &Path) -> Option<(PathBuf, PathBuf)> {
+    let dir_name = app_dir.file_name()?.to_str()?;
+    let raw_name = dir_name.strip_suffix(".app").unwrap_or(dir_name);
+    let name_lower = raw_name.to_lowercase();
+
+    let subdirs = [
+        app_dir.to_path_buf(),
+        app_dir.join("app"),
+        app_dir.join("bin"),
+        app_dir.join("Contents").join("MacOS"),
+    ];
+
+    // Priority 1: Exact directory name match
+    for sdir in &subdirs {
+        if !sdir.is_dir() {
+            continue;
+        }
+        for candidate_name in &[raw_name, &name_lower] {
+            let cand_path = sdir.join(candidate_name);
+            if cand_path.exists() && is_executable_file(&cand_path) {
+                return Some((cand_path, app_dir.to_path_buf()));
+            }
+        }
+        for ext in &[".sh", ".bin"] {
+            let cand_path = sdir.join(format!("{raw_name}{ext}"));
+            if cand_path.exists() && is_executable_file(&cand_path) {
+                return Some((cand_path, app_dir.to_path_buf()));
+            }
+        }
+    }
+
+    // Priority 2: Standard launcher scripts
+    for sdir in &subdirs {
+        if !sdir.is_dir() {
+            continue;
+        }
+        for script in &["run.sh", "start.sh", "launch.sh", "main.sh", "app.sh", "main"] {
+            let cand_path = sdir.join(script);
+            if cand_path.exists() && is_executable_file(&cand_path) {
+                return Some((cand_path, app_dir.to_path_buf()));
+            }
+        }
+    }
+
+    // Priority 3: First valid executable in directory or bin
+    for sdir in &subdirs {
+        if let Ok(entries) = fs::read_dir(sdir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if let Some(fname) = p.file_name().and_then(|f| f.to_str()) {
+                    if !is_helper_binary(fname) && is_executable_file(&p) {
+                        return Some((p, app_dir.to_path_buf()));
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn find_folder_app_icon(app_dir: &Path) -> String {
+    let dir_name = app_dir.file_name().and_then(|f| f.to_str()).unwrap_or("");
+    let raw_name = dir_name.strip_suffix(".app").unwrap_or(dir_name);
+    let name_lower = raw_name.to_lowercase();
+
+    // 1. Direct files in app_dir
+    for base in &[raw_name, &name_lower, "icon", "logo", "app"] {
+        for ext in &[".png", ".svg", ".xpm"] {
+            let cand = app_dir.join(format!("{base}{ext}"));
+            if cand.is_file() {
+                return cand.to_string_lossy().to_string();
+            }
+        }
+    }
+
+    // 2. Common Electron / standard asset paths
+    let asset_subpaths = [
+        "app/resources/app/assets/icon.png",
+        "app/resources/app/assets/icon.svg",
+        "resources/app/assets/icon.png",
+        "resources/app/assets/icon.svg",
+        "app/resources/app/icon.png",
+        "resources/app/icon.png",
+        "assets/icon.png",
+        "assets/icon.svg",
+        "assets/logo.png",
+        "assets/logo.svg",
+        "resources/icon.png",
+        "resources/icon.svg",
+        "res/icon.png",
+    ];
+
+    for rel in &asset_subpaths {
+        let cand = app_dir.join(rel);
+        if cand.is_file() {
+            return cand.to_string_lossy().to_string();
+        }
+    }
+
+    // 3. Deep search for icon/logo up to depth 4
+    let walker = WalkDir::new(app_dir)
+        .max_depth(4)
+        .follow_links(true)
+        .into_iter()
+        .filter_entry(|e| {
+            let n = e.file_name().to_string_lossy();
+            !n.starts_with('.') && n != "node_modules" && n != ".git"
+        });
+
+    for item in walker.flatten() {
+        let p = item.path();
+        if !p.is_file() {
+            continue;
+        }
+        let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+        if ext == "png" || ext == "svg" {
+            let fname = p.file_stem().and_then(|f| f.to_str()).unwrap_or("").to_lowercase();
+            if fname.contains("icon") || fname.contains("logo") || fname == name_lower {
+                return p.to_string_lossy().to_string();
+            }
+        }
+    }
+
+    // 4. Try system pixmaps
+    for ext in &[".png", ".svg"] {
+        let cand = PathBuf::from(format!("/usr/share/pixmaps/{name_lower}{ext}"));
+        if cand.is_file() {
+            return cand.to_string_lossy().to_string();
+        }
+    }
+
+    "application-x-executable".to_string()
+}
+
+fn index_folder_apps(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>) {
+    let mut seen_names = HashSet::new();
+
+    for directory in folder_app_dirs() {
+        let read_entries = match fs::read_dir(&directory) {
+            Ok(iter) => iter,
+            Err(_) => continue,
+        };
+
+        for item in read_entries.flatten() {
+            let path = item.path();
+
+            let Some(file_name) = path.file_name().and_then(|f| f.to_str()) else {
+                continue;
+            };
+
+            if file_name.starts_with('.') {
+                continue;
+            }
+
+            // A. Directory: e.g. ~/Applications/Postman or ~/Applications/Postman.app
+            if path.is_dir() {
+                // Check if there is an embedded .desktop file
+                let mut found_desktop = false;
+                let desktop_walker = WalkDir::new(&path)
+                    .max_depth(3)
+                    .follow_links(true)
+                    .into_iter()
+                    .filter_entry(|e| !should_skip_entry(e));
+
+                for d_item in desktop_walker.flatten() {
+                    let d_path = d_item.path();
+                    if d_path.extension().and_then(|ext| ext.to_str()) == Some("desktop") {
+                        if let Some(mut d_entry) = parse_desktop_file(d_path) {
+                            let p_str = d_path.to_string_lossy().to_string();
+                            if seen_paths.insert(p_str) {
+                                if !d_entry.exec.starts_with('/') {
+                                    if let Some((bin_path, _)) = find_folder_app_executable(&path) {
+                                        d_entry.exec = bin_path.to_string_lossy().to_string();
+                                    }
+                                }
+                                entries.push(d_entry);
+                                found_desktop = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if found_desktop {
+                    continue;
+                }
+
+                // If no desktop file found, treat as folder application bundle
+                if let Some((exec_path, _workdir)) = find_folder_app_executable(&path) {
+                    let app_name = clean_folder_app_name(file_name);
+                    let name_key = app_name.to_lowercase();
+
+                    if !seen_names.insert(name_key.clone()) {
+                        continue;
+                    }
+
+                    let path_str = path.to_string_lossy().to_string();
+                    seen_paths.insert(path_str.clone());
+
+                    let icon = find_folder_app_icon(&path);
+                    let exec_str = exec_path.to_string_lossy().to_string();
+
+                    entries.push(SearchEntry {
+                        id: 0,
+                        kind: "app".to_string(),
+                        name: app_name,
+                        path: path_str,
+                        exec: exec_str,
+                        icon,
+                        terminal: false,
+                        generic_name: "Application".to_string(),
+                        keywords: format!("application;portable;folder;{name_key};"),
+                        description: "Application".to_string(),
+                    });
+                }
+            } else if path.is_file() || path.is_symlink() {
+                // B. Standalone binary or link directly in Applications
+                let lower = file_name.to_lowercase();
+                if lower.ends_with(".appimage") || lower.ends_with(".desktop") {
+                    continue;
+                }
+
+                if is_helper_binary(file_name) || !is_executable_file(&path) {
+                    continue;
+                }
+
+                let app_name = clean_folder_app_name(file_name);
+                let name_key = app_name.to_lowercase();
+
+                if !seen_names.insert(name_key.clone()) {
+                    continue;
+                }
+
+                let path_str = path.to_string_lossy().to_string();
+                if !seen_paths.insert(path_str.clone()) {
+                    continue;
+                }
+
+                let icon = find_folder_app_icon(path.parent().unwrap_or(&path));
+
+                entries.push(SearchEntry {
+                    id: 0,
+                    kind: "app".to_string(),
+                    name: app_name,
+                    path: path_str.clone(),
+                    exec: path_str,
+                    icon,
+                    terminal: false,
+                    generic_name: "Application".to_string(),
+                    keywords: format!("application;portable;{name_key};"),
+                    description: "Application".to_string(),
+                });
+            }
+        }
+    }
+}
+
 // ============================================================
 // APPIMAGE DISCOVERY
 // ============================================================
@@ -529,6 +867,7 @@ fn build_index() -> Vec<SearchEntry> {
     let mut seen_paths = HashSet::new();
 
     index_applications(&mut entries, &mut seen_paths);
+    index_folder_apps(&mut entries, &mut seen_paths);
     index_appimages(&mut entries, &mut seen_paths);
     index_files(&mut entries, &mut seen_paths);
 
@@ -581,6 +920,15 @@ fn check_app_dirs_newer_than(cache_mtime: SystemTime) -> bool {
         }
     }
     for dir in appimage_dirs() {
+        if let Ok(metadata) = fs::metadata(&dir) {
+            if let Ok(mtime) = metadata.modified() {
+                if mtime > cache_mtime {
+                    return true;
+                }
+            }
+        }
+    }
+    for dir in folder_app_dirs() {
         if let Ok(metadata) = fs::metadata(&dir) {
             if let Ok(mtime) = metadata.modified() {
                 if mtime > cache_mtime {
@@ -1034,6 +1382,37 @@ fn launch_desktop_file(path_str: &str) -> Result<(), String> {
         .map_err(|e| format!("failed to spawn exec command: {e}"))
 }
 
+fn launch_folder_app(exec_path: &Path, workdir: &Path) -> Result<(), String> {
+    if !exec_path.exists() {
+        return Err(format!("executable not found: {}", exec_path.display()));
+    }
+
+    if let Ok(metadata) = fs::metadata(exec_path) {
+        let mut perms = metadata.permissions();
+        let mode = perms.mode();
+        if mode & 0o111 == 0 {
+            perms.set_mode(mode | 0o755);
+            let _ = fs::set_permissions(exec_path, perms);
+        }
+    }
+
+    let workdir = if workdir.is_dir() {
+        workdir
+    } else {
+        exec_path.parent().unwrap_or_else(|| Path::new("/"))
+    };
+
+    Command::new(exec_path)
+        .current_dir(workdir)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .process_group(0)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("failed to launch application '{}': {e}", exec_path.display()))
+}
+
 fn launch_appimage(path_str: &str) -> Result<(), String> {
     let path = Path::new(path_str);
     if !path.is_file() {
@@ -1089,12 +1468,21 @@ pub fn open(target: &str) {
     }
 
     // If target is directly an existing path
-    let target_path = Path::new(target);
+    let target_path = PathBuf::from(target);
     if target_path.exists() {
         let result = if target.ends_with(".desktop") {
             launch_desktop_file(target)
         } else if target.to_lowercase().ends_with(".appimage") {
             launch_appimage(target)
+        } else if target_path.is_dir() {
+            if let Some((exec, workdir)) = find_folder_app_executable(&target_path) {
+                launch_folder_app(&exec, &workdir)
+            } else {
+                launch_file(target)
+            }
+        } else if is_executable_file(&target_path) {
+            let workdir = target_path.parent().unwrap_or_else(|| Path::new("/"));
+            launch_folder_app(&target_path, workdir)
         } else {
             launch_file(target)
         };
@@ -1122,7 +1510,20 @@ pub fn open(target: &str) {
         };
 
         let result = match entry.kind.as_str() {
-            "app" => launch_desktop_file(&entry.path),
+            "app" => {
+                if entry.path.ends_with(".desktop") {
+                    launch_desktop_file(&entry.path)
+                } else {
+                    let exec_path = PathBuf::from(&entry.exec);
+                    let entry_path = PathBuf::from(&entry.path);
+                    let workdir = if entry_path.is_dir() {
+                        entry_path
+                    } else {
+                        exec_path.parent().unwrap_or_else(|| Path::new("/")).to_path_buf()
+                    };
+                    launch_folder_app(&exec_path, &workdir)
+                }
+            }
             "appimage" => launch_appimage(&entry.path),
             "file" => launch_file(&entry.path),
             other => Err(format!("unsupported search result type: {other}")),

@@ -14,6 +14,11 @@ import "../modules/battery" as BatteryModule
 Item {
     id: root
 
+    implicitWidth: 760
+    implicitHeight: 460
+    width: 760
+    height: 460
+
     // ============================================================
     // CONTROL CENTER STATE
     //

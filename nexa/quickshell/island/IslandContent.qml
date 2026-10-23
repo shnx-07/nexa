@@ -211,6 +211,12 @@ Item {
         if (root.specialMode === "shelf" && islandShelfLoader.item) {
             Qt.callLater(islandShelfLoader.item.refresh)
         }
+        if (root.specialMode === "controlCenter") {
+            root.controlCenterLoaded = true
+            if (controlCenterIslandLoader.item) {
+                controlCenterIslandLoader.item.currentPage = root.pendingControlCenterPage
+            }
+        }
     }
 
     // ============================================================
@@ -977,17 +983,42 @@ Item {
         }
     }
 
+    property bool controlCenterLoaded: false
+
+    Timer {
+        id: controlCenterPreloadTimer
+        interval: 1500
+        running: true
+        repeat: false
+        onTriggered: {
+            root.controlCenterLoaded = true
+        }
+    }
+
     Loader {
         id: controlCenterIslandLoader
-        anchors.fill: parent
-        active: root.specialMode === "controlCenter"
-        visible: active && root.full
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        width: 760
+        height: 460
+        active: root.specialMode === "controlCenter" || root.controlCenterLoaded
+        visible: opacity > 0
+        opacity: (root.specialMode === "controlCenter" && root.full) ? 1.0 : 0.0
         z: 100
-        source: active ? "ControlCenterIsland.qml" : ""
+        source: "ControlCenterIsland.qml"
+        layer.enabled: true
         onLoaded: {
+            root.controlCenterLoaded = true
             if (item) {
                 item.currentPage = root.pendingControlCenterPage
                 item.requestClose.connect(root.requestCloseSpecialMode)
+            }
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 150
+                easing.type: Easing.OutQuad
             }
         }
     }
