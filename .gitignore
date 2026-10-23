@@ -3,3 +3,10 @@ nexa/rust/target/
 *.log
 *.tmp
 .cache/
+
+# Exclude user transient state & runtime overrides
+nexa/config/wallpaper.conf
+nexa/config/lockscreen.conf
+nexa/config/theme.conf
+nexa/config/theme.state
+nexa/config/power.json

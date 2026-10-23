@@ -66,8 +66,8 @@ elseif platform.is_mac then
       { label = 'Nushell', args = { 'nu', '-l' } },
    }
 elseif platform.is_linux then
-   local shell = get_default_shell()
-   options.default_prog = { shell, '-l' }
+   -- WezTerm explicitly uses Fish shell
+   options.default_prog = { 'fish', '-l' }
    options.launch_menu = {
       { label = 'Zsh', args = { 'zsh', '-l' } },
       { label = 'Fish', args = { 'fish', '-l' } },

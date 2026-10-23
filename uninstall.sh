@@ -65,6 +65,7 @@ CONFIG_TARGETS=(
     "qt6ct"
     "kdeglobals"
     "mimeapps.list"
+    "nvim"
     "starship.toml"
     "chrome-flags.conf"
     "chromium-flags.conf"

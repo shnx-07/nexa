@@ -53,8 +53,8 @@ Item {
     property bool windowGlow: true
     property real windowDim: 0.0
 
-    readonly property string themeScript: "$HOME/.config/nexa/scripts/theme.sh"
-    readonly property string nexad: "$HOME/.config/nexa/rust/target/release/nexad"
+    readonly property string themeScript: Quickshell.env("HOME") + "/.config/nexa/scripts/theme.sh"
+    readonly property string nexad: Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
 
     onVisibleChanged: {
         if (visible) {

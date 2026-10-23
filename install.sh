@@ -88,18 +88,24 @@ PACMAN_PACKAGES=(
     xdg-desktop-portal-gtk
     polkit-kde-agent
 
-    # Build & Development
+    # Build & Development & Programming Toolchains
     base-devel
     git
     rust
     cargo
     gcc
+    clang
+    gdb
     pkgconf
     cmake
     meson
     cpio
     openssl
     python
+    python-pip
+    python-gobject
+    jdk21-openjdk
+    jdk25-openjdk
 
     # Audio & Media
     pipewire
@@ -139,13 +145,16 @@ PACMAN_PACKAGES=(
     adwaita-icon-theme
     adw-gtk-theme
 
-    # Terminals & File Managers
+    # Terminals & File Managers & Media Viewers
     alacritty
     kitty
     wezterm
     nemo
     dolphin
     yazi
+    gwenview
+    kimageformats
+    qt6-imageformats
 
     # Shell & System Utilities
     zsh
@@ -190,8 +199,21 @@ AUR_PACKAGES=(
 )
 
 log_info "Installing AUR packages: ${AUR_PACKAGES[*]}"
-$AUR_HELPER -S --needed --noconfirm "${AUR_PACKAGES[@]}"
-log_success "AUR packages installed successfully."
+log_info "Installing AUR packages: ${AUR_PACKAGES[*]}"
+$AUR_HELPER -S --needed --noconfirm "${AUR_PACKAGES[@]}" || {
+    log_warn "Some AUR packages failed. Checking Quickshell..."
+    if ! command -v quickshell >/dev/null 2>&1; then
+        log_warn "Quickshell not found! Building quickshell-git directly via makepkg..."
+        QS_BUILD_DIR="$(mktemp -d)"
+        git clone https://aur.archlinux.org/quickshell-git.git "$QS_BUILD_DIR/quickshell-git"
+        (
+            cd "$QS_BUILD_DIR/quickshell-git"
+            makepkg -si --noconfirm
+        )
+        rm -rf "$QS_BUILD_DIR"
+    fi
+}
+log_success "AUR packages installed successfully." 
 
 # ------------------------------------------------------------------------------
 # 5. Backup Existing Configurations
@@ -217,6 +239,7 @@ CONFIG_TARGETS=(
     "qt6ct"
     "kdeglobals"
     "mimeapps.list"
+    "nvim"
     "starship.toml"
     "chrome-flags.conf"
     "chromium-flags.conf"
@@ -335,6 +358,14 @@ if command -v gsettings >/dev/null 2>&1; then
     gsettings set org.gnome.desktop.interface font-name 'SF Pro Display 11' 2>/dev/null || true
     gsettings set org.gnome.desktop.interface document-font-name 'SF Pro Display 11' 2>/dev/null || true
     gsettings set org.gnome.desktop.interface icon-theme 'Adwaita' 2>/dev/null || true
+fi
+
+# Set Gwenview as primary default image viewer across all image MIME types
+if command -v xdg-mime >/dev/null 2>&1; then
+    log_info "Setting Gwenview as the default image viewer..."
+    for mime in image/png image/jpeg image/gif image/webp image/bmp image/svg+xml image/tiff image/avif image/heic; do
+        xdg-mime default org.kde.gwenview.desktop "$mime" 2>/dev/null || true
+    done
 fi
 
 # Verify or enable ZRAM memory compression (vital for smooth performance on 8GB-16GB machines)
