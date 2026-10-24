@@ -89,6 +89,8 @@ Item {
         contentHeight: Math.max(height, columnsRow.implicitHeight + 12)
         boundsBehavior: Flickable.StopAtBounds
 
+        NexaUI.NexaSmoothScroll {}
+
         Row {
             id: columnsRow
             width: parent.width

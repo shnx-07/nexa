@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 Item {
@@ -632,6 +633,8 @@ Item {
                     contentWidth: width
                     boundsBehavior: Flickable.StopAtBounds
 
+                    NexaUI.NexaSmoothScroll {}
+
                     ScrollBar.vertical: ScrollBar {
                         id: detailsScrollBar
                         policy: ScrollBar.AsNeeded
@@ -866,6 +869,8 @@ Item {
                     contentHeight: forecastMode === 0 ? dailyCol.implicitHeight : hourlyCol.implicitHeight
                     contentWidth: width
                     boundsBehavior: Flickable.StopAtBounds
+
+                    NexaUI.NexaSmoothScroll {}
 
                     ScrollBar.vertical: ScrollBar {
                         id: forecastScrollBar

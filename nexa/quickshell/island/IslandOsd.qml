@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import "../theme" as Nexa
+import "../theme/components" as NexaUI
 
 Item {
     id: root
@@ -82,41 +83,15 @@ Item {
         }
 
         // Pill Progress Track
-        Item {
-            id: trackContainer
+        NexaUI.NexaProgressBar {
             Layout.fillWidth: true
             Layout.preferredHeight: 8
             Layout.alignment: Qt.AlignVCenter
-
-            Rectangle {
-                anchors.fill: parent
-                radius: height / 2
-                color: Nexa.Theme.surface
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
-                clip: true
-
-                Rectangle {
-                    id: fillBar
-                    height: parent.height
-                    width: Math.max(0, Math.min(parent.width, parent.width * Math.min(1.0, Math.max(0.0, root.value))))
-                    radius: height / 2
-                    color: root.iconColor
-
-                    Behavior on width {
-                        NumberAnimation {
-                            duration: Nexa.Theme.animationFast
-                            easing.type: Easing.OutQuad
-                        }
-                    }
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: Nexa.Theme.animationFast
-                        }
-                    }
-                }
-            }
+            from: 0.0
+            to: 1.0
+            value: root.value
+            barColor: root.iconColor
+            trackColor: Nexa.Theme.surface
         }
 
         // Percentage Text
@@ -292,19 +267,14 @@ Item {
                 font.weight: Nexa.Theme.fontWeightBold
             }
 
-            Rectangle {
+            NexaUI.NexaProgressBar {
                 Layout.fillWidth: true
-                height: 4
-                radius: 2
-                color: Nexa.Theme.surfaceContainer
-                clip: true
-
-                Rectangle {
-                    height: parent.height
-                    width: Math.max(0, Math.min(parent.width, parent.width * Math.min(1.0, Math.max(0.0, root.value))))
-                    radius: 2
-                    color: root.batteryCharging ? Nexa.Theme.success : Nexa.Theme.primary
-                }
+                implicitHeight: 4
+                from: 0.0
+                to: 1.0
+                value: root.value
+                barColor: root.batteryCharging ? Nexa.Theme.success : Nexa.Theme.primary
+                trackColor: Nexa.Theme.surfaceContainer
             }
         }
 

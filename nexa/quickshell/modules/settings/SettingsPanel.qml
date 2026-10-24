@@ -24,8 +24,8 @@ Item {
     property string tab: "profile"
     readonly property var tabs: ["profile", "display", "power", "bars", "lock", "system"]
     function rad(n) {
-        if (Nexa.Theme.windowRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.windowRounding / 10.0)));
+        if (Nexa.Theme.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
     }
 
     readonly property bool shuffle: Services.LockScreen.shuffle
@@ -101,7 +101,7 @@ Item {
         anchors.centerIn: parent
         width: Math.min(1240, (root.width > 0 ? root.width : 1920) * 0.88)
         height: Math.min(900, (root.height > 0 ? root.height : 1080) * 0.9)
-        radius: Nexa.Theme.windowRounding === 0 ? 0 : root.rad(Nexa.Theme.radiusLg + 6)
+        radius: Nexa.Theme.nexaRounding
         color: Nexa.Theme.panelBackground
         border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.border

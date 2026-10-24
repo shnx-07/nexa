@@ -50,7 +50,7 @@ NexaUI.NexaCard {
         ? fixedPillWidth
         : Nexa.Theme.controlHeightSm
 
-    radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
+    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
 
     // ------------------------------------------------------------
     // SURFACE

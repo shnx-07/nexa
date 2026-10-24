@@ -6,6 +6,7 @@ import Quickshell.Io
 import "../../../theme" as Nexa
 import "../../lockthemes/components"
 import "../../../services" as Services
+import "../../../theme/components" as NexaUI
 
 Item {
     id: root
@@ -49,8 +50,8 @@ Item {
     readonly property int batteryPercent: Services.Battery ? Services.Battery.percentage : 100
 
     function rad(n) {
-        if (Nexa.Theme.windowRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.windowRounding / 10.0)));
+        if (Nexa.Theme.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
     }
 
     function loadConfig() {
@@ -560,31 +561,12 @@ Item {
                             }
                         }
 
-                        // Custom Styled Toggle Switch
-                        ClickableRect {
-                            width: 48
-                            height: 26
-                            radius: 13
-                            color: root.batterySaverEnabled ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest
-                            border.width: Nexa.Theme.borderThin
-                            border.color: root.batterySaverEnabled ? Nexa.Theme.primary : Nexa.Theme.border
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.batterySaverEnabled = !root.batterySaverEnabled;
-                                root.saveConfig();
-                            }
-
-                            Rectangle {
-                                width: 20
-                                height: 20
-                                radius: 10
-                                color: root.batterySaverEnabled ? Nexa.Theme.onPrimary : Nexa.Theme.mutedText
-                                anchors.verticalCenter: parent.verticalCenter
-                                x: root.batterySaverEnabled ? parent.width - width - 3 : 3
-
-                                Behavior on x {
-                                    NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                                }
+                        // Standardized NexaToggle
+                        NexaUI.NexaToggle {
+                            checked: root.batterySaverEnabled
+                            onToggled: {
+                                root.batterySaverEnabled = !root.batterySaverEnabled
+                                root.saveConfig()
                             }
                         }
                     }

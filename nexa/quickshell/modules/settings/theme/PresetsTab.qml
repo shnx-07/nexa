@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import "../../../theme" as Nexa
+import "../../../theme/components" as NexaUI
 
 RowLayout {
     id: root
@@ -237,6 +238,8 @@ RowLayout {
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
 
+                        NexaUI.NexaSmoothScroll {}
+
                         Column {
                             id: catColumn
                             width: parent.width
@@ -408,6 +411,8 @@ RowLayout {
                     contentHeight: decksColumn.implicitHeight + 20
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
+
+                    NexaUI.NexaSmoothScroll {}
 
                     Column {
                         id: decksColumn

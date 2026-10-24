@@ -10,3 +10,5 @@ nexa/config/lockscreen.conf
 nexa/config/theme.conf
 nexa/config/theme.state
 nexa/config/power.json
+
+nexa/display.json

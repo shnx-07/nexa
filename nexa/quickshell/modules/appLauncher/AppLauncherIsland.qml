@@ -420,10 +420,10 @@ Item {
                 Rectangle {
                     width: 26
                     height: 26
-                    radius: Nexa.Theme.windowRounding === 0 ? 0 : 13
+                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : 13
                     visible: searchInput.text.length > 0
                     color: clearMouse.containsMouse ? Nexa.Theme.hover : "transparent"
-                    border.width: (Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
+                    border.width: (Nexa.Theme.nexaRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
                     border.color: Nexa.Theme.borderSubtle
 
                     Text {
@@ -464,6 +464,8 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
 
+                NexaUI.NexaSmoothScroll { horizontal: true }
+
                 Row {
                     id: categoryRow
                     spacing: 6
@@ -482,7 +484,7 @@ Item {
 
                             implicitWidth: chipRow.implicitWidth + 20
                             implicitHeight: 36
-                            radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
+                            radius: Nexa.Theme.nexaRounding === 0 ? 0 : height / 2
 
                             color: active
                                 ? Nexa.Theme.primary
@@ -565,6 +567,8 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 flickDeceleration: Nexa.Theme.flickDeceleration
                 maximumFlickVelocity: Nexa.Theme.flickVelocityMax
+
+                NexaUI.NexaSmoothScroll {}
 
                 ScrollBar.vertical: ScrollBar {
                     id: gridScrollBar

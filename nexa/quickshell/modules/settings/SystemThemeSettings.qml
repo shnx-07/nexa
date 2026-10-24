@@ -49,6 +49,7 @@ Item {
 
     // Compositor state (Hyprland window styling)
     property int windowRounding: Nexa.Theme.windowRounding
+    property int nexaRounding: Nexa.Theme.nexaRounding
     property int windowBorderSize: Nexa.Theme.windowBorderSize
     property bool windowGlow: true
     property real windowDim: 0.0
@@ -229,20 +230,35 @@ Item {
         refreshTimer.restart()
     }
 
+    Timer {
+        id: shapeApplyTimer
+        interval: 50
+        repeat: false
+        onTriggered: {
+            const script = Quickshell.env("HOME") + "/.config/nexa/scripts/apply-shapes.sh"
+            Quickshell.execDetached([script, root.windowRounding.toString(), root.windowBorderSize.toString(), root.nexaRounding.toString(), "standard"])
+        }
+    }
+
     function setRounding(r) {
         const val = parseInt(r) || 0
         root.windowRounding = val
         Nexa.Theme.windowRounding = val
-        const script = Quickshell.env("HOME") + "/.config/nexa/scripts/apply-shapes.sh"
-        Quickshell.execDetached([script, val.toString(), root.windowBorderSize.toString(), "standard"])
+        shapeApplyTimer.restart()
+    }
+
+    function setNexaRounding(nr) {
+        const val = parseInt(nr) || 0
+        root.nexaRounding = val
+        Nexa.Theme.nexaRounding = val
+        shapeApplyTimer.restart()
     }
 
     function setBorderSize(b) {
         const val = parseInt(b) || 0
         root.windowBorderSize = val
         Nexa.Theme.windowBorderSize = val
-        const script = Quickshell.env("HOME") + "/.config/nexa/scripts/apply-shapes.sh"
-        Quickshell.execDetached([script, root.windowRounding.toString(), val.toString(), "standard"])
+        shapeApplyTimer.restart()
     }
 
     function setWindowGlow(on) {
@@ -641,11 +657,13 @@ Item {
                 visible: root.activeSubTab === "windows"
 
                 windowRounding: root.windowRounding
+                nexaRounding: root.nexaRounding
                 windowBorderSize: root.windowBorderSize
                 windowGlow: root.windowGlow
                 windowDim: root.windowDim
 
                 onSetRoundingRequested: r => root.setRounding(r)
+                onSetNexaRoundingRequested: nr => root.setNexaRounding(nr)
                 onSetBorderSizeRequested: b => root.setBorderSize(b)
                 onSetWindowGlowRequested: g => root.setWindowGlow(g)
                 onSetWindowDimRequested: d => root.setWindowDim(d)

@@ -533,7 +533,7 @@ Item {
                 Rectangle {
                     implicitWidth: 34
                     implicitHeight: 34
-                    radius: Nexa.Theme.windowRounding === 0 ? 0 : 17
+                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : 17
                     color: Qt.rgba(root.solarColor.r, root.solarColor.g, root.solarColor.b, 0.15)
                     border.width: 1
                     border.color: Qt.rgba(root.solarColor.r, root.solarColor.g, root.solarColor.b, 0.3)

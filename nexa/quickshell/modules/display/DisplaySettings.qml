@@ -57,8 +57,8 @@ Item {
     property string pendingActionDescription: "Display settings changed"
 
     function rad(n) {
-        if (Nexa.Theme.windowRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.windowRounding / 10.0)));
+        if (Nexa.Theme.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
     }
 
     function showToast(msg) {
@@ -502,7 +502,7 @@ Item {
                             text: "Display Arrangement"
                             font.family: Nexa.Theme.fontFamily
                             font.pixelSize: 12
-                            font.weight: Font.SemiBold
+                            font.weight: Font.DemiBold
                             color: Nexa.Theme.text
                         }
 
@@ -605,7 +605,7 @@ Item {
                                             text: !isEnabled ? "Disabled" : (isPrimary ? "Main Screen" : "Active")
                                             font.family: Nexa.Theme.fontFamily
                                             font.pixelSize: 9
-                                            font.weight: Font.SemiBold
+                                            font.weight: Font.DemiBold
                                             color: !isEnabled ? Nexa.Theme.mutedText : (isPrimary ? Nexa.Theme.primary : Nexa.Theme.text)
                                         }
                                     }
@@ -836,7 +836,7 @@ Item {
                                         text: root.selectedDisplay ? (root.isDispInternal(root.selectedDisplay) ? "INTERNAL" : "EXTERNAL") : ""
                                         font.family: Nexa.Theme.fontFamily
                                         font.pixelSize: 10
-                                        font.weight: Font.SemiBold
+                                        font.weight: Font.DemiBold
                                         color: Nexa.Theme.mutedText
                                     }
                                 }

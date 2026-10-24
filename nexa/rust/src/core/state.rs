@@ -50,6 +50,16 @@ pub struct SettingsState {
 
     #[serde(default)]
     pub dnd: bool,
+
+    #[serde(default = "current_timestamp")]
+    pub timestamp: u64,
+}
+
+fn current_timestamp() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
 }
 
 fn default_volume() -> u32 { 60 }
@@ -76,6 +86,7 @@ impl Default for SettingsState {
             nightlight_temperature: default_nightlight_temp(),
             screen_filter: default_filter(),
             dnd: false,
+            timestamp: current_timestamp(),
         }
     }
 }
@@ -109,13 +120,9 @@ pub fn load_state() -> SettingsState {
 
 pub fn save_state(state: &SettingsState) -> Result<(), String> {
     let path = state_path();
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
     let json = serde_json::to_string_pretty(state)
         .map_err(|e| format!("Failed to serialize settings state: {e}"))?;
-    fs::write(&path, json)
-        .map_err(|e| format!("Failed to write settings state to {}: {e}", path.display()))
+    crate::core::fs_utils::atomic_write(&path, json)
 }
 
 pub fn update_state<F>(update: F) -> Result<SettingsState, String>
@@ -124,6 +131,7 @@ where
 {
     let mut state = load_state();
     update(&mut state);
+    state.timestamp = current_timestamp();
     save_state(&state)?;
     Ok(state)
 }
@@ -206,7 +214,8 @@ pub fn sync_from_system() -> SettingsState {
     // 9. Do Not Disturb
     state.dnd = crate::notifications::load_dnd();
 
-    // 10. Save and return
+    // 10. Stamp and Save
+    state.timestamp = current_timestamp();
     let _ = save_state(&state);
     state
 }

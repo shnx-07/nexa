@@ -252,6 +252,8 @@ Item {
             contentHeight: cardsGrid.implicitHeight + 8
             boundsBehavior: Flickable.StopAtBounds
 
+            NexaUI.NexaSmoothScroll {}
+
             ScrollBar.vertical: ScrollBar {
                 id: notifScrollBar
                 policy: ScrollBar.AsNeeded

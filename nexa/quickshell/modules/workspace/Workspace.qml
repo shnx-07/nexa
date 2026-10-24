@@ -176,7 +176,7 @@ RowLayout {
             }
         }
 
-        radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
+        radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
         color: Nexa.Theme.surfaceContainer
         border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.border
@@ -246,7 +246,7 @@ RowLayout {
                         // Directly tracks parent width for instant single-curve synchronization
                         width: parent.width - 4
                         height: 10
-                        radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
+                        radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
 
                         color: {
                             if (workspaceButton.active) {
@@ -307,7 +307,7 @@ RowLayout {
         visible: root.activeSpecialWorkspaces.length > 0
         implicitHeight: Nexa.Theme.controlHeightSm
         implicitWidth: scratchpadRow.implicitWidth + 12
-        radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
+        radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
         color: Nexa.Theme.surfaceContainer
         border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.border
@@ -339,7 +339,7 @@ RowLayout {
 
                     width: 26
                     height: 22
-                    radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
+                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
                     border.width: isFocused ? Nexa.Theme.borderThin : 0
                     border.color: Nexa.Theme.primary
 

@@ -1006,7 +1006,7 @@ Item {
         opacity: (root.specialMode === "controlCenter" && root.full) ? 1.0 : 0.0
         z: 100
         source: "ControlCenterIsland.qml"
-        layer.enabled: true
+        layer.enabled: false
         onLoaded: {
             root.controlCenterLoaded = true
             if (item) {

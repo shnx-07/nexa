@@ -134,7 +134,7 @@ fn apply_shader(path: &Path) -> Result<(), String> {
         .replace('"', "\\\"");
 
     let expr = format!(
-        r#"hl.config({{ debug = {{ damage_tracking = 1 }}, decoration = {{ screen_shader = "{path_str}" }} }});"#
+        r#"_G._nexa_filter_active = true; hl.config({{ debug = {{ damage_tracking = 1 }}, decoration = {{ screen_shader = "{path_str}" }} }}); hl.dispatch(hl.dsp.force_renderer_reload());"#
     );
 
     run_hyprctl(&["eval", &expr])
@@ -143,7 +143,7 @@ fn apply_shader(path: &Path) -> Result<(), String> {
 fn disable_shader() -> Result<(), String> {
     run_hyprctl(&[
         "eval",
-        r#"hl.config({ debug = { damage_tracking = 2 }, decoration = { screen_shader = "" } });"#,
+        r#"_G._nexa_filter_active = false; hl.config({ decoration = { screen_shader = "" } }); hl.dispatch(hl.dsp.force_renderer_reload()); hl.timer(function() if not _G._nexa_filter_active then hl.config({ debug = { damage_tracking = 2 } }) end end, { timeout = 200, type = "oneshot" });"#,
     ])
 }
 

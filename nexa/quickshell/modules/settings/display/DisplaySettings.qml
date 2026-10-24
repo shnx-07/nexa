@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import "../../theme" as Nexa
+import "../../../theme/components" as NexaUI
 
 Item {
     id: root
@@ -57,8 +58,8 @@ Item {
     property string pendingActionDescription: "Display settings changed"
 
     function rad(n) {
-        if (Nexa.Theme.windowRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.windowRounding / 10.0)));
+        if (Nexa.Theme.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
     }
 
     function showToast(msg) {
@@ -302,6 +303,8 @@ Item {
         contentHeight: contentCol.implicitHeight + 40
         clip: true
         boundsBehavior: Flickable.StopAtBounds
+
+        NexaUI.NexaSmoothScroll {}
 
         Column {
             id: contentCol

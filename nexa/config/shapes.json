@@ -1,5 +1,6 @@
 {
   "rounding": 10,
   "border_size": 0,
-  "style": "standard"
+  "style": "standard",
+  "nexa_rounding": 10
 }

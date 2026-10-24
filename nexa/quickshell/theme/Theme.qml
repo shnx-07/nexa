@@ -10,6 +10,10 @@ import "../modules/appLauncher" as AppLauncher
 QtObject {
     id: root
 
+    // Central nexad binary location (Single Source of Truth)
+    readonly property string nexadBin: Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
+
+
     // ============================================================
     // GLASS MODE (iOS Liquid Glass with HyprGlass refraction)
     // ============================================================
@@ -32,6 +36,7 @@ QtObject {
     // SHAPES & CURVATURE PROFILE (System-wide Radii)
     // ============================================================
     property int windowRounding: 10
+    property int nexaRounding: 14
     property int windowBorderSize: 0
 
     property FileView _shapesWatcher: FileView {
@@ -43,6 +48,11 @@ QtObject {
                 const data = JSON.parse(text())
                 if (data && data.rounding !== undefined) {
                     root.windowRounding = data.rounding
+                }
+                if (data && data.nexa_rounding !== undefined) {
+                    root.nexaRounding = data.nexa_rounding
+                } else if (data && data.rounding !== undefined) {
+                    root.nexaRounding = data.rounding
                 }
                 if (data && data.border_size !== undefined) {
                     root.windowBorderSize = data.border_size
@@ -218,6 +228,9 @@ QtObject {
     readonly property color errorContainer:
         ThemeParts.MatugenColors.errorContainer
 
+    readonly property color onErrorContainer:
+        ThemeParts.MatugenColors.on_error
+
     readonly property color warning:
         ThemeParts.MatugenColors.warning
 
@@ -370,8 +383,8 @@ QtObject {
 
     readonly property color borderSubtle:
         glassMode
-            ? ((root.windowRounding === 0 || root.windowBorderSize > 0) ? Qt.rgba(primary.r, primary.g, primary.b, 0.40) : Qt.rgba(1, 1, 1, 0.15))
-            : ((root.windowRounding === 0 || root.windowBorderSize > 0)
+            ? ((root.nexaRounding === 0 || root.windowBorderSize > 0) ? Qt.rgba(primary.r, primary.g, primary.b, 0.40) : Qt.rgba(1, 1, 1, 0.15))
+            : ((root.nexaRounding === 0 || root.windowBorderSize > 0)
                 ? Qt.rgba(primary.r, primary.g, primary.b, 0.45)
                 : Qt.rgba(
                     outline.r,
@@ -382,8 +395,8 @@ QtObject {
 
     readonly property color border:
         glassMode
-            ? ((root.windowRounding === 0 || root.windowBorderSize > 0) ? Qt.rgba(primary.r, primary.g, primary.b, 0.70) : Qt.rgba(1, 1, 1, 0.22))
-            : ((root.windowRounding === 0 || root.windowBorderSize > 0)
+            ? ((root.nexaRounding === 0 || root.windowBorderSize > 0) ? Qt.rgba(primary.r, primary.g, primary.b, 0.70) : Qt.rgba(1, 1, 1, 0.22))
+            : ((root.nexaRounding === 0 || root.windowBorderSize > 0)
                 ? Qt.rgba(primary.r, primary.g, primary.b, 0.85)
                 : Qt.rgba(
                     outline.r,
@@ -394,8 +407,8 @@ QtObject {
 
     readonly property color borderStrong:
         glassMode
-            ? ((root.windowRounding === 0 || root.windowBorderSize > 0) ? primary : Qt.rgba(1, 1, 1, 0.38))
-            : ((root.windowRounding === 0 || root.windowBorderSize > 0)
+            ? ((root.nexaRounding === 0 || root.windowBorderSize > 0) ? primary : Qt.rgba(1, 1, 1, 0.38))
+            : ((root.nexaRounding === 0 || root.windowBorderSize > 0)
                 ? primary
                 : Qt.rgba(
                     outline.r,
@@ -619,14 +632,14 @@ QtObject {
     // RADII (Dynamically scaled from system windowRounding profile)
     // ============================================================
 
-    readonly property int radiusXs: root.windowRounding === 0 ? 0 : Math.max(2, Math.round(root.windowRounding * 0.4))
-    readonly property int radiusSm: root.windowRounding === 0 ? 0 : Math.max(3, Math.round(root.windowRounding * 0.8))
-    readonly property int radiusMd: root.windowRounding === 0 ? 0 : Math.max(4, Math.round(root.windowRounding * 1.2))
-    readonly property int radiusLg: root.windowRounding === 0 ? 0 : Math.max(6, Math.round(root.windowRounding * 1.6))
-    readonly property int radiusXl: root.windowRounding === 0 ? 0 : Math.max(8, Math.round(root.windowRounding * 2.2))
-    readonly property int radius2Xl: root.windowRounding === 0 ? 0 : Math.max(10, Math.round(root.windowRounding * 2.8))
+    readonly property int radiusXs: root.nexaRounding === 0 ? 0 : Math.max(2, Math.round(root.nexaRounding * 0.4))
+    readonly property int radiusSm: root.nexaRounding === 0 ? 0 : Math.max(3, Math.round(root.nexaRounding * 0.8))
+    readonly property int radiusMd: root.nexaRounding === 0 ? 0 : Math.max(4, Math.round(root.nexaRounding * 1.2))
+    readonly property int radiusLg: root.nexaRounding === 0 ? 0 : Math.max(6, Math.round(root.nexaRounding * 1.6))
+    readonly property int radiusXl: root.nexaRounding === 0 ? 0 : Math.max(8, Math.round(root.nexaRounding * 2.2))
+    readonly property int radius2Xl: root.nexaRounding === 0 ? 0 : Math.max(10, Math.round(root.nexaRounding * 2.8))
 
-    readonly property int radiusPill: root.windowRounding === 0 ? 0 : 999
+    readonly property int radiusPill: root.nexaRounding === 0 ? 0 : 999
 
 
     // ============================================================

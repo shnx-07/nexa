@@ -689,6 +689,8 @@ PopupWindow {
                         maximumFlickVelocity: Nexa.Theme.flickVelocityMax
                         pixelAligned: true
 
+                        NexaUI.NexaSmoothScroll {}
+
                         // Sleek discreet floating scrollbar
                         ScrollBar.vertical: ScrollBar {
                             id: btScrollBar

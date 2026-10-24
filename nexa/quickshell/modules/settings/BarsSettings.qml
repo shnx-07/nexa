@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 import "../../services" as Services
 
 Item {
@@ -14,44 +15,11 @@ Item {
     signal requestClose()
 
     function rad(n) {
-        if (Nexa.Theme.windowRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.windowRounding / 10.0)));
+        if (Nexa.Theme.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
     }
 
-    component StyledSwitch: Switch {
-        id: sw
-        implicitWidth: 44
-        implicitHeight: 24
-
-        indicator: Rectangle {
-            implicitWidth: 44
-            implicitHeight: 24
-            radius: root.rad(12)
-            color: sw.checked ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest
-            border.width: Nexa.Theme.borderThin
-            border.color: sw.checked ? Nexa.Theme.primary : Nexa.Theme.border
-
-            Rectangle {
-                x: sw.checked ? parent.width - width - 3 : 3
-                anchors.verticalCenter: parent.verticalCenter
-                width: 18
-                height: 18
-                radius: root.rad(9)
-                color: sw.checked ? Nexa.Theme.onPrimary : Nexa.Theme.text
-                border.width: root.rad(9) === 0 ? Nexa.Theme.borderThin : 0
-                border.color: Nexa.Theme.border
-                Behavior on x {
-                    NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
-                }
-            }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            acceptedButtons: Qt.NoButton
-        }
-    }
+    component StyledSwitch: NexaUI.NexaToggle {}
 
     // Status feedback
     property string toastText: ""
@@ -77,6 +45,8 @@ Item {
         contentHeight: contentCol.implicitHeight + 24
         boundsBehavior: Flickable.StopAtBounds
         clip: true
+
+        NexaUI.NexaSmoothScroll {}
 
         ColumnLayout {
             id: contentCol

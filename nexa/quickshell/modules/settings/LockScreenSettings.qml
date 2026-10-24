@@ -4,6 +4,7 @@ import QtQuick.Effects
 import Quickshell
 import "../../theme/colors"
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 import "../lockthemes/components"
 import "../lockthemes"
 import "../../services" as Services
@@ -86,6 +87,8 @@ Item {
             contentHeight: grid.height + 20
             clip: true
             boundsBehavior: Flickable.StopAtBounds
+
+            NexaUI.NexaSmoothScroll {}
 
             Grid {
                 id: grid

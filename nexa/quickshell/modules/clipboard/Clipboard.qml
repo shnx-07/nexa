@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 PanelWindow {
@@ -650,7 +651,7 @@ PanelWindow {
             width: Math.min(root.panelWidth, parent.width - 40)
             height: Math.min(root.panelHeight, parent.height - 60)
 
-            radius: Nexa.Theme.radiusLg
+            radius: Nexa.Theme.nexaRounding
             color: Nexa.Theme.panelBackground
             border.width: Nexa.Theme.borderThin
             border.color: Nexa.Theme.border
@@ -662,13 +663,15 @@ PanelWindow {
                 anchors.fill: parent
             }
 
-            // Top glass edge highlight gradient
+            // Continuous-corner top glass highlight
             Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                height: 1
-                color: Nexa.Theme.edgeHighlightStrong
+                anchors.fill: parent
+                anchors.margins: parent.border.width
+                radius: Math.max(0, parent.radius - parent.border.width)
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlightStrong }
+                    GradientStop { position: 0.25; color: "transparent" }
+                }
                 z: 10
             }
 
@@ -1044,7 +1047,9 @@ PanelWindow {
                                 boundsBehavior: Flickable.StopAtBounds
                                 flickDeceleration: Nexa.Theme.flickDeceleration
                                 maximumFlickVelocity: Nexa.Theme.flickVelocityMax
-                                pixelAligned: true
+                                pixelAligned: false
+
+                                NexaUI.NexaSmoothScroll {}
 
                                 delegate: Item {
                                     id: entryDelegate
@@ -1492,7 +1497,9 @@ PanelWindow {
                                 boundsBehavior: Flickable.StopAtBounds
                                 flickDeceleration: Nexa.Theme.flickDeceleration
                                 maximumFlickVelocity: Nexa.Theme.flickVelocityMax
-                                pixelAligned: true
+                                pixelAligned: false
+
+                                NexaUI.NexaSmoothScroll {}
 
                                 ScrollBar.vertical: ScrollBar {
                                     id: cbScrollBar
@@ -1693,9 +1700,16 @@ PanelWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 32
-                    color: Nexa.Theme.surfaceContainerLow
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.borderSubtle
+                    color: "transparent"
+
+                    // Top divider line only (no outer side borders to clash with panel corners)
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 1
+                        color: Nexa.Theme.borderSubtle
+                    }
 
                     RowLayout {
                         anchors.fill: parent

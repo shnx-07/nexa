@@ -5,6 +5,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import "../../../theme" as Nexa
+import "../../../theme/components" as NexaUI
 import "../../lockthemes/components"
 import "../../../services" as Services
 
@@ -184,6 +185,8 @@ Item {
         contentHeight: contentCol.implicitHeight + 36
         boundsBehavior: Flickable.StopAtBounds
         clip: true
+
+        NexaUI.NexaSmoothScroll {}
 
         Column {
             id: contentCol

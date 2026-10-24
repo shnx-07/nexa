@@ -24,7 +24,7 @@ Item {
         id: button
 
         anchors.fill: parent
-        radius: Nexa.Theme.windowRounding === 0 ? 0 : Nexa.Theme.radiusSm
+        radius: Nexa.Theme.nexaRounding === 0 ? 0 : Nexa.Theme.radiusSm
 
         color: mouse.containsMouse
             ? Nexa.Theme.hover

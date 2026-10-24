@@ -163,7 +163,7 @@ PanelWindow {
 
                     implicitHeight: Nexa.Theme.controlHeightSm
                     implicitWidth: pillRow.implicitWidth + extraWidth
-                    radius: Nexa.Theme.windowRounding === 0 ? 0 : height / 2
+                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
                     color: Nexa.Theme.surfaceContainer
                     border.width: Nexa.Theme.borderThin
                     border.color: Nexa.Theme.border
@@ -235,7 +235,7 @@ PanelWindow {
                     visible: Services.BarConfig.showBattery
                     width: Nexa.Theme.controlHeightSm
                     height: Nexa.Theme.controlHeightSm
-                    radius: Nexa.Theme.windowRounding === 0 ? 0 : width / 2
+                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
                     color: Nexa.Theme.surfaceContainer
                     border.width: Nexa.Theme.borderThin
                     border.color: Nexa.Theme.border
@@ -249,7 +249,7 @@ PanelWindow {
                     visible: Services.BarConfig.showNetwork
                     width: Nexa.Theme.controlHeightSm
                     height: Nexa.Theme.controlHeightSm
-                    radius: Nexa.Theme.windowRounding === 0 ? 0 : width / 2
+                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
                     color: Nexa.Theme.surfaceContainer
                     border.width: Nexa.Theme.borderThin
                     border.color: Nexa.Theme.border
@@ -263,7 +263,7 @@ PanelWindow {
                     visible: Services.BarConfig.showPower
                     width: Nexa.Theme.controlHeightSm
                     height: Nexa.Theme.controlHeightSm
-                    radius: Nexa.Theme.windowRounding === 0 ? 0 : width / 2
+                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
                     color: Nexa.Theme.surfaceContainer
                     border.width: Nexa.Theme.borderThin
                     border.color: Nexa.Theme.border

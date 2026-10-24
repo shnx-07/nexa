@@ -1252,7 +1252,7 @@ PanelWindow {
         // --------------------------------------------------------
 
         radius:
-          Nexa.Theme.windowRounding === 0
+          Nexa.Theme.nexaRounding === 0
           ? 0
           : (root.full
              || root.specialModeActive
@@ -1276,10 +1276,10 @@ PanelWindow {
           : Nexa.Theme.islandBackground
 
 
-        border.width: (root.full || root.hovered || Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
+        border.width: (root.full || root.hovered || Nexa.Theme.nexaRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
 
         border.color:
-          (Nexa.Theme.windowRounding === 0 || Nexa.Theme.windowBorderSize > 0)
+          (Nexa.Theme.nexaRounding === 0 || Nexa.Theme.windowBorderSize > 0)
             ? Nexa.Theme.borderStrong
             : (root.full
                 || root.hovered

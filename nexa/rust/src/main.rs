@@ -1,34 +1,17 @@
-#[allow(non_snake_case)]
-mod display;
-#[allow(non_snake_case)]
-mod appLauncher;
-#[allow(non_snake_case)]
-mod screenTemp;
-#[allow(non_snake_case)]
-mod screenFilter;
-mod weather;
-mod workspace;
-#[allow(non_snake_case)]
-mod commandSearch;
-mod island;
-mod network;
-mod system;
-mod search;
-mod wallpaper;
-mod palette;
-mod screenshot;
-mod snipping;
-mod recorder;
-mod clipboard;
-mod notifications;
-mod lock;
-mod power;
-mod audio;
-mod brightness;
-mod state;
-mod shelf;
-mod slideshow;
-mod media;
+pub mod core;
+pub mod desktop;
+pub mod display;
+pub mod hardware;
+pub mod media_tools;
+pub mod palette;
+pub mod services;
+
+// Re-exports so internal code and CLI commands continue to work seamlessly
+pub use core::{state, system};
+pub use desktop::{island, lock, power, shelf, workspace};
+pub use hardware::{audio, brightness, network, screenFilter, screenTemp};
+pub use media_tools::{media, recorder, screenshot, slideshow, snipping, wallpaper};
+pub use services::{appLauncher, clipboard, command, commandSearch, notifications, search, weather};
 
 use std::env;
 

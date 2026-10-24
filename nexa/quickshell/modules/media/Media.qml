@@ -949,19 +949,15 @@ Item {
                 }
 
                 // Mini Progress Bar
-                Rectangle {
+                NexaUI.NexaProgressBar {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 3
-                    radius: 1.5
-                    color: Nexa.Theme.surfaceContainerHighest
+                    implicitHeight: 3
+                    from: 0.0
+                    to: 1.0
+                    value: root.progress
+                    barColor: Nexa.Theme.primary
+                    trackColor: Nexa.Theme.surfaceContainerHighest
                     visible: root.duration > 0
-
-                    Rectangle {
-                        height: parent.height
-                        width: parent.width * root.progress
-                        radius: parent.radius
-                        color: Nexa.Theme.primary
-                    }
                 }
             }
 

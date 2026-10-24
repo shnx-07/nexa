@@ -3,7 +3,8 @@ set -u
 
 ROUNDING="${1:-10}"
 BORDER_SIZE="${2:-0}"
-STYLE="${3:-standard}"
+NEXA_ROUNDING="${3:-$ROUNDING}"
+STYLE="${4:-standard}"
 
 # SEC-01: Validate numeric inputs to prevent code/Lua injection into Hyprland
 if ! [[ "$ROUNDING" =~ ^[0-9]+$ ]]; then
@@ -14,6 +15,10 @@ fi
 if ! [[ "$BORDER_SIZE" =~ ^[0-9]+$ ]]; then
   echo "Error: BORDER_SIZE must be an unsigned integer." >&2
   exit 1
+fi
+
+if ! [[ "$NEXA_ROUNDING" =~ ^[0-9]+$ ]]; then
+  NEXA_ROUNDING="$ROUNDING"
 fi
 
 # Sanitize STYLE to safe identifier characters only
@@ -30,6 +35,7 @@ SHAPES_JSON="$CONFIG_DIR/shapes.json"
 cat > "$SHAPES_JSON" <<JSON
 {
   "rounding": $ROUNDING,
+  "nexa_rounding": $NEXA_ROUNDING,
   "border_size": $BORDER_SIZE,
   "style": "$STYLE"
 }

@@ -841,6 +841,8 @@ PopupWindow {
                         boundsBehavior: Flickable.StopAtBounds
                         reuseItems: true
 
+                        NexaUI.NexaSmoothScroll {}
+
                         // Sleek discreet floating scrollbar
                         ScrollBar.vertical: ScrollBar {
                             id: wifiScrollBar

@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 Item {
@@ -529,7 +530,9 @@ Item {
             maximumFlickVelocity:
                 Nexa.Theme.flickVelocityMax
 
-            pixelAligned: true
+            NexaUI.NexaSmoothScroll {}
+
+            pixelAligned: false
 
             ScrollBar.vertical: ScrollBar {
                 id: cmdScrollBar

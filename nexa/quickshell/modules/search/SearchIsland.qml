@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 Item {
@@ -738,6 +739,8 @@ Item {
 
             maximumFlickVelocity:
                 Nexa.Theme.flickVelocityMax
+
+            NexaUI.NexaSmoothScroll {}
 
             pixelAligned: true
 

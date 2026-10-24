@@ -6,8 +6,11 @@ NexaHeader 1.0 NexaHeader.qml
 NexaIconButton 1.0 NexaIconButton.qml
 NexaJsonProcess 1.0 NexaJsonProcess.qml
 NexaPopup 1.0 NexaPopup.qml
+NexaProgressBar 1.0 NexaProgressBar.qml
 NexaSection 1.0 NexaSection.qml
 NexaShadow 1.0 NexaShadow.qml
 NexaSlider 1.0 NexaSlider.qml
+NexaSmoothScroll 1.0 NexaSmoothScroll.qml
+NexaTextField 1.0 NexaTextField.qml
 NexaToggle 1.0 NexaToggle.qml
 NexaTooltip 1.0 NexaTooltip.qml
