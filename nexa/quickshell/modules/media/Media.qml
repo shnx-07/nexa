@@ -50,14 +50,87 @@ Item {
     property var playerLastActive: ({})
     property var activePlayerObj: null
 
-    readonly property var player: activePlayerObj || (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null)
+    readonly property var rawPlayerList: {
+        const list = Mpris.players.values
+        if (!list) return []
+        const valid = []
+        for (let i = 0; i < list.length; ++i) {
+            const p = list[i]
+            if (!p) continue
+            const id = (p.identity || "").toLowerCase()
+            const title = (p.trackTitle || "").trim()
+            const artist = (p.trackArtist || "").trim()
+            // Ignore playerctld proxy if no player is actually active/controlled
+            if (id.includes("playerctld") && title === "" && artist === "") {
+                continue
+            }
+            valid.push(p)
+        }
+        return valid
+    }
+
+    onRawPlayerListChanged: {
+        root.evaluateBestPlayer()
+    }
+
+    readonly property var player: {
+        const list = rawPlayerList
+        if (!list || list.length === 0) return null
+
+        // 1. If user manually locked a player that is still alive, retain it
+        if (root.manualPlayerIdentity !== "") {
+            for (let i = 0; i < list.length; ++i) {
+                if (list[i] && list[i].identity === root.manualPlayerIdentity) {
+                    return list[i]
+                }
+            }
+        }
+
+        // 2. If activePlayerObj is still alive and present in list, use it
+        if (root.activePlayerObj) {
+            for (let i = 0; i < list.length; ++i) {
+                if (list[i] && list[i] === root.activePlayerObj) {
+                    return root.activePlayerObj
+                }
+            }
+        }
+
+        // 3. Otherwise find any player actively Playing
+        for (let i = 0; i < list.length; ++i) {
+            if (list[i] && list[i].playbackState === MprisPlaybackState.Playing) {
+                return list[i]
+            }
+        }
+
+        // 4. Otherwise find any player that is Paused with track metadata
+        for (let i = 0; i < list.length; ++i) {
+            if (list[i] && list[i].playbackState === MprisPlaybackState.Paused) {
+                const t = (list[i].trackTitle || "").trim()
+                const a = (list[i].trackArtist || "").trim()
+                if (t !== "" || a !== "") {
+                    return list[i]
+                }
+            }
+        }
+
+        // 5. Fallback to first available player
+        return list[0]
+    }
 
     function getPlayerList() {
         const list = Mpris.players.values
         if (!list) return []
         const valid = []
         for (let i = 0; i < list.length; ++i) {
-            if (list[i]) valid.push(list[i])
+            const p = list[i]
+            if (!p) continue
+            const id = (p.identity || "").toLowerCase()
+            const title = (p.trackTitle || "").trim()
+            const artist = (p.trackArtist || "").trim()
+            if (id.includes("playerctld") && title === "" && artist === "") {
+                continue
+            }
+            valid.push(p)
         }
         return valid
     }
@@ -67,6 +140,19 @@ Item {
         if (list.length === 0) {
             root.activePlayerObj = null
             return
+        }
+
+        if (root.activePlayerObj) {
+            let found = false
+            for (let i = 0; i < list.length; ++i) {
+                if (list[i] && list[i] === root.activePlayerObj) {
+                    found = true
+                    break
+                }
+            }
+            if (!found) {
+                root.activePlayerObj = null
+            }
         }
 
         // 1. If user manually locked a player that is still alive, retain it
@@ -223,32 +309,61 @@ Item {
         && player.playbackState === MprisPlaybackState.Paused
 
     // ------------------------------------------------------------
-    // 1-MINUTE PAUSE / IDLE TIMEOUT
+    // 1-MINUTE PAUSE / IDLE TIMEOUT (Wall-clock absolute timer)
     // ------------------------------------------------------------
 
+    property real pausedTimestamp: 0
     property bool pauseTimeoutExpired: false
-
-    Timer {
-        id: pauseTimeoutTimer
-        interval: 60000
-        running: root.available && root.hasTrack && root.paused && !root.playing
-        repeat: false
-        onTriggered: {
-            root.pauseTimeoutExpired = true
-        }
-    }
 
     onPlayingChanged: {
         if (root.playing) {
             root.pauseTimeoutExpired = false
-            pauseTimeoutTimer.stop()
+            root.pausedTimestamp = 0
+        } else if (root.paused) {
+            root.pausedTimestamp = Date.now()
+            root.pauseTimeoutExpired = false
+        }
+    }
+
+    onPausedChanged: {
+        if (root.paused && !root.playing) {
+            if (root.pausedTimestamp === 0) {
+                root.pausedTimestamp = Date.now()
+            }
+            root.pauseTimeoutExpired = false
+        } else if (!root.paused && !root.playing) {
+            // Player stopped or closed
+            root.pauseTimeoutExpired = true
+        }
+    }
+
+    onAvailableChanged: {
+        if (!root.available) {
+            root.pauseTimeoutExpired = false
+            root.pausedTimestamp = 0
+            root.activePlayerObj = null
         }
     }
 
     onHasTrackChanged: {
         if (!root.hasTrack) {
             root.pauseTimeoutExpired = false
-            pauseTimeoutTimer.stop()
+            root.pausedTimestamp = 0
+        }
+    }
+
+    Timer {
+        id: pauseWatchdogTimer
+        interval: 1000
+        running: root.available && root.hasTrack && !root.playing && !root.pauseTimeoutExpired
+        repeat: true
+        onTriggered: {
+            if (root.pausedTimestamp > 0 && !root.playing) {
+                const elapsed = Date.now() - root.pausedTimestamp
+                if (elapsed >= 60000) {
+                    root.pauseTimeoutExpired = true
+                }
+            }
         }
     }
 
@@ -259,7 +374,10 @@ Item {
 
     readonly property bool hasTrack:
         available
-        && (player.trackTitle !== "" || player.trackArtist !== "")
+        && player
+        && player.trackTitle !== null
+        && player.trackTitle !== undefined
+        && (player.trackTitle.trim() !== "" || (player.trackArtist && player.trackArtist.trim() !== ""))
 
     // ============================================================
     // METADATA
@@ -348,6 +466,9 @@ Item {
 
     Component.onCompleted: {
         root.evaluateBestPlayer()
+        if (root.paused && !root.playing) {
+            root.pausedTimestamp = Date.now()
+        }
         if (initialPlayerctlProbe) initialPlayerctlProbe.running = true
         triggerCoverFetch()
     }
