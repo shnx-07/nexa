@@ -444,7 +444,14 @@ fn find_folder_app_executable(app_dir: &Path) -> Option<(PathBuf, PathBuf)> {
         if !sdir.is_dir() {
             continue;
         }
-        for script in &["run.sh", "start.sh", "launch.sh", "main.sh", "app.sh", "main"] {
+        for script in &[
+            "run.sh",
+            "start.sh",
+            "launch.sh",
+            "main.sh",
+            "app.sh",
+            "main",
+        ] {
             let cand_path = sdir.join(script);
             if cand_path.exists() && is_executable_file(&cand_path) {
                 return Some((cand_path, app_dir.to_path_buf()));
@@ -523,9 +530,17 @@ fn find_folder_app_icon(app_dir: &Path) -> String {
         if !p.is_file() {
             continue;
         }
-        let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+        let ext = p
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_lowercase();
         if ext == "png" || ext == "svg" {
-            let fname = p.file_stem().and_then(|f| f.to_str()).unwrap_or("").to_lowercase();
+            let fname = p
+                .file_stem()
+                .and_then(|f| f.to_str())
+                .unwrap_or("")
+                .to_lowercase();
             if fname.contains("icon") || fname.contains("logo") || fname == name_lower {
                 return p.to_string_lossy().to_string();
             }
@@ -897,14 +912,12 @@ fn build_index() -> Vec<SearchEntry> {
 }
 
 fn save_index(entries: &[SearchEntry]) -> Result<(), String> {
-    fs::create_dir_all(cache_dir())
-        .map_err(|e| format!("failed to create cache dir: {e}"))?;
+    fs::create_dir_all(cache_dir()).map_err(|e| format!("failed to create cache dir: {e}"))?;
 
     let json = serde_json::to_string(entries)
         .map_err(|e| format!("failed to serialize search index: {e}"))?;
 
-    fs::write(cache_path(), json)
-        .map_err(|e| format!("failed to write search index: {e}"))?;
+    fs::write(cache_path(), json).map_err(|e| format!("failed to write search index: {e}"))?;
 
     Ok(())
 }
@@ -960,8 +973,8 @@ fn load_index() -> Result<Vec<SearchEntry>, String> {
         return Ok(entries);
     }
 
-    let content = fs::read_to_string(&path)
-        .map_err(|e| format!("failed to read search index: {e}"))?;
+    let content =
+        fs::read_to_string(&path).map_err(|e| format!("failed to read search index: {e}"))?;
 
     match serde_json::from_str::<Vec<SearchEntry>>(&content) {
         Ok(entries) => Ok(entries),
@@ -1253,8 +1266,16 @@ pub fn query(query_str: &str) {
         .collect();
 
     results.sort_by(|a, b| {
-        let rank_a = if a.kind == "app" || a.kind == "appimage" { 0 } else { 1 };
-        let rank_b = if b.kind == "app" || b.kind == "appimage" { 0 } else { 1 };
+        let rank_a = if a.kind == "app" || a.kind == "appimage" {
+            0
+        } else {
+            1
+        };
+        let rank_b = if b.kind == "app" || b.kind == "appimage" {
+            0
+        } else {
+            1
+        };
 
         rank_a
             .cmp(&rank_b)
@@ -1324,8 +1345,8 @@ fn launch_desktop_file(path_str: &str) -> Result<(), String> {
     }
 
     // 2. Fallback: Parse Exec line and run directly
-    let content = fs::read_to_string(desktop_path)
-        .map_err(|e| format!("cannot read desktop file: {e}"))?;
+    let content =
+        fs::read_to_string(desktop_path).map_err(|e| format!("cannot read desktop file: {e}"))?;
 
     let mut exec = String::new();
     let mut terminal = false;
@@ -1410,7 +1431,12 @@ fn launch_folder_app(exec_path: &Path, workdir: &Path) -> Result<(), String> {
         .process_group(0)
         .spawn()
         .map(|_| ())
-        .map_err(|e| format!("failed to launch application '{}': {e}", exec_path.display()))
+        .map_err(|e| {
+            format!(
+                "failed to launch application '{}': {e}",
+                exec_path.display()
+            )
+        })
 }
 
 fn launch_appimage(path_str: &str) -> Result<(), String> {
@@ -1519,7 +1545,10 @@ pub fn open(target: &str) {
                     let workdir = if entry_path.is_dir() {
                         entry_path
                     } else {
-                        exec_path.parent().unwrap_or_else(|| Path::new("/")).to_path_buf()
+                        exec_path
+                            .parent()
+                            .unwrap_or_else(|| Path::new("/"))
+                            .to_path_buf()
                     };
                     launch_folder_app(&exec_path, &workdir)
                 }

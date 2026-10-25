@@ -157,7 +157,14 @@ log "Monitor: $MONITOR"
 
 stop_mpvpaper() {
   if pgrep -x mpvpaper >/dev/null 2>&1; then
+    pkill -CONT -x mpvpaper 2>/dev/null || true
     pkill -x mpvpaper 2>/dev/null || true
+    local i=0
+    while pgrep -x mpvpaper >/dev/null 2>&1 && (( i < 6 )); do
+      sleep 0.05
+      ((i++))
+    done
+    pkill -9 -x mpvpaper 2>/dev/null || true
   fi
 }
 
@@ -165,60 +172,90 @@ stop_mpvpaper() {
 # Static wallpaper & GIF
 # ------------------------------------------------------------
 
+get_transition_args() {
+  local nexad="$HOME/.config/nexa/rust/target/release/nexad"
+  if [[ -x "$nexad" ]]; then
+    local res
+    res="$("$nexad" wallpaper transition-args 2>/dev/null)"
+    if [[ -n "$res" ]]; then
+      echo "$res"
+      return 0
+    fi
+  fi
+  # Fallback if nexad is unavailable
+  echo "--transition-type wave --transition-angle 45 --transition-wave 35,18 --transition-duration 1.2 --transition-fps 60 --transition-bezier .42,0,.58,1 -f Bilinear"
+}
+
 apply_static() {
   if ! command -v awww >/dev/null 2>&1; then
     log "awww is not installed."
     return 1
   fi
 
-  stop_mpvpaper
-  awww unpause 2>/dev/null || true
-
-  # Query monitor refresh rate (default to 60 if unavailable)
-  local fps=60
-  if command -v hyprctl >/dev/null 2>&1; then
-    local detected_fps
-    detected_fps=$(hyprctl monitors 2>/dev/null | awk '/@/ {print int($2)}' | head -n 1)
-    if [[ -n "$detected_fps" && "$detected_fps" -ge 30 && "$detected_fps" -le 360 ]]; then
-      fps="$detected_fps"
-    fi
-  fi
-
   if [[ "$OPT_RESTORE" == "true" ]]; then
     log "Restoring wallpaper with instant transition (none)"
+    stop_mpvpaper
+    awww unpause 2>/dev/null || true
     if [[ "$MONITOR" == "*" || "$MONITOR" == "ALL" ]]; then
       awww img "$WALLPAPER" --transition-type none || return 1
     else
       awww img -o "$MONITOR" "$WALLPAPER" --transition-type none || return 1
     fi
-  else
-    # Multiple dynamic transition animations
-    local transitions=("wipe" "wave" "grow" "center" "any" "outer" "fade" "left" "right" "top" "bottom")
-    local rand_idx=$((RANDOM % ${#transitions[@]}))
-    local selected_trans="${transitions[$rand_idx]}"
-    local rand_angle=$(( (RANDOM % 8) * 45 )) # 0, 45, 90, 135, 180, 225, 270, 315
+    return 0
+  fi
 
-    log "Applying wallpaper with transition: $selected_trans ($rand_angle deg) at ${fps}fps"
+  local trans_args
+  trans_args="$(get_transition_args)"
+
+  # SEAMLESS VIDEO -> IMAGE HANDSHAKE:
+  # If mpvpaper is currently running, synchronize awww with the video's poster thumbnail first
+  # while mpvpaper is still rendering on top. Then stop mpvpaper cleanly, and run the transition!
+  if pgrep -x mpvpaper >/dev/null 2>&1; then
+    local prev_theme=""
+    if [[ -f "$WALLPAPER_CONFIG" ]]; then
+      prev_theme=$(grep "^THEME_SOURCE=" "$WALLPAPER_CONFIG" | cut -d= -f2- | tr -d '"'"'")
+    fi
+
+    awww unpause 2>/dev/null || true
+
+    if [[ -n "$prev_theme" && -f "$prev_theme" ]]; then
+      log "Priming awww with video poster frame: $prev_theme"
+      if [[ "$MONITOR" == "*" || "$MONITOR" == "ALL" ]]; then
+        awww img "$prev_theme" --transition-type none -f Bilinear 2>/dev/null || true
+      else
+        awww img -o "$MONITOR" "$prev_theme" --transition-type none -f Bilinear 2>/dev/null || true
+      fi
+      sleep 0.05
+    fi
+
+    # Stop mpvpaper now that awww is holding the exact still frame of the video!
+    stop_mpvpaper
+
+    log "Applying wallpaper with transition: $trans_args"
+
+    # Start the full, uninterrupted transition from that still frame to the new wallpaper
+    if [[ "$MONITOR" == "*" || "$MONITOR" == "ALL" ]]; then
+      # shellcheck disable=SC2086
+      awww img "$WALLPAPER" $trans_args || return 1
+    else
+      # shellcheck disable=SC2086
+      awww img -o "$MONITOR" "$WALLPAPER" $trans_args || return 1
+    fi
+  else
+    stop_mpvpaper
+    awww unpause 2>/dev/null || true
+
+    log "Applying wallpaper with transition: $trans_args"
 
     if [[ "$MONITOR" == "*" || "$MONITOR" == "ALL" ]]; then
-      if ! awww img "$WALLPAPER" \
-        --transition-type "$selected_trans" \
-        --transition-angle "$rand_angle" \
-        --transition-duration 1.2 \
-        --transition-fps "$fps" \
-        --transition-bezier .42,0,.58,1 \
-        -f Bilinear; then
+      # shellcheck disable=SC2086
+      if ! awww img "$WALLPAPER" $trans_args; then
         log "awww failed to apply wallpaper."
         return 1
       fi
     else
-      if ! awww img -o "$MONITOR" "$WALLPAPER" \
-        --transition-type "$selected_trans" \
-        --transition-angle "$rand_angle" \
-        --transition-duration 1.2 \
-        --transition-fps "$fps" \
-        --transition-bezier .42,0,.58,1 \
-        -f Bilinear; then
+      # shellcheck disable=SC2086
+      if ! awww img -o "$MONITOR" "$WALLPAPER" $trans_args; then
         log "awww failed to apply wallpaper on $MONITOR."
         return 1
       fi
@@ -238,24 +275,86 @@ apply_animated() {
     return 1
   fi
 
-  stop_mpvpaper
-  awww pause 2>/dev/null || true
-
   local target="$MONITOR"
-
   if [[ "$target" == "*" ]]; then
     target="ALL"
   fi
 
+  # Generate poster thumbnail (at 0.0s) for seamless entry transition
+  local hash
+  hash="$(printf '%s' "$WALLPAPER" | sha256sum | awk '{print $1}')"
+  local poster="$THEME_CACHE/firstframe-${hash}.jpg"
+
+  if [[ ! -f "$poster" ]] && command -v ffmpeg >/dev/null 2>&1; then
+    ffmpeg -loglevel error -ss 0.0 -i "$WALLPAPER" -frames:v 1 -vf "scale=1920:-2" -q:v 3 -y "$poster" 2>/dev/null || true
+  fi
+  # Fallback to theme frame if firstframe extraction failed
+  if [[ ! -f "$poster" ]]; then
+    poster="$THEME_CACHE/wallpaper-${hash}.jpg"
+  fi
+
+  local trans_args
+  trans_args="$(get_transition_args)"
+
+  # SEAMLESS VIDEO -> VIDEO HANDSHAKE:
+  # If mpvpaper is ALREADY running (e.g. video to video transition), prime awww with the previous
+  # video's frame first, stop old mpvpaper so the previous frame is held visibly on screen,
+  # and only then run the transition into the new video's frame!
+  if pgrep -x mpvpaper >/dev/null 2>&1; then
+    local prev_theme=""
+    if [[ -f "$WALLPAPER_CONFIG" ]]; then
+      prev_theme=$(grep "^THEME_SOURCE=" "$WALLPAPER_CONFIG" | cut -d= -f2- | tr -d '"'"'")
+    fi
+    awww unpause 2>/dev/null || true
+    if [[ -n "$prev_theme" && -f "$prev_theme" ]]; then
+      if [[ "$target" == "ALL" ]]; then
+        awww img "$prev_theme" --transition-type none -f Bilinear 2>/dev/null || true
+      else
+        awww img -o "$target" "$prev_theme" --transition-type none -f Bilinear 2>/dev/null || true
+      fi
+      sleep 0.05
+    fi
+    stop_mpvpaper
+  fi
+
+  # 1. Transition awww into the new video's first frame and wait for it to complete 100%!
+  if [[ -f "$poster" ]] && command -v awww >/dev/null 2>&1; then
+    awww unpause 2>/dev/null || true
+    log "Transitioning into video poster frame with: $trans_args"
+    if [[ "$target" == "ALL" ]]; then
+      # shellcheck disable=SC2086
+      awww img "$poster" $trans_args 2>/dev/null || true
+    else
+      # shellcheck disable=SC2086
+      awww img -o "$target" "$poster" $trans_args 2>/dev/null || true
+    fi
+
+    # Wait for the transition to finish completely so it is NEVER cut off mid-way!
+    local dur
+    dur=$(echo "$trans_args" | grep -oP '(?<=--transition-duration )\d+(\.\d+)?' | head -n 1)
+    dur="${dur:-1.2}"
+    # Add 0.15s margin to ensure the bezier curve completes its final settle step
+    dur=$(awk -v d="$dur" 'BEGIN { printf "%.2f", d + 0.15 }' 2>/dev/null || echo "$dur")
+    sleep "$dur"
+  fi
+
+  stop_mpvpaper
+
+  # 2. Start mpvpaper seamlessly over the matching completed first frame
   if ! mpvpaper \
     --fork \
     -p \
-    -o "no-audio loop-file=inf hwdec=auto-safe profile=fast opengl-pbo=yes framedrop=vo video-sync=desync demuxer-max-bytes=20M demuxer-max-back-bytes=5M" \
+    -o "no-audio loop-file=inf hwdec=auto-safe profile=fast opengl-pbo=yes framedrop=vo video-sync=desync demuxer-max-bytes=20M demuxer-max-back-bytes=5M input-terminal=no input-default-bindings=no" \
     "$target" \
     "$WALLPAPER"; then
     log "mpvpaper failed to start."
     return 1
   fi
+
+  (
+    sleep 1.0
+    awww pause 2>/dev/null || true
+  ) &
 
   return 0
 }

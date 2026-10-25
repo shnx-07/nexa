@@ -1,4 +1,4 @@
-use openssl::hash::{hash, MessageDigest};
+use openssl::hash::{MessageDigest, hash};
 use serde::{Deserialize, Serialize};
 use std::{
     env, fs,
@@ -6,8 +6,8 @@ use std::{
     path::PathBuf,
     process::{Command, Stdio},
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicU64, Ordering},
     },
     thread,
     time::Duration,
@@ -67,7 +67,11 @@ pub fn fetch_high_res_cover(title: &str, artist: &str) -> Option<String> {
     let cache_dir = get_covers_cache_dir();
 
     // Generate MD5 cache key identical to hashlib.md5
-    let key_str = format!("{}|{}", title_clean.to_lowercase(), artist_clean.to_lowercase());
+    let key_str = format!(
+        "{}|{}",
+        title_clean.to_lowercase(),
+        artist_clean.to_lowercase()
+    );
     let md5_bytes = match hash(MessageDigest::md5(), key_str.as_bytes()) {
         Ok(b) => b,
         Err(_) => return None,
@@ -148,7 +152,10 @@ pub fn fetch_high_res_cover(title: &str, artist: &str) -> Option<String> {
                                         let tmp_path = cache_dir.join(format!("{key_hex}.tmp"));
                                         if fs::write(&tmp_path, &bytes).is_ok() {
                                             let _ = fs::rename(&tmp_path, &cached_path);
-                                            return Some(format!("file://{}", cached_path.to_string_lossy()));
+                                            return Some(format!(
+                                                "file://{}",
+                                                cached_path.to_string_lossy()
+                                            ));
                                         }
                                     }
                                 }
@@ -187,7 +194,11 @@ pub fn resolve_player_branding(identity: &str) -> (&'static str, &'static str, &
     let id = identity.to_lowercase();
     if id.contains("spotify") {
         ("Spotify", "󰓇", "#1DB954")
-    } else if id.contains("firefox") || id.contains("zen") || id.contains("floorp") || id.contains("waterfox") {
+    } else if id.contains("firefox")
+        || id.contains("zen")
+        || id.contains("floorp")
+        || id.contains("waterfox")
+    {
         ("Firefox", "󰈹", "#FF7139")
     } else if id.contains("chrome") || id.contains("chromium") {
         ("Chrome", "󰊯", "#4285F4")
@@ -226,7 +237,10 @@ pub fn upscale_artwork_url(url: &str) -> String {
         art = art.replace("ab67616d00004851", "ab67616d0000b273");
     } else if art.contains("hqdefault.jpg") {
         art = art.replace("hqdefault.jpg", "maxresdefault.jpg");
-    } else if art.contains("default.jpg") && !art.contains("maxresdefault.jpg") && !art.contains("sddefault.jpg") {
+    } else if art.contains("default.jpg")
+        && !art.contains("maxresdefault.jpg")
+        && !art.contains("sddefault.jpg")
+    {
         art = art.replace("default.jpg", "hqdefault.jpg");
     }
     art
@@ -270,13 +284,22 @@ fn parse_playerctl_line(line: &str) -> Option<MediaState> {
     let artist = parts[3].trim();
     let album = parts[4].trim();
     let raw_cover = parts[5].trim();
-    let length = parts.get(6).and_then(|s| s.trim().parse::<i64>().ok()).unwrap_or(0);
-    let position = parts.get(7).and_then(|s| s.trim().parse::<i64>().ok()).unwrap_or(0);
+    let length = parts
+        .get(6)
+        .and_then(|s| s.trim().parse::<i64>().ok())
+        .unwrap_or(0);
+    let position = parts
+        .get(7)
+        .and_then(|s| s.trim().parse::<i64>().ok())
+        .unwrap_or(0);
 
     let (clean_name, icon, color) = resolve_player_branding(raw_player);
     let upscaled = upscale_artwork_url(raw_cover);
 
-    let high_res = if upscaled.is_empty() || upscaled.contains("/tmp/") || upscaled.contains("firefox-mpris") {
+    let high_res = if upscaled.is_empty()
+        || upscaled.contains("/tmp/")
+        || upscaled.contains("firefox-mpris")
+    {
         fetch_high_res_cover(title, artist).unwrap_or_else(|| upscaled.clone())
     } else {
         upscaled.clone()
@@ -292,7 +315,11 @@ fn parse_playerctl_line(line: &str) -> Option<MediaState> {
         title: title.to_string(),
         artist: artist.to_string(),
         album: album.to_string(),
-        cover: if upscaled.is_empty() { high_res.clone() } else { upscaled },
+        cover: if upscaled.is_empty() {
+            high_res.clone()
+        } else {
+            upscaled
+        },
         high_res_cover: high_res,
         length,
         position,

@@ -59,7 +59,11 @@ pub fn build_layout_plan(
     };
 
     // Also explicitly disable any lingering "ghost" monitors cached in Hyprland
-    for ghost in snapshot.monitors.iter().filter(|m| m.is_ghost && m.enabled_in_compositor) {
+    for ghost in snapshot
+        .monitors
+        .iter()
+        .filter(|m| m.is_ghost && m.enabled_in_compositor)
+    {
         if !plan.disable_configs.iter().any(|d| d.name == ghost.name) {
             // Evacuate workspaces off the ghost monitor to primary
             for ws in snapshot
@@ -90,7 +94,10 @@ pub fn build_layout_plan(
 }
 
 /// Resolves mode specification, scale, and transform for a monitor using saved preferences or defaults.
-fn resolve_monitor_params(monitor: &Monitor, config: &DisplayConfigStore) -> (String, f32, Transform) {
+fn resolve_monitor_params(
+    monitor: &Monitor,
+    config: &DisplayConfigStore,
+) -> (String, f32, Transform) {
     if let Some(pref) = config.preference_for_monitor(monitor) {
         let mode_spec = pref
             .preferred_mode_spec
@@ -105,7 +112,11 @@ fn resolve_monitor_params(monitor: &Monitor, config: &DisplayConfigStore) -> (St
         .preferred_mode
         .map(|m| m.to_hyprland_mode())
         .unwrap_or_else(|| "preferred".to_string());
-    let scale = if monitor.scale <= 0.0 { 1.0 } else { monitor.scale };
+    let scale = if monitor.scale <= 0.0 {
+        1.0
+    } else {
+        monitor.scale
+    };
     (mode_spec, scale, monitor.transform)
 }
 
@@ -393,7 +404,8 @@ fn plan_extend(
     }
 
     let (int_mode, int_scale, int_transform) = resolve_monitor_params(internal, config);
-    let (int_w, int_h) = planned_logical_size_with_spec(internal, int_scale, int_transform, Some(&int_mode));
+    let (int_w, int_h) =
+        planned_logical_size_with_spec(internal, int_scale, int_transform, Some(&int_mode));
 
     let mut enable_configs = Vec::new();
     enable_configs.push(TargetMonitorConfig {
@@ -413,7 +425,8 @@ fn plan_extend(
 
     for ext in &externals {
         let (ext_mode, ext_scale, ext_transform) = resolve_monitor_params(ext, config);
-        let (ext_w, ext_h) = planned_logical_size_with_spec(ext, ext_scale, ext_transform, Some(&ext_mode));
+        let (ext_w, ext_h) =
+            planned_logical_size_with_spec(ext, ext_scale, ext_transform, Some(&ext_mode));
 
         let pos = match direction {
             ExtendDirection::Right => {

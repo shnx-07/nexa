@@ -77,6 +77,6 @@ QtObject {
     readonly property color text: on_background
     readonly property color mutedText: on_surface_variant
 
-    // Keep current NEXA compatibility
-    readonly property color surfaceVariant: on_surface_variant
+    // Keep current NEXA compatibility (map to proper surface container, not text)
+    readonly property color surfaceVariant: surfaceContainerHigh
 }

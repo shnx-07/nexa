@@ -2,22 +2,16 @@ use serde::{Deserialize, Serialize};
 
 use std::{
     collections::HashMap,
-    env,
-    fs,
+    env, fs,
     path::PathBuf,
     sync::{
-        atomic::{AtomicU32, Ordering},
         Arc, Mutex,
+        atomic::{AtomicU32, Ordering},
     },
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use zbus::{
-    interface,
-    object_server::SignalEmitter,
-    zvariant::OwnedValue,
-    Connection,
-};
+use zbus::{Connection, interface, object_server::SignalEmitter, zvariant::OwnedValue};
 
 use std::path::Path;
 
@@ -51,10 +45,8 @@ pub struct NotificationTransientEvent {
 // QML only renders the resulting state.
 // ============================================================
 
-
 const DBUS_NAME: &str = "org.freedesktop.Notifications";
 const DBUS_PATH: &str = "/org/freedesktop/Notifications";
-
 
 // ============================================================
 // DATA
@@ -66,7 +58,6 @@ pub struct NotificationAction {
     pub key: String,
     pub label: String,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -88,7 +79,6 @@ pub struct Notification {
     pub read: bool,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationState {
@@ -96,14 +86,12 @@ pub struct NotificationState {
     pub unread_count: usize,
 }
 
-
 // ============================================================
 // STORAGE
 // ============================================================
 
 fn state_path() -> PathBuf {
-    let home = env::var("HOME")
-        .unwrap_or_else(|_| "/tmp".to_string());
+    let home = env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
 
     PathBuf::from(home)
         .join(".cache")
@@ -111,14 +99,12 @@ fn state_path() -> PathBuf {
         .join("notifications.json")
 }
 
-
 fn now_timestamp() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs()
 }
-
 
 fn popup_timeout_ms(expire_timeout: i32) -> u64 {
     match expire_timeout {
@@ -157,7 +143,6 @@ fn write_state(notifications: &[Notification]) {
     }
 }
 
-
 fn load_state() -> Vec<Notification> {
     let path = state_path();
 
@@ -172,12 +157,10 @@ fn load_state() -> Vec<Notification> {
     state.notifications
 }
 
-
 //Island helper
 
 fn transient_path() -> PathBuf {
-    let home = env::var("HOME")
-        .unwrap_or_else(|_| "/tmp".to_string());
+    let home = env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
 
     PathBuf::from(home)
         .join(".cache")
@@ -185,19 +168,12 @@ fn transient_path() -> PathBuf {
         .join("notification-event.json")
 }
 
-
 // ============================================================
 // DO NOT DISTURB
 // ============================================================
 
-
-
 fn dnd_path() -> PathBuf {
-    let home =
-        env::var("HOME")
-            .unwrap_or_else(
-                |_| "/tmp".to_string()
-            );
+    let home = env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
 
     PathBuf::from(home)
         .join(".config")
@@ -206,84 +182,39 @@ fn dnd_path() -> PathBuf {
         .join("notifications.conf")
 }
 
-
 pub(crate) fn load_dnd() -> bool {
-    let Ok(content) =
-        fs::read_to_string(
-            dnd_path()
-        )
-    else {
+    let Ok(content) = fs::read_to_string(dnd_path()) else {
         return false;
     };
 
-
     for line in content.lines() {
-        let Some(
-            (key, value)
-        ) = line.split_once('=')
-        else {
+        let Some((key, value)) = line.split_once('=') else {
             continue;
         };
 
-
         if key.trim() == "dnd" {
-            return matches!(
-                value.trim(),
-                "true"
-                    | "1"
-                    | "on"
-                    | "yes"
-            );
+            return matches!(value.trim(), "true" | "1" | "on" | "yes");
         }
     }
-
 
     false
 }
 
+fn save_dnd(enabled: bool) -> Result<(), String> {
+    let path = dnd_path();
 
-fn save_dnd(
-    enabled: bool,
-) -> Result<(), String> {
-    let path =
-        dnd_path();
-
-
-    if let Some(parent) =
-        path.parent()
-    {
+    if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .map_err(
-                |error|
-                    format!(
-                        "failed to create notification config directory: {error}"
-                    )
-            )?;
+            .map_err(|error| format!("failed to create notification config directory: {error}"))?;
     }
 
+    let content = format!("dnd={enabled}\n");
 
-    let content =
-        format!(
-            "dnd={enabled}\n"
-        );
-
-
-    fs::write(
-        path,
-        content,
-    )
-    .map_err(
-        |error|
-            format!(
-                "failed to write notification config: {error}"
-            )
-    )
+    fs::write(path, content)
+        .map_err(|error| format!("failed to write notification config: {error}"))
 }
 
-
-fn print_dnd(
-    enabled: bool,
-) {
+fn print_dnd(enabled: bool) {
     println!(
         "{}",
         serde_json::json!({
@@ -292,82 +223,52 @@ fn print_dnd(
     );
 }
 
-
 pub fn dnd_info() {
-    print_dnd(
-        load_dnd()
-    );
+    print_dnd(load_dnd());
 }
-
 
 pub fn dnd_on() {
-    match save_dnd(
-        true
-    ) {
+    match save_dnd(true) {
         Ok(()) => {
             let _ = crate::state::update_state(|s| s.dnd = true);
-            print_dnd(
-                true
-            );
+            print_dnd(true);
         }
 
         Err(error) => {
-            eprintln!(
-                "{error}"
-            );
+            eprintln!("{error}");
         }
     }
 }
-
 
 pub fn dnd_off() {
-    match save_dnd(
-        false
-    ) {
+    match save_dnd(false) {
         Ok(()) => {
             let _ = crate::state::update_state(|s| s.dnd = false);
-            print_dnd(
-                false
-            );
+            print_dnd(false);
         }
 
         Err(error) => {
-            eprintln!(
-                "{error}"
-            );
+            eprintln!("{error}");
         }
     }
 }
-
 
 pub fn dnd_toggle() {
-    let enabled =
-        !load_dnd();
+    let enabled = !load_dnd();
 
-
-    match save_dnd(
-        enabled
-    ) {
+    match save_dnd(enabled) {
         Ok(()) => {
             let _ = crate::state::update_state(|s| s.dnd = enabled);
-            print_dnd(
-                enabled
-            );
+            print_dnd(enabled);
         }
 
         Err(error) => {
-            eprintln!(
-                "{error}"
-            );
+            eprintln!("{error}");
         }
     }
 }
 
-
-
-fn write_transient_event(
-    notification: &Notification,
-) {
+fn write_transient_event(notification: &Notification) {
     let path = transient_path();
 
     if let Some(parent) = path.parent() {
@@ -376,52 +277,31 @@ fn write_transient_event(
 
     let event = NotificationTransientEvent {
         // Timestamp + id gives QML a changing event value.
-        serial:
-            notification.timestamp
-                .saturating_mul(1000)
-                .saturating_add(notification.id as u64),
+        serial: notification
+            .timestamp
+            .saturating_mul(1000)
+            .saturating_add(notification.id as u64),
 
-        id:
-            notification.id,
+        id: notification.id,
 
-        app_name:
-            notification.app_name.clone(),
+        app_name: notification.app_name.clone(),
 
-        app_icon:
-            notification.app_icon.clone(),
+        app_icon: notification.app_icon.clone(),
 
-        summary:
-            notification.summary.clone(),
+        summary: notification.summary.clone(),
 
-        body:
-            notification.body.clone(),
+        body: notification.body.clone(),
 
-        timestamp:
-            notification.timestamp,
+        timestamp: notification.timestamp,
 
-        timeout_ms:
-            popup_timeout_ms(
-                notification.expire_timeout
-            ),
+        timeout_ms: popup_timeout_ms(notification.expire_timeout),
     };
 
-    if let Ok(json) =
-        serde_json::to_string_pretty(&event)
-    {
-        let temporary =
-            path.with_extension("tmp");
+    if let Ok(json) = serde_json::to_string_pretty(&event) {
+        let temporary = path.with_extension("tmp");
 
-        if fs::write(
-            &temporary,
-            json,
-        )
-        .is_ok()
-        {
-            let _ =
-                fs::rename(
-                    temporary,
-                    path,
-                );
+        if fs::write(&temporary, json).is_ok() {
+            let _ = fs::rename(temporary, path);
         }
     }
 }
@@ -454,7 +334,6 @@ fn parse_actions(raw: Vec<String>) -> Vec<NotificationAction> {
         .collect()
 }
 
-
 // ============================================================
 // SERVER STATE
 // ============================================================
@@ -465,7 +344,6 @@ struct NotificationServer {
     next_id: Arc<AtomicU32>,
     latest_transient: Arc<Mutex<Option<u32>>>,
 }
-
 
 impl NotificationServer {
     fn new() -> Self {
@@ -478,78 +356,49 @@ impl NotificationServer {
             .unwrap_or(0);
 
         Self {
-            notifications: Arc::new(
-                Mutex::new(notifications)
-            ),
+            notifications: Arc::new(Mutex::new(notifications)),
 
-            next_id: Arc::new(
-                AtomicU32::new(
-                    highest_id.saturating_add(1)
-                )
-            ),
+            next_id: Arc::new(AtomicU32::new(highest_id.saturating_add(1))),
 
-            latest_transient: Arc::new(
-                Mutex::new(None)
-            ),
+            latest_transient: Arc::new(Mutex::new(None)),
         }
     }
 
     fn next_notification_id(&self) -> u32 {
-        self.next_id.fetch_add(
-            1,
-            Ordering::Relaxed
-        )
+        self.next_id.fetch_add(1, Ordering::Relaxed)
     }
 }
 // ============================================================
-// ICON 
+// ICON
 // ============================================================
-
 
 fn icon_search_roots() -> Vec<PathBuf> {
     let mut roots = Vec::new();
 
     if let Ok(home) = env::var("HOME") {
-        roots.push(
-            PathBuf::from(&home)
-                .join(".local/share/icons")
-        );
+        roots.push(PathBuf::from(&home).join(".local/share/icons"));
 
-        roots.push(
-            PathBuf::from(&home)
-                .join(".icons")
-        );
+        roots.push(PathBuf::from(&home).join(".icons"));
     }
 
-    roots.push(
-        PathBuf::from("/usr/share/icons")
-    );
+    roots.push(PathBuf::from("/usr/share/icons"));
 
-    roots.push(
-        PathBuf::from("/usr/share/pixmaps")
-    );
+    roots.push(PathBuf::from("/usr/share/pixmaps"));
 
     roots
 }
-
 
 fn desktop_search_roots() -> Vec<PathBuf> {
     let mut roots = Vec::new();
 
     if let Ok(home) = env::var("HOME") {
-        roots.push(
-            PathBuf::from(&home)
-                .join(".local/share/applications")
-        );
+        roots.push(PathBuf::from(&home).join(".local/share/applications"));
     }
 
-    roots.push(
-        PathBuf::from("/usr/share/applications")
-    );
+    roots.push(PathBuf::from("/usr/share/applications"));
 
     roots
 }
-
 
 fn is_image_file(path: &Path) -> bool {
     let Some(ext) = path.extension() else {
@@ -557,13 +406,10 @@ fn is_image_file(path: &Path) -> bool {
     };
 
     matches!(
-        ext.to_string_lossy()
-            .to_ascii_lowercase()
-            .as_str(),
+        ext.to_string_lossy().to_ascii_lowercase().as_str(),
         "png" | "svg" | "jpg" | "jpeg" | "webp" | "xpm"
     )
 }
-
 
 fn find_icon_file(icon_name: &str) -> Option<String> {
     if icon_name.is_empty() {
@@ -572,15 +418,9 @@ fn find_icon_file(icon_name: &str) -> Option<String> {
 
     let direct = PathBuf::from(icon_name);
 
-    if direct.is_absolute()
-        && direct.exists()
-        && is_image_file(&direct)
-    {
-        return Some(
-            direct.to_string_lossy().to_string()
-        );
+    if direct.is_absolute() && direct.exists() && is_image_file(&direct) {
+        return Some(direct.to_string_lossy().to_string());
     }
-
 
     let names = if Path::new(icon_name).extension().is_some() {
         vec![icon_name.to_string()]
@@ -592,7 +432,6 @@ fn find_icon_file(icon_name: &str) -> Option<String> {
             format!("{icon_name}.webp"),
         ]
     };
-
 
     for root in icon_search_roots() {
         if !root.exists() {
@@ -608,15 +447,10 @@ fn find_icon_file(icon_name: &str) -> Option<String> {
                 continue;
             }
 
-            let filename =
-                entry.file_name().to_string_lossy();
+            let filename = entry.file_name().to_string_lossy();
 
             if names.iter().any(|name| filename == name.as_str()) {
-                return Some(
-                    entry.path()
-                        .to_string_lossy()
-                        .to_string()
-                );
+                return Some(entry.path().to_string_lossy().to_string());
             }
         }
     }
@@ -624,15 +458,12 @@ fn find_icon_file(icon_name: &str) -> Option<String> {
     None
 }
 
-
 fn desktop_icon_name(app_name: &str) -> Option<String> {
     if app_name.is_empty() {
         return None;
     }
 
-    let wanted =
-        app_name.to_ascii_lowercase();
-
+    let wanted = app_name.to_ascii_lowercase();
 
     for root in desktop_search_roots() {
         if !root.exists() {
@@ -650,43 +481,24 @@ fn desktop_icon_name(app_name: &str) -> Option<String> {
 
             let path = entry.path();
 
-            if path.extension()
-                .and_then(|ext| ext.to_str())
-                != Some("desktop")
-            {
+            if path.extension().and_then(|ext| ext.to_str()) != Some("desktop") {
                 continue;
             }
 
-
-            let Ok(contents) =
-                fs::read_to_string(path)
-            else {
+            let Ok(contents) = fs::read_to_string(path) else {
                 continue;
             };
-
 
             let mut name = None;
             let mut icon = None;
 
             for line in contents.lines() {
-                if name.is_none()
-                    && line.starts_with("Name=")
-                {
-                    name = Some(
-                        line.trim_start_matches("Name=")
-                            .trim()
-                            .to_string()
-                    );
+                if name.is_none() && line.starts_with("Name=") {
+                    name = Some(line.trim_start_matches("Name=").trim().to_string());
                 }
 
-                if icon.is_none()
-                    && line.starts_with("Icon=")
-                {
-                    icon = Some(
-                        line.trim_start_matches("Icon=")
-                            .trim()
-                            .to_string()
-                    );
+                if icon.is_none() && line.starts_with("Icon=") {
+                    icon = Some(line.trim_start_matches("Icon=").trim().to_string());
                 }
 
                 if name.is_some() && icon.is_some() {
@@ -694,27 +506,20 @@ fn desktop_icon_name(app_name: &str) -> Option<String> {
                 }
             }
 
-
             let desktop_filename = path
                 .file_stem()
                 .and_then(|value| value.to_str())
                 .unwrap_or("")
                 .to_ascii_lowercase();
 
-
             let name_matches = name
                 .as_ref()
-                .map(|value| {
-                    value.to_ascii_lowercase() == wanted
-                })
+                .map(|value| value.to_ascii_lowercase() == wanted)
                 .unwrap_or(false);
 
-
-            let filename_matches =
-                desktop_filename == wanted
+            let filename_matches = desktop_filename == wanted
                 || desktop_filename.contains(&wanted)
                 || wanted.contains(&desktop_filename);
-
 
             if name_matches || filename_matches {
                 if let Some(icon) = icon {
@@ -727,28 +532,16 @@ fn desktop_icon_name(app_name: &str) -> Option<String> {
     None
 }
 
-fn resolve_app_icon(
-    app_name: &str,
-    app_icon: &str,
-) -> String {
-
-    if let Some(path) =
-        find_icon_file(app_icon)
-    {
+fn resolve_app_icon(app_name: &str, app_icon: &str) -> String {
+    if let Some(path) = find_icon_file(app_icon) {
         return path;
     }
 
-
-    if let Some(icon_name) =
-        desktop_icon_name(app_name)
-    {
-        if let Some(path) =
-            find_icon_file(&icon_name)
-        {
+    if let Some(icon_name) = desktop_icon_name(app_name) {
+        if let Some(path) = find_icon_file(&icon_name) {
             return path;
         }
     }
-
 
     String::new()
 }
@@ -759,7 +552,6 @@ fn resolve_app_icon(
 
 #[interface(name = "org.freedesktop.Notifications")]
 impl NotificationServer {
-
     // ========================================================
     // NOTIFY
     // ========================================================
@@ -775,18 +567,12 @@ impl NotificationServer {
         _hints: HashMap<String, OwnedValue>,
         expire_timeout: i32,
     ) -> u32 {
-
-        let resolved_icon =
-        resolve_app_icon(
-            &app_name,
-            &app_icon,
-        );
+        let resolved_icon = resolve_app_icon(&app_name, &app_icon);
 
         let mut notifications = match self.notifications.lock() {
             Ok(value) => value,
             Err(_) => return 0,
         };
-
 
         // ----------------------------------------------------
         // REPLACE EXISTING NOTIFICATION
@@ -817,7 +603,6 @@ impl NotificationServer {
             }
         }
 
-
         // ----------------------------------------------------
         // NEW NOTIFICATION
         // ----------------------------------------------------
@@ -842,7 +627,6 @@ impl NotificationServer {
             read: false,
         };
 
-
         // Send the exact new notification to the transient surface
         // before moving it into history.
         // ----------------------------------------------------
@@ -853,25 +637,15 @@ impl NotificationServer {
         // ----------------------------------------------------
 
         if !load_dnd() {
-            write_transient_event(
-                &notification
-            );
+            write_transient_event(&notification);
         }
 
+        notifications.insert(0, notification);
 
-        notifications.insert(
-            0,
-            notification
-        );
-
-
-        if let Ok(mut latest) =
-            self.latest_transient.lock()
-        {
+        if let Ok(mut latest) = self.latest_transient.lock() {
             *latest = Some(id);
         }
 
-        
         // ----------------------------------------------------
         // HISTORY LIMIT
         // ----------------------------------------------------
@@ -882,12 +656,10 @@ impl NotificationServer {
             notifications.truncate(MAX_HISTORY);
         }
 
-
         write_state(&notifications);
 
         id
     }
-
 
     // ========================================================
     // CLOSE NOTIFICATION
@@ -900,12 +672,9 @@ impl NotificationServer {
     ) {
         let removed = {
             if let Ok(mut notifications) = self.notifications.lock() {
-
                 let before = notifications.len();
 
-                notifications.retain(
-                    |notification| notification.id != id
-                );
+                notifications.retain(|notification| notification.id != id);
 
                 let removed = notifications.len() != before;
 
@@ -920,15 +689,9 @@ impl NotificationServer {
         };
 
         if removed {
-            let _ = Self::notification_closed(
-                &emitter,
-                id,
-                3,
-            )
-            .await;
+            let _ = Self::notification_closed(&emitter, id, 3).await;
         }
     }
-
 
     // ========================================================
     // INVOKE ACTION
@@ -940,43 +703,33 @@ impl NotificationServer {
         action_key: String,
         #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
     ) -> bool {
-
         let valid = {
             match self.notifications.lock() {
-                Ok(notifications) => {
-                    notifications.iter().any(|notification| {
-                        notification.id == id
-                            && notification.actions.iter().any(|action| {
-                                action.key == action_key
-                            })
-                    })
-                }
+                Ok(notifications) => notifications.iter().any(|notification| {
+                    notification.id == id
+                        && notification
+                            .actions
+                            .iter()
+                            .any(|action| action.key == action_key)
+                }),
 
                 Err(_) => false,
             }
         };
 
-
         if !valid {
             return false;
         }
 
-
-        if Self::action_invoked(
-            &emitter,
-            id,
-            action_key,
-        )
-        .await
-        .is_err()
+        if Self::action_invoked(&emitter, id, action_key)
+            .await
+            .is_err()
         {
             return false;
         }
 
-
         true
     }
-
 
     // ========================================================
     // CAPABILITIES
@@ -990,14 +743,11 @@ impl NotificationServer {
         ]
     }
 
-
     // ========================================================
     // SERVER INFORMATION
     // ========================================================
 
-    fn get_server_information(
-        &self
-    ) -> (String, String, String, String) {
+    fn get_server_information(&self) -> (String, String, String, String) {
         (
             "NEXA".to_string(),
             "NEXA".to_string(),
@@ -1005,7 +755,6 @@ impl NotificationServer {
             "1.2".to_string(),
         )
     }
-
 
     // ========================================================
     // SIGNALS
@@ -1020,7 +769,6 @@ impl NotificationServer {
         reason: u32,
     ) -> zbus::Result<()>;
 
-
     #[zbus(signal)]
     async fn action_invoked(
         emitter: &SignalEmitter<'_>,
@@ -1028,12 +776,7 @@ impl NotificationServer {
         action_key: String,
     ) -> zbus::Result<()>;
 
-
-
-    async fn mark_read(
-        &self,
-        id: u32,
-    ) -> bool {
+    async fn mark_read(&self, id: u32) -> bool {
         let mut changed = false;
 
         if let Ok(mut notifications) = self.notifications.lock() {
@@ -1055,10 +798,7 @@ impl NotificationServer {
         changed
     }
 
-
-    async fn mark_all_read(
-        &self,
-    ) -> u32 {
+    async fn mark_all_read(&self) -> u32 {
         let mut changed_count = 0;
 
         if let Ok(mut notifications) = self.notifications.lock() {
@@ -1078,42 +818,26 @@ impl NotificationServer {
     }
 }
 
-
 // ============================================================
 // DAEMON
 // ============================================================
 
 pub async fn run_daemon() -> zbus::Result<()> {
-
     let server = NotificationServer::new();
-
 
     let connection = Connection::session().await?;
 
+    connection.request_name(DBUS_NAME).await?;
 
-    connection
-        .request_name(DBUS_NAME)
-        .await?;
+    connection.object_server().at(DBUS_PATH, server).await?;
 
-
-    connection
-        .object_server()
-        .at(DBUS_PATH, server)
-        .await?;
-
-
-    println!(
-        "NEXA notification server running on {}",
-        DBUS_NAME
-    );
-
+    println!("NEXA notification server running on {}", DBUS_NAME);
 
     // Keep daemon alive.
     futures_lite::future::pending::<()>().await;
 
     Ok(())
 }
-
 
 // ============================================================
 // CLI — LIST
@@ -1136,14 +860,10 @@ pub fn list() {
         Ok(json) => println!("{json}"),
 
         Err(error) => {
-            eprintln!(
-                "{{\"success\":false,\"error\":\"{}\"}}",
-                error
-            );
+            eprintln!("{{\"success\":false,\"error\":\"{}\"}}", error);
         }
     }
 }
-
 
 // ============================================================
 // CLI — DISMISS
@@ -1152,27 +872,13 @@ pub fn list() {
 pub async fn dismiss(id: u32) -> zbus::Result<()> {
     let connection = Connection::session().await?;
 
-    let proxy = zbus::Proxy::new(
-        &connection,
-        DBUS_NAME,
-        DBUS_PATH,
-        DBUS_NAME,
-    )
-    .await?;
+    let proxy = zbus::Proxy::new(&connection, DBUS_NAME, DBUS_PATH, DBUS_NAME).await?;
 
     // First try the live daemon.
-    let result: zbus::Result<()> = proxy
-        .call(
-            "CloseNotification",
-            &(id),
-        )
-        .await;
+    let result: zbus::Result<()> = proxy.call("CloseNotification", &(id)).await;
 
     if result.is_ok() {
-        println!(
-            "{{\"success\":true,\"id\":{},\"source\":\"daemon\"}}",
-            id
-        );
+        println!("{{\"success\":true,\"id\":{},\"source\":\"daemon\"}}", id);
 
         return Ok(());
     }
@@ -1188,12 +894,9 @@ pub async fn dismiss(id: u32) -> zbus::Result<()> {
 
     let before = notifications.len();
 
-    notifications.retain(
-        |notification| notification.id != id
-    );
+    notifications.retain(|notification| notification.id != id);
 
-    let removed =
-        notifications.len() != before;
+    let removed = notifications.len() != before;
 
     if removed {
         write_state(&notifications);
@@ -1201,13 +904,11 @@ pub async fn dismiss(id: u32) -> zbus::Result<()> {
 
     println!(
         "{{\"success\":{},\"id\":{},\"source\":\"storage\"}}",
-        removed,
-        id
+        removed, id
     );
 
     Ok(())
 }
-
 
 // ============================================================
 // CLI — CLEAR
@@ -1217,54 +918,35 @@ pub async fn clear() -> zbus::Result<()> {
     let notifications = load_state();
 
     if notifications.is_empty() {
-        println!(
-            "{{\"success\":true,\"cleared\":0}}"
-        );
+        println!("{{\"success\":true,\"cleared\":0}}");
 
         return Ok(());
     }
 
-    let total =
-        notifications.len();
+    let total = notifications.len();
 
-    let connection =
-        Connection::session().await?;
+    let connection = Connection::session().await?;
 
-    let proxy = zbus::Proxy::new(
-        &connection,
-        DBUS_NAME,
-        DBUS_PATH,
-        DBUS_NAME,
-    )
-    .await?;
+    let proxy = zbus::Proxy::new(&connection, DBUS_NAME, DBUS_PATH, DBUS_NAME).await?;
 
-    let ids: Vec<u32> =
-        notifications
-            .iter()
-            .map(|notification| notification.id)
-            .collect();
+    let ids: Vec<u32> = notifications
+        .iter()
+        .map(|notification| notification.id)
+        .collect();
 
     let mut cleared = 0;
-
 
     // --------------------------------------------------------
     // FIRST TRY THE LIVE DAEMON
     // --------------------------------------------------------
 
     for id in ids {
-        let result: zbus::Result<()> =
-            proxy
-                .call(
-                    "CloseNotification",
-                    &(id),
-                )
-                .await;
+        let result: zbus::Result<()> = proxy.call("CloseNotification", &(id)).await;
 
         if result.is_ok() {
             cleared += 1;
         }
     }
-
 
     // --------------------------------------------------------
     // FALLBACK
@@ -1287,7 +969,6 @@ pub async fn clear() -> zbus::Result<()> {
         return Ok(());
     }
 
-
     println!(
         "{{\"success\":true,\"cleared\":{},\"source\":\"daemon\"}}",
         cleared
@@ -1300,32 +981,18 @@ pub async fn clear() -> zbus::Result<()> {
 // ACTION
 // ============================================================
 
-pub async fn action(
-    id: u32,
-    action_key: String,
-) -> zbus::Result<()> {
+pub async fn action(id: u32, action_key: String) -> zbus::Result<()> {
     let connection = Connection::session().await?;
 
-    let proxy = zbus::Proxy::new(
-        &connection,
-        DBUS_NAME,
-        DBUS_PATH,
-        DBUS_NAME,
-    )
-    .await?;
+    let proxy = zbus::Proxy::new(&connection, DBUS_NAME, DBUS_PATH, DBUS_NAME).await?;
 
     let success: bool = proxy
-        .call(
-            "InvokeAction",
-            &(id, action_key.clone()),
-        )
+        .call("InvokeAction", &(id, action_key.clone()))
         .await?;
 
     println!(
         "{{\"success\":{},\"id\":{},\"action\":\"{}\"}}",
-        success,
-        id,
-        action_key
+        success, id, action_key
     );
 
     Ok(())
@@ -1335,31 +1002,14 @@ pub async fn action(
 // READ
 // ============================================================
 
-
-
 pub async fn read(id: u32) -> zbus::Result<()> {
     let connection = Connection::session().await?;
 
-    let proxy = zbus::Proxy::new(
-        &connection,
-        DBUS_NAME,
-        DBUS_PATH,
-        DBUS_NAME,
-    )
-    .await?;
+    let proxy = zbus::Proxy::new(&connection, DBUS_NAME, DBUS_PATH, DBUS_NAME).await?;
 
-    let changed: bool = proxy
-        .call(
-            "MarkRead",
-            &(id),
-        )
-        .await?;
+    let changed: bool = proxy.call("MarkRead", &(id)).await?;
 
-    println!(
-        "{{\"success\":{},\"id\":{}}}",
-        changed,
-        id
-    );
+    println!("{{\"success\":{},\"id\":{}}}", changed, id);
 
     Ok(())
 }
@@ -1371,25 +1021,11 @@ pub async fn read(id: u32) -> zbus::Result<()> {
 pub async fn read_all() -> zbus::Result<()> {
     let connection = Connection::session().await?;
 
-    let proxy = zbus::Proxy::new(
-        &connection,
-        DBUS_NAME,
-        DBUS_PATH,
-        DBUS_NAME,
-    )
-    .await?;
+    let proxy = zbus::Proxy::new(&connection, DBUS_NAME, DBUS_PATH, DBUS_NAME).await?;
 
-    let changed: u32 = proxy
-        .call(
-            "MarkAllRead",
-            &(),
-        )
-        .await?;
+    let changed: u32 = proxy.call("MarkAllRead", &()).await?;
 
-    println!(
-        "{{\"success\":true,\"changed\":{}}}",
-        changed
-    );
+    println!("{{\"success\":true,\"changed\":{}}}", changed);
 
     Ok(())
 }

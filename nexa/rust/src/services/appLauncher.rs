@@ -1,14 +1,11 @@
 use serde::Serialize;
 use std::{
     collections::{HashMap, HashSet},
-    env,
-    fs,
+    env, fs,
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 use walkdir::WalkDir;
-
-
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AppEntry {
@@ -69,20 +66,18 @@ struct DesktopEntryData {
 fn xdg_application_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
 
-    let data_home = env::var_os("XDG_DATA_HOME")
-        .map(PathBuf::from)
-        .or_else(|| {
-            env::var_os("HOME")
-                .map(PathBuf::from)
-                .map(|home| home.join(".local/share"))
-        });
+    let data_home = env::var_os("XDG_DATA_HOME").map(PathBuf::from).or_else(|| {
+        env::var_os("HOME")
+            .map(PathBuf::from)
+            .map(|home| home.join(".local/share"))
+    });
 
     if let Some(path) = data_home {
         dirs.push(path.join("applications"));
     }
 
-    let data_dirs = env::var("XDG_DATA_DIRS")
-        .unwrap_or_else(|_| "/usr/local/share:/usr/share".to_string());
+    let data_dirs =
+        env::var("XDG_DATA_DIRS").unwrap_or_else(|_| "/usr/local/share:/usr/share".to_string());
 
     for dir in data_dirs.split(':').filter(|value| !value.is_empty()) {
         dirs.push(PathBuf::from(dir).join("applications"));
@@ -94,9 +89,7 @@ fn xdg_application_dirs() -> Vec<PathBuf> {
 fn desktop_id(base: &Path, path: &Path) -> Option<String> {
     let relative = path.strip_prefix(base).ok()?;
 
-    let mut id = relative
-        .to_string_lossy()
-        .replace(['/', '\\'], "-");
+    let mut id = relative.to_string_lossy().replace(['/', '\\'], "-");
 
     if !id.ends_with(".desktop") {
         return None;
@@ -106,11 +99,7 @@ fn desktop_id(base: &Path, path: &Path) -> Option<String> {
         id.remove(0);
     }
 
-    if id.is_empty() {
-        None
-    } else {
-        Some(id)
-    }
+    if id.is_empty() { None } else { Some(id) }
 }
 
 fn parse_desktop_entry(path: &Path) -> Option<DesktopEntryData> {
@@ -155,26 +144,15 @@ fn parse_desktop_entry(path: &Path) -> Option<DesktopEntryData> {
     }
 }
 
-fn value<'a>(
-    data: &'a DesktopEntryData,
-    key: &str,
-) -> Option<&'a str> {
-    data.values
-        .get(key)
-        .map(String::as_str)
+fn value<'a>(data: &'a DesktopEntryData, key: &str) -> Option<&'a str> {
+    data.values.get(key).map(String::as_str)
 }
 
-fn desktop_bool(
-    data: &DesktopEntryData,
-    key: &str,
-) -> bool {
+fn desktop_bool(data: &DesktopEntryData, key: &str) -> bool {
     value(data, key)
         .map(|value| {
             matches!(
-                value
-                    .trim()
-                    .to_ascii_lowercase()
-                    .as_str(),
+                value.trim().to_ascii_lowercase().as_str(),
                 "true" | "1" | "yes"
             )
         })
@@ -188,76 +166,40 @@ fn locale_candidates() -> Vec<String> {
         .or_else(|| env::var("LANG").ok())
         .unwrap_or_default();
 
-    if raw.is_empty()
-        || raw == "C"
-        || raw == "POSIX"
-    {
+    if raw.is_empty() || raw == "C" || raw == "POSIX" {
         return Vec::new();
     }
 
-    let without_encoding =
-        raw.split('.')
-            .next()
-            .unwrap_or(&raw);
+    let without_encoding = raw.split('.').next().unwrap_or(&raw);
 
     let mut candidates = Vec::new();
 
-    let (base, modifier) =
-        match without_encoding.split_once('@') {
-            Some((base, modifier)) => {
-                (base, Some(modifier))
-            }
+    let (base, modifier) = match without_encoding.split_once('@') {
+        Some((base, modifier)) => (base, Some(modifier)),
 
-            None => {
-                (without_encoding, None)
-            }
-        };
+        None => (without_encoding, None),
+    };
 
-    let (language, territory) =
-        match base.split_once('_') {
-            Some((language, territory)) => {
-                (language, Some(territory))
-            }
+    let (language, territory) = match base.split_once('_') {
+        Some((language, territory)) => (language, Some(territory)),
 
-            None => {
-                (base, None)
-            }
-        };
+        None => (base, None),
+    };
 
-    if let (
-        Some(territory),
-        Some(modifier),
-    ) = (
-        territory,
-        modifier,
-    ) {
-        candidates.push(
-            format!(
-                "{language}_{territory}@{modifier}"
-            )
-        );
+    if let (Some(territory), Some(modifier)) = (territory, modifier) {
+        candidates.push(format!("{language}_{territory}@{modifier}"));
     }
 
     if let Some(territory) = territory {
-        candidates.push(
-            format!(
-                "{language}_{territory}"
-            )
-        );
+        candidates.push(format!("{language}_{territory}"));
     }
 
     if let Some(modifier) = modifier {
-        candidates.push(
-            format!(
-                "{language}@{modifier}"
-            )
-        );
+        candidates.push(format!("{language}@{modifier}"));
     }
 
     if !language.is_empty() {
-        candidates.push(
-            language.to_string()
-        );
+        candidates.push(language.to_string());
     }
 
     candidates.dedup();
@@ -271,21 +213,10 @@ fn localized_value(
     locale_candidates: &[String],
 ) -> Option<String> {
     for locale in locale_candidates {
-        let localized_key =
-            format!(
-                "{key}[{locale}]"
-            );
+        let localized_key = format!("{key}[{locale}]");
 
-        if let Some(value) =
-            value(
-                data,
-                &localized_key,
-            )
-        {
-            let value =
-                unescape_desktop_value(
-                    value,
-                );
+        if let Some(value) = value(data, &localized_key) {
+            let value = unescape_desktop_value(value);
 
             if !value.is_empty() {
                 return Some(value);
@@ -298,20 +229,12 @@ fn localized_value(
         .filter(|value| !value.is_empty())
 }
 
-fn unescape_desktop_value(
-    value: &str,
-) -> String {
-    let mut output =
-        String::with_capacity(
-            value.len(),
-        );
+fn unescape_desktop_value(value: &str) -> String {
+    let mut output = String::with_capacity(value.len());
 
-    let mut chars =
-        value.chars();
+    let mut chars = value.chars();
 
-    while let Some(ch) =
-        chars.next()
-    {
+    while let Some(ch) = chars.next() {
         if ch != '\\' {
             output.push(ch);
             continue;
@@ -352,9 +275,7 @@ fn unescape_desktop_value(
     output
 }
 
-fn split_desktop_list(
-    value: &str,
-) -> Vec<String> {
+fn split_desktop_list(value: &str) -> Vec<String> {
     let mut items = Vec::new();
     let mut current = String::new();
     let mut escaped = false;
@@ -402,13 +323,10 @@ fn split_desktop_list(
         }
 
         if ch == ';' {
-            let item =
-                current.trim();
+            let item = current.trim();
 
             if !item.is_empty() {
-                items.push(
-                    item.to_string(),
-                );
+                items.push(item.to_string());
             }
 
             current.clear();
@@ -422,13 +340,10 @@ fn split_desktop_list(
         current.push('\\');
     }
 
-    let item =
-        current.trim();
+    let item = current.trim();
 
     if !item.is_empty() {
-        items.push(
-            item.to_string(),
-        );
+        items.push(item.to_string());
     }
 
     items
@@ -440,70 +355,35 @@ fn current_desktops() -> Vec<String> {
         .split(':')
         .map(str::trim)
         .filter(|value| !value.is_empty())
-        .map(|value| {
-            value.to_ascii_lowercase()
-        })
+        .map(|value| value.to_ascii_lowercase())
         .collect()
 }
 
-fn desktop_environment_allows(
-    data: &DesktopEntryData,
-) -> bool {
-    let current =
-        current_desktops();
+fn desktop_environment_allows(data: &DesktopEntryData) -> bool {
+    let current = current_desktops();
 
-    if let Some(only_show_in) =
-        value(
-            data,
-            "OnlyShowIn",
-        )
-    {
-        let allowed =
-            split_desktop_list(
-                only_show_in,
-            );
+    if let Some(only_show_in) = value(data, "OnlyShowIn") {
+        let allowed = split_desktop_list(only_show_in);
 
         if current.is_empty()
-            || !allowed.iter().any(
-                |desktop| {
-                    current.iter().any(
-                        |current| {
-                            current
-                                .eq_ignore_ascii_case(
-                                    desktop,
-                                )
-                        },
-                    )
-                },
-            )
+            || !allowed.iter().any(|desktop| {
+                current
+                    .iter()
+                    .any(|current| current.eq_ignore_ascii_case(desktop))
+            })
         {
             return false;
         }
     }
 
-    if let Some(not_show_in) =
-        value(
-            data,
-            "NotShowIn",
-        )
-    {
-        let blocked =
-            split_desktop_list(
-                not_show_in,
-            );
+    if let Some(not_show_in) = value(data, "NotShowIn") {
+        let blocked = split_desktop_list(not_show_in);
 
-        if blocked.iter().any(
-            |desktop| {
-                current.iter().any(
-                    |current| {
-                        current
-                            .eq_ignore_ascii_case(
-                                desktop,
-                            )
-                    },
-                )
-            },
-        ) {
+        if blocked.iter().any(|desktop| {
+            current
+                .iter()
+                .any(|current| current.eq_ignore_ascii_case(desktop))
+        }) {
             return false;
         }
     }
@@ -511,38 +391,26 @@ fn desktop_environment_allows(
     true
 }
 
-fn command_exists(
-    program: &str,
-) -> bool {
-    let path =
-        Path::new(program);
+fn command_exists(program: &str) -> bool {
+    let path = Path::new(program);
 
     if path.components().count() > 1 {
         return path.is_file();
     }
 
-    let Some(path_var) =
-        env::var_os("PATH")
-    else {
+    let Some(path_var) = env::var_os("PATH") else {
         return false;
     };
 
-    env::split_paths(
-        &path_var,
-    )
-    .any(|dir| {
-        dir.join(program).is_file()
-    })
+    env::split_paths(&path_var).any(|dir| dir.join(program).is_file())
 }
 
-fn normalize_category(
-    raw_categories: &[String],
-) -> (String, String) {
+fn normalize_category(raw_categories: &[String]) -> (String, String) {
     let has = |choices: &[&str]| {
         raw_categories.iter().any(|category| {
-            choices.iter().any(|choice| {
-                category.eq_ignore_ascii_case(choice)
-            })
+            choices
+                .iter()
+                .any(|choice| category.eq_ignore_ascii_case(choice))
         })
     };
 
@@ -555,10 +423,7 @@ fn normalize_category(
         "Debugger",
         "RevisionControl",
     ]) {
-        return (
-            "development".to_string(),
-            "Development".to_string(),
-        );
+        return ("development".to_string(), "Development".to_string());
     }
 
     if has(&[
@@ -574,10 +439,7 @@ fn normalize_category(
         "FileTransfer",
         "News",
     ]) {
-        return (
-            "internet".to_string(),
-            "Internet".to_string(),
-        );
+        return ("internet".to_string(), "Internet".to_string());
     }
 
     if has(&[
@@ -592,10 +454,7 @@ fn normalize_category(
         "Midi",
         "DiscBurning",
     ]) {
-        return (
-            "media".to_string(),
-            "Media".to_string(),
-        );
+        return ("media".to_string(), "Media".to_string());
     }
 
     if has(&[
@@ -610,10 +469,7 @@ fn normalize_category(
         "Publishing",
         "Viewer",
     ]) {
-        return (
-            "graphics".to_string(),
-            "Graphics".to_string(),
-        );
+        return ("graphics".to_string(), "Graphics".to_string());
     }
 
     if has(&[
@@ -631,10 +487,7 @@ fn normalize_category(
         "PDA",
         "ProjectManagement",
     ]) {
-        return (
-            "office".to_string(),
-            "Office".to_string(),
-        );
+        return ("office".to_string(), "Office".to_string());
     }
 
     if has(&[
@@ -653,10 +506,7 @@ fn normalize_category(
         "SportsGame",
         "StrategyGame",
     ]) {
-        return (
-            "games".to_string(),
-            "Games".to_string(),
-        );
+        return ("games".to_string(), "Games".to_string());
     }
 
     if has(&[
@@ -670,10 +520,7 @@ fn normalize_category(
         "TextTools",
         "Utility",
     ]) {
-        return (
-            "utilities".to_string(),
-            "Utilities".to_string(),
-        );
+        return ("utilities".to_string(), "Utilities".to_string());
     }
 
     if has(&[
@@ -687,10 +534,7 @@ fn normalize_category(
         "HardwareSettings",
         "DesktopSettings",
     ]) {
-        return (
-            "system".to_string(),
-            "System".to_string(),
-        );
+        return ("system".to_string(), "System".to_string());
     }
 
     // --------------------------------------------------------
@@ -699,22 +543,14 @@ fn normalize_category(
 
     for category in raw_categories {
         if is_display_category(category) {
-            return (
-                category_to_id(category),
-                category_to_name(category),
-            );
+            return (category_to_id(category), category_to_name(category));
         }
     }
 
-    (
-        "other".to_string(),
-        "Other".to_string(),
-    )
+    ("other".to_string(), "Other".to_string())
 }
 
-fn is_display_category(
-    category: &str,
-) -> bool {
+fn is_display_category(category: &str) -> bool {
     let ignored = [
         "GTK",
         "Qt",
@@ -729,60 +565,44 @@ fn is_display_category(
 
     !category.is_empty()
         && !category.starts_with("X-")
-        && !ignored.iter().any(|item| {
-            category.eq_ignore_ascii_case(item)
-        })
+        && !ignored
+            .iter()
+            .any(|item| category.eq_ignore_ascii_case(item))
 }
 
-fn category_to_id(
-    category: &str,
-) -> String {
-    let mut result =
-        String::new();
+fn category_to_id(category: &str) -> String {
+    let mut result = String::new();
 
     for ch in category.chars() {
         if ch.is_ascii_alphanumeric() {
-            result.push(
-                ch.to_ascii_lowercase()
-            );
+            result.push(ch.to_ascii_lowercase());
         } else if !result.ends_with('-') {
             result.push('-');
         }
     }
 
-    result
-        .trim_matches('-')
-        .to_string()
+    result.trim_matches('-').to_string()
 }
 
-fn category_to_name(
-    category: &str,
-) -> String {
-    let mut result =
-        String::new();
+fn category_to_name(category: &str) -> String {
+    let mut result = String::new();
 
-    let mut previous_lowercase =
-        false;
+    let mut previous_lowercase = false;
 
     for ch in category.chars() {
-        if ch == '-'
-            || ch == '_'
-        {
+        if ch == '-' || ch == '_' {
             result.push(' ');
             previous_lowercase = false;
             continue;
         }
 
-        if ch.is_uppercase()
-            && previous_lowercase
-        {
+        if ch.is_uppercase() && previous_lowercase {
             result.push(' ');
         }
 
         result.push(ch);
 
-        previous_lowercase =
-            ch.is_lowercase();
+        previous_lowercase = ch.is_lowercase();
     }
 
     result
@@ -794,425 +614,212 @@ fn parse_app(
     data: DesktopEntryData,
     locale_candidates: &[String],
 ) -> Option<DiscoveredApp> {
-    if value(
-        &data,
-        "Type",
-    ) != Some("Application")
-    {
+    if value(&data, "Type") != Some("Application") {
         return None;
     }
 
-    if desktop_bool(
-        &data,
-        "Hidden",
-    ) || desktop_bool(
-        &data,
-        "NoDisplay",
-    ) {
+    if desktop_bool(&data, "Hidden") || desktop_bool(&data, "NoDisplay") {
         return None;
     }
 
-    if !desktop_environment_allows(
-        &data,
-    ) {
+    if !desktop_environment_allows(&data) {
         return None;
     }
 
-    if let Some(try_exec) =
-        value(
-            &data,
-            "TryExec",
-        )
-    {
-        let try_exec =
-            unescape_desktop_value(
-                try_exec,
-            );
+    if let Some(try_exec) = value(&data, "TryExec") {
+        let try_exec = unescape_desktop_value(try_exec);
 
-        if !try_exec.is_empty()
-            && !command_exists(
-                &try_exec,
-            )
-        {
+        if !try_exec.is_empty() && !command_exists(&try_exec) {
             return None;
         }
     }
 
-    let name =
-        localized_value(
-            &data,
-            "Name",
-            locale_candidates,
-        )?;
+    let name = localized_value(&data, "Name", locale_candidates)?;
 
-    let exec =
-        value(
-            &data,
-            "Exec",
-        )
+    let exec = value(&data, "Exec")
         .map(str::trim)
-        .filter(|value| {
-            !value.is_empty()
-        })?
+        .filter(|value| !value.is_empty())?
         .to_string();
 
-    let generic_name =
-        localized_value(
-            &data,
-            "GenericName",
-            locale_candidates,
-        );
+    let generic_name = localized_value(&data, "GenericName", locale_candidates);
 
-    let comment =
-        localized_value(
-            &data,
-            "Comment",
-            locale_candidates,
-        );
+    let comment = localized_value(&data, "Comment", locale_candidates);
 
-    let icon =
-        value(
-            &data,
-            "Icon",
-        )
-        .map(
-            unescape_desktop_value,
-        )
-        .filter(|value| {
-            !value.is_empty()
-        });
+    let icon = value(&data, "Icon")
+        .map(unescape_desktop_value)
+        .filter(|value| !value.is_empty());
 
-    let raw_categories =
-        value(
-            &data,
-            "Categories",
-        )
+    let raw_categories = value(&data, "Categories")
         .map(split_desktop_list)
         .unwrap_or_default();
 
-    let keywords =
-        localized_value(
-            &data,
-            "Keywords",
-            locale_candidates,
-        )
-        .map(|value| {
-            split_desktop_list(
-                &value,
-            )
-        })
-        .or_else(|| {
-            value(
-                &data,
-                "Keywords",
-            )
-            .map(
-                split_desktop_list,
-            )
-        })
+    let keywords = localized_value(&data, "Keywords", locale_candidates)
+        .map(|value| split_desktop_list(&value))
+        .or_else(|| value(&data, "Keywords").map(split_desktop_list))
         .unwrap_or_default();
 
-    let (
-        category_id,
-        category_name,
-    ) = normalize_category(
-        &raw_categories,
-    );
+    let (category_id, category_name) = normalize_category(&raw_categories);
 
-    Some(
-        DiscoveredApp {
-            app: AppEntry {
-                id,
-                name,
-                generic_name,
-                comment,
-                icon,
-                exec,
-                terminal:
-                    desktop_bool(
-                        &data,
-                        "Terminal",
-                    ),
-                category_id,
-                category_name,
-                keywords,
-                startup_wm_class: value(
-                    &data,
-                    "StartupWMClass",
-                )
+    Some(DiscoveredApp {
+        app: AppEntry {
+            id,
+            name,
+            generic_name,
+            comment,
+            icon,
+            exec,
+            terminal: desktop_bool(&data, "Terminal"),
+            category_id,
+            category_name,
+            keywords,
+            startup_wm_class: value(&data, "StartupWMClass")
                 .map(unescape_desktop_value)
                 .filter(|v| !v.is_empty()),
-            },
-
-            desktop_file:
-                path.to_path_buf(),
         },
-    )
+
+        desktop_file: path.to_path_buf(),
+    })
 }
 
 fn discover_apps() -> Vec<DiscoveredApp> {
-    let locale_candidates =
-        locale_candidates();
+    let locale_candidates = locale_candidates();
 
-    let mut apps =
-        Vec::new();
+    let mut apps = Vec::new();
 
-    let mut claimed_ids =
-        HashSet::<String>::new();
+    let mut claimed_ids = HashSet::<String>::new();
 
-    for base in
-        xdg_application_dirs()
-    {
+    for base in xdg_application_dirs() {
         if !base.is_dir() {
             continue;
         }
 
-        let mut paths =
-            WalkDir::new(
-                &base,
-            )
+        let mut paths = WalkDir::new(&base)
             .follow_links(true)
             .into_iter()
-            .filter_map(
-                Result::ok,
-            )
-            .filter(|entry| {
-                entry
-                    .file_type()
-                    .is_file()
-            })
-            .map(|entry| {
-                entry.into_path()
-            })
-            .filter(|path| {
-                path.extension()
-                    .and_then(|ext| {
-                        ext.to_str()
-                    })
-                    == Some(
-                        "desktop",
-                    )
-            })
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_type().is_file())
+            .map(|entry| entry.into_path())
+            .filter(|path| path.extension().and_then(|ext| ext.to_str()) == Some("desktop"))
             .collect::<Vec<_>>();
 
         paths.sort();
 
         for path in paths {
-            let Some(id) =
-                desktop_id(
-                    &base,
-                    &path,
-                )
-            else {
+            let Some(id) = desktop_id(&base, &path) else {
                 continue;
             };
 
-            if !claimed_ids.insert(
-                id.clone(),
-            ) {
+            if !claimed_ids.insert(id.clone()) {
                 continue;
             }
 
-            let Some(data) =
-                parse_desktop_entry(
-                    &path,
-                )
-            else {
+            let Some(data) = parse_desktop_entry(&path) else {
                 continue;
             };
 
-            if let Some(app) =
-                parse_app(
-                    id,
-                    &path,
-                    data,
-                    &locale_candidates,
-                )
-            {
+            if let Some(app) = parse_app(id, &path, data, &locale_candidates) {
                 apps.push(app);
             }
         }
     }
 
-    apps.sort_by(
-        |a, b| {
-            a.app
-                .name
-                .to_ascii_lowercase()
-                .cmp(
-                    &b.app
-                        .name
-                        .to_ascii_lowercase(),
-                )
-                .then_with(|| {
-                    a.app
-                        .id
-                        .cmp(
-                            &b.app.id,
-                        )
-                })
-        },
-    );
+    apps.sort_by(|a, b| {
+        a.app
+            .name
+            .to_ascii_lowercase()
+            .cmp(&b.app.name.to_ascii_lowercase())
+            .then_with(|| a.app.id.cmp(&b.app.id))
+    });
 
     apps
 }
 
-fn build_launcher_payload(
-    apps: &[DiscoveredApp],
-) -> LauncherPayload {
-    let all_apps =
-        apps
-            .iter()
-            .map(|item| {
-                item.app.clone()
-            })
-            .collect::<Vec<_>>();
+fn build_launcher_payload(apps: &[DiscoveredApp]) -> LauncherPayload {
+    let all_apps = apps.iter().map(|item| item.app.clone()).collect::<Vec<_>>();
 
-    let mut grouped:
-        HashMap<String, (String, Vec<AppEntry>)> =
-        HashMap::new();
+    let mut grouped: HashMap<String, (String, Vec<AppEntry>)> = HashMap::new();
 
     for item in apps {
-        let app =
-            item.app.clone();
+        let app = item.app.clone();
 
         grouped
-            .entry(
-                app.category_id.clone(),
-            )
-            .or_insert_with(|| {
-                (
-                    app.category_name.clone(),
-                    Vec::new(),
-                )
-            })
+            .entry(app.category_id.clone())
+            .or_insert_with(|| (app.category_name.clone(), Vec::new()))
             .1
             .push(app);
     }
 
-    let mut categories =
-        grouped
-            .into_iter()
-            .map(
-                |(
-                    id,
-                    (
-                        name,
-                        mut category_apps,
-                    ),
-                )| {
-                    category_apps.sort_by(
-                        |a, b| {
-                            a.name
-                                .to_ascii_lowercase()
-                                .cmp(
-                                    &b.name
-                                        .to_ascii_lowercase(),
-                                )
-                        },
-                    );
+    let mut categories = grouped
+        .into_iter()
+        .map(|(id, (name, mut category_apps))| {
+            category_apps.sort_by(|a, b| {
+                a.name
+                    .to_ascii_lowercase()
+                    .cmp(&b.name.to_ascii_lowercase())
+            });
 
-                    CategoryGroup {
-                        id,
-                        name,
-                        count:
-                            category_apps.len(),
-                        apps:
-                            category_apps,
-                    }
-                },
-            )
-            .collect::<Vec<_>>();
+            CategoryGroup {
+                id,
+                name,
+                count: category_apps.len(),
+                apps: category_apps,
+            }
+        })
+        .collect::<Vec<_>>();
 
-    categories.sort_by(
-        |a, b| {
-            a.name
-                .to_ascii_lowercase()
-                .cmp(
-                    &b.name
-                        .to_ascii_lowercase(),
-                )
-        },
-    );
+    categories.sort_by(|a, b| {
+        a.name
+            .to_ascii_lowercase()
+            .cmp(&b.name.to_ascii_lowercase())
+    });
 
     categories.insert(
         0,
         CategoryGroup {
-            id:
-                "all".to_string(),
+            id: "all".to_string(),
 
-            name:
-                "All".to_string(),
+            name: "All".to_string(),
 
-            count:
-                all_apps.len(),
+            count: all_apps.len(),
 
-            apps:
-                all_apps,
+            apps: all_apps,
         },
     );
 
     LauncherPayload {
-        total:
-            apps.len(),
+        total: apps.len(),
 
         categories,
     }
 }
 
-fn normalize_search_text(
-    value: &str,
-) -> String {
-    value
-        .trim()
-        .to_ascii_lowercase()
+fn normalize_search_text(value: &str) -> String {
+    value.trim().to_ascii_lowercase()
 }
 
-fn subsequence_score(
-    haystack: &str,
-    needle: &str,
-) -> Option<u32> {
+fn subsequence_score(haystack: &str, needle: &str) -> Option<u32> {
     if needle.is_empty() {
         return Some(0);
     }
 
-    let haystack_chars =
-        haystack
-            .chars()
-            .collect::<Vec<_>>();
+    let haystack_chars = haystack.chars().collect::<Vec<_>>();
 
-    let needle_chars =
-        needle
-            .chars()
-            .collect::<Vec<_>>();
+    let needle_chars = needle.chars().collect::<Vec<_>>();
 
-    let mut haystack_index =
-        0usize;
+    let mut haystack_index = 0usize;
 
-    let mut first_match =
-        None;
+    let mut first_match = None;
 
-    let mut previous_match =
-        None;
+    let mut previous_match = None;
 
-    let mut gaps =
-        0u32;
+    let mut gaps = 0u32;
 
     for needle_char in needle_chars {
-        let mut found =
-            None;
+        let mut found = None;
 
-        while haystack_index
-            < haystack_chars.len()
-        {
-            if haystack_chars[
-                haystack_index
-            ] == needle_char
-            {
-                found =
-                    Some(
-                        haystack_index,
-                    );
+        while haystack_index < haystack_chars.len() {
+            if haystack_chars[haystack_index] == needle_char {
+                found = Some(haystack_index);
 
                 haystack_index += 1;
 
@@ -1222,42 +829,23 @@ fn subsequence_score(
             haystack_index += 1;
         }
 
-        let index =
-            found?;
+        let index = found?;
 
         if first_match.is_none() {
-            first_match =
-                Some(index);
+            first_match = Some(index);
         }
 
-        if let Some(previous) =
-            previous_match
-        {
-            gaps +=
-                index
-                    .saturating_sub(
-                        previous + 1,
-                    )
-                    as u32;
+        if let Some(previous) = previous_match {
+            gaps += index.saturating_sub(previous + 1) as u32;
         }
 
-        previous_match =
-            Some(index);
+        previous_match = Some(index);
     }
 
-    Some(
-        first_match
-            .unwrap_or(0)
-            as u32
-            + gaps * 2,
-    )
+    Some(first_match.unwrap_or(0) as u32 + gaps * 2)
 }
 
-fn field_score(
-    field: &str,
-    token: &str,
-    base: u32,
-) -> Option<u32> {
+fn field_score(field: &str, token: &str, base: u32) -> Option<u32> {
     if field.is_empty() {
         return None;
     }
@@ -1267,195 +855,88 @@ fn field_score(
     }
 
     if field.starts_with(token) {
-        return Some(
-            base + 5,
-        );
+        return Some(base + 5);
     }
 
-    if let Some(position) =
-        field.find(token)
-    {
-        return Some(
-            base
-                + 15
-                + position as u32,
-        );
+    if let Some(position) = field.find(token) {
+        return Some(base + 15 + position as u32);
     }
 
-    subsequence_score(
-        field,
-        token,
-    )
-    .map(|score| {
-        base + 60 + score
-    })
+    subsequence_score(field, token).map(|score| base + 60 + score)
 }
 
-fn score_app(
-    app: &AppEntry,
-    query: &str,
-) -> Option<u32> {
-    let tokens =
-        query
-            .split_whitespace()
-            .filter(|token| {
-                !token.is_empty()
-            })
-            .collect::<Vec<_>>();
+fn score_app(app: &AppEntry, query: &str) -> Option<u32> {
+    let tokens = query
+        .split_whitespace()
+        .filter(|token| !token.is_empty())
+        .collect::<Vec<_>>();
 
     if tokens.is_empty() {
         return Some(0);
     }
 
-    let name =
-        app.name
-            .to_ascii_lowercase();
+    let name = app.name.to_ascii_lowercase();
 
-    let generic_name =
-        app.generic_name
-            .as_deref()
-            .unwrap_or("")
-            .to_ascii_lowercase();
+    let generic_name = app
+        .generic_name
+        .as_deref()
+        .unwrap_or("")
+        .to_ascii_lowercase();
 
-    let comment =
-        app.comment
-            .as_deref()
-            .unwrap_or("")
-            .to_ascii_lowercase();
+    let comment = app.comment.as_deref().unwrap_or("").to_ascii_lowercase();
 
-    let id =
-        app.id
-            .to_ascii_lowercase();
+    let id = app.id.to_ascii_lowercase();
 
-    let category =
-        app.category_name
-            .to_ascii_lowercase();
+    let category = app.category_name.to_ascii_lowercase();
 
-    let keywords =
-        app.keywords
-            .iter()
-            .map(|keyword| {
-                keyword
-                    .to_ascii_lowercase()
-            })
-            .collect::<Vec<_>>();
+    let keywords = app
+        .keywords
+        .iter()
+        .map(|keyword| keyword.to_ascii_lowercase())
+        .collect::<Vec<_>>();
 
-    let mut total =
-        0u32;
+    let mut total = 0u32;
 
     for token in tokens {
-        let mut best =
-            field_score(
-                &name,
-                token,
-                0,
-            );
+        let mut best = field_score(&name, token, 0);
 
         for candidate in [
-            field_score(
-                &generic_name,
-                token,
-                20,
-            ),
-
-            field_score(
-                &id,
-                token,
-                30,
-            ),
-
-            field_score(
-                &category,
-                token,
-                40,
-            ),
-
-            field_score(
-                &comment,
-                token,
-                50,
-            ),
+            field_score(&generic_name, token, 20),
+            field_score(&id, token, 30),
+            field_score(&category, token, 40),
+            field_score(&comment, token, 50),
         ] {
-            if let Some(candidate) =
-                candidate
-            {
-                best =
-                    Some(
-                        best.map_or(
-                            candidate,
-                            |current| {
-                                current
-                                    .min(
-                                        candidate,
-                                    )
-                            },
-                        ),
-                    );
+            if let Some(candidate) = candidate {
+                best = Some(best.map_or(candidate, |current| current.min(candidate)));
             }
         }
 
-        for keyword in
-            &keywords
-        {
-            if let Some(candidate) =
-                field_score(
-                    keyword,
-                    token,
-                    25,
-                )
-            {
-                best =
-                    Some(
-                        best.map_or(
-                            candidate,
-                            |current| {
-                                current
-                                    .min(
-                                        candidate,
-                                    )
-                            },
-                        ),
-                    );
+        for keyword in &keywords {
+            if let Some(candidate) = field_score(keyword, token, 25) {
+                best = Some(best.map_or(candidate, |current| current.min(candidate)));
             }
         }
 
-        total =
-            total
-                .saturating_add(
-                    best?,
-                );
+        total = total.saturating_add(best?);
     }
 
     Some(total)
 }
 
-fn find_app(
-    id: &str,
-) -> Option<DiscoveredApp> {
-    discover_apps()
-        .into_iter()
-        .find(|item| {
-            item.app.id == id
-        })
+fn find_app(id: &str) -> Option<DiscoveredApp> {
+    discover_apps().into_iter().find(|item| item.app.id == id)
 }
 
-fn shell_words(
-    command: &str,
-) -> Result<Vec<String>, String> {
-    let mut words =
-        Vec::new();
+fn shell_words(command: &str) -> Result<Vec<String>, String> {
+    let mut words = Vec::new();
 
-    let mut current =
-        String::new();
+    let mut current = String::new();
 
-    let mut in_single =
-        false;
+    let mut in_single = false;
 
-    let mut in_double =
-        false;
+    let mut in_double = false;
 
-    let mut escaped =
-        false;
+    let mut escaped = false;
 
     for ch in command.chars() {
         if escaped {
@@ -1465,36 +946,21 @@ fn shell_words(
         }
 
         match ch {
-            '\\'
-                if !in_single =>
-            {
+            '\\' if !in_single => {
                 escaped = true;
             }
 
-            '\''
-                if !in_double =>
-            {
-                in_single =
-                    !in_single;
+            '\'' if !in_double => {
+                in_single = !in_single;
             }
 
-            '"'
-                if !in_single =>
-            {
-                in_double =
-                    !in_double;
+            '"' if !in_single => {
+                in_double = !in_double;
             }
 
-            ' ' | '\t'
-                if !in_single
-                    && !in_double =>
-            {
+            ' ' | '\t' if !in_single && !in_double => {
                 if !current.is_empty() {
-                    words.push(
-                        std::mem::take(
-                            &mut current,
-                        ),
-                    );
+                    words.push(std::mem::take(&mut current));
                 }
             }
 
@@ -1504,14 +970,8 @@ fn shell_words(
         }
     }
 
-    if escaped
-        || in_single
-        || in_double
-    {
-        return Err(
-            "Malformed Exec command"
-                .to_string(),
-        );
+    if escaped || in_single || in_double {
+        return Err("Malformed Exec command".to_string());
     }
 
     if !current.is_empty() {
@@ -1521,52 +981,30 @@ fn shell_words(
     Ok(words)
 }
 
-fn expand_exec_token(
-    token: &str,
-    app: &DiscoveredApp,
-) -> Vec<String> {
+fn expand_exec_token(token: &str, app: &DiscoveredApp) -> Vec<String> {
     if token == "%i" {
-        if let Some(icon) =
-            &app.app.icon
-        {
-            return vec![
-                "--icon"
-                    .to_string(),
-
-                icon.clone(),
-            ];
+        if let Some(icon) = &app.app.icon {
+            return vec!["--icon".to_string(), icon.clone()];
         }
 
         return Vec::new();
     }
 
-    if matches!(
-        token,
-        "%f"
-            | "%F"
-            | "%u"
-            | "%U"
-    ) {
+    if matches!(token, "%f" | "%F" | "%u" | "%U") {
         return Vec::new();
     }
 
-    let mut output =
-        String::new();
+    let mut output = String::new();
 
-    let mut chars =
-        token.chars();
+    let mut chars = token.chars();
 
-    while let Some(ch) =
-        chars.next()
-    {
+    while let Some(ch) = chars.next() {
         if ch != '%' {
             output.push(ch);
             continue;
         }
 
-        let Some(code) =
-            chars.next()
-        else {
+        let Some(code) = chars.next() else {
             output.push('%');
             break;
         };
@@ -1577,39 +1015,18 @@ fn expand_exec_token(
             }
 
             'c' => {
-                output.push_str(
-                    &app.app.name,
-                );
+                output.push_str(&app.app.name);
             }
 
             'k' => {
-                output.push_str(
-                    &app
-                        .desktop_file
-                        .to_string_lossy(),
-                );
+                output.push_str(&app.desktop_file.to_string_lossy());
             }
 
-            'f'
-            | 'F'
-            | 'u'
-            | 'U'
-            | 'd'
-            | 'D'
-            | 'n'
-            | 'N'
-            | 'v'
-            | 'm' =>
-            {
-            }
+            'f' | 'F' | 'u' | 'U' | 'd' | 'D' | 'n' | 'N' | 'v' | 'm' => {}
 
             'i' => {
-                if let Some(icon) =
-                    &app.app.icon
-                {
-                    output.push_str(
-                        icon,
-                    );
+                if let Some(icon) = &app.app.icon {
+                    output.push_str(icon);
                 }
             }
 
@@ -1624,161 +1041,96 @@ fn expand_exec_token(
     }
 }
 
-fn expanded_exec(
-    app: &DiscoveredApp,
-) -> Result<Vec<String>, String> {
-    let raw_words =
-        shell_words(
-            &app.app.exec,
-        )?;
+fn expanded_exec(app: &DiscoveredApp) -> Result<Vec<String>, String> {
+    let raw_words = shell_words(&app.app.exec)?;
 
-    let mut words =
-        Vec::new();
+    let mut words = Vec::new();
 
     for token in raw_words {
-        words.extend(
-            expand_exec_token(
-                &token,
-                app,
-            ),
-        );
+        words.extend(expand_exec_token(&token, app));
     }
 
     if words.is_empty() {
-        Err(
-            format!(
-                "Invalid Exec command for {}",
-                app.app.name
-            ),
-        )
+        Err(format!("Invalid Exec command for {}", app.app.name))
     } else {
         Ok(words)
     }
 }
 
 fn terminal_command() -> Vec<String> {
-    if let Ok(terminal) =
-        env::var("TERMINAL")
-    {
-        if let Ok(words) =
-            shell_words(
-                &terminal,
-            )
-        {
+    if let Ok(terminal) = env::var("TERMINAL") {
+        if let Ok(words) = shell_words(&terminal) {
             if !words.is_empty() {
                 return words;
             }
         }
     }
 
-    for candidate in [
-        "kitty",
-        "foot",
-        "alacritty",
-        "wezterm",
-        "xterm",
-    ] {
+    for candidate in ["kitty", "foot", "alacritty", "wezterm", "xterm"] {
         if command_exists(candidate) {
-            return vec![
-                candidate.to_string(),
-            ];
+            return vec![candidate.to_string()];
         }
     }
 
-    vec![
-        "kitty".to_string(),
-    ]
+    vec!["kitty".to_string()]
 }
 
-fn terminal_exec_flag(
-    program: &str,
-) -> Option<&'static str> {
-    let name =
-        Path::new(program)
-            .file_name()
-            .and_then(|name| {
-                name.to_str()
-            })
-            .unwrap_or(program);
+fn terminal_exec_flag(program: &str) -> Option<&'static str> {
+    let name = Path::new(program)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or(program);
 
     match name {
-        "kitty"
-        | "foot"
-        | "alacritty"
-        | "wezterm"
-        | "xterm" =>
-        {
-            Some("-e")
-        }
+        "kitty" | "foot" | "alacritty" | "wezterm" | "xterm" => Some("-e"),
 
         _ => None,
     }
 }
 
-fn launch_with_exec(
-    app: &DiscoveredApp,
-) -> Result<(), String> {
-    let words =
-        expanded_exec(app)?;
+fn launch_with_exec(app: &DiscoveredApp) -> Result<(), String> {
+    let words = expanded_exec(app)?;
 
-    let program =
-        &words[0];
+    let program = &words[0];
 
-    let mut arguments =
-        words[1..].to_vec();
+    let mut arguments = words[1..].to_vec();
 
     if program.ends_with("btop") && !arguments.iter().any(|arg| arg == "--force-utf") {
         arguments.push("--force-utf".to_string());
     }
 
-    let mut command =
-        if app.app.terminal {
-            let terminal =
-                terminal_command();
+    let mut command = if app.app.terminal {
+        let terminal = terminal_command();
 
-            let mut command =
-                Command::new(
-                    &terminal[0],
-                );
+        let mut command = Command::new(&terminal[0]);
 
-            if terminal.len() > 1 {
-                command.args(
-                    &terminal[1..],
-                );
-            }
+        if terminal.len() > 1 {
+            command.args(&terminal[1..]);
+        }
 
-            let app_class = if app.app.name.to_lowercase().starts_with("yazi") || app.app.id.to_lowercase().starts_with("yazi") {
-                "yazi".to_string()
-            } else {
-                app.app.name.to_lowercase().replace(' ', "-")
-            };
-            command.arg("--class").arg(&app_class);
-
-            if let Some(flag) =
-                terminal_exec_flag(
-                    &terminal[0],
-                )
-            {
-                command.arg(flag);
-            }
-
-            command
-                .arg(program)
-                .args(&arguments);
-
-            command
+        let app_class = if app.app.name.to_lowercase().starts_with("yazi")
+            || app.app.id.to_lowercase().starts_with("yazi")
+        {
+            "yazi".to_string()
         } else {
-            let mut command =
-                Command::new(
-                    program,
-                );
-
-            command.args(
-                &arguments,
-            );
-
-            command
+            app.app.name.to_lowercase().replace(' ', "-")
         };
+        command.arg("--class").arg(&app_class);
+
+        if let Some(flag) = terminal_exec_flag(&terminal[0]) {
+            command.arg(flag);
+        }
+
+        command.arg(program).args(&arguments);
+
+        command
+    } else {
+        let mut command = Command::new(program);
+
+        command.args(&arguments);
+
+        command
+    };
 
     let lang = env::var("LANG").unwrap_or_else(|_| "en_US.UTF-8".to_string());
     let lc_all = env::var("LC_ALL").unwrap_or_else(|_| "en_US.UTF-8".to_string());
@@ -1788,48 +1140,25 @@ fn launch_with_exec(
         .current_dir(home)
         .env("LANG", lang)
         .env("LC_ALL", lc_all)
-        .stdin(
-            Stdio::null(),
-        )
-        .stdout(
-            Stdio::null(),
-        )
-        .stderr(
-            Stdio::null(),
-        )
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .map(|_| ())
-        .map_err(|error| {
-            format!(
-                "Failed to launch {}: {error}",
-                app.app.name
-            )
-        })
+        .map_err(|error| format!("Failed to launch {}: {error}", app.app.name))
 }
 
-fn launch_desktop_entry(
-    app: &DiscoveredApp,
-) -> Result<(), String> {
+fn launch_desktop_entry(app: &DiscoveredApp) -> Result<(), String> {
     if !app.app.terminal && command_exists("gio") {
         match Command::new("gio")
             .arg("launch")
-            .arg(
-                &app.desktop_file,
-            )
-            .stdin(
-                Stdio::null(),
-            )
-            .stdout(
-                Stdio::null(),
-            )
-            .stderr(
-                Stdio::null(),
-            )
+            .arg(&app.desktop_file)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status()
         {
-            Ok(status)
-                if status.success() =>
-            {
+            Ok(status) if status.success() => {
                 return Ok(());
             }
 
@@ -1840,241 +1169,127 @@ fn launch_desktop_entry(
     launch_with_exec(app)
 }
 
-fn print_json<T: Serialize>(
-    value: &T,
-) {
-    match serde_json::to_string(
-        value,
-    ) {
+fn print_json<T: Serialize>(value: &T) {
+    match serde_json::to_string(value) {
         Ok(json) => {
             println!("{json}");
         }
 
         Err(error) => {
-            eprintln!(
-                "Failed to serialize launcher JSON: {error}"
-            );
+            eprintln!("Failed to serialize launcher JSON: {error}");
         }
     }
 }
 
 pub fn list() {
-    let apps =
-        discover_apps();
+    let apps = discover_apps();
 
     let _ = update_runtime_desktop_index();
 
-    let payload =
-        build_launcher_payload(
-            &apps,
-        );
+    let payload = build_launcher_payload(&apps);
 
-    print_json(
-        &payload,
-    );
+    print_json(&payload);
 }
 
-pub fn search(
-    query: &str,
-) {
-    let normalized_query =
-        normalize_search_text(
-            query,
-        );
+pub fn search(query: &str) {
+    let normalized_query = normalize_search_text(query);
 
     if normalized_query.is_empty() {
-        print_json(
-            &SearchPayload {
-                query:
-                    String::new(),
+        print_json(&SearchPayload {
+            query: String::new(),
 
-                count:
-                    0,
+            count: 0,
 
-                results:
-                    Vec::new(),
-            },
-        );
+            results: Vec::new(),
+        });
 
         return;
     }
 
-    let mut ranked =
-        discover_apps()
-            .into_iter()
-            .filter_map(|item| {
-                score_app(
-                    &item.app,
-                    &normalized_query,
-                )
-                .map(|score| {
-                    (
-                        score,
-                        item.app,
-                    )
-                })
+    let mut ranked = discover_apps()
+        .into_iter()
+        .filter_map(|item| score_app(&item.app, &normalized_query).map(|score| (score, item.app)))
+        .collect::<Vec<_>>();
+
+    ranked.sort_by(|(score_a, app_a), (score_b, app_b)| {
+        score_a
+            .cmp(score_b)
+            .then_with(|| {
+                app_a
+                    .name
+                    .to_ascii_lowercase()
+                    .cmp(&app_b.name.to_ascii_lowercase())
             })
-            .collect::<Vec<_>>();
+            .then_with(|| app_a.id.cmp(&app_b.id))
+    });
 
-    ranked.sort_by(
-        |(
-            score_a,
-            app_a,
-        ),
-         (
-            score_b,
-            app_b,
-        )| {
-            score_a
-                .cmp(
-                    score_b,
-                )
-                .then_with(|| {
-                    app_a
-                        .name
-                        .to_ascii_lowercase()
-                        .cmp(
-                            &app_b
-                                .name
-                                .to_ascii_lowercase(),
-                        )
-                })
-                .then_with(|| {
-                    app_a
-                        .id
-                        .cmp(
-                            &app_b.id,
-                        )
-                })
-        },
-    );
+    let results = ranked.into_iter().map(|(_, app)| app).collect::<Vec<_>>();
 
-    let results =
-        ranked
-            .into_iter()
-            .map(|(_, app)| app)
-            .collect::<Vec<_>>();
+    print_json(&SearchPayload {
+        query: query.trim().to_string(),
 
-    print_json(
-        &SearchPayload {
-            query:
-                query
-                    .trim()
-                    .to_string(),
+        count: results.len(),
 
-            count:
-                results.len(),
-
-            results,
-        },
-    );
+        results,
+    });
 }
 
-pub fn launch(
-    id: &str,
-) {
-    let Some(app) =
-        find_app(id)
-    else {
-        print_json(
-            &ActionResponse {
-                success:
-                    false,
+pub fn launch(id: &str) {
+    let Some(app) = find_app(id) else {
+        print_json(&ActionResponse {
+            success: false,
 
-                action:
-                    "launch",
+            action: "launch",
 
-                id:
-                    Some(
-                        id.to_string(),
-                    ),
+            id: Some(id.to_string()),
 
-                message:
-                    format!(
-                        "Application not found: {id}"
-                    ),
-            },
-        );
+            message: format!("Application not found: {id}"),
+        });
 
         return;
     };
 
-    match launch_desktop_entry(
-        &app,
-    ) {
+    match launch_desktop_entry(&app) {
         Ok(()) => {
-            print_json(
-                &ActionResponse {
-                    success:
-                        true,
+            print_json(&ActionResponse {
+                success: true,
 
-                    action:
-                        "launch",
+                action: "launch",
 
-                    id:
-                        Some(
-                            app.app
-                                .id
-                                .clone(),
-                        ),
+                id: Some(app.app.id.clone()),
 
-                    message:
-                        format!(
-                            "Launched {}",
-                            app.app.name
-                        ),
-                },
-            );
+                message: format!("Launched {}", app.app.name),
+            });
         }
 
         Err(error) => {
-            print_json(
-                &ActionResponse {
-                    success:
-                        false,
+            print_json(&ActionResponse {
+                success: false,
 
-                    action:
-                        "launch",
+                action: "launch",
 
-                    id:
-                        Some(
-                            app.app
-                                .id
-                                .clone(),
-                        ),
+                id: Some(app.app.id.clone()),
 
-                    message:
-                        error,
-                },
-            );
+                message: error,
+            });
         }
     }
 }
 
 pub fn refresh() {
-    let apps =
-        discover_apps();
+    let apps = discover_apps();
 
     let _ = update_runtime_desktop_index();
 
-    print_json(
-        &ActionResponse {
-            success:
-                true,
+    print_json(&ActionResponse {
+        success: true,
 
-            action:
-                "refresh",
+        action: "refresh",
 
-            id:
-                None,
+        id: None,
 
-            message:
-                format!(
-                    "Discovered {} applications",
-                    apps.len()
-                ),
-        },
-    );
+        message: format!("Discovered {} applications", apps.len()),
+    });
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -2141,8 +1356,12 @@ pub fn get_desktop_index() -> HashMap<String, AppIndexEntry> {
 
         // Key 3: if clean_id is reverse-DNS, also add the last segment (e.g. "vscode", "dolphin")
         if let Some((_, last)) = clean_id.rsplit_once('.') {
-            index.entry(last.to_string()).or_insert_with(|| entry.clone());
-            index.entry(last.to_lowercase()).or_insert_with(|| entry.clone());
+            index
+                .entry(last.to_string())
+                .or_insert_with(|| entry.clone());
+            index
+                .entry(last.to_lowercase())
+                .or_insert_with(|| entry.clone());
         }
 
         // Key 4: StartupWMClass (e.g. "com.microsoft.VSCode", "Alacritty")
@@ -2150,8 +1369,12 @@ pub fn get_desktop_index() -> HashMap<String, AppIndexEntry> {
             index.insert(wm_class.clone(), entry.clone());
             index.insert(wm_class.to_lowercase(), entry.clone());
             if let Some((_, last)) = wm_class.rsplit_once('.') {
-                index.entry(last.to_string()).or_insert_with(|| entry.clone());
-                index.entry(last.to_lowercase()).or_insert_with(|| entry.clone());
+                index
+                    .entry(last.to_string())
+                    .or_insert_with(|| entry.clone());
+                index
+                    .entry(last.to_lowercase())
+                    .or_insert_with(|| entry.clone());
             }
         }
     }

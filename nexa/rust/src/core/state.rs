@@ -1,10 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{
-    env,
-    fs,
-    path::PathBuf,
-    process::Command,
-};
+use std::{env, fs, path::PathBuf, process::Command};
 
 // ============================================================
 // SETTINGS STATE MODEL
@@ -62,13 +57,27 @@ fn current_timestamp() -> u64 {
         .unwrap_or(0)
 }
 
-fn default_volume() -> u32 { 60 }
-fn default_input_volume() -> u32 { 80 }
-fn default_brightness() -> u32 { 70 }
-fn default_true() -> bool { true }
-fn default_nightlight_mode() -> String { "manual".to_string() }
-fn default_nightlight_temp() -> u32 { 5000 }
-fn default_filter() -> String { "off".to_string() }
+fn default_volume() -> u32 {
+    60
+}
+fn default_input_volume() -> u32 {
+    80
+}
+fn default_brightness() -> u32 {
+    70
+}
+fn default_true() -> bool {
+    true
+}
+fn default_nightlight_mode() -> String {
+    "manual".to_string()
+}
+fn default_nightlight_temp() -> u32 {
+    5000
+}
+fn default_filter() -> String {
+    "off".to_string()
+}
 
 impl Default for SettingsState {
     fn default() -> Self {
@@ -244,13 +253,17 @@ pub fn restore_all(force: bool) -> Result<(), String> {
             let _ = Command::new("rfkill").args(["unblock", "wifi"]).status();
             let _ = Command::new("nmcli").args(["radio", "wifi", "on"]).status();
         } else {
-            let _ = Command::new("nmcli").args(["radio", "wifi", "off"]).status();
+            let _ = Command::new("nmcli")
+                .args(["radio", "wifi", "off"])
+                .status();
             let _ = Command::new("rfkill").args(["block", "wifi"]).status();
         }
 
         // Restore Bluetooth
         if state.bluetooth_enabled {
-            let _ = Command::new("rfkill").args(["unblock", "bluetooth"]).status();
+            let _ = Command::new("rfkill")
+                .args(["unblock", "bluetooth"])
+                .status();
             let _ = Command::new("bluetoothctl").args(["power", "on"]).status();
         } else {
             let _ = Command::new("rfkill").args(["block", "bluetooth"]).status();
@@ -294,10 +307,7 @@ pub fn restore_all(force: bool) -> Result<(), String> {
 
     // 4. Screen Brightness
     let _ = Command::new("brightnessctl")
-        .args([
-            "set",
-            &format!("{}%", state.brightness.clamp(1, 100)),
-        ])
+        .args(["set", &format!("{}%", state.brightness.clamp(1, 100))])
         .status();
 
     // 5. Screen Temperature / Night Light
@@ -340,8 +350,7 @@ pub fn handle(args: &[String]) -> Result<(), String> {
             restore_all(force)?;
             println!(
                 "{}",
-                serde_json::to_string(&load_state())
-                    .map_err(|e| e.to_string())?
+                serde_json::to_string(&load_state()).map_err(|e| e.to_string())?
             );
             Ok(())
         }
@@ -350,8 +359,7 @@ pub fn handle(args: &[String]) -> Result<(), String> {
             let state = sync_from_system();
             println!(
                 "{}",
-                serde_json::to_string(&state)
-                    .map_err(|e| e.to_string())?
+                serde_json::to_string(&state).map_err(|e| e.to_string())?
             );
             Ok(())
         }
@@ -360,8 +368,7 @@ pub fn handle(args: &[String]) -> Result<(), String> {
             let state = load_state();
             println!(
                 "{}",
-                serde_json::to_string(&state)
-                    .map_err(|e| e.to_string())?
+                serde_json::to_string(&state).map_err(|e| e.to_string())?
             );
             Ok(())
         }
@@ -412,12 +419,13 @@ pub fn handle(args: &[String]) -> Result<(), String> {
 
             println!(
                 "{}",
-                serde_json::to_string(&updated)
-                    .map_err(|e| e.to_string())?
+                serde_json::to_string(&updated).map_err(|e| e.to_string())?
             );
             Ok(())
         }
 
-        _ => Err("usage: nexad state <restore [--force]|save|sync|info|set <key> <val>>".to_string()),
+        _ => {
+            Err("usage: nexad state <restore [--force]|save|sync|info|set <key> <val>>".to_string())
+        }
     }
 }

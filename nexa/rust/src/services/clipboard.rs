@@ -24,96 +24,54 @@ pub struct ClipboardEntry {
 // COMMAND HELPERS
 // ============================================================
 
-fn run_command(
-    program: &str,
-    args: &[&str],
-) -> Result<String, String> {
+fn run_command(program: &str, args: &[&str]) -> Result<String, String> {
     let output = Command::new(program)
         .args(args)
         .output()
-        .map_err(|e| {
-            format!("Failed to run {program}: {e}")
-        })?;
+        .map_err(|e| format!("Failed to run {program}: {e}"))?;
 
     if !output.status.success() {
-        return Err(
-            String::from_utf8_lossy(
-                &output.stderr
-            )
-            .trim()
-            .to_string()
-        );
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
     }
 
-    Ok(
-        String::from_utf8_lossy(
-            &output.stdout
-        )
-        .to_string()
-    )
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
-fn decode_bytes(
-    id: &str,
-) -> Result<Vec<u8>, String> {
+fn decode_bytes(id: &str) -> Result<Vec<u8>, String> {
     let output = Command::new("cliphist")
         .args(["decode", id])
         .output()
-        .map_err(|e| {
-            format!(
-                "Failed to decode clipboard entry: {e}"
-            )
-        })?;
+        .map_err(|e| format!("Failed to decode clipboard entry: {e}"))?;
 
     if !output.status.success() {
-        return Err(
-            String::from_utf8_lossy(
-                &output.stderr
-            )
-            .trim()
-            .to_string()
-        );
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
     }
 
     Ok(output.stdout)
 }
 
-fn decode_text(
-    id: &str,
-) -> Result<String, String> {
+fn decode_text(id: &str) -> Result<String, String> {
     let bytes = decode_bytes(id)?;
 
-    Ok(
-        String::from_utf8_lossy(
-            &bytes
-        )
-        .to_string()
-    )
+    Ok(String::from_utf8_lossy(&bytes).to_string())
 }
 
 // ============================================================
 // ENTRY TYPE
 // ============================================================
 
-fn is_image_preview(
-    preview: &str,
-) -> bool {
-    let value =
-        preview.to_lowercase();
+fn is_image_preview(preview: &str) -> bool {
+    let value = preview.to_lowercase();
 
     value.contains("binary data")
-        && (
-            value.contains("png")
+        && (value.contains("png")
             || value.contains("jpeg")
             || value.contains("jpg")
             || value.contains("webp")
-            || value.contains("image")
-        )
+            || value.contains("image"))
 }
 
-fn entry_type(
-    preview: &str,
-) -> &'static str {
+fn entry_type(preview: &str) -> &'static str {
     if is_image_preview(preview) {
         "image"
     } else {
@@ -126,63 +84,32 @@ fn entry_type(
 // ============================================================
 
 fn pins_path() -> PathBuf {
-    let home =
-        std::env::var("HOME")
-            .unwrap_or_else(
-                |_| ".".to_string()
-            );
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
 
-    PathBuf::from(home)
-        .join(
-            ".config/nexa/clipboard-pins.json"
-        )
+    PathBuf::from(home).join(".config/nexa/clipboard-pins.json")
 }
 
 fn load_pins() -> HashSet<String> {
     let path = pins_path();
 
-    let Ok(data) =
-        fs::read_to_string(path)
-    else {
+    let Ok(data) = fs::read_to_string(path) else {
         return HashSet::new();
     };
 
-    serde_json::from_str(&data)
-        .unwrap_or_default()
+    serde_json::from_str(&data).unwrap_or_default()
 }
 
-fn save_pins(
-    pins: &HashSet<String>,
-) -> Result<(), String> {
+fn save_pins(pins: &HashSet<String>) -> Result<(), String> {
     let path = pins_path();
 
-    if let Some(parent) =
-        path.parent()
-    {
-        fs::create_dir_all(parent)
-            .map_err(|e| {
-                format!(
-                    "Failed to create pin directory: {e}"
-                )
-            })?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create pin directory: {e}"))?;
     }
 
     let data =
-        serde_json::to_string_pretty(
-            pins
-        )
-        .map_err(|e| {
-            format!(
-                "Failed to serialize pins: {e}"
-            )
-        })?;
+        serde_json::to_string_pretty(pins).map_err(|e| format!("Failed to serialize pins: {e}"))?;
 
-    fs::write(path, data)
-        .map_err(|e| {
-            format!(
-                "Failed to save pins: {e}"
-            )
-        })
+    fs::write(path, data).map_err(|e| format!("Failed to save pins: {e}"))
 }
 
 // ============================================================
@@ -190,11 +117,7 @@ fn save_pins(
 // ============================================================
 
 fn image_cache_dir() -> PathBuf {
-    let home =
-        std::env::var("HOME")
-            .unwrap_or_else(
-                |_| ".".to_string()
-            );
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
 
     PathBuf::from(home)
         .join(".cache")
@@ -202,81 +125,35 @@ fn image_cache_dir() -> PathBuf {
         .join("clipboard")
 }
 
-fn image_extension(
-    data: &[u8],
-) -> &'static str {
+fn image_extension(data: &[u8]) -> &'static str {
     // PNG
-    if data.len() >= 8
-        && data[0..8]
-            == [
-                0x89,
-                0x50,
-                0x4E,
-                0x47,
-                0x0D,
-                0x0A,
-                0x1A,
-                0x0A,
-            ]
-    {
+    if data.len() >= 8 && data[0..8] == [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] {
         return "png";
     }
 
     // JPEG
-    if data.len() >= 3
-        && data[0] == 0xFF
-        && data[1] == 0xD8
-        && data[2] == 0xFF
-    {
+    if data.len() >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
         return "jpg";
     }
 
     // WEBP
-    if data.len() >= 12
-        && &data[0..4] == b"RIFF"
-        && &data[8..12] == b"WEBP"
-    {
+    if data.len() >= 12 && &data[0..4] == b"RIFF" && &data[8..12] == b"WEBP" {
         return "webp";
     }
 
     "png"
 }
 
-fn cache_image(
-    id: &str,
-    data: &[u8],
-) -> Result<PathBuf, String> {
-    let directory =
-        image_cache_dir();
+fn cache_image(id: &str, data: &[u8]) -> Result<PathBuf, String> {
+    let directory = image_cache_dir();
 
-    fs::create_dir_all(
-        &directory
-    )
-    .map_err(|e| {
-        format!(
-            "Failed to create clipboard cache: {e}"
-        )
-    })?;
+    fs::create_dir_all(&directory).map_err(|e| format!("Failed to create clipboard cache: {e}"))?;
 
-    let extension =
-        image_extension(data);
+    let extension = image_extension(data);
 
-    let path =
-        directory.join(
-            format!(
-                "{id}.{extension}"
-            )
-        );
+    let path = directory.join(format!("{id}.{extension}"));
 
-    fs::write(
-        &path,
-        data
-    )
-    .map_err(|e| {
-        format!(
-            "Failed to cache clipboard image: {e}"
-        )
-    })?;
+    fs::write(&path, data).map_err(|e| format!("Failed to cache clipboard image: {e}"))?;
 
     Ok(path)
 }
@@ -285,32 +162,17 @@ fn cache_image(
 // BUILD ENTRIES
 // ============================================================
 
-fn load_entries() -> Result<
-    Vec<ClipboardEntry>,
-    String,
-> {
-    let pins =
-        load_pins();
+fn load_entries() -> Result<Vec<ClipboardEntry>, String> {
+    let pins = load_pins();
 
-    let raw =
-        run_command(
-            "cliphist",
-            &["list"]
-        )?;
+    let raw = run_command("cliphist", &["list"])?;
 
-    let mut entries =
-        Vec::new();
+    let mut entries = Vec::new();
 
     for line in raw.lines() {
-        let mut parts =
-            line.splitn(
-                2,
-                '\t'
-            );
+        let mut parts = line.splitn(2, '\t');
 
-        let Some(id) =
-            parts.next()
-        else {
+        let Some(id) = parts.next() else {
             continue;
         };
 
@@ -318,40 +180,23 @@ fn load_entries() -> Result<
             continue;
         }
 
-        let preview =
-            parts
-                .next()
-                .unwrap_or("")
-                .to_string();
+        let preview = parts.next().unwrap_or("").to_string();
 
-        let kind =
-            entry_type(
-                &preview
-            );
+        let kind = entry_type(&preview);
 
-        let size_bytes =
-            decode_bytes(id)
-                .map(
-                    |bytes| bytes.len()
-                )
-                .unwrap_or(0);
+        let size_bytes = decode_bytes(id).map(|bytes| bytes.len()).unwrap_or(0);
 
-        entries.push(
-            ClipboardEntry {
-                id:
-                    id.to_string(),
+        entries.push(ClipboardEntry {
+            id: id.to_string(),
 
-                preview,
+            preview,
 
-                size_bytes,
+            size_bytes,
 
-                pinned:
-                    pins.contains(id),
+            pinned: pins.contains(id),
 
-                entry_type:
-                    kind.to_string(),
-            }
-        );
+            entry_type: kind.to_string(),
+        });
     }
 
     // --------------------------------------------------------
@@ -361,33 +206,17 @@ fn load_entries() -> Result<
     // larger cliphist ID = newer
     // --------------------------------------------------------
 
-    entries.sort_by(
-        |a, b| {
-            if a.pinned
-                != b.pinned
-            {
-                return b
-                    .pinned
-                    .cmp(
-                        &a.pinned
-                    );
-            }
-
-            let a_id =
-                a.id
-                    .parse::<u64>()
-                    .unwrap_or(0);
-
-            let b_id =
-                b.id
-                    .parse::<u64>()
-                    .unwrap_or(0);
-
-            b_id.cmp(
-                &a_id
-            )
+    entries.sort_by(|a, b| {
+        if a.pinned != b.pinned {
+            return b.pinned.cmp(&a.pinned);
         }
-    );
+
+        let a_id = a.id.parse::<u64>().unwrap_or(0);
+
+        let b_id = b.id.parse::<u64>().unwrap_or(0);
+
+        b_id.cmp(&a_id)
+    });
 
     Ok(entries)
 }
@@ -401,12 +230,7 @@ pub fn list() {
         Ok(entries) => {
             println!(
                 "{}",
-                serde_json::to_string(
-                    &entries
-                )
-                .unwrap_or_else(
-                    |_| "[]".to_string()
-                )
+                serde_json::to_string(&entries).unwrap_or_else(|_| "[]".to_string())
             );
         }
 
@@ -420,68 +244,34 @@ pub fn list() {
 // SEARCH
 // ============================================================
 
-pub fn search(
-    query: &str,
-) {
-    let query =
-        query.to_lowercase();
+pub fn search(query: &str) {
+    let query = query.to_lowercase();
 
     match load_entries() {
         Ok(entries) => {
-            let filtered:
-                Vec<ClipboardEntry> =
-                entries
-                    .into_iter()
-                    .filter(
-                        |entry| {
-                            if entry
-                                .preview
-                                .to_lowercase()
-                                .contains(
-                                    &query
-                                )
-                            {
-                                return true;
-                            }
+            let filtered: Vec<ClipboardEntry> = entries
+                .into_iter()
+                .filter(|entry| {
+                    if entry.preview.to_lowercase().contains(&query) {
+                        return true;
+                    }
 
-                            if entry
-                                .entry_type
-                                == "image"
-                            {
-                                return query
-                                    .contains(
-                                        "image"
-                                    )
-                                    || query
-                                        .contains(
-                                            "png"
-                                        )
-                                    || query
-                                        .contains(
-                                            "screenshot"
-                                        );
-                            }
+                    if entry.entry_type == "image" {
+                        return query.contains("image")
+                            || query.contains("png")
+                            || query.contains("screenshot");
+                    }
 
-                            decode_text(
-                                &entry.id
-                            )
-                            .unwrap_or_default()
-                            .to_lowercase()
-                            .contains(
-                                &query
-                            )
-                        }
-                    )
-                    .collect();
+                    decode_text(&entry.id)
+                        .unwrap_or_default()
+                        .to_lowercase()
+                        .contains(&query)
+                })
+                .collect();
 
             println!(
                 "{}",
-                serde_json::to_string(
-                    &filtered
-                )
-                .unwrap_or_else(
-                    |_| "[]".to_string()
-                )
+                serde_json::to_string(&filtered).unwrap_or_else(|_| "[]".to_string())
             );
         }
 
@@ -495,96 +285,47 @@ pub fn search(
 // GET
 // ============================================================
 
-pub fn get(
-    id: &str,
-) {
-    let raw =
-        match run_command(
-            "cliphist",
-            &["list"]
-        ) {
-            Ok(value) =>
-                value,
+pub fn get(id: &str) {
+    let raw = match run_command("cliphist", &["list"]) {
+        Ok(value) => value,
 
-            Err(error) => {
-                eprintln!(
-                    "{error}"
-                );
-                return;
-            }
-        };
+        Err(error) => {
+            eprintln!("{error}");
+            return;
+        }
+    };
 
-    let target =
-        raw.lines()
-            .find(
-                |line| {
-                    line
-                        .split('\t')
-                        .next()
-                        .map(
-                            |entry_id| {
-                                entry_id
-                                    == id
-                            }
-                        )
-                        .unwrap_or(
-                            false
-                        )
-                }
-            );
+    let target = raw.lines().find(|line| {
+        line.split('\t')
+            .next()
+            .map(|entry_id| entry_id == id)
+            .unwrap_or(false)
+    });
 
-    let Some(target) =
-        target
-    else {
-        eprintln!(
-            "Clipboard entry not found"
-        );
+    let Some(target) = target else {
+        eprintln!("Clipboard entry not found");
         return;
     };
 
-    let preview =
-        target
-            .splitn(
-                2,
-                '\t'
-            )
-            .nth(1)
-            .unwrap_or("");
+    let preview = target.splitn(2, '\t').nth(1).unwrap_or("");
 
-    let kind =
-        entry_type(
-            preview
-        );
+    let kind = entry_type(preview);
 
-    let bytes =
-        match decode_bytes(id) {
-            Ok(bytes) =>
-                bytes,
+    let bytes = match decode_bytes(id) {
+        Ok(bytes) => bytes,
 
-            Err(error) => {
-                eprintln!(
-                    "{error}"
-                );
-                return;
-            }
-        };
+        Err(error) => {
+            eprintln!("{error}");
+            return;
+        }
+    };
 
     if kind == "image" {
-        match cache_image(
-            id,
-            &bytes
-        ) {
+        match cache_image(id, &bytes) {
             Ok(path) => {
-                let path_string =
-                    path
-                        .to_string_lossy()
-                        .to_string();
+                let path_string = path.to_string_lossy().to_string();
 
-                let source =
-                    format!(
-                        "file://{}",
-                        path_string
-                    );
+                let source = format!("file://{}", path_string);
 
                 println!(
                     "{}",
@@ -599,20 +340,14 @@ pub fn get(
             }
 
             Err(error) => {
-                eprintln!(
-                    "{error}"
-                );
+                eprintln!("{error}");
             }
         }
 
         return;
     }
 
-    let content =
-        String::from_utf8_lossy(
-            &bytes
-        )
-        .to_string();
+    let content = String::from_utf8_lossy(&bytes).to_string();
 
     println!(
         "{}",
@@ -629,58 +364,33 @@ pub fn get(
 // COPY
 // ============================================================
 
-pub fn copy(
-    id: &str,
-) {
-    let mut decode =
-        match Command::new(
-            "cliphist"
-        )
-        .args([
-            "decode",
-            id
-        ])
-        .stdout(
-            Stdio::piped()
-        )
+pub fn copy(id: &str) {
+    let mut decode = match Command::new("cliphist")
+        .args(["decode", id])
+        .stdout(Stdio::piped())
         .spawn()
-        {
-            Ok(child) =>
-                child,
+    {
+        Ok(child) => child,
 
-            Err(error) => {
-                eprintln!(
-                    "Failed to decode clipboard item: {error}"
-                );
+        Err(error) => {
+            eprintln!("Failed to decode clipboard item: {error}");
 
-                return;
-            }
-        };
+            return;
+        }
+    };
 
-    let Some(stdout) =
-        decode.stdout.take()
-    else {
-        eprintln!(
-            "Failed to read clipboard data"
-        );
+    let Some(stdout) = decode.stdout.take() else {
+        eprintln!("Failed to read clipboard data");
 
         return;
     };
 
-    let result =
-        Command::new(
-            "wl-copy"
-        )
-        .stdin(stdout)
-        .status();
+    let result = Command::new("wl-copy").stdin(stdout).status();
 
-    let _ =
-        decode.wait();
+    let _ = decode.wait();
 
     match result {
-        Ok(status)
-            if status.success() =>
-        {
+        Ok(status) if status.success() => {
             println!(
                 "{}",
                 serde_json::json!({
@@ -691,15 +401,11 @@ pub fn copy(
         }
 
         Ok(_) => {
-            eprintln!(
-                "wl-copy failed"
-            );
+            eprintln!("wl-copy failed");
         }
 
         Err(error) => {
-            eprintln!(
-                "Failed to run wl-copy: {error}"
-            );
+            eprintln!("Failed to run wl-copy: {error}");
         }
     }
 }
@@ -708,19 +414,12 @@ pub fn copy(
 // PIN
 // ============================================================
 
-pub fn pin(
-    id: &str,
-) {
-    let mut pins =
-        load_pins();
+pub fn pin(id: &str) {
+    let mut pins = load_pins();
 
-    pins.insert(
-        id.to_string()
-    );
+    pins.insert(id.to_string());
 
-    match save_pins(
-        &pins
-    ) {
+    match save_pins(&pins) {
         Ok(_) => {
             println!(
                 "{}",
@@ -733,9 +432,7 @@ pub fn pin(
         }
 
         Err(error) => {
-            eprintln!(
-                "{error}"
-            );
+            eprintln!("{error}");
         }
     }
 }
@@ -744,17 +441,12 @@ pub fn pin(
 // UNPIN
 // ============================================================
 
-pub fn unpin(
-    id: &str,
-) {
-    let mut pins =
-        load_pins();
+pub fn unpin(id: &str) {
+    let mut pins = load_pins();
 
     pins.remove(id);
 
-    match save_pins(
-        &pins
-    ) {
+    match save_pins(&pins) {
         Ok(_) => {
             println!(
                 "{}",
@@ -767,9 +459,7 @@ pub fn unpin(
         }
 
         Err(error) => {
-            eprintln!(
-                "{error}"
-            );
+            eprintln!("{error}");
         }
     }
 }
@@ -778,139 +468,70 @@ pub fn unpin(
 // DELETE
 // ============================================================
 
-pub fn delete(
-    id: &str,
-) {
-    let list =
-        match run_command(
-            "cliphist",
-            &["list"]
-        ) {
-            Ok(value) =>
-                value,
+pub fn delete(id: &str) {
+    let list = match run_command("cliphist", &["list"]) {
+        Ok(value) => value,
 
-            Err(error) => {
-                eprintln!(
-                    "{error}"
-                );
+        Err(error) => {
+            eprintln!("{error}");
 
-                return;
-            }
-        };
+            return;
+        }
+    };
 
-    let target =
-        list.lines()
-            .find(
-                |line| {
-                    line
-                        .split('\t')
-                        .next()
-                        .map(
-                            |entry_id| {
-                                entry_id
-                                    == id
-                            }
-                        )
-                        .unwrap_or(
-                            false
-                        )
-                }
-            );
+    let target = list.lines().find(|line| {
+        line.split('\t')
+            .next()
+            .map(|entry_id| entry_id == id)
+            .unwrap_or(false)
+    });
 
-    let Some(target) =
-        target
-    else {
-        eprintln!(
-            "Clipboard entry not found"
-        );
+    let Some(target) = target else {
+        eprintln!("Clipboard entry not found");
 
         return;
     };
 
-    let mut child =
-        match Command::new(
-            "cliphist"
-        )
-        .arg(
-            "delete"
-        )
-        .stdin(
-            Stdio::piped()
-        )
+    let mut child = match Command::new("cliphist")
+        .arg("delete")
+        .stdin(Stdio::piped())
         .spawn()
-        {
-            Ok(child) =>
-                child,
-
-            Err(error) => {
-                eprintln!(
-                    "Failed to run cliphist delete: {error}"
-                );
-
-                return;
-            }
-        };
-
-    if let Some(
-        mut stdin
-    ) = child.stdin.take()
     {
-        if let Err(error) =
-            writeln!(
-                stdin,
-                "{target}"
-            )
-        {
-            eprintln!(
-                "Failed to send clipboard entry: {error}"
-            );
+        Ok(child) => child,
+
+        Err(error) => {
+            eprintln!("Failed to run cliphist delete: {error}");
+
+            return;
+        }
+    };
+
+    if let Some(mut stdin) = child.stdin.take() {
+        if let Err(error) = writeln!(stdin, "{target}") {
+            eprintln!("Failed to send clipboard entry: {error}");
 
             return;
         }
     }
 
     match child.wait() {
-        Ok(status)
-            if status.success() =>
-        {
-            let mut pins =
-                load_pins();
+        Ok(status) if status.success() => {
+            let mut pins = load_pins();
 
             if pins.remove(id) {
-                let _ =
-                    save_pins(
-                        &pins
-                    );
+                let _ = save_pins(&pins);
             }
 
             // remove cached preview if present
 
-            let cache =
-                image_cache_dir();
+            let cache = image_cache_dir();
 
-            if let Ok(files) =
-                fs::read_dir(
-                    &cache
-                )
-            {
-                for file in
-                    files.flatten()
-                {
-                    let name =
-                        file
-                            .file_name()
-                            .to_string_lossy()
-                            .to_string();
+            if let Ok(files) = fs::read_dir(&cache) {
+                for file in files.flatten() {
+                    let name = file.file_name().to_string_lossy().to_string();
 
-                    if name.starts_with(
-                        &format!(
-                            "{id}."
-                        )
-                    ) {
-                        let _ =
-                            fs::remove_file(
-                                file.path()
-                            );
+                    if name.starts_with(&format!("{id}.")) {
+                        let _ = fs::remove_file(file.path());
                     }
                 }
             }
@@ -925,15 +546,11 @@ pub fn delete(
         }
 
         Ok(_) => {
-            eprintln!(
-                "Failed to delete clipboard entry"
-            );
+            eprintln!("Failed to delete clipboard entry");
         }
 
         Err(error) => {
-            eprintln!(
-                "Failed to wait for delete: {error}"
-            );
+            eprintln!("Failed to wait for delete: {error}");
         }
     }
 }
@@ -943,35 +560,18 @@ pub fn delete(
 // ============================================================
 
 pub fn clear() {
-    match Command::new(
-        "cliphist"
-    )
-    .arg(
-        "wipe"
-    )
-    .status()
-    {
-        Ok(status)
-            if status.success() =>
-        {
-            let pin_file =
-                pins_path();
+    match Command::new("cliphist").arg("wipe").status() {
+        Ok(status) if status.success() => {
+            let pin_file = pins_path();
 
             if pin_file.exists() {
-                let _ =
-                    fs::remove_file(
-                        pin_file
-                    );
+                let _ = fs::remove_file(pin_file);
             }
 
-            let cache =
-                image_cache_dir();
+            let cache = image_cache_dir();
 
             if cache.exists() {
-                let _ =
-                    fs::remove_dir_all(
-                        cache
-                    );
+                let _ = fs::remove_dir_all(cache);
             }
 
             println!(
@@ -983,15 +583,11 @@ pub fn clear() {
         }
 
         Ok(_) => {
-            eprintln!(
-                "Failed to clear clipboard history"
-            );
+            eprintln!("Failed to clear clipboard history");
         }
 
         Err(error) => {
-            eprintln!(
-                "Failed to run cliphist wipe: {error}"
-            );
+            eprintln!("Failed to run cliphist wipe: {error}");
         }
     }
 }

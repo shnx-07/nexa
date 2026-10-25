@@ -16,7 +16,20 @@ pub fn get_info(path: &Path) -> WallpaperInfo {
     let meta = metadata::extract_metadata(path);
 
     // 3. Extract palette via matugen
-    let palette = matugen::extract_palette(path);
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    let is_video = matches!(ext.as_str(), "mp4" | "mkv" | "mov" | "webm");
+
+    let image_path = if is_video {
+        crate::media_tools::wallpaper::ensure_thumbnail(path, "video")
+    } else {
+        path.to_path_buf()
+    };
+
+    let palette = matugen::extract_palette(&image_path);
 
     let info = WallpaperInfo {
         path: path.to_string_lossy().to_string(),

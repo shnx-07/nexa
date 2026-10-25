@@ -1,6 +1,5 @@
 use std::{
-    env,
-    fs,
+    env, fs,
     path::PathBuf,
     process::{Command, Stdio},
 };
@@ -54,8 +53,7 @@ impl Default for ScreenTempState {
 }
 
 fn config_path() -> PathBuf {
-    let home = env::var("HOME")
-        .unwrap_or_else(|_| ".".to_string());
+    let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
 
     PathBuf::from(home)
         .join(".config")
@@ -94,9 +92,7 @@ fn cleanup_hyprsunset() {
 
 fn ensure_hyprsunset_running() -> Result<(), String> {
     if !command_exists("hyprsunset") {
-        return Err(
-            "hyprsunset is not installed".to_string()
-        );
+        return Err("hyprsunset is not installed".to_string());
     }
 
     let running = Command::new("pgrep")
@@ -117,13 +113,9 @@ fn ensure_hyprsunset_running() -> Result<(), String> {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .map_err(|error| {
-            format!("failed to start hyprsunset: {error}")
-        })?;
+        .map_err(|error| format!("failed to start hyprsunset: {error}"))?;
 
-    std::thread::sleep(
-        std::time::Duration::from_millis(250)
-    );
+    std::thread::sleep(std::time::Duration::from_millis(250));
 
     Ok(())
 }
@@ -135,11 +127,7 @@ fn apply_temperature(temperature: u32) -> Result<(), String> {
 
     for attempt in 0..3 {
         let output = Command::new("hyprctl")
-            .args([
-                "hyprsunset",
-                "temperature",
-                &temperature.to_string(),
-            ])
+            .args(["hyprsunset", "temperature", &temperature.to_string()])
             .output();
 
         match output {
@@ -194,21 +182,17 @@ fn reset_temperature() -> Result<(), String> {
     }
 
     let output = Command::new("hyprctl")
-        .args([
-            "hyprsunset",
-            "identity",
-        ])
+        .args(["hyprsunset", "identity"])
         .output()
-        .map_err(|error| {
-            format!(
-                "failed to reset screen temperature: {error}"
-            )
-        })?;
+        .map_err(|error| format!("failed to reset screen temperature: {error}"))?;
 
     if !output.status.success() {
         let err = String::from_utf8_lossy(&output.stderr);
         let out = String::from_utf8_lossy(&output.stdout);
-        if !err.contains("Couldn't connect") && !out.contains("Couldn't connect") && output.status.code() != Some(3) {
+        if !err.contains("Couldn't connect")
+            && !out.contains("Couldn't connect")
+            && output.status.code() != Some(3)
+        {
             return Err(if !err.trim().is_empty() {
                 err.trim().to_string()
             } else {
@@ -243,32 +227,26 @@ pub(crate) fn load_state() -> ScreenTempState {
             }
 
             "mode" => {
-                if matches!(
-                    value,
-                    "manual" | "wallpaper" | "night"
-                ) {
+                if matches!(value, "manual" | "wallpaper" | "night") {
                     state.mode = value.to_string();
                 }
             }
 
             "manual_temperature" => {
                 if let Ok(value) = value.parse::<u32>() {
-                    state.manual_temperature =
-                        clamp_temperature(value);
+                    state.manual_temperature = clamp_temperature(value);
                 }
             }
 
             "wallpaper_temperature" => {
                 if let Ok(value) = value.parse::<u32>() {
-                    state.wallpaper_temperature =
-                        clamp_temperature(value);
+                    state.wallpaper_temperature = clamp_temperature(value);
                 }
             }
 
             "night_temperature" => {
                 if let Ok(value) = value.parse::<u32>() {
-                    state.night_temperature =
-                        clamp_temperature(value);
+                    state.night_temperature = clamp_temperature(value);
                 }
             }
 
@@ -301,11 +279,9 @@ pub(crate) fn load_state() -> ScreenTempState {
     }
 
     if state.enabled {
-        state.temperature =
-            active_temperature(&state);
+        state.temperature = active_temperature(&state);
     } else {
-        state.temperature =
-            DEFAULT_TEMP;
+        state.temperature = DEFAULT_TEMP;
     }
 
     state
@@ -316,11 +292,7 @@ pub(crate) fn save_state(state: &ScreenTempState) -> Result<(), String> {
 
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .map_err(|error| {
-                format!(
-                    "failed to create screen temp config directory: {error}"
-                )
-            })?;
+            .map_err(|error| format!("failed to create screen temp config directory: {error}"))?;
     }
 
     let content = format!(
@@ -346,12 +318,7 @@ pub(crate) fn save_state(state: &ScreenTempState) -> Result<(), String> {
         state.schedule_target,
     );
 
-    fs::write(path, content)
-        .map_err(|error| {
-            format!(
-                "failed to save screen temp state: {error}"
-            )
-        })
+    fs::write(path, content).map_err(|error| format!("failed to save screen temp state: {error}"))
 }
 
 fn active_temperature(state: &ScreenTempState) -> u32 {
@@ -571,25 +538,18 @@ pub fn evaluate_schedule(state: &mut ScreenTempState, force: bool) -> Result<boo
 
 fn parse_temperature(value: Option<&String>) -> Result<u32, String> {
     let Some(value) = value else {
-        return Err(
-            "missing temperature value".to_string()
-        );
+        return Err("missing temperature value".to_string());
     };
 
     let temperature = value
         .parse::<u32>()
-        .map_err(|_| {
-            format!("invalid temperature: {value}")
-        })?;
+        .map_err(|_| format!("invalid temperature: {value}"))?;
 
     if !(MIN_TEMP..=MAX_TEMP).contains(&temperature) {
-        return Err(
-            format!(
-                "temperature must be between {}K and {}K",
-                MIN_TEMP,
-                MAX_TEMP
-            )
-        );
+        return Err(format!(
+            "temperature must be between {}K and {}K",
+            MIN_TEMP, MAX_TEMP
+        ));
     }
 
     Ok(temperature)
@@ -597,10 +557,7 @@ fn parse_temperature(value: Option<&String>) -> Result<u32, String> {
 
 fn wallpaper_temperature(path: &str) -> Result<u32, String> {
     if !command_exists("ffmpeg") {
-        return Err(
-            "ffmpeg is required for wallpaper warmth analysis"
-                .to_string()
-        );
+        return Err("ffmpeg is required for wallpaper warmth analysis".to_string());
     }
 
     let output = Command::new("ffmpeg")
@@ -621,25 +578,14 @@ fn wallpaper_temperature(path: &str) -> Result<u32, String> {
             "pipe:1",
         ])
         .output()
-        .map_err(|error| {
-            format!(
-                "failed to analyze wallpaper: {error}"
-            )
-        })?;
+        .map_err(|error| format!("failed to analyze wallpaper: {error}"))?;
 
     if !output.status.success() {
-        return Err(
-            String::from_utf8_lossy(&output.stderr)
-                .trim()
-                .to_string()
-        );
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
     }
 
     if output.stdout.len() < 3 {
-        return Err(
-            "wallpaper analysis returned no RGB data"
-                .to_string()
-        );
+        return Err("wallpaper analysis returned no RGB data".to_string());
     }
 
     let red = output.stdout[0] as f32;
@@ -657,50 +603,31 @@ fn wallpaper_temperature(path: &str) -> Result<u32, String> {
 
     let total = (red + green + blue).max(1.0);
 
-    let warmth =
-        (red - blue) / total;
+    let warmth = (red - blue) / total;
 
     // Amplify gently so typical wallpapers produce
     // a visible but not extreme difference.
-    let warmth =
-        (warmth * 3.0)
-            .clamp(-1.0, 1.0);
+    let warmth = (warmth * 3.0).clamp(-1.0, 1.0);
 
     let temperature = if warmth >= 0.0 {
         // Warm wallpaper:
         // 5000K -> 3800K
         WALLPAPER_NEUTRAL_TEMP as f32
-            - warmth
-                * (
-                    WALLPAPER_NEUTRAL_TEMP
-                        - WALLPAPER_MIN_TEMP
-                ) as f32
+            - warmth * (WALLPAPER_NEUTRAL_TEMP - WALLPAPER_MIN_TEMP) as f32
     } else {
         // Cool wallpaper:
         // 5000K -> 6000K
         WALLPAPER_NEUTRAL_TEMP as f32
-            + (-warmth)
-                * (
-                    WALLPAPER_MAX_TEMP
-                        - WALLPAPER_NEUTRAL_TEMP
-                ) as f32
+            + (-warmth) * (WALLPAPER_MAX_TEMP - WALLPAPER_NEUTRAL_TEMP) as f32
     };
 
-    Ok(
-        temperature
-            .round()
-            .clamp(
-                WALLPAPER_MIN_TEMP as f32,
-                WALLPAPER_MAX_TEMP as f32,
-            ) as u32
-    )
+    Ok(temperature
+        .round()
+        .clamp(WALLPAPER_MIN_TEMP as f32, WALLPAPER_MAX_TEMP as f32) as u32)
 }
 
 pub fn handle(args: &[String]) -> Result<(), String> {
-    let command = args
-        .first()
-        .map(String::as_str)
-        .unwrap_or("info");
+    let command = args.first().map(String::as_str).unwrap_or("info");
 
     let mut state = load_state();
 
@@ -738,21 +665,11 @@ pub fn handle(args: &[String]) -> Result<(), String> {
 
         "mode" => {
             let Some(mode) = args.get(1) else {
-                return Err(
-                    "missing mode: manual | wallpaper | night"
-                        .to_string()
-                );
+                return Err("missing mode: manual | wallpaper | night".to_string());
             };
 
-            if !matches!(
-                mode.as_str(),
-                "manual" | "wallpaper" | "night"
-            ) {
-                return Err(
-                    format!(
-                        "invalid mode: {mode}"
-                    )
-                );
+            if !matches!(mode.as_str(), "manual" | "wallpaper" | "night") {
+                return Err(format!("invalid mode: {mode}"));
             }
 
             state.mode = mode.clone();
@@ -764,14 +681,11 @@ pub fn handle(args: &[String]) -> Result<(), String> {
         }
 
         "set" => {
-            let temperature =
-                parse_temperature(args.get(1))?;
+            let temperature = parse_temperature(args.get(1))?;
 
-            state.manual_temperature =
-                temperature;
+            state.manual_temperature = temperature;
 
-            state.mode =
-                "manual".to_string();
+            state.mode = "manual".to_string();
 
             state.enabled = true;
 
@@ -783,20 +697,14 @@ pub fn handle(args: &[String]) -> Result<(), String> {
 
         "wallpaper" => {
             let Some(path) = args.get(1) else {
-                return Err(
-                    "missing wallpaper image path".to_string()
-                );
+                return Err("missing wallpaper image path".to_string());
             };
 
-            let temperature =
-                wallpaper_temperature(path)?;
+            let temperature = wallpaper_temperature(path)?;
 
-            state.wallpaper_temperature =
-                temperature;
+            state.wallpaper_temperature = temperature;
 
-            if state.enabled
-                && state.mode == "wallpaper"
-            {
+            if state.enabled && state.mode == "wallpaper" {
                 apply_state(&mut state)?;
             }
 
@@ -806,15 +714,11 @@ pub fn handle(args: &[String]) -> Result<(), String> {
         }
 
         "wallpaper-set" => {
-            let temperature =
-                parse_temperature(args.get(1))?;
+            let temperature = parse_temperature(args.get(1))?;
 
-            state.wallpaper_temperature =
-                temperature;
+            state.wallpaper_temperature = temperature;
 
-            if state.enabled
-                && state.mode == "wallpaper"
-            {
+            if state.enabled && state.mode == "wallpaper" {
                 apply_state(&mut state)?;
             }
 
@@ -824,15 +728,11 @@ pub fn handle(args: &[String]) -> Result<(), String> {
         }
 
         "night-set" => {
-            let temperature =
-                parse_temperature(args.get(1))?;
+            let temperature = parse_temperature(args.get(1))?;
 
-            state.night_temperature =
-                temperature;
+            state.night_temperature = temperature;
 
-            if state.enabled
-                && state.mode == "night"
-            {
+            if state.enabled && state.mode == "night" {
                 apply_state(&mut state)?;
             }
 
@@ -897,11 +797,7 @@ pub fn handle(args: &[String]) -> Result<(), String> {
         }
 
         _ => {
-            return Err(
-                format!(
-                    "unknown screen temperature command: {command}"
-                )
-            );
+            return Err(format!("unknown screen temperature command: {command}"));
         }
     }
 

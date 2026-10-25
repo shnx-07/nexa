@@ -1,10 +1,9 @@
+use super::types::WallpaperInfo;
+use openssl::hash::{MessageDigest, hash};
 use std::{
-    env,
-    fs,
+    env, fs,
     path::{Path, PathBuf},
 };
-use openssl::hash::{hash, MessageDigest};
-use super::types::WallpaperInfo;
 
 fn cache_dir() -> PathBuf {
     let home = env::var("HOME").unwrap_or_else(|_| String::from("."));

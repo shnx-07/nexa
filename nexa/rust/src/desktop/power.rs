@@ -16,32 +16,18 @@ use std::process::Command;
 // Actual system actions stay here.
 // ============================================================
 
-fn run_command(
-    program: &str,
-    args: &[&str],
-) -> Result<(), String> {
+fn run_command(program: &str, args: &[&str]) -> Result<(), String> {
     let status = Command::new(program)
         .args(args)
         .status()
-        .map_err(|error| {
-            format!(
-                "Failed to run {}: {}",
-                program,
-                error
-            )
-        })?;
+        .map_err(|error| format!("Failed to run {}: {}", program, error))?;
 
     if status.success() {
         Ok(())
     } else {
-        Err(format!(
-            "{} exited with status {}",
-            program,
-            status
-        ))
+        Err(format!("{} exited with status {}", program, status))
     }
 }
-
 
 // ============================================================
 // LOCK
@@ -54,11 +40,8 @@ fn lock() -> Result<(), String> {
     // We intentionally keep the command registered now so
     // Power.qml will not need changing later.
 
-    Err(
-        "NEXA lock screen is not implemented yet".to_string()
-    )
+    Err("NEXA lock screen is not implemented yet".to_string())
 }
-
 
 // ============================================================
 // SUSPEND
@@ -66,12 +49,8 @@ fn lock() -> Result<(), String> {
 
 fn suspend() -> Result<(), String> {
     let _ = crate::state::sync_from_system();
-    run_command(
-        "systemctl",
-        &["suspend"],
-    )
+    run_command("systemctl", &["suspend"])
 }
-
 
 // ============================================================
 // LOGOUT
@@ -79,15 +58,8 @@ fn suspend() -> Result<(), String> {
 
 fn logout() -> Result<(), String> {
     let _ = crate::state::sync_from_system();
-    run_command(
-        "hyprctl",
-        &[
-            "dispatch",
-            "exit",
-        ],
-    )
+    run_command("hyprctl", &["dispatch", "exit"])
 }
-
 
 // ============================================================
 // REBOOT
@@ -95,12 +67,8 @@ fn logout() -> Result<(), String> {
 
 fn reboot() -> Result<(), String> {
     let _ = crate::state::sync_from_system();
-    run_command(
-        "systemctl",
-        &["reboot"],
-    )
+    run_command("systemctl", &["reboot"])
 }
-
 
 // ============================================================
 // SHUTDOWN
@@ -108,52 +76,29 @@ fn reboot() -> Result<(), String> {
 
 fn shutdown() -> Result<(), String> {
     let _ = crate::state::sync_from_system();
-    run_command(
-        "systemctl",
-        &["poweroff"],
-    )
+    run_command("systemctl", &["poweroff"])
 }
-
 
 // ============================================================
 // COMMAND HANDLER
 // ============================================================
 
-pub fn handle(
-    args: &[String],
-) -> Result<(), String> {
+pub fn handle(args: &[String]) -> Result<(), String> {
     if args.is_empty() {
-        return Err(
-            "Missing power action".to_string()
-        );
+        return Err("Missing power action".to_string());
     }
 
     match args[0].as_str() {
-        "lock" => {
-            lock()
-        }
+        "lock" => lock(),
 
-        "suspend" => {
-            suspend()
-        }
+        "suspend" => suspend(),
 
-        "logout" => {
-            logout()
-        }
+        "logout" => logout(),
 
-        "reboot" => {
-            reboot()
-        }
+        "reboot" => reboot(),
 
-        "shutdown" => {
-            shutdown()
-        }
+        "shutdown" => shutdown(),
 
-        action => {
-            Err(format!(
-                "Unknown power action: {}",
-                action
-            ))
-        }
+        action => Err(format!("Unknown power action: {}", action)),
     }
 }

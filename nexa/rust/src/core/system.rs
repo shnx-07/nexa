@@ -1,29 +1,14 @@
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 use std::{
-    env,
-    ffi::OsStr,
-    fs,
-    io::Write,
-    path::PathBuf,
-    process::Command,
-    thread::sleep,
-    time::Duration,
+    env, ffi::OsStr, fs, io::Write, path::PathBuf, process::Command, thread::sleep, time::Duration,
 };
-
 
 // ============================================================
 // PUBLIC DATA
 // ============================================================
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-)]
+#[derive(Debug, Clone, Serialize)]
 pub struct AirplaneInfo {
     pub enabled: bool,
 
@@ -34,12 +19,7 @@ pub struct AirplaneInfo {
     pub restore_bluetooth: bool,
 }
 
-
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-)]
+#[derive(Debug, Clone, Serialize)]
 pub struct VpnInfo {
     pub enabled: bool,
 
@@ -49,17 +29,11 @@ pub struct VpnInfo {
     pub last: String,
 }
 
-
 // ============================================================
 // PERSISTENT STATE
 // ============================================================
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct SystemState {
     #[serde(default)]
     pub airplane_enabled: bool,
@@ -74,7 +48,6 @@ pub(crate) struct SystemState {
     pub last_vpn: String,
 }
 
-
 impl Default for SystemState {
     fn default() -> Self {
         Self {
@@ -87,7 +60,6 @@ impl Default for SystemState {
         }
     }
 }
-
 
 // ============================================================
 // KEYBOARD LOCK LED WATCHER
@@ -140,14 +112,11 @@ pub fn keylock_watch() {
     }
 }
 
-
 // ============================================================
 // CLI
 // ============================================================
 
-pub fn handle(
-    args: &[String],
-) {
+pub fn handle(args: &[String]) {
     if args.is_empty() {
         print_usage();
         return;
@@ -163,152 +132,86 @@ pub fn handle(
         return;
     }
 
+    let result = match args[0].as_str() {
+        // ====================================================
+        // AIRPLANE
+        // ====================================================
+        "airplane" => match args[1].as_str() {
+            "info" => airplane_info().and_then(print_json),
 
-    let result =
-        match args[0].as_str() {
+            "on" => airplane_on().and_then(print_json),
 
-            // ====================================================
-            // AIRPLANE
-            // ====================================================
+            "off" => airplane_off().and_then(print_json),
 
-            "airplane" => {
-                match args[1].as_str() {
-
-                    "info" => {
-                        airplane_info()
-                            .and_then(print_json)
-                    }
-
-
-                    "on" => {
-                        airplane_on()
-                            .and_then(print_json)
-                    }
-
-
-                    "off" => {
-                        airplane_off()
-                            .and_then(print_json)
-                    }
-
-
-                    "toggle" => {
-                        airplane_toggle()
-                            .and_then(print_json)
-                    }
-
-
-                    _ => {
-                        print_usage();
-                        return;
-                    }
-                }
-            }
-
-
-            // ====================================================
-            // VPN
-            // ====================================================
-
-            "vpn" => {
-                match args[1].as_str() {
-
-                    "info" => {
-                        vpn_info()
-                            .and_then(print_json)
-                    }
-
-
-                    "connect" => {
-                        if args.len() < 3 {
-                            Err(
-                                "Missing VPN profile name"
-                                    .to_string()
-                            )
-                        } else {
-                            vpn_connect(
-                                &args[2]
-                            )
-                            .and_then(print_json)
-                        }
-                    }
-
-
-                    "disconnect" => {
-                        vpn_disconnect()
-                            .and_then(print_json)
-                    }
-
-
-                    "toggle" => {
-                        vpn_toggle()
-                            .and_then(print_json)
-                    }
-
-
-                    _ => {
-                        print_usage();
-                        return;
-                    }
-                }
-            }
-
+            "toggle" => airplane_toggle().and_then(print_json),
 
             _ => {
                 print_usage();
                 return;
             }
-        };
+        },
 
+        // ====================================================
+        // VPN
+        // ====================================================
+        "vpn" => match args[1].as_str() {
+            "info" => vpn_info().and_then(print_json),
+
+            "connect" => {
+                if args.len() < 3 {
+                    Err("Missing VPN profile name".to_string())
+                } else {
+                    vpn_connect(&args[2]).and_then(print_json)
+                }
+            }
+
+            "disconnect" => vpn_disconnect().and_then(print_json),
+
+            "toggle" => vpn_toggle().and_then(print_json),
+
+            _ => {
+                print_usage();
+                return;
+            }
+        },
+
+        _ => {
+            print_usage();
+            return;
+        }
+    };
 
     if let Err(error) = result {
         eprintln!("{error}");
     }
 }
 
-
 // ============================================================
 // AIRPLANE INFO
 // ============================================================
 
-pub fn airplane_info()
-    -> Result<AirplaneInfo, String>
-{
-    let state =
-        load_state();
+pub fn airplane_info() -> Result<AirplaneInfo, String> {
+    let state = load_state();
 
+    Ok(AirplaneInfo {
+        enabled: state.airplane_enabled,
 
-    Ok(
-        AirplaneInfo {
-            enabled:
-                state.airplane_enabled,
+        wifi_enabled: wifi_enabled()?,
 
-            wifi_enabled:
-                wifi_enabled()?,
+        bluetooth_enabled: bluetooth_enabled()?,
 
-            bluetooth_enabled:
-                bluetooth_enabled()?,
+        restore_wifi: state.wifi_before_airplane,
 
-            restore_wifi:
-                state.wifi_before_airplane,
-
-            restore_bluetooth:
-                state.bluetooth_before_airplane,
-        }
-    )
+        restore_bluetooth: state.bluetooth_before_airplane,
+    })
 }
-
 
 // ============================================================
 // AIRPLANE ON
 // ============================================================
 
-pub fn airplane_on()
-    -> Result<AirplaneInfo, String>
-{
-    let mut state =
-        load_state();
-
+pub fn airplane_on() -> Result<AirplaneInfo, String> {
+    let mut state = load_state();
 
     /*
      * Already active.
@@ -319,25 +222,17 @@ pub fn airplane_on()
         return airplane_info();
     }
 
+    let wifi = wifi_enabled()?;
 
-    let wifi =
-        wifi_enabled()?;
-
-
-    let bluetooth =
-        bluetooth_enabled()?;
-
+    let bluetooth = bluetooth_enabled()?;
 
     /*
      * Remember exactly what was enabled before
      * entering Airplane Mode.
      */
-    state.wifi_before_airplane =
-        wifi;
+    state.wifi_before_airplane = wifi;
 
-    state.bluetooth_before_airplane =
-        bluetooth;
-
+    state.bluetooth_before_airplane = bluetooth;
 
     // --------------------------------------------------------
     // DISABLE WIFI
@@ -347,15 +242,12 @@ pub fn airplane_on()
         wifi_set_enabled(false)?;
     }
 
-
     // --------------------------------------------------------
     // DISABLE BLUETOOTH
     // --------------------------------------------------------
 
     if bluetooth {
-        if let Err(error) =
-            bluetooth_set_enabled(false)
-        {
+        if let Err(error) = bluetooth_set_enabled(false) {
             /*
              * Bluetooth failed.
              *
@@ -363,22 +255,16 @@ pub fn airplane_on()
              * system half-transitioned.
              */
             if wifi {
-                let _ =
-                    wifi_set_enabled(true);
+                let _ = wifi_set_enabled(true);
             }
 
             return Err(error);
         }
     }
 
+    state.airplane_enabled = true;
 
-    state.airplane_enabled =
-        true;
-
-
-    save_state(
-        &state
-    )?;
+    save_state(&state)?;
 
     let _ = crate::state::update_state(|s| {
         s.airplane_enabled = true;
@@ -386,26 +272,19 @@ pub fn airplane_on()
         s.bluetooth_enabled = false;
     });
 
-
     airplane_info()
 }
-
 
 // ============================================================
 // AIRPLANE OFF
 // ============================================================
 
-pub fn airplane_off()
-    -> Result<AirplaneInfo, String>
-{
-    let mut state =
-        load_state();
-
+pub fn airplane_off() -> Result<AirplaneInfo, String> {
+    let mut state = load_state();
 
     if !state.airplane_enabled {
         return airplane_info();
     }
-
 
     /*
      * Restore only the radios which were enabled
@@ -425,32 +304,21 @@ pub fn airplane_off()
      *     Bluetooth stays OFF
      */
 
-
     // --------------------------------------------------------
     // WIFI
     // --------------------------------------------------------
 
-    wifi_set_enabled(
-        state.wifi_before_airplane
-    )?;
-
+    wifi_set_enabled(state.wifi_before_airplane)?;
 
     // --------------------------------------------------------
     // BLUETOOTH
     // --------------------------------------------------------
 
-    bluetooth_set_enabled(
-        state.bluetooth_before_airplane
-    )?;
+    bluetooth_set_enabled(state.bluetooth_before_airplane)?;
 
+    state.airplane_enabled = false;
 
-    state.airplane_enabled =
-        false;
-
-
-    save_state(
-        &state
-    )?;
+    save_state(&state)?;
 
     let wifi_restored = state.wifi_before_airplane;
     let bt_restored = state.bluetooth_before_airplane;
@@ -460,21 +328,15 @@ pub fn airplane_off()
         s.bluetooth_enabled = bt_restored;
     });
 
-
     airplane_info()
 }
-
 
 // ============================================================
 // AIRPLANE TOGGLE
 // ============================================================
 
-pub fn airplane_toggle()
-    -> Result<AirplaneInfo, String>
-{
-    let state =
-        load_state();
-
+pub fn airplane_toggle() -> Result<AirplaneInfo, String> {
+    let state = load_state();
 
     if state.airplane_enabled {
         airplane_off()
@@ -483,252 +345,119 @@ pub fn airplane_toggle()
     }
 }
 
-
 // ============================================================
 // WIFI
 // ============================================================
 
-fn wifi_enabled()
-    -> Result<bool, String>
-{
-    Ok(
-        run(
-            "nmcli",
-            [
-                "radio",
-                "wifi",
-            ],
-        )?
-        .trim()
-        == "enabled"
-    )
+fn wifi_enabled() -> Result<bool, String> {
+    Ok(run("nmcli", ["radio", "wifi"])?.trim() == "enabled")
 }
 
-
-fn wifi_set_enabled(
-    enabled: bool,
-) -> Result<(), String> {
+fn wifi_set_enabled(enabled: bool) -> Result<(), String> {
     run(
         "nmcli",
-        [
-            "radio",
-            "wifi",
-            if enabled {
-                "on"
-            } else {
-                "off"
-            },
-        ],
+        ["radio", "wifi", if enabled { "on" } else { "off" }],
     )?;
-
 
     Ok(())
 }
-
 
 // ============================================================
 // BLUETOOTH
 // ============================================================
 
-fn bluetooth_enabled()
-    -> Result<bool, String>
-{
-    let output =
-        run(
-            "bluetoothctl",
-            [
-                "show",
-            ],
-        )?;
+fn bluetooth_enabled() -> Result<bool, String> {
+    let output = run("bluetoothctl", ["show"])?;
 
-
-    Ok(
-        output
-            .lines()
-            .any(
-                |line|
-                    line.trim()
-                        == "Powered: yes"
-            )
-    )
+    Ok(output.lines().any(|line| line.trim() == "Powered: yes"))
 }
 
-
-fn bluetooth_set_enabled(
-    enabled: bool,
-) -> Result<(), String> {
+fn bluetooth_set_enabled(enabled: bool) -> Result<(), String> {
     run(
         "bluetoothctl",
-        [
-            "power",
-            if enabled {
-                "on"
-            } else {
-                "off"
-            },
-        ],
+        ["power", if enabled { "on" } else { "off" }],
     )?;
-
 
     Ok(())
 }
-
 
 // ============================================================
 // VPN INFO
 // ============================================================
 
-pub fn vpn_info()
-    -> Result<VpnInfo, String>
-{
-    let configured =
-        configured_vpns()?;
+pub fn vpn_info() -> Result<VpnInfo, String> {
+    let configured = configured_vpns()?;
 
+    let active = active_vpns()?;
 
-    let active =
-        active_vpns()?;
+    let state = load_state();
 
+    Ok(VpnInfo {
+        enabled: !active.is_empty(),
 
-    let state =
-        load_state();
+        active: active.first().cloned().unwrap_or_default(),
 
+        configured,
 
-    Ok(
-        VpnInfo {
-            enabled:
-                !active.is_empty(),
-
-            active:
-                active
-                    .first()
-                    .cloned()
-                    .unwrap_or_default(),
-
-            configured,
-
-            last:
-                state.last_vpn,
-        }
-    )
+        last: state.last_vpn,
+    })
 }
-
 
 // ============================================================
 // VPN CONNECT
 // ============================================================
 
-pub fn vpn_connect(
-    name: &str,
-) -> Result<VpnInfo, String> {
-    let configured =
-        configured_vpns()?;
+pub fn vpn_connect(name: &str) -> Result<VpnInfo, String> {
+    let configured = configured_vpns()?;
 
-
-    if !configured.iter()
-        .any(
-            |profile|
-                profile == name
-        )
-    {
-        return Err(
-            format!(
-                "VPN profile not found: {name}"
-            )
-        );
+    if !configured.iter().any(|profile| profile == name) {
+        return Err(format!("VPN profile not found: {name}"));
     }
-
 
     /*
      * Disconnect another active VPN first.
      *
      * Quick Settings v1 is deliberately single-VPN.
      */
-    let active =
-        active_vpns()?;
-
+    let active = active_vpns()?;
 
     for current in active {
         if current != name {
-            let _ =
-                run(
-                    "nmcli",
-                    [
-                        "connection",
-                        "down",
-                        "id",
-                        &current,
-                    ],
-                );
+            let _ = run("nmcli", ["connection", "down", "id", &current]);
         }
     }
 
+    run("nmcli", ["connection", "up", "id", name])?;
 
-    run(
-        "nmcli",
-        [
-            "connection",
-            "up",
-            "id",
-            name,
-        ],
-    )?;
+    let mut state = load_state();
 
+    state.last_vpn = name.to_string();
 
-    let mut state =
-        load_state();
-
-
-    state.last_vpn =
-        name.to_string();
-
-
-    save_state(
-        &state
-    )?;
-
+    save_state(&state)?;
 
     vpn_info()
 }
-
 
 // ============================================================
 // VPN DISCONNECT
 // ============================================================
 
-pub fn vpn_disconnect()
-    -> Result<VpnInfo, String>
-{
-    let active =
-        active_vpns()?;
-
+pub fn vpn_disconnect() -> Result<VpnInfo, String> {
+    let active = active_vpns()?;
 
     for name in active {
-        run(
-            "nmcli",
-            [
-                "connection",
-                "down",
-                "id",
-                &name,
-            ],
-        )?;
+        run("nmcli", ["connection", "down", "id", &name])?;
     }
-
 
     vpn_info()
 }
-
 
 // ============================================================
 // VPN TOGGLE
 // ============================================================
 
-pub fn vpn_toggle()
-    -> Result<VpnInfo, String>
-{
-    let info =
-        vpn_info()?;
-
+pub fn vpn_toggle() -> Result<VpnInfo, String> {
+    let info = vpn_info()?;
 
     /*
      * Active VPN:
@@ -738,78 +467,50 @@ pub fn vpn_toggle()
         return vpn_disconnect();
     }
 
-
     /*
      * No configured VPN profiles.
      */
     if info.configured.is_empty() {
-        return Err(
-            "No VPN profiles configured in NetworkManager"
-                .to_string()
-        );
+        return Err("No VPN profiles configured in NetworkManager".to_string());
     }
-
 
     /*
      * Prefer the previously used VPN profile.
      */
-    if !info.last.is_empty()
-        && info.configured
-            .iter()
-            .any(
-                |name|
-                    name == &info.last
-            )
-    {
-        return vpn_connect(
-            &info.last
-        );
+    if !info.last.is_empty() && info.configured.iter().any(|name| name == &info.last) {
+        return vpn_connect(&info.last);
     }
-
 
     /*
      * Otherwise use the first configured VPN.
      */
-    vpn_connect(
-        &info.configured[0]
-    )
+    vpn_connect(&info.configured[0])
 }
-
 
 // ============================================================
 // CONFIGURED VPN PROFILES
 // ============================================================
 
-fn configured_vpns()
-    -> Result<Vec<String>, String>
-{
-    let output =
-        run(
-            "nmcli",
-            [
-                "-t",
-                "--escape",
-                "no",
-                "-f",
-                "NAME,TYPE",
-                "connection",
-                "show",
-            ],
-        )?;
+fn configured_vpns() -> Result<Vec<String>, String> {
+    let output = run(
+        "nmcli",
+        [
+            "-t",
+            "--escape",
+            "no",
+            "-f",
+            "NAME,TYPE",
+            "connection",
+            "show",
+        ],
+    )?;
 
-
-    let mut result =
-        Vec::new();
-
+    let mut result = Vec::new();
 
     for line in output.lines() {
-        let Some(
-            (name, kind)
-        ) = line.rsplit_once(':')
-        else {
+        let Some((name, kind)) = line.rsplit_once(':') else {
             continue;
         };
-
 
         /*
          * NetworkManager uses "vpn" for OpenVPN,
@@ -817,114 +518,72 @@ fn configured_vpns()
          *
          * WireGuard profiles use "wireguard".
          */
-        if kind != "vpn"
-            && kind != "wireguard"
-        {
+        if kind != "vpn" && kind != "wireguard" {
             continue;
         }
 
-
-        let name =
-            name.trim();
-
+        let name = name.trim();
 
         if name.is_empty() {
             continue;
         }
 
-
-        if !result.iter()
-            .any(
-                |existing|
-                    existing == name
-            )
-        {
-            result.push(
-                name.to_string()
-            );
+        if !result.iter().any(|existing| existing == name) {
+            result.push(name.to_string());
         }
     }
 
-
     result.sort();
-
 
     Ok(result)
 }
-
 
 // ============================================================
 // ACTIVE VPN PROFILES
 // ============================================================
 
-fn active_vpns()
-    -> Result<Vec<String>, String>
-{
-    let output =
-        run(
-            "nmcli",
-            [
-                "-t",
-                "--escape",
-                "no",
-                "-f",
-                "NAME,TYPE",
-                "connection",
-                "show",
-                "--active",
-            ],
-        )?;
+fn active_vpns() -> Result<Vec<String>, String> {
+    let output = run(
+        "nmcli",
+        [
+            "-t",
+            "--escape",
+            "no",
+            "-f",
+            "NAME,TYPE",
+            "connection",
+            "show",
+            "--active",
+        ],
+    )?;
 
-
-    let mut result =
-        Vec::new();
-
+    let mut result = Vec::new();
 
     for line in output.lines() {
-        let Some(
-            (name, kind)
-        ) = line.rsplit_once(':')
-        else {
+        let Some((name, kind)) = line.rsplit_once(':') else {
             continue;
         };
 
-
-        if kind != "vpn"
-            && kind != "wireguard"
-        {
+        if kind != "vpn" && kind != "wireguard" {
             continue;
         }
 
-
-        let name =
-            name.trim();
-
+        let name = name.trim();
 
         if !name.is_empty() {
-            result.push(
-                name.to_string()
-            );
+            result.push(name.to_string());
         }
     }
 
-
     Ok(result)
 }
-
 
 // ============================================================
 // STATE PATH
 // ============================================================
 
-fn state_path()
-    -> PathBuf
-{
-    let home =
-        env::var("HOME")
-            .unwrap_or_else(
-                |_| ".".to_string()
-            );
-
+fn state_path() -> PathBuf {
+    let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
 
     PathBuf::from(home)
         .join(".config")
@@ -933,173 +592,84 @@ fn state_path()
         .join("quicksettings.conf")
 }
 
-
 // ============================================================
 // LOAD STATE
 // ============================================================
 
-pub(crate) fn load_state()
-    -> SystemState
-{
-    let path =
-        state_path();
+pub(crate) fn load_state() -> SystemState {
+    let path = state_path();
 
-
-    let Ok(content) =
-        fs::read_to_string(path)
-    else {
+    let Ok(content) = fs::read_to_string(path) else {
         return SystemState::default();
     };
 
-
-    serde_json::from_str(
-        &content
-    )
-    .unwrap_or_default()
+    serde_json::from_str(&content).unwrap_or_default()
 }
-
 
 // ============================================================
 // SAVE STATE
 // ============================================================
 
-pub(crate) fn save_state(
-    state: &SystemState,
-) -> Result<(), String> {
-    let path =
-        state_path();
+pub(crate) fn save_state(state: &SystemState) -> Result<(), String> {
+    let path = state_path();
 
-
-    if let Some(parent) =
-        path.parent()
-    {
+    if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .map_err(
-                |error|
-                    format!(
-                        "Failed to create config directory: {error}"
-                    )
-            )?;
+            .map_err(|error| format!("Failed to create config directory: {error}"))?;
     }
 
+    let content = serde_json::to_string_pretty(state)
+        .map_err(|error| format!("Failed to serialize Quick Settings state: {error}"))?;
 
-    let content =
-        serde_json::to_string_pretty(
-            state
-        )
-        .map_err(
-            |error|
-                format!(
-                    "Failed to serialize Quick Settings state: {error}"
-                )
-        )?;
-
-
-    fs::write(
-        &path,
-        content,
-    )
-    .map_err(
-        |error|
-            format!(
-                "Failed to save {}: {error}",
-                path.display()
-            )
-    )
+    fs::write(&path, content).map_err(|error| format!("Failed to save {}: {error}", path.display()))
 }
-
 
 // ============================================================
 // JSON
 // ============================================================
 
-fn print_json<T>(
-    value: T,
-) -> Result<(), String>
+fn print_json<T>(value: T) -> Result<(), String>
 where
     T: Serialize,
 {
     println!(
         "{}",
-        serde_json::to_string(
-            &value
-        )
-        .map_err(
-            |error|
-                error.to_string()
-        )?
+        serde_json::to_string(&value).map_err(|error| error.to_string())?
     );
-
 
     Ok(())
 }
-
 
 // ============================================================
 // COMMAND
 // ============================================================
 
-fn run<I, S>(
-    program: &str,
-    args: I,
-) -> Result<String, String>
+fn run<I, S>(program: &str, args: I) -> Result<String, String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    let output =
-        Command::new(program)
-            .args(args)
-            .output()
-            .map_err(
-                |error|
-                    format!(
-                        "{program}: {error}"
-                    )
-            )?;
-
+    let output = Command::new(program)
+        .args(args)
+        .output()
+        .map_err(|error| format!("{program}: {error}"))?;
 
     if !output.status.success() {
-        let stderr =
-            String::from_utf8_lossy(
-                &output.stderr
-            )
-            .trim()
-            .to_string();
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
 
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
-        let stdout =
-            String::from_utf8_lossy(
-                &output.stdout
-            )
-            .trim()
-            .to_string();
-
-
-        return Err(
-            if !stderr.is_empty() {
-                stderr
-            } else if !stdout.is_empty() {
-                stdout
-            } else {
-                format!(
-                    "{program} exited with {}",
-                    output.status
-                )
-            }
-        );
+        return Err(if !stderr.is_empty() {
+            stderr
+        } else if !stdout.is_empty() {
+            stdout
+        } else {
+            format!("{program} exited with {}", output.status)
+        });
     }
 
-
-    Ok(
-        String::from_utf8_lossy(
-            &output.stdout
-        )
-        .trim()
-        .to_string()
-    )
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
-
 
 // ============================================================
 // USAGE

@@ -51,6 +51,7 @@ Item {
     // ============================================================
 
     property string wallpaperPath: ""
+    property string wallpaperProxy: ""
     property string wallpaperType: ""
 
     property bool wallpaperLoaded: false
@@ -160,10 +161,10 @@ Item {
         const text =
             String(output).trim()
 
-        const separator =
-            text.indexOf("|")
+        const parts =
+            text.split("|")
 
-        if (separator <= 0) {
+        if (parts.length < 2) {
             console.warn(
                 "NEXA lockscreen: invalid wallpaper info:",
                 text
@@ -173,24 +174,21 @@ Item {
         }
 
 
-        wallpaperType =
-            text.substring(
-                0,
-                separator
-            )
+        const nextType = parts[0]
+        const nextPath = parts[1]
+        const nextProxy = parts.length > 2 ? parts[2] : ""
 
-        wallpaperPath =
-            text.substring(
-                separator + 1
-            )
-
+        wallpaperProxy = nextProxy
+        wallpaperPath = nextPath
+        wallpaperType = nextType
         wallpaperLoaded = true
-
 
         console.log(
             "NEXA lockscreen wallpaper:",
             wallpaperType,
-            wallpaperPath
+            wallpaperPath,
+            "proxy:",
+            wallpaperProxy
         )
     }
 
@@ -506,9 +504,7 @@ Item {
 
         source:
             (!root.still && root.wallpaperType === "video")
-            ? root.fileUrl(
-                root.wallpaperPath
-            )
+            ? (root.wallpaperProxy !== "" ? root.fileUrl(root.wallpaperProxy) : root.fileUrl(root.wallpaperPath))
             : ""
 
         loops:

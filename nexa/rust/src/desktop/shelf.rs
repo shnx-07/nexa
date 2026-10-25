@@ -41,7 +41,10 @@ fn default_icon_name() -> String {
 
 fn config_dir() -> PathBuf {
     let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home).join(".config").join("nexa").join("config")
+    PathBuf::from(home)
+        .join(".config")
+        .join("nexa")
+        .join("config")
 }
 
 fn shelf_path() -> PathBuf {
@@ -50,7 +53,10 @@ fn shelf_path() -> PathBuf {
 
 fn quickshell_dir() -> PathBuf {
     let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home).join(".config").join("nexa").join("quickshell")
+    PathBuf::from(home)
+        .join(".config")
+        .join("nexa")
+        .join("quickshell")
 }
 
 // ============================================================
@@ -76,8 +82,7 @@ pub fn save_shelf(state: &ShelfState) -> Result<(), String> {
     let json = serde_json::to_string_pretty(state)
         .map_err(|e| format!("Failed to serialize shelf state: {e}"))?;
 
-    fs::write(shelf_path(), json)
-        .map_err(|e| format!("Failed to write shelf state: {e}"))
+    fs::write(shelf_path(), json).map_err(|e| format!("Failed to write shelf state: {e}"))
 }
 
 // ============================================================
@@ -169,17 +174,29 @@ fn detect_mime_and_category(path: &Path) -> (String, String) {
 
         "pdf" => ("application/pdf".to_string(), "document".to_string()),
         "doc" | "docx" => ("application/msword".to_string(), "document".to_string()),
-        "xls" | "xlsx" => ("application/vnd.ms-excel".to_string(), "document".to_string()),
-        "ppt" | "pptx" => ("application/vnd.ms-powerpoint".to_string(), "document".to_string()),
+        "xls" | "xlsx" => (
+            "application/vnd.ms-excel".to_string(),
+            "document".to_string(),
+        ),
+        "ppt" | "pptx" => (
+            "application/vnd.ms-powerpoint".to_string(),
+            "document".to_string(),
+        ),
         "txt" => ("text/plain".to_string(), "document".to_string()),
         "md" => ("text/markdown".to_string(), "document".to_string()),
 
         "zip" => ("application/zip".to_string(), "archive".to_string()),
         "tar" => ("application/x-tar".to_string(), "archive".to_string()),
         "gz" => ("application/gzip".to_string(), "archive".to_string()),
-        "7z" => ("application/x-7z-compressed".to_string(), "archive".to_string()),
+        "7z" => (
+            "application/x-7z-compressed".to_string(),
+            "archive".to_string(),
+        ),
         "rar" => ("application/vnd.rar".to_string(), "archive".to_string()),
-        "bz2" | "xz" => ("application/x-compressed".to_string(), "archive".to_string()),
+        "bz2" | "xz" => (
+            "application/x-compressed".to_string(),
+            "archive".to_string(),
+        ),
 
         "rs" | "py" | "js" | "ts" | "qml" | "c" | "cpp" | "h" | "html" | "css" | "json"
         | "toml" | "yaml" | "sh" => ("text/plain".to_string(), "code".to_string()),
@@ -196,11 +213,7 @@ fn detect_mime_and_category(path: &Path) -> (String, String) {
 /// the real system icon rather than a hardcoded Nerd-Font glyph.
 /// Falls back to a sensible default if gio is unavailable.
 fn get_icon_name(path: &str) -> String {
-    if let Ok(output) = Command::new("gio")
-        .arg("info")
-        .arg(path)
-        .output()
-    {
+    if let Ok(output) = Command::new("gio").arg("info").arg(path).output() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         for line in stdout.lines() {
             // Match the line that contains "standard::icon:" but not "symbolic-icon"
@@ -216,7 +229,8 @@ fn get_icon_name(path: &str) -> String {
                         if icon.is_empty()
                             || icon.contains("symbolic")
                             || icon.contains('.')   // MIME-type names have dots
-                            || icon.len() > 40      // real icon names are short
+                            || icon.len() > 40
+                        // real icon names are short
                         {
                             continue;
                         }
@@ -310,8 +324,7 @@ pub fn add_many(inputs: &[&str]) -> Result<Vec<ShelfItem>, String> {
 /// Convenience wrapper — add a single file.
 #[allow(dead_code)]
 pub fn add(input: &str) -> Result<ShelfItem, String> {
-    add_many(&[input])
-        .map(|mut v| v.remove(0))
+    add_many(&[input]).map(|mut v| v.remove(0))
 }
 
 pub fn remove(id: &str) -> Result<(), String> {
@@ -432,4 +445,3 @@ pub fn call_quickshell(action: &str) -> Result<(), String> {
 
     Ok(())
 }
-

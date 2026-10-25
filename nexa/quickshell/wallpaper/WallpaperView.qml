@@ -29,6 +29,7 @@ PanelWindow {
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     // ---------------------------------------------------------
     // Paths
@@ -223,11 +224,13 @@ PanelWindow {
             const type = parts[0]
             const path = parts[1]
             const thumb = parts.length >= 3 && parts[2] ? parts[2] : path
+            const proxy = parts.length >= 4 && parts[3] ? parts[3] : ""
 
             newItems.push({
                 wallType: type,
                 wallPath: path,
                 wallThumb: thumb,
+                wallProxy: proxy,
                 wallName: fileName(path)
             })
         }
@@ -723,6 +726,7 @@ PanelWindow {
 
     Shortcut {
         sequence: "Left"
+        context: Qt.ApplicationShortcut
 
         enabled:
             root.visible &&
@@ -735,6 +739,7 @@ PanelWindow {
 
     Shortcut {
         sequence: "Right"
+        context: Qt.ApplicationShortcut
 
         enabled:
             root.visible &&
@@ -747,6 +752,7 @@ PanelWindow {
 
     Shortcut {
         sequence: "Return"
+        context: Qt.ApplicationShortcut
 
         enabled:
             root.visible &&
@@ -759,6 +765,7 @@ PanelWindow {
 
     Shortcut {
         sequence: "Escape"
+        context: Qt.ApplicationShortcut
 
         enabled:
             root.visible &&
@@ -792,6 +799,7 @@ PanelWindow {
 
     ListView {
         id: view
+        focus: true
 
         anchors.fill: parent
 
@@ -917,6 +925,7 @@ PanelWindow {
             required property string wallType
             required property string wallPath
             required property string wallThumb
+            required property string wallProxy
             required property string wallName
 
             readonly property bool matches:
@@ -1373,8 +1382,8 @@ PanelWindow {
                         id: previewPlayer
 
                         source:
-                            cardRoot.isVideo
-                            ? root.fileUrl(cardRoot.wallPath)
+                            (cardRoot.isVideo && !cardRoot.isCurrentWallpaper)
+                            ? root.fileUrl(cardRoot.wallProxy && cardRoot.wallProxy.length > 0 ? cardRoot.wallProxy : cardRoot.wallPath)
                             : ""
 
                         loops:
@@ -1393,6 +1402,7 @@ PanelWindow {
 
                     VideoOutput {
                         id: previewOutput
+                        focus: false
 
                         anchors.centerIn: parent
 
@@ -1436,17 +1446,32 @@ PanelWindow {
                         }
                     }
 
+                    Timer {
+                        id: videoPlayTimer
+                        interval: 180
+                        repeat: false
+                        onTriggered: {
+                            if (cardRoot.isVideo && cardRoot.selected && !cardRoot.isCurrentWallpaper && root.visible) {
+                                previewPlayer.position = 0
+                                previewPlayer.play()
+                            }
+                        }
+                    }
+
                     Connections {
                         target: cardRoot
 
                         function onSelectedChanged() {
-                            if (!cardRoot.isVideo)
+                            if (!cardRoot.isVideo || cardRoot.isCurrentWallpaper) {
+                                videoPlayTimer.stop()
+                                previewPlayer.stop()
                                 return
+                            }
 
-                            if (cardRoot.selected) {
-                                previewPlayer.position = 0
-                                previewPlayer.play()
+                            if (cardRoot.selected && root.visible) {
+                                videoPlayTimer.restart()
                             } else {
+                                videoPlayTimer.stop()
                                 previewPlayer.stop()
                             }
                         }
@@ -3064,6 +3089,7 @@ PanelWindow {
     }
 
     onVisibleChanged: {
+        root.applying = false
         if (!visible) {
             root.applyMenuOpen = false
             root.closeAllSlideshowMenus()

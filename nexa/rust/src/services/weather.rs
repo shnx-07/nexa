@@ -5,33 +5,23 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-
 // ============================================================
 // API
 // ============================================================
 
-const FORECAST_URL: &str =
-    "https://api.open-meteo.com/v1/forecast";
+const FORECAST_URL: &str = "https://api.open-meteo.com/v1/forecast";
 
-const GEOCODING_URL: &str =
-    "https://geocoding-api.open-meteo.com/v1/search";
+const GEOCODING_URL: &str = "https://geocoding-api.open-meteo.com/v1/search";
 
-const IP_LOCATION_URL: &str =
-    "https://ipapi.co/json/";
+const IP_LOCATION_URL: &str = "https://ipapi.co/json/";
 
-const CACHE_MAX_AGE: u64 =
-    15 * 60;
+const CACHE_MAX_AGE: u64 = 15 * 60;
 
-const HTTP_TIMEOUT_SECONDS: u64 =
-    12;
-
+const HTTP_TIMEOUT_SECONDS: u64 = 12;
 
 // ============================================================
 // WEATHER CONFIG
 // ============================================================
-
-
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WeatherConfig {
@@ -51,33 +41,24 @@ pub struct WeatherConfig {
 impl Default for WeatherConfig {
     fn default() -> Self {
         Self {
-            location_mode:
-                "auto".to_string(),
+            location_mode: "auto".to_string(),
 
-            city:
-                String::new(),
+            city: String::new(),
 
-            admin1:
-                String::new(),
+            admin1: String::new(),
 
-            country:
-                String::new(),
+            country: String::new(),
 
-            latitude:
-                None,
+            latitude: None,
 
-            longitude:
-                None,
+            longitude: None,
 
-            elevation:
-                None,
+            elevation: None,
 
-            timezone:
-                String::new(),
+            timezone: String::new(),
         }
     }
 }
-
 
 // ============================================================
 // LOCATION OUTPUT
@@ -98,7 +79,6 @@ pub struct WeatherLocation {
     pub timezone_abbreviation: String,
 }
 
-
 #[derive(Debug, Clone, Serialize)]
 pub struct LocationInfo {
     pub mode: String,
@@ -112,7 +92,6 @@ pub struct LocationInfo {
 
     pub resolved: WeatherLocation,
 }
-
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LocationSearchResult {
@@ -128,7 +107,6 @@ pub struct LocationSearchResult {
 
     pub timezone: String,
 }
-
 
 // ============================================================
 // WEATHER OUTPUT
@@ -150,7 +128,6 @@ pub struct WeatherOutput {
     pub updated_at: u64,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CurrentWeather {
     pub temperature: f64,
@@ -171,7 +148,6 @@ pub struct CurrentWeather {
     pub is_day: bool,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WeatherDetails {
     pub temperature_min: f64,
@@ -190,7 +166,6 @@ pub struct WeatherDetails {
     pub timezone: String,
     pub timezone_abbreviation: String,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DailyForecast {
@@ -211,7 +186,6 @@ pub struct DailyForecast {
     pub precipitation_probability: f64,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HourlyForecast {
     pub time: String,
@@ -231,7 +205,6 @@ pub struct HourlyForecast {
     pub is_day: bool,
 }
 
-
 // ============================================================
 // GEOCODING API
 // ============================================================
@@ -240,7 +213,6 @@ pub struct HourlyForecast {
 struct GeocodingResponse {
     results: Option<Vec<GeocodingResult>>,
 }
-
 
 #[derive(Debug, Deserialize)]
 struct GeocodingResult {
@@ -257,7 +229,6 @@ struct GeocodingResult {
     admin1: Option<String>,
 }
 
-
 // ============================================================
 // AUTO LOCATION API
 // ============================================================
@@ -272,7 +243,6 @@ struct AutoLocationResponse {
 
     timezone: Option<String>,
 }
-
 
 // ============================================================
 // FORECAST API
@@ -290,7 +260,6 @@ struct ForecastResponse {
     daily: ForecastDaily,
 }
 
-
 #[derive(Debug, Deserialize)]
 struct ForecastCurrent {
     temperature_2m: f64,
@@ -304,7 +273,6 @@ struct ForecastCurrent {
     is_day: i32,
 }
 
-
 #[derive(Debug, Deserialize)]
 struct ForecastHourly {
     time: Vec<String>,
@@ -312,22 +280,16 @@ struct ForecastHourly {
     temperature_2m: Vec<f64>,
     apparent_temperature: Vec<f64>,
 
-    precipitation_probability:
-        Vec<Option<f64>>,
+    precipitation_probability: Vec<Option<f64>>,
 
-    weather_code:
-        Vec<i32>,
+    weather_code: Vec<i32>,
 
-    wind_speed_10m:
-        Vec<f64>,
+    wind_speed_10m: Vec<f64>,
 
-    wind_direction_10m:
-        Vec<f64>,
+    wind_direction_10m: Vec<f64>,
 
-    is_day:
-        Vec<i32>,
+    is_day: Vec<i32>,
 }
-
 
 #[derive(Debug, Deserialize)]
 struct ForecastDaily {
@@ -341,905 +303,470 @@ struct ForecastDaily {
     sunrise: Vec<String>,
     sunset: Vec<String>,
 
-    uv_index_max:
-        Vec<Option<f64>>,
+    uv_index_max: Vec<Option<f64>>,
 
-    precipitation_probability_max:
-        Vec<Option<f64>>,
+    precipitation_probability_max: Vec<Option<f64>>,
 }
-
 
 // ============================================================
 // COMMAND ENTRY
 // ============================================================
 
-pub fn handle(
-    args: &[String]
-) -> Result<(), String> {
-
-    let action =
-        args.first()
-            .map(String::as_str)
-            .unwrap_or("info");
-
+pub fn handle(args: &[String]) -> Result<(), String> {
+    let action = args.first().map(String::as_str).unwrap_or("info");
 
     match action {
-
         // --------------------------------------------------------
         // WEATHER INFO
         // --------------------------------------------------------
-
         "info" => {
-            let weather =
-                load_weather(false)?;
+            let weather = load_weather(false)?;
 
-            print_json(
-                &weather
-            )?;
+            print_json(&weather)?;
         }
-
 
         // --------------------------------------------------------
         // WEATHER REFRESH
         // --------------------------------------------------------
-
         "refresh" => {
-            let weather =
-                load_weather(true)?;
+            let weather = load_weather(true)?;
 
-            print_json(
-                &weather
-            )?;
+            print_json(&weather)?;
         }
-
 
         // --------------------------------------------------------
         // LOCATION
         // --------------------------------------------------------
-
         "location" => {
-            handle_location(
-                &args[1..]
-            )?;
+            handle_location(&args[1..])?;
         }
 
-
         _ => {
-            return Err(
-                weather_usage()
-            );
+            return Err(weather_usage());
         }
     }
 
-
     Ok(())
 }
-
 
 // ============================================================
 // LOCATION COMMANDS
 // ============================================================
 
-fn handle_location(
-    args: &[String]
-) -> Result<(), String> {
-
-    let action =
-        args.first()
-            .map(String::as_str)
-            .unwrap_or("info");
-
+fn handle_location(args: &[String]) -> Result<(), String> {
+    let action = args.first().map(String::as_str).unwrap_or("info");
 
     match action {
-
         // --------------------------------------------------------
         // LOCATION INFO
         // --------------------------------------------------------
-
         "info" => {
-            let config =
-                read_weather_config();
+            let config = read_weather_config();
 
+            let location = resolve_configured_location(&config)?;
 
-            let location =
-                resolve_configured_location(
-                    &config
-                )?;
+            let output = LocationInfo {
+                mode: config.location_mode,
 
+                configured_city: config.city,
 
-            let output =
-                LocationInfo {
-                    mode:
-                        config.location_mode,
+                latitude: config.latitude,
 
-                    configured_city:
-                        config.city,
+                longitude: config.longitude,
 
-                    latitude:
-                        config.latitude,
+                configured_admin1: config.admin1,
 
-                    longitude:
-                        config.longitude,
+                configured_country: config.country,
 
-                    configured_admin1:
-                        config.admin1,
+                resolved: location,
+            };
 
-                    configured_country:
-                        config.country,
-
-                    resolved:
-                        location,
-                };
-
-
-            print_json(
-                &output
-            )?;
+            print_json(&output)?;
         }
-
 
         // --------------------------------------------------------
         // AUTO LOCATION
         // --------------------------------------------------------
-
         "auto" => {
+            let config = WeatherConfig::default();
 
-            let config =
-                WeatherConfig::default();
-
-
-            save_weather_config(
-                &config
-            )?;
-
+            save_weather_config(&config)?;
 
             clear_weather_cache()?;
 
+            let location = resolve_auto_location()?;
 
-            let location =
-                resolve_auto_location()?;
+            print_json(&LocationInfo {
+                mode: "auto".to_string(),
 
+                configured_city: String::new(),
 
-            print_json(
-                &LocationInfo {
-                    mode:
-                        "auto".to_string(),
+                latitude: None,
 
-                    configured_city:
-                        String::new(),
+                longitude: None,
 
-                    latitude:
-                        None,
+                configured_admin1: String::new(),
 
-                    longitude:
-                        None,
+                configured_country: String::new(),
 
-                    configured_admin1:
-                        String::new(),
-
-                    configured_country:
-                        String::new(),
-
-                    resolved:
-                        location,
-                }
-            )?;
+                resolved: location,
+            })?;
         }
-
 
         // --------------------------------------------------------
         // SEARCH LOCATION
         // --------------------------------------------------------
-
         "search" => {
-
             if args.len() < 2 {
-                return Err(
-                    "usage: nexad weather location search <city>"
-                        .to_string()
-                );
+                return Err("usage: nexad weather location search <city>".to_string());
             }
 
+            let query = args[1..].join(" ");
 
-            let query =
-                args[1..]
-                    .join(" ");
+            let results = search_locations(&query)?;
 
-
-            let results =
-                search_locations(
-                    &query
-                )?;
-
-
-            print_json(
-                &results
-            )?;
+            print_json(&results)?;
         }
-
 
         // --------------------------------------------------------
         // SET MANUAL LOCATION
         // --------------------------------------------------------
-
         "set" => {
-
             if args.len() < 2 {
-                return Err(
-                    "usage: nexad weather location set <city>"
-                        .to_string()
-                );
+                return Err("usage: nexad weather location set <city>".to_string());
             }
 
+            let query = args[1..].join(" ");
 
-            let query =
-                args[1..]
-                    .join(" ");
+            let result = resolve_manual_location(&query)?;
 
+            let config = WeatherConfig {
+                location_mode: "manual".to_string(),
 
-            let result =
-                resolve_manual_location(
-                    &query
-                )?;
+                city: result.name.clone(),
 
+                admin1: result.admin1.clone(),
 
-           
-            let config =
-                WeatherConfig {
-                    location_mode:
-                        "manual".to_string(),
+                country: result.country.clone(),
 
-                    city:
-                        result.name.clone(),
+                latitude: Some(result.latitude),
 
-                    admin1:
-                        result.admin1.clone(),
+                longitude: Some(result.longitude),
 
-                    country:
-                        result.country.clone(),
+                elevation: Some(result.elevation),
 
-                    latitude:
-                        Some(
-                            result.latitude
-                        ),
+                timezone: result.timezone.clone(),
+            };
 
-                    longitude:
-                        Some(
-                            result.longitude
-                        ),
-
-                    elevation:
-                        Some(
-                            result.elevation
-                        ),
-
-                    timezone:
-                        result.timezone.clone(),
-                };
-
-
-            save_weather_config(
-                &config
-            )?;
-
+            save_weather_config(&config)?;
 
             clear_weather_cache()?;
 
+            print_json(&LocationInfo {
+                mode: "manual".to_string(),
 
-            print_json(
-                &LocationInfo {
-                    mode:
-                        "manual".to_string(),
+                configured_city: result.name.clone(),
 
-                    configured_city:
-                        result.name.clone(),
+                latitude: Some(result.latitude),
 
-                    latitude:
-                        Some(
-                            result.latitude
-                        ),
+                longitude: Some(result.longitude),
 
-                    longitude:
-                        Some(
-                            result.longitude
-                        ),
+                configured_admin1: result.admin1.clone(),
 
-                    configured_admin1:
-                        result.admin1.clone(),
+                configured_country: result.country.clone(),
 
-                    configured_country:
-                        result.country.clone(),
-
-                    resolved:
-                        result,
-                }
-            )?;
+                resolved: result,
+            })?;
         }
 
-
         _ => {
-            return Err(
-                location_usage()
-            );
+            return Err(location_usage());
         }
     }
 
-
     Ok(())
 }
-
 
 // ============================================================
 // WEATHER LOADING
 // ============================================================
 
-fn load_weather(
-    force_refresh: bool
-) -> Result<WeatherOutput, String> {
-
-    let config =
-        read_weather_config();
-
+fn load_weather(force_refresh: bool) -> Result<WeatherOutput, String> {
+    let config = read_weather_config();
 
     if !force_refresh {
-
-        if let Some(weather) =
-            load_cached_weather(
-                &config
-            )
-        {
-            return Ok(
-                weather
-            );
+        if let Some(weather) = load_cached_weather(&config) {
+            return Ok(weather);
         }
     }
 
+    let location = resolve_configured_location(&config)?;
 
-    let location =
-        resolve_configured_location(
-            &config
-        )?;
+    let mut weather = fetch_weather(&location)?;
 
+    weather.cached = false;
 
-    let mut weather =
-        fetch_weather(
-            &location
-        )?;
+    save_weather_cache(&weather)?;
 
-
-    weather.cached =
-        false;
-
-
-    save_weather_cache(
-        &weather
-    )?;
-
-
-    Ok(
-        weather
-    )
+    Ok(weather)
 }
-
 
 // ============================================================
 // CONFIGURED LOCATION
 // ============================================================
 
-fn resolve_configured_location(
-    config: &WeatherConfig
-) -> Result<WeatherLocation, String> {
-
+fn resolve_configured_location(config: &WeatherConfig) -> Result<WeatherLocation, String> {
     match config.location_mode.as_str() {
-
         // --------------------------------------------------------
         // MANUAL
         // --------------------------------------------------------
-
         "manual" => {
+            if let (Some(latitude), Some(longitude)) = (config.latitude, config.longitude) {
+                return Ok(WeatherLocation {
+                    name: if config.city.is_empty() {
+                        "Manual Location".to_string()
+                    } else {
+                        config.city.clone()
+                    },
 
-                        if let (
-                Some(latitude),
-                Some(longitude)
-            ) =
-                (
-                    config.latitude,
-                    config.longitude
-                )
-            {
-                return Ok(
-                    WeatherLocation {
-                        name:
-                            if config.city.is_empty() {
-                                "Manual Location".to_string()
-                            } else {
-                                config.city.clone()
-                            },
+                    admin1: config.admin1.clone(),
 
-                        admin1:
-                            config.admin1.clone(),
+                    country: config.country.clone(),
 
-                        country:
-                            config.country.clone(),
+                    latitude,
+                    longitude,
 
-                        latitude,
-                        longitude,
+                    elevation: config.elevation.unwrap_or(0.0),
 
-                        elevation:
-                            config.elevation
-                                .unwrap_or(0.0),
+                    timezone: config.timezone.clone(),
 
-                        timezone:
-                            config.timezone.clone(),
-
-                        timezone_abbreviation:
-                            String::new(),
-                    }
-                );
+                    timezone_abbreviation: String::new(),
+                });
             }
-
 
             if !config.city.trim().is_empty() {
-                return resolve_manual_location(
-                    &config.city
-                );
+                return resolve_manual_location(&config.city);
             }
 
-
-            Err(
-                "manual weather location has no city or coordinates"
-                    .to_string()
-            )
+            Err("manual weather location has no city or coordinates".to_string())
         }
-
 
         // --------------------------------------------------------
         // AUTO
         // --------------------------------------------------------
-
-        _ => {
-            resolve_auto_location()
-        }
+        _ => resolve_auto_location(),
     }
 }
-
 
 // ============================================================
 // AUTOMATIC LOCATION
 // ============================================================
 
-fn resolve_auto_location()
-    -> Result<WeatherLocation, String>
-{
-    let client =
-        http_client()?;
+fn resolve_auto_location() -> Result<WeatherLocation, String> {
+    let client = http_client()?;
 
+    let response = client
+        .get(IP_LOCATION_URL)
+        .send()
+        .map_err(|error| format!("automatic location request failed: {error}"))?;
 
-    let response =
-        client
-            .get(IP_LOCATION_URL)
-            .send()
-            .map_err(
-                |error|
-                    format!(
-                        "automatic location request failed: {error}"
-                    )
-            )?;
-
-
-    if !response
-        .status()
-        .is_success()
-    {
-        return Err(
-            format!(
-                "automatic location request returned HTTP {}",
-                response.status()
-            )
-        );
+    if !response.status().is_success() {
+        return Err(format!(
+            "automatic location request returned HTTP {}",
+            response.status()
+        ));
     }
 
+    let data: AutoLocationResponse = response
+        .json()
+        .map_err(|error| format!("failed to parse automatic location response: {error}"))?;
 
-    let data:
-        AutoLocationResponse =
-        response
-            .json()
-            .map_err(
-                |error|
-                    format!(
-                        "failed to parse automatic location response: {error}"
-                    )
-            )?;
+    let latitude = data
+        .latitude
+        .ok_or_else(|| "automatic location response did not contain latitude".to_string())?;
 
+    let longitude = data
+        .longitude
+        .ok_or_else(|| "automatic location response did not contain longitude".to_string())?;
 
-    let latitude =
-        data.latitude
-            .ok_or_else(
-                ||
-                    "automatic location response did not contain latitude"
-                        .to_string()
-            )?;
+    Ok(WeatherLocation {
+        name: data.city.unwrap_or_else(|| "Current Location".to_string()),
 
+        admin1: String::new(),
 
-    let longitude =
-        data.longitude
-            .ok_or_else(
-                ||
-                    "automatic location response did not contain longitude"
-                        .to_string()
-            )?;
+        country: data.country_name.unwrap_or_default(),
 
+        latitude,
+        longitude,
 
-    Ok(
-        WeatherLocation {
-            name:
-                data.city
-                    .unwrap_or_else(
-                        ||
-                            "Current Location"
-                                .to_string()
-                    ),
-            
-            admin1:
-                String::new(),
+        elevation: 0.0,
 
+        timezone: data.timezone.unwrap_or_default(),
 
-
-            country:
-                data.country_name
-                    .unwrap_or_default(),
-
-            latitude,
-            longitude,
-
-            elevation:
-                0.0,
-
-            timezone:
-                data.timezone
-                    .unwrap_or_default(),
-
-            timezone_abbreviation:
-                String::new(),
-        }
-    )
+        timezone_abbreviation: String::new(),
+    })
 }
-
 
 // ============================================================
 // MANUAL LOCATION
 // ============================================================
 
-fn resolve_manual_location(
-    query: &str
-) -> Result<WeatherLocation, String> {
+fn resolve_manual_location(query: &str) -> Result<WeatherLocation, String> {
+    let results = search_locations(query)?;
 
-    let results =
-        search_locations(
-            query
-        )?;
+    let result = results
+        .into_iter()
+        .next()
+        .ok_or_else(|| format!("location not found: {query}"))?;
 
+    Ok(WeatherLocation {
+        name: result.name,
 
-    let result =
-        results
-            .into_iter()
-            .next()
-            .ok_or_else(
-                ||
-                    format!(
-                        "location not found: {query}"
-                    )
-            )?;
+        admin1: result.admin1,
 
+        country: result.country,
 
-    Ok(
-        WeatherLocation {
-            name:
-                result.name,
+        latitude: result.latitude,
 
-            admin1:
-                result.admin1,
+        longitude: result.longitude,
 
-            country:
-                result.country,
+        elevation: result.elevation,
 
-            latitude:
-                result.latitude,
+        timezone: result.timezone,
 
-            longitude:
-                result.longitude,
-
-            elevation:
-                result.elevation,
-
-            timezone:
-                result.timezone,
-
-            timezone_abbreviation:
-                String::new(),
-        }
-    )
+        timezone_abbreviation: String::new(),
+    })
 }
-
 
 // ============================================================
 // LOCATION SEARCH
 // ============================================================
 
-fn search_locations(
-    query: &str
-) -> Result<Vec<LocationSearchResult>, String> {
-
-    let query =
-        query.trim();
-
+fn search_locations(query: &str) -> Result<Vec<LocationSearchResult>, String> {
+    let query = query.trim();
 
     if query.is_empty() {
-        return Err(
-            "location search query is empty"
-                .to_string()
-        );
+        return Err("location search query is empty".to_string());
     }
 
+    let client = http_client()?;
 
-    let client =
-        http_client()?;
+    let response = client
+        .get(GEOCODING_URL)
+        .query(&[
+            ("name", query),
+            ("count", "10"),
+            ("language", "en"),
+            ("format", "json"),
+        ])
+        .send()
+        .map_err(|error| format!("location search request failed: {error}"))?;
 
-
-    let response =
-        client
-            .get(GEOCODING_URL)
-            .query(
-                &[
-                    (
-                        "name",
-                        query
-                    ),
-                    (
-                        "count",
-                        "10"
-                    ),
-                    (
-                        "language",
-                        "en"
-                    ),
-                    (
-                        "format",
-                        "json"
-                    ),
-                ]
-            )
-            .send()
-            .map_err(
-                |error|
-                    format!(
-                        "location search request failed: {error}"
-                    )
-            )?;
-
-
-    if !response
-        .status()
-        .is_success()
-    {
-        return Err(
-            format!(
-                "location search returned HTTP {}",
-                response.status()
-            )
-        );
+    if !response.status().is_success() {
+        return Err(format!(
+            "location search returned HTTP {}",
+            response.status()
+        ));
     }
 
+    let data: GeocodingResponse = response
+        .json()
+        .map_err(|error| format!("failed to parse location search response: {error}"))?;
 
-    let data:
-        GeocodingResponse =
-        response
-            .json()
-            .map_err(
-                |error|
-                    format!(
-                        "failed to parse location search response: {error}"
-                    )
-            )?;
+    let results = data
+        .results
+        .unwrap_or_default()
+        .into_iter()
+        .map(|result| LocationSearchResult {
+            name: result.name,
 
+            admin1: result.admin1.unwrap_or_default(),
 
-    let results =
-        data.results
-            .unwrap_or_default()
-            .into_iter()
-            .map(
-                |result|
-                    LocationSearchResult {
-                        name:
-                            result.name,
+            country: result.country.unwrap_or_default(),
 
-                        admin1:
-                            result.admin1
-                                .unwrap_or_default(),
+            latitude: result.latitude,
 
-                        country:
-                            result.country
-                                .unwrap_or_default(),
+            longitude: result.longitude,
 
-                        latitude:
-                            result.latitude,
+            elevation: result.elevation.unwrap_or(0.0),
 
-                        longitude:
-                            result.longitude,
+            timezone: result.timezone.unwrap_or_default(),
+        })
+        .collect();
 
-                        elevation:
-                            result.elevation
-                                .unwrap_or(0.0),
-
-                        timezone:
-                            result.timezone
-                                .unwrap_or_default(),
-                    }
-            )
-            .collect();
-
-
-    Ok(
-        results
-    )
+    Ok(results)
 }
-
 
 // ============================================================
 // WEATHER API
 // ============================================================
 
-fn fetch_weather(
-    location: &WeatherLocation
-) -> Result<WeatherOutput, String> {
+fn fetch_weather(location: &WeatherLocation) -> Result<WeatherOutput, String> {
+    let client = http_client()?;
 
-    let client =
-        http_client()?;
+    let latitude = location.latitude.to_string();
 
+    let longitude = location.longitude.to_string();
 
-    let latitude =
-        location.latitude
-            .to_string();
+    let current = concat!(
+        "temperature_2m,",
+        "apparent_temperature,",
+        "weather_code,",
+        "wind_speed_10m,",
+        "wind_direction_10m,",
+        "is_day"
+    );
 
-    let longitude =
-        location.longitude
-            .to_string();
+    let hourly = concat!(
+        "temperature_2m,",
+        "apparent_temperature,",
+        "precipitation_probability,",
+        "weather_code,",
+        "wind_speed_10m,",
+        "wind_direction_10m,",
+        "is_day"
+    );
 
+    let daily = concat!(
+        "weather_code,",
+        "temperature_2m_max,",
+        "temperature_2m_min,",
+        "sunrise,",
+        "sunset,",
+        "uv_index_max,",
+        "precipitation_probability_max"
+    );
 
-    let current =
-        concat!(
-            "temperature_2m,",
-            "apparent_temperature,",
-            "weather_code,",
-            "wind_speed_10m,",
-            "wind_direction_10m,",
-            "is_day"
-        );
+    let response = client
+        .get(FORECAST_URL)
+        .query(&[
+            ("latitude", latitude.as_str()),
+            ("longitude", longitude.as_str()),
+            ("current", current),
+            ("hourly", hourly),
+            ("daily", daily),
+            ("timezone", "auto"),
+            ("forecast_days", "7"),
+            ("temperature_unit", "celsius"),
+            ("wind_speed_unit", "kmh"),
+        ])
+        .send()
+        .map_err(|error| format!("weather request failed: {error}"))?;
 
+    if !response.status().is_success() {
+        let status = response.status();
 
-    let hourly =
-        concat!(
-            "temperature_2m,",
-            "apparent_temperature,",
-            "precipitation_probability,",
-            "weather_code,",
-            "wind_speed_10m,",
-            "wind_direction_10m,",
-            "is_day"
-        );
+        let body = response.text().unwrap_or_default();
 
-
-    let daily =
-        concat!(
-            "weather_code,",
-            "temperature_2m_max,",
-            "temperature_2m_min,",
-            "sunrise,",
-            "sunset,",
-            "uv_index_max,",
-            "precipitation_probability_max"
-        );
-
-
-    let response =
-        client
-            .get(FORECAST_URL)
-            .query(
-                &[
-                    (
-                        "latitude",
-                        latitude.as_str()
-                    ),
-                    (
-                        "longitude",
-                        longitude.as_str()
-                    ),
-
-                    (
-                        "current",
-                        current
-                    ),
-
-                    (
-                        "hourly",
-                        hourly
-                    ),
-
-                    (
-                        "daily",
-                        daily
-                    ),
-
-                    (
-                        "timezone",
-                        "auto"
-                    ),
-
-                    (
-                        "forecast_days",
-                        "7"
-                    ),
-
-                    (
-                        "temperature_unit",
-                        "celsius"
-                    ),
-
-                    (
-                        "wind_speed_unit",
-                        "kmh"
-                    ),
-                ]
-            )
-            .send()
-            .map_err(
-                |error|
-                    format!(
-                        "weather request failed: {error}"
-                    )
-            )?;
-
-
-    if !response
-        .status()
-        .is_success()
-    {
-        let status =
-            response.status();
-
-
-        let body =
-            response
-                .text()
-                .unwrap_or_default();
-
-
-        return Err(
-            format!(
-                "weather request returned HTTP {status}: {body}"
-            )
-        );
+        return Err(format!("weather request returned HTTP {status}: {body}"));
     }
 
+    let api: ForecastResponse = response
+        .json()
+        .map_err(|error| format!("failed to parse weather response: {error}"))?;
 
-    let api:
-        ForecastResponse =
-        response
-            .json()
-            .map_err(
-                |error|
-                    format!(
-                        "failed to parse weather response: {error}"
-                    )
-            )?;
-
-
-    build_weather_output(
-        location,
-        api
-    )
+    build_weather_output(location, api)
 }
-
 
 // ============================================================
 // BUILD WEATHER OUTPUT
@@ -1249,1042 +776,502 @@ fn build_weather_output(
     location: &WeatherLocation,
     api: ForecastResponse,
 ) -> Result<WeatherOutput, String> {
+    let today_min = api
+        .daily
+        .temperature_2m_min
+        .first()
+        .copied()
+        .unwrap_or(api.current.temperature_2m);
 
-    let today_min =
-        api.daily
-            .temperature_2m_min
-            .first()
-            .copied()
-            .unwrap_or(
-                api.current
-                    .temperature_2m
-            );
+    let today_max = api
+        .daily
+        .temperature_2m_max
+        .first()
+        .copied()
+        .unwrap_or(api.current.temperature_2m);
 
+    let sunrise = api
+        .daily
+        .sunrise
+        .first()
+        .map(|value| extract_time(value))
+        .unwrap_or_default();
 
-    let today_max =
-        api.daily
-            .temperature_2m_max
-            .first()
-            .copied()
-            .unwrap_or(
-                api.current
-                    .temperature_2m
-            );
+    let sunset = api
+        .daily
+        .sunset
+        .first()
+        .map(|value| extract_time(value))
+        .unwrap_or_default();
 
+    let uv_index = api
+        .daily
+        .uv_index_max
+        .first()
+        .and_then(|value| *value)
+        .unwrap_or(0.0);
 
-    let sunrise =
-        api.daily
-            .sunrise
-            .first()
-            .map(
-                |value|
-                    extract_time(
-                        value
-                    )
-            )
-            .unwrap_or_default();
+    let wind_direction = degrees_to_direction(api.current.wind_direction_10m);
 
+    let (condition, icon) = weather_description(api.current.weather_code, api.current.is_day == 1);
 
-    let sunset =
-        api.daily
-            .sunset
-            .first()
-            .map(
-                |value|
-                    extract_time(
-                        value
-                    )
-            )
-            .unwrap_or_default();
+    let current = CurrentWeather {
+        temperature: api.current.temperature_2m,
 
+        apparent_temperature: api.current.apparent_temperature,
 
-    let uv_index =
-        api.daily
-            .uv_index_max
-            .first()
-            .and_then(
-                |value|
-                    *value
-            )
-            .unwrap_or(0.0);
+        condition: condition.to_string(),
 
+        weather_code: api.current.weather_code,
 
-    let wind_direction =
-        degrees_to_direction(
-            api.current
-                .wind_direction_10m
-        );
+        icon: icon.to_string(),
 
+        min_temperature: today_min,
 
-    let (
-        condition,
-        icon
-    ) =
-        weather_description(
-            api.current
-                .weather_code,
+        max_temperature: today_max,
 
-            api.current
-                .is_day
-                == 1,
-        );
+        wind_speed: api.current.wind_speed_10m,
 
+        wind_direction_degrees: api.current.wind_direction_10m,
 
-    let current =
-        CurrentWeather {
-            temperature:
-                api.current
-                    .temperature_2m,
+        wind_direction: wind_direction.to_string(),
 
-            apparent_temperature:
-                api.current
-                    .apparent_temperature,
+        is_day: api.current.is_day == 1,
+    };
 
-            condition:
-                condition.to_string(),
+    let details = WeatherDetails {
+        temperature_min: today_min,
 
-            weather_code:
-                api.current
-                    .weather_code,
+        temperature_max: today_max,
 
-            icon:
-                icon.to_string(),
+        wind_speed: api.current.wind_speed_10m,
 
-            min_temperature:
-                today_min,
+        wind_direction: wind_direction.to_string(),
 
-            max_temperature:
-                today_max,
+        sunrise,
+        sunset,
 
-            wind_speed:
-                api.current
-                    .wind_speed_10m,
+        elevation: api.elevation,
 
-            wind_direction_degrees:
-                api.current
-                    .wind_direction_10m,
+        uv_index,
 
-            wind_direction:
-                wind_direction.to_string(),
+        timezone: api.timezone.clone(),
 
-            is_day:
-                api.current
-                    .is_day
-                    == 1,
-        };
+        timezone_abbreviation: api.timezone_abbreviation.clone(),
+    };
 
+    let daily = build_daily_forecast(&api.daily);
 
-    let details =
-        WeatherDetails {
-            temperature_min:
-                today_min,
+    let hourly = build_hourly_forecast(&api.hourly);
 
-            temperature_max:
-                today_max,
+    let output_location = WeatherLocation {
+        name: location.name.clone(),
 
-            wind_speed:
-                api.current
-                    .wind_speed_10m,
+        admin1: location.admin1.clone(),
 
-            wind_direction:
-                wind_direction.to_string(),
+        country: location.country.clone(),
 
-            sunrise,
-            sunset,
+        latitude: location.latitude,
 
-            elevation:
-                api.elevation,
+        longitude: location.longitude,
 
-            uv_index,
+        // Forecast API value is preferable here.
+        elevation: api.elevation,
 
-            timezone:
-                api.timezone.clone(),
+        timezone: api.timezone.clone(),
 
-            timezone_abbreviation:
-                api.timezone_abbreviation
-                    .clone(),
-        };
+        timezone_abbreviation: api.timezone_abbreviation.clone(),
+    };
 
+    Ok(WeatherOutput {
+        success: true,
 
-    let daily =
-        build_daily_forecast(
-            &api.daily
-        );
+        cached: false,
 
+        location: output_location,
 
-    let hourly =
-        build_hourly_forecast(
-            &api.hourly
-        );
+        current,
+        details,
 
+        daily,
+        hourly,
 
-    let output_location =
-        WeatherLocation {
-            name:
-                location.name.clone(),
-
-            admin1:
-                location.admin1.clone(),
-
-            country:
-                location.country.clone(),
-
-            latitude:
-                location.latitude,
-
-            longitude:
-                location.longitude,
-
-            // Forecast API value is preferable here.
-            elevation:
-                api.elevation,
-
-            timezone:
-                api.timezone.clone(),
-
-            timezone_abbreviation:
-                api.timezone_abbreviation
-                    .clone(),
-        };
-
-
-    Ok(
-        WeatherOutput {
-            success:
-                true,
-
-            cached:
-                false,
-
-            location:
-                output_location,
-
-            current,
-            details,
-
-            daily,
-            hourly,
-
-            updated_at:
-                unix_time(),
-        }
-    )
+        updated_at: unix_time(),
+    })
 }
-
 
 // ============================================================
 // DAILY FORECAST
 // ============================================================
 
-fn build_daily_forecast(
-    daily: &ForecastDaily
-) -> Vec<DailyForecast> {
-
-    let mut output =
-        Vec::new();
-
+fn build_daily_forecast(daily: &ForecastDaily) -> Vec<DailyForecast> {
+    let mut output = Vec::new();
 
     for index in 0..daily.time.len() {
+        let code = get_i32(&daily.weather_code, index);
 
-        let code =
-            get_i32(
-                &daily.weather_code,
-                index
-            );
+        let (condition, icon) = weather_description(code, true);
 
+        output.push(DailyForecast {
+            date: get_string(&daily.time, index),
 
-        let (
-            condition,
-            icon
-        ) =
-            weather_description(
-                code,
-                true
-            );
+            weather_code: code,
 
+            condition: condition.to_string(),
 
-        output.push(
-            DailyForecast {
-                date:
-                    get_string(
-                        &daily.time,
-                        index
-                    ),
+            icon: icon.to_string(),
 
-                weather_code:
-                    code,
+            min_temperature: get_f64(&daily.temperature_2m_min, index),
 
-                condition:
-                    condition.to_string(),
+            max_temperature: get_f64(&daily.temperature_2m_max, index),
 
-                icon:
-                    icon.to_string(),
+            sunrise: extract_time(&get_string(&daily.sunrise, index)),
 
-                min_temperature:
-                    get_f64(
-                        &daily.temperature_2m_min,
-                        index
-                    ),
+            sunset: extract_time(&get_string(&daily.sunset, index)),
 
-                max_temperature:
-                    get_f64(
-                        &daily.temperature_2m_max,
-                        index
-                    ),
+            uv_index: get_optional_f64(&daily.uv_index_max, index),
 
-                sunrise:
-                    extract_time(
-                        &get_string(
-                            &daily.sunrise,
-                            index
-                        )
-                    ),
-
-                sunset:
-                    extract_time(
-                        &get_string(
-                            &daily.sunset,
-                            index
-                        )
-                    ),
-
-                uv_index:
-                    get_optional_f64(
-                        &daily.uv_index_max,
-                        index
-                    ),
-
-                precipitation_probability:
-                    get_optional_f64(
-                        &daily.precipitation_probability_max,
-                        index
-                    ),
-            }
-        );
+            precipitation_probability: get_optional_f64(
+                &daily.precipitation_probability_max,
+                index,
+            ),
+        });
     }
-
 
     output
 }
-
 
 // ============================================================
 // HOURLY FORECAST
 // ============================================================
 
-fn build_hourly_forecast(
-    hourly: &ForecastHourly
-) -> Vec<HourlyForecast> {
-
-    let mut output =
-        Vec::new();
-
+fn build_hourly_forecast(hourly: &ForecastHourly) -> Vec<HourlyForecast> {
+    let mut output = Vec::new();
 
     for index in 0..hourly.time.len() {
+        let code = get_i32(&hourly.weather_code, index);
 
-        let code =
-            get_i32(
-                &hourly.weather_code,
-                index
-            );
+        let is_day = hourly.is_day.get(index).copied().unwrap_or(1) == 1;
 
+        let (condition, icon) = weather_description(code, is_day);
 
-        let is_day =
-            hourly
-                .is_day
-                .get(index)
-                .copied()
-                .unwrap_or(1)
-                == 1;
+        output.push(HourlyForecast {
+            time: get_string(&hourly.time, index),
 
+            temperature: get_f64(&hourly.temperature_2m, index),
 
-        let (
-            condition,
-            icon
-        ) =
-            weather_description(
-                code,
-                is_day
-            );
+            apparent_temperature: get_f64(&hourly.apparent_temperature, index),
 
+            weather_code: code,
 
-        output.push(
-            HourlyForecast {
-                time:
-                    get_string(
-                        &hourly.time,
-                        index
-                    ),
+            condition: condition.to_string(),
 
-                temperature:
-                    get_f64(
-                        &hourly.temperature_2m,
-                        index
-                    ),
+            icon: icon.to_string(),
 
-                apparent_temperature:
-                    get_f64(
-                        &hourly.apparent_temperature,
-                        index
-                    ),
+            precipitation_probability: get_optional_f64(&hourly.precipitation_probability, index),
 
-                weather_code:
-                    code,
+            wind_speed: get_f64(&hourly.wind_speed_10m, index),
 
-                condition:
-                    condition.to_string(),
+            wind_direction: degrees_to_direction(get_f64(&hourly.wind_direction_10m, index))
+                .to_string(),
 
-                icon:
-                    icon.to_string(),
-
-                precipitation_probability:
-                    get_optional_f64(
-                        &hourly.precipitation_probability,
-                        index
-                    ),
-
-                wind_speed:
-                    get_f64(
-                        &hourly.wind_speed_10m,
-                        index
-                    ),
-
-                wind_direction:
-                    degrees_to_direction(
-                        get_f64(
-                            &hourly.wind_direction_10m,
-                            index
-                        )
-                    )
-                    .to_string(),
-
-                is_day,
-            }
-        );
+            is_day,
+        });
     }
-
 
     output
 }
-
 
 // ============================================================
 // WEATHER CODES
 // ============================================================
 
-fn weather_description(
-    code: i32,
-    is_day: bool,
-) -> (&'static str, &'static str) {
-
+fn weather_description(code: i32, is_day: bool) -> (&'static str, &'static str) {
     match code {
-
         0 => {
             if is_day {
-                (
-                    "Clear sky",
-                    "clear-day"
-                )
+                ("Clear sky", "clear-day")
             } else {
-                (
-                    "Clear sky",
-                    "clear-night"
-                )
+                ("Clear sky", "clear-night")
             }
         }
-
 
         1 => {
             if is_day {
-                (
-                    "Mainly clear",
-                    "mostly-clear-day"
-                )
+                ("Mainly clear", "mostly-clear-day")
             } else {
-                (
-                    "Mainly clear",
-                    "mostly-clear-night"
-                )
+                ("Mainly clear", "mostly-clear-night")
             }
         }
-
 
         2 => {
             if is_day {
-                (
-                    "Partly cloudy",
-                    "partly-cloudy-day"
-                )
+                ("Partly cloudy", "partly-cloudy-day")
             } else {
-                (
-                    "Partly cloudy",
-                    "partly-cloudy-night"
-                )
+                ("Partly cloudy", "partly-cloudy-night")
             }
         }
 
+        3 => ("Overcast", "cloudy"),
 
-        3 =>
-            (
-                "Overcast",
-                "cloudy"
-            ),
+        45 | 48 => ("Fog", "fog"),
 
+        51 | 53 | 55 => ("Drizzle", "drizzle"),
 
-        45 | 48 =>
-            (
-                "Fog",
-                "fog"
-            ),
+        56 | 57 => ("Freezing drizzle", "freezing-rain"),
 
+        61 | 63 | 65 => ("Rain", "rain"),
 
-        51 | 53 | 55 =>
-            (
-                "Drizzle",
-                "drizzle"
-            ),
+        66 | 67 => ("Freezing rain", "freezing-rain"),
 
+        71 | 73 | 75 => ("Snow", "snow"),
 
-        56 | 57 =>
-            (
-                "Freezing drizzle",
-                "freezing-rain"
-            ),
+        77 => ("Snow grains", "snow"),
 
+        80 | 81 | 82 => ("Rain showers", "rain-showers"),
 
-        61 | 63 | 65 =>
-            (
-                "Rain",
-                "rain"
-            ),
+        85 | 86 => ("Snow showers", "snow-showers"),
 
+        95 => ("Thunderstorm", "thunderstorm"),
 
-        66 | 67 =>
-            (
-                "Freezing rain",
-                "freezing-rain"
-            ),
+        96 | 99 => ("Thunderstorm with hail", "thunderstorm-hail"),
 
-
-        71 | 73 | 75 =>
-            (
-                "Snow",
-                "snow"
-            ),
-
-
-        77 =>
-            (
-                "Snow grains",
-                "snow"
-            ),
-
-
-        80 | 81 | 82 =>
-            (
-                "Rain showers",
-                "rain-showers"
-            ),
-
-
-        85 | 86 =>
-            (
-                "Snow showers",
-                "snow-showers"
-            ),
-
-
-        95 =>
-            (
-                "Thunderstorm",
-                "thunderstorm"
-            ),
-
-
-        96 | 99 =>
-            (
-                "Thunderstorm with hail",
-                "thunderstorm-hail"
-            ),
-
-
-        _ =>
-            (
-                "Unknown",
-                "unknown"
-            ),
+        _ => ("Unknown", "unknown"),
     }
 }
-
 
 // ============================================================
 // WIND DIRECTION
 // ============================================================
 
-fn degrees_to_direction(
-    degrees: f64
-) -> &'static str {
-
-    let degrees =
-        degrees.rem_euclid(
-            360.0
-        );
-
+fn degrees_to_direction(degrees: f64) -> &'static str {
+    let degrees = degrees.rem_euclid(360.0);
 
     match degrees {
+        d if d < 22.5 => "N",
 
-        d if d < 22.5 =>
-            "N",
+        d if d < 67.5 => "NE",
 
-        d if d < 67.5 =>
-            "NE",
+        d if d < 112.5 => "E",
 
-        d if d < 112.5 =>
-            "E",
+        d if d < 157.5 => "SE",
 
-        d if d < 157.5 =>
-            "SE",
+        d if d < 202.5 => "S",
 
-        d if d < 202.5 =>
-            "S",
+        d if d < 247.5 => "SW",
 
-        d if d < 247.5 =>
-            "SW",
+        d if d < 292.5 => "W",
 
-        d if d < 292.5 =>
-            "W",
+        d if d < 337.5 => "NW",
 
-        d if d < 337.5 =>
-            "NW",
-
-        _ =>
-            "N",
+        _ => "N",
     }
 }
-
 
 // ============================================================
 // CONFIG
 // ============================================================
 
-fn read_weather_config()
-    -> WeatherConfig
-{
-    let path =
-        config_path();
+fn read_weather_config() -> WeatherConfig {
+    let path = config_path();
 
-
-    let Ok(contents) =
-        fs::read_to_string(
-            path
-        )
-    else {
+    let Ok(contents) = fs::read_to_string(path) else {
         return WeatherConfig::default();
     };
 
-
-    let mut config =
-        WeatherConfig::default();
-
+    let mut config = WeatherConfig::default();
 
     for line in contents.lines() {
+        let line = line.trim();
 
-        let line =
-            line.trim();
-
-
-        if line.is_empty()
-            || line.starts_with('#')
-        {
+        if line.is_empty() || line.starts_with('#') {
             continue;
         }
 
-
-        let Some(
-            (
-                key,
-                value
-            )
-        ) =
-            line.split_once('=')
-        else {
+        let Some((key, value)) = line.split_once('=') else {
             continue;
         };
 
+        let key = key.trim();
 
-        let key =
-            key.trim();
-
-        let value =
-            value.trim();
-
+        let value = value.trim();
 
         match key {
-
             "location_mode" => {
-
-                if value == "auto"
-                    || value == "manual"
-                {
-                    config.location_mode =
-                        value.to_string();
+                if value == "auto" || value == "manual" {
+                    config.location_mode = value.to_string();
                 }
             }
-
 
             "city" => {
-                config.city =
-                    value.to_string();
+                config.city = value.to_string();
             }
 
-
             "latitude" => {
-
                 if !value.is_empty() {
-                    config.latitude =
-                        value
-                            .parse::<f64>()
-                            .ok();
+                    config.latitude = value.parse::<f64>().ok();
                 }
             }
 
-
             "longitude" => {
-
                 if !value.is_empty() {
-                    config.longitude =
-                        value
-                            .parse::<f64>()
-                            .ok();
+                    config.longitude = value.parse::<f64>().ok();
                 }
             }
 
             "admin1" => {
-                config.admin1 =
-                    value.to_string();
+                config.admin1 = value.to_string();
             }
-
 
             "country" => {
-                config.country =
-                    value.to_string();
+                config.country = value.to_string();
             }
-
 
             "elevation" => {
                 if !value.is_empty() {
-                    config.elevation =
-                        value
-                            .parse::<f64>()
-                            .ok();
+                    config.elevation = value.parse::<f64>().ok();
                 }
             }
 
-
             "timezone" => {
-                config.timezone =
-                    value.to_string();
+                config.timezone = value.to_string();
             }
-
 
             _ => {}
         }
     }
 
-
     config
 }
 
+fn save_weather_config(config: &WeatherConfig) -> Result<(), String> {
+    let path = config_path();
 
-fn save_weather_config(
-    config: &WeatherConfig
-) -> Result<(), String> {
-
-    let path =
-        config_path();
-
-
-    if let Some(parent) =
-        path.parent()
-    {
-        fs::create_dir_all(
-            parent
-        )
-        .map_err(
-            |error|
-                format!(
-                    "failed to create config directory: {error}"
-                )
-        )?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|error| format!("failed to create config directory: {error}"))?;
     }
 
+    let latitude = config
+        .latitude
+        .map(|value| value.to_string())
+        .unwrap_or_default();
 
-    let latitude =
-        config.latitude
-            .map(
-                |value|
-                    value.to_string()
-            )
-            .unwrap_or_default();
+    let longitude = config
+        .longitude
+        .map(|value| value.to_string())
+        .unwrap_or_default();
 
+    let elevation = config
+        .elevation
+        .map(|value| value.to_string())
+        .unwrap_or_default();
 
-    let longitude =
-        config.longitude
-            .map(
-                |value|
-                    value.to_string()
-            )
-            .unwrap_or_default();
+    let contents = format!(
+        concat!(
+            "# NEXA Weather\n",
+            "\n",
+            "location_mode={}\n",
+            "city={}\n",
+            "admin1={}\n",
+            "country={}\n",
+            "latitude={}\n",
+            "longitude={}\n",
+            "elevation={}\n",
+            "timezone={}\n"
+        ),
+        config.location_mode,
+        config.city,
+        config.admin1,
+        config.country,
+        latitude,
+        longitude,
+        elevation,
+        config.timezone,
+    );
 
-    let elevation =
-        config.elevation
-            .map(
-                |value|
-                    value.to_string()
-            )
-            .unwrap_or_default();
-
-
-    let contents =
-        format!(
-            concat!(
-                "# NEXA Weather\n",
-                "\n",
-                "location_mode={}\n",
-                "city={}\n",
-                "admin1={}\n",
-                "country={}\n",
-                "latitude={}\n",
-                "longitude={}\n",
-                "elevation={}\n",
-                "timezone={}\n"
-            ),
-
-            config.location_mode,
-            config.city,
-            config.admin1,
-            config.country,
-            latitude,
-            longitude,
-            elevation,
-            config.timezone,
-        );
-
-    
-
-
-    fs::write(
-        path,
-        contents
-    )
-    .map_err(
-        |error|
-            format!(
-                "failed to save weather config: {error}"
-            )
-    )
+    fs::write(path, contents).map_err(|error| format!("failed to save weather config: {error}"))
 }
-
 
 // ============================================================
 // CACHE
 // ============================================================
 
-fn load_cached_weather(
-    config: &WeatherConfig
-) -> Option<WeatherOutput> {
+fn load_cached_weather(config: &WeatherConfig) -> Option<WeatherOutput> {
+    let path = cache_path();
 
-    let path =
-        cache_path();
+    let contents = fs::read_to_string(path).ok()?;
 
+    let mut weather: WeatherOutput = serde_json::from_str(&contents).ok()?;
 
-    let contents =
-        fs::read_to_string(
-            path
-        )
-        .ok()?;
+    let now = unix_time();
 
-
-    let mut weather:
-        WeatherOutput =
-        serde_json::from_str(
-            &contents
-        )
-        .ok()?;
-
-
-    let now =
-        unix_time();
-
-
-    if now.saturating_sub(
-        weather.updated_at
-    ) > CACHE_MAX_AGE
-    {
+    if now.saturating_sub(weather.updated_at) > CACHE_MAX_AGE {
         return None;
     }
-
 
     // Manual config may have been edited outside nexad.
     // Refuse stale cache when coordinates no longer match.
     if config.location_mode == "manual" {
-
-        if let (
-            Some(latitude),
-            Some(longitude)
-        ) =
-            (
-                config.latitude,
-                config.longitude
-            )
-        {
-            if !coordinates_equal(
-                weather.location.latitude,
-                latitude
-            )
-            || !coordinates_equal(
-                weather.location.longitude,
-                longitude
-            )
+        if let (Some(latitude), Some(longitude)) = (config.latitude, config.longitude) {
+            if !coordinates_equal(weather.location.latitude, latitude)
+                || !coordinates_equal(weather.location.longitude, longitude)
             {
                 return None;
             }
         }
     }
 
+    weather.cached = true;
 
-    weather.cached =
-        true;
-
-
-    Some(
-        weather
-    )
+    Some(weather)
 }
 
+fn save_weather_cache(weather: &WeatherOutput) -> Result<(), String> {
+    let path = cache_path();
 
-fn save_weather_cache(
-    weather: &WeatherOutput
-) -> Result<(), String> {
-
-    let path =
-        cache_path();
-
-
-    if let Some(parent) =
-        path.parent()
-    {
-        fs::create_dir_all(
-            parent
-        )
-        .map_err(
-            |error|
-                format!(
-                    "failed to create weather cache directory: {error}"
-                )
-        )?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|error| format!("failed to create weather cache directory: {error}"))?;
     }
 
+    let json = serde_json::to_string_pretty(weather)
+        .map_err(|error| format!("failed to serialize weather cache: {error}"))?;
 
-    let json =
-        serde_json::to_string_pretty(
-            weather
-        )
-        .map_err(
-            |error|
-                format!(
-                    "failed to serialize weather cache: {error}"
-                )
-        )?;
-
-
-    fs::write(
-        path,
-        json
-    )
-    .map_err(
-        |error|
-            format!(
-                "failed to write weather cache: {error}"
-            )
-    )
+    fs::write(path, json).map_err(|error| format!("failed to write weather cache: {error}"))
 }
 
-
-fn clear_weather_cache()
-    -> Result<(), String>
-{
-    remove_file_if_exists(
-        &cache_path()
-    )
+fn clear_weather_cache() -> Result<(), String> {
+    remove_file_if_exists(&cache_path())
 }
 
+fn remove_file_if_exists(path: &Path) -> Result<(), String> {
+    match fs::remove_file(path) {
+        Ok(_) => Ok(()),
 
-fn remove_file_if_exists(
-    path: &Path
-) -> Result<(), String> {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
 
-    match fs::remove_file(
-        path
-    ) {
-
-        Ok(_) =>
-            Ok(()),
-
-
-        Err(error)
-            if error.kind()
-                == std::io::ErrorKind::NotFound =>
-        {
-            Ok(())
-        }
-
-
-        Err(error) => {
-            Err(
-                format!(
-                    "failed to remove {}: {error}",
-                    path.display()
-                )
-            )
-        }
+        Err(error) => Err(format!("failed to remove {}: {error}", path.display())),
     }
 }
-
 
 // ============================================================
 // HTTP
 // ============================================================
 
-fn http_client()
-    -> Result<reqwest::blocking::Client, String>
-{
+fn http_client() -> Result<reqwest::blocking::Client, String> {
     reqwest::blocking::Client::builder()
-        .user_agent(
-            "nexa-weather/0.1"
-        )
-        .timeout(
-            Duration::from_secs(
-                HTTP_TIMEOUT_SECONDS
-            )
-        )
+        .user_agent("nexa-weather/0.1")
+        .timeout(Duration::from_secs(HTTP_TIMEOUT_SECONDS))
         .build()
-        .map_err(
-            |error|
-                format!(
-                    "failed to create HTTP client: {error}"
-                )
-        )
+        .map_err(|error| format!("failed to create HTTP client: {error}"))
 }
-
 
 // ============================================================
 // PATHS
 // ============================================================
 
-fn config_path()
-    -> PathBuf
-{
+fn config_path() -> PathBuf {
     home_dir()
         .join(".config")
         .join("nexa")
@@ -2292,10 +1279,7 @@ fn config_path()
         .join("weather.conf")
 }
 
-
-fn cache_path()
-    -> PathBuf
-{
+fn cache_path() -> PathBuf {
     home_dir()
         .join(".cache")
         .join("nexa")
@@ -2303,158 +1287,68 @@ fn cache_path()
         .join("weather.json")
 }
 
-
-fn home_dir()
-    -> PathBuf
-{
-    env::var_os(
-        "HOME"
-    )
-    .map(
-        PathBuf::from
-    )
-    .unwrap_or_else(
-        ||
-            PathBuf::from(".")
-    )
+fn home_dir() -> PathBuf {
+    env::var_os("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."))
 }
-
 
 // ============================================================
 // HELPERS
 // ============================================================
 
-fn unix_time()
-    -> u64
-{
+fn unix_time() -> u64 {
     SystemTime::now()
-        .duration_since(
-            UNIX_EPOCH
-        )
-        .map(
-            |duration|
-                duration.as_secs()
-        )
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
         .unwrap_or(0)
 }
 
-
-fn coordinates_equal(
-    first: f64,
-    second: f64,
-) -> bool {
-
-    (
-        first
-        -
-        second
-    )
-    .abs()
-        < 0.0001
+fn coordinates_equal(first: f64, second: f64) -> bool {
+    (first - second).abs() < 0.0001
 }
 
-
-fn extract_time(
-    value: &str
-) -> String {
-
-    value
-        .split('T')
-        .nth(1)
-        .unwrap_or(
-            value
-        )
-        .to_string()
+fn extract_time(value: &str) -> String {
+    value.split('T').nth(1).unwrap_or(value).to_string()
 }
 
-
-fn get_string(
-    values: &[String],
-    index: usize,
-) -> String {
-
-    values
-        .get(index)
-        .cloned()
-        .unwrap_or_default()
+fn get_string(values: &[String], index: usize) -> String {
+    values.get(index).cloned().unwrap_or_default()
 }
 
-
-fn get_f64(
-    values: &[f64],
-    index: usize,
-) -> f64 {
-
-    values
-        .get(index)
-        .copied()
-        .unwrap_or(0.0)
+fn get_f64(values: &[f64], index: usize) -> f64 {
+    values.get(index).copied().unwrap_or(0.0)
 }
 
-
-fn get_i32(
-    values: &[i32],
-    index: usize,
-) -> i32 {
-
-    values
-        .get(index)
-        .copied()
-        .unwrap_or(0)
+fn get_i32(values: &[i32], index: usize) -> i32 {
+    values.get(index).copied().unwrap_or(0)
 }
 
-
-fn get_optional_f64(
-    values: &[Option<f64>],
-    index: usize,
-) -> f64 {
-
-    values
-        .get(index)
-        .copied()
-        .flatten()
-        .unwrap_or(0.0)
+fn get_optional_f64(values: &[Option<f64>], index: usize) -> f64 {
+    values.get(index).copied().flatten().unwrap_or(0.0)
 }
-
 
 // ============================================================
 // JSON
 // ============================================================
 
-fn print_json<T>(
-    value: &T
-) -> Result<(), String>
+fn print_json<T>(value: &T) -> Result<(), String>
 where
     T: Serialize,
 {
-    let json =
-        serde_json::to_string(
-            value
-        )
-        .map_err(
-            |error|
-                format!(
-                    "failed to serialize weather output: {error}"
-                )
-        )?;
+    let json = serde_json::to_string(value)
+        .map_err(|error| format!("failed to serialize weather output: {error}"))?;
 
-
-    println!(
-        "{json}"
-    );
-
+    println!("{json}");
 
     Ok(())
 }
-
 
 // ============================================================
 // USAGE
 // ============================================================
 
-fn weather_usage()
-    -> String
-{
+fn weather_usage() -> String {
     concat!(
         "usage:\n",
         "  nexad weather info\n",
@@ -2467,10 +1361,7 @@ fn weather_usage()
     .to_string()
 }
 
-
-fn location_usage()
-    -> String
-{
+fn location_usage() -> String {
     concat!(
         "usage:\n",
         "  nexad weather location info\n",

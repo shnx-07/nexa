@@ -334,7 +334,10 @@ impl TargetMonitorConfig {
     /// Formats into a Hyprland 0.56+ Lua  command string.
     pub fn to_hyprland_lua_eval(&self) -> String {
         if !self.enabled {
-            return format!(r#"eval hl.monitor({{ output = "{}", disabled = true }})"#, self.name);
+            return format!(
+                r#"eval hl.monitor({{ output = "{}", disabled = true }})"#,
+                self.name
+            );
         }
 
         let mode = if self.mode_spec.trim().is_empty() || self.mode_spec == "preferred" {
@@ -410,10 +413,7 @@ pub enum DisplayError {
     InternalMonitorNotFound,
     ConfigIoError(String),
     CommandTimeout(String),
-    ExecutionFailed {
-        step: String,
-        reason: String,
-    },
+    ExecutionFailed { step: String, reason: String },
 }
 
 impl fmt::Display for DisplayError {
@@ -426,7 +426,10 @@ impl fmt::Display for DisplayError {
                 write!(f, "Safety abort: Plan would leave zero active displays")
             }
             Self::ExternalMonitorNotFound => {
-                write!(f, "Requested external display mode, but no external monitor is connected")
+                write!(
+                    f,
+                    "Requested external display mode, but no external monitor is connected"
+                )
             }
             Self::InternalMonitorNotFound => {
                 write!(f, "Internal laptop panel (eDP) not found")

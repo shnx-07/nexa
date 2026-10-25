@@ -142,7 +142,10 @@ fn run_socket_listener(raw_tx: Sender<DisplayEvent>) {
                 eprintln!("[NexaDisplay] Hyprland socket2 closed; reconnecting...");
             }
             Err(e) => {
-                eprintln!("[NexaDisplay] socket2 unavailable ({}); retrying in {:?}", e, backoff);
+                eprintln!(
+                    "[NexaDisplay] socket2 unavailable ({}); retrying in {:?}",
+                    e, backoff
+                );
             }
         }
 
@@ -258,11 +261,15 @@ mod tests {
     fn parses_monitor_v1_events() {
         assert_eq!(
             parse_hyprland_event("monitoradded>>HDMI-A-1"),
-            Some(DisplayEvent::HotplugChanged { connector: Some("HDMI-A-1".into()) })
+            Some(DisplayEvent::HotplugChanged {
+                connector: Some("HDMI-A-1".into())
+            })
         );
         assert_eq!(
             parse_hyprland_event("monitorremoved>>DP-2\n"),
-            Some(DisplayEvent::HotplugChanged { connector: Some("DP-2".into()) })
+            Some(DisplayEvent::HotplugChanged {
+                connector: Some("DP-2".into())
+            })
         );
     }
 
@@ -270,7 +277,9 @@ mod tests {
     fn parses_monitor_v2_events() {
         assert_eq!(
             parse_hyprland_event("monitoraddedv2>>1,DP-1,Dell Inc. U2720Q"),
-            Some(DisplayEvent::HotplugChanged { connector: Some("DP-1".into()) })
+            Some(DisplayEvent::HotplugChanged {
+                connector: Some("DP-1".into())
+            })
         );
         assert_eq!(
             parse_hyprland_event("monitorremovedv2>>1"),
@@ -280,7 +289,10 @@ mod tests {
 
     #[test]
     fn parses_config_reload_and_ignores_noise() {
-        assert_eq!(parse_hyprland_event("configreloaded>>"), Some(DisplayEvent::ForceRefresh));
+        assert_eq!(
+            parse_hyprland_event("configreloaded>>"),
+            Some(DisplayEvent::ForceRefresh)
+        );
         assert_eq!(parse_hyprland_event("activewindow>>kitty,~"), None);
         assert_eq!(parse_hyprland_event("garbage without separator"), None);
     }
@@ -290,18 +302,30 @@ mod tests {
         let (raw_tx, raw_rx) = mpsc::channel();
         let (tx, rx) = mpsc::channel();
         let handle = thread::spawn(move || {
-            run_debouncer(raw_rx, tx, Duration::from_millis(50), Duration::from_millis(500))
+            run_debouncer(
+                raw_rx,
+                tx,
+                Duration::from_millis(50),
+                Duration::from_millis(500),
+            )
         });
 
         for i in 0..5 {
             raw_tx
-                .send(DisplayEvent::HotplugChanged { connector: Some(format!("DP-{i}")) })
+                .send(DisplayEvent::HotplugChanged {
+                    connector: Some(format!("DP-{i}")),
+                })
                 .unwrap();
             thread::sleep(Duration::from_millis(10));
         }
 
         let first = rx.recv_timeout(Duration::from_millis(500)).unwrap();
-        assert_eq!(first, DisplayEvent::HotplugChanged { connector: Some("DP-4".into()) });
+        assert_eq!(
+            first,
+            DisplayEvent::HotplugChanged {
+                connector: Some("DP-4".into())
+            }
+        );
         assert!(rx.recv_timeout(Duration::from_millis(150)).is_err());
 
         drop(raw_tx);
@@ -313,7 +337,12 @@ mod tests {
         let (raw_tx, raw_rx) = mpsc::channel();
         let (tx, rx) = mpsc::channel();
         let handle = thread::spawn(move || {
-            run_debouncer(raw_rx, tx, Duration::from_millis(100), Duration::from_millis(150))
+            run_debouncer(
+                raw_rx,
+                tx,
+                Duration::from_millis(100),
+                Duration::from_millis(150),
+            )
         });
 
         // Pulses every 40 ms would never let a 100 ms quiet window elapse.

@@ -344,7 +344,9 @@ impl DisplayManager {
             eprintln!("[NexaDisplay] Emergency apply failed: {e}; trying blind eDP-1 enable…");
 
             // Last resort: send a single keyword to re-enable eDP-1 at origin.
-            let _ = backend::hyprctl_command(r#"eval hl.monitor({ output = "eDP-1", disabled = false, mode = "preferred", position = "0x0", scale = 1.0, transform = 0 })"#);
+            let _ = backend::hyprctl_command(
+                r#"eval hl.monitor({ output = "eDP-1", disabled = false, mode = "preferred", position = "0x0", scale = 1.0, transform = 0 })"#,
+            );
             let _ = backend::hyprctl_command("keyword monitor eDP-1,preferred,0x0,1");
         }
 
@@ -360,10 +362,7 @@ impl DisplayManager {
 
     /// Returns a clone of the last known `HardwareSnapshot`.
     pub fn last_snapshot(&self) -> HardwareSnapshot {
-        self.snapshot
-            .lock()
-            .map(|s| s.clone())
-            .unwrap_or_default()
+        self.snapshot.lock().map(|s| s.clone()).unwrap_or_default()
     }
 
     /// Returns the current resolved `(ProjectionMode, ExtendDirection)` for the active topology.

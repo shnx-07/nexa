@@ -11,7 +11,9 @@ pub use core::{state, system};
 pub use desktop::{island, lock, power, shelf, workspace};
 pub use hardware::{audio, brightness, network, screenFilter, screenTemp};
 pub use media_tools::{media, recorder, screenshot, slideshow, snipping, wallpaper};
-pub use services::{appLauncher, clipboard, command, commandSearch, notifications, search, weather};
+pub use services::{
+    appLauncher, clipboard, command, commandSearch, notifications, search, weather,
+};
 
 use std::env;
 
@@ -98,6 +100,19 @@ fn main() {
                     if let Err(e) = wallpaper::apply_desktop(path, monitor) {
                         eprintln!("{e}");
                     }
+                }
+                "transition-args" => {
+                    let engine = crate::media_tools::transition::TransitionEngine::new();
+                    let effect = if let Some(name) = args.get(3) {
+                        let nanos = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.subsec_nanos() as usize)
+                            .unwrap_or(0);
+                        engine.build_effect(name, nanos)
+                    } else {
+                        engine.random_effect()
+                    };
+                    println!("{}", effect.args.join(" "));
                 }
                 "refresh" => wallpaper::refresh(),
                 "slideshow" => {
@@ -545,7 +560,9 @@ fn main() {
                 "list" => notifications::list(),
                 "dismiss" => {
                     let Some(id_str) = args.get(3) else {
-                        eprintln!("usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>");
+                        eprintln!(
+                            "usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>"
+                        );
                         return;
                     };
                     match id_str.parse::<u32>() {
@@ -564,7 +581,9 @@ fn main() {
                 }
                 "read" => {
                     let Some(id_str) = args.get(3) else {
-                        eprintln!("usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>");
+                        eprintln!(
+                            "usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>"
+                        );
                         return;
                     };
                     let id = match id_str.parse::<u32>() {
@@ -585,7 +604,9 @@ fn main() {
                 }
                 "action" => {
                     let (Some(id_str), Some(action_key)) = (args.get(3), args.get(4)) else {
-                        eprintln!("usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>");
+                        eprintln!(
+                            "usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>"
+                        );
                         return;
                     };
                     let id = match id_str.parse::<u32>() {
@@ -595,20 +616,22 @@ fn main() {
                             return;
                         }
                     };
-                    if let Err(e) = async_io::block_on(notifications::action(id, action_key.clone())) {
+                    if let Err(e) =
+                        async_io::block_on(notifications::action(id, action_key.clone()))
+                    {
                         eprintln!("failed to invoke notification action: {e}");
                     }
                 }
-                "dnd" => {
-                    match args.get(3).map(String::as_str).unwrap_or("info") {
-                        "info" => notifications::dnd_info(),
-                        "on" => notifications::dnd_on(),
-                        "off" => notifications::dnd_off(),
-                        "toggle" => notifications::dnd_toggle(),
-                        _ => eprintln!("usage: nexad notifications dnd <info|on|off|toggle>"),
-                    }
-                }
-                _ => eprintln!("usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>"),
+                "dnd" => match args.get(3).map(String::as_str).unwrap_or("info") {
+                    "info" => notifications::dnd_info(),
+                    "on" => notifications::dnd_on(),
+                    "off" => notifications::dnd_off(),
+                    "toggle" => notifications::dnd_toggle(),
+                    _ => eprintln!("usage: nexad notifications dnd <info|on|off|toggle>"),
+                },
+                _ => eprintln!(
+                    "usage: nexad notifications <daemon|list|dismiss|clear|read|read-all|action>"
+                ),
             }
         }
 

@@ -6,8 +6,8 @@
 //! Prohibited from mutating state or executing shell commands directly.
 
 use crate::display::model::{
-    ConnectorType, DisplayError, DisplayMode, HardwareSnapshot, LidState, Monitor,
-    MonitorIdentity, Position, PowerState, Transform, WorkspaceInfo,
+    ConnectorType, DisplayError, DisplayMode, HardwareSnapshot, LidState, Monitor, MonitorIdentity,
+    Position, PowerState, Transform, WorkspaceInfo,
 };
 use serde::Deserialize;
 use std::collections::HashMap;

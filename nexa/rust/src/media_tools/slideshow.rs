@@ -1,11 +1,10 @@
+use serde::{Deserialize, Serialize};
 use std::{
-    env,
-    fs,
+    env, fs,
     path::{Path, PathBuf},
     process::Command,
     time::{SystemTime, UNIX_EPOCH},
 };
-use serde::{Deserialize, Serialize};
 
 // ============================================================
 // CONFIG MODEL
@@ -15,9 +14,9 @@ use serde::{Deserialize, Serialize};
 pub struct SlideshowConfig {
     pub enabled: bool,
     pub paused: bool,
-    pub interval: String,      // "5m", "10m", "15m", "30m", "1h"
-    pub type_filter: String,   // "All", "Image", "GIF", "Video"
-    pub apply_target: String,  // "Background", "Lock Screen", "Both"
+    pub interval: String,     // "5m", "10m", "15m", "30m", "1h"
+    pub type_filter: String,  // "All", "Image", "GIF", "Video"
+    pub apply_target: String, // "Background", "Lock Screen", "Both"
     #[serde(default)]
     pub last_wallpaper: String,
     #[serde(default)]
@@ -48,15 +47,26 @@ fn home_dir() -> PathBuf {
 }
 
 pub fn slideshow_dir() -> PathBuf {
-    home_dir().join("Pictures").join("Wallpapers").join("Slideshow")
+    home_dir()
+        .join("Pictures")
+        .join("Wallpapers")
+        .join("Slideshow")
 }
 
 fn config_path() -> PathBuf {
-    home_dir().join(".config").join("nexa").join("config").join("slideshow.json")
+    home_dir()
+        .join(".config")
+        .join("nexa")
+        .join("config")
+        .join("slideshow.json")
 }
 
 fn apply_script_path() -> PathBuf {
-    home_dir().join(".config").join("nexa").join("scripts").join("wallpaper.sh")
+    home_dir()
+        .join(".config")
+        .join("nexa")
+        .join("scripts")
+        .join("wallpaper.sh")
 }
 
 fn last_wallpaper_cache_path() -> PathBuf {
@@ -95,8 +105,7 @@ pub fn save_config(cfg: &SlideshowConfig) -> Result<(), String> {
     }
     let json = serde_json::to_string_pretty(cfg)
         .map_err(|e| format!("Failed to serialize slideshow config: {e}"))?;
-    fs::write(&path, json)
-        .map_err(|e| format!("Failed to write slideshow config: {e}"))?;
+    fs::write(&path, json).map_err(|e| format!("Failed to write slideshow config: {e}"))?;
     Ok(())
 }
 
@@ -188,7 +197,9 @@ pub fn next() -> Result<String, String> {
     if candidates.len() < 2 {
         notify_empty_folder();
         if candidates.is_empty() {
-            return Err("No matching wallpapers found in ~/Pictures/Wallpapers/Slideshow".to_string());
+            return Err(
+                "No matching wallpapers found in ~/Pictures/Wallpapers/Slideshow".to_string(),
+            );
         }
     }
 
@@ -228,10 +239,7 @@ pub fn next() -> Result<String, String> {
     if target == "Background" || target == "Both" {
         let script = apply_script_path();
         if script.exists() {
-            let _ = Command::new("bash")
-                .arg(&script)
-                .arg(&selected_str)
-                .spawn();
+            let _ = Command::new("bash").arg(&script).arg(&selected_str).spawn();
         } else {
             let _ = crate::wallpaper::apply_desktop(&selected_str, None);
         }
@@ -314,4 +322,3 @@ pub fn handle_set(args: &[String]) -> Result<(), String> {
     print_status();
     Ok(())
 }
-

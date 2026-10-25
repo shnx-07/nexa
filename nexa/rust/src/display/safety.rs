@@ -117,9 +117,10 @@ pub fn verify_applied_state(
     }
 
     // Confirm primary monitor from the plan is active in Hyprland
-    let primary_active = post_snapshot.monitors.iter().any(|m| {
-        m.name == expected_plan.primary_monitor && m.enabled_in_compositor && !m.is_ghost
-    });
+    let primary_active = post_snapshot
+        .monitors
+        .iter()
+        .any(|m| m.name == expected_plan.primary_monitor && m.enabled_in_compositor && !m.is_ghost);
 
     if !primary_active {
         return Err(DisplayError::SafetyViolation(format!(

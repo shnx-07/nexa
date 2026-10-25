@@ -1,7 +1,6 @@
 use serde::Serialize;
 use std::{
-    env,
-    fs,
+    env, fs,
     path::PathBuf,
     process::{Command, Stdio},
     time::{SystemTime, UNIX_EPOCH},
@@ -20,44 +19,32 @@ fn print_json<T: Serialize>(value: &T) {
         Ok(json) => println!("{json}"),
 
         Err(error) => {
-            eprintln!(
-                "Failed to serialize snipping response: {error}"
-            );
+            eprintln!("Failed to serialize snipping response: {error}");
         }
     }
 }
 
 fn snipping_dir() -> PathBuf {
-    let home =
-        env::var("HOME")
-            .unwrap_or_else(|_| ".".to_string());
+    let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
 
-    PathBuf::from(home)
-        .join("Pictures")
-        .join("Snippings")
+    PathBuf::from(home).join("Pictures").join("Snippings")
 }
 
 fn timestamp() -> String {
-    let now =
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
 
-    let output =
-        Command::new("date")
-            .arg("-d")
-            .arg(format!("@{now}"))
-            .arg("+%Y-%m-%d_%H-%M-%S")
-            .output();
+    let output = Command::new("date")
+        .arg("-d")
+        .arg(format!("@{now}"))
+        .arg("+%Y-%m-%d_%H-%M-%S")
+        .output();
 
     match output {
         Ok(output) if output.status.success() => {
-            String::from_utf8_lossy(
-                &output.stdout
-            )
-            .trim()
-            .to_string()
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
         }
 
         _ => now.to_string(),
@@ -69,61 +56,43 @@ pub fn capture() {
     // SELECT REGION
     // ============================================================
 
-    let slurp_output =
-        match Command::new("slurp")
-            .output()
-        {
-            Ok(output) => output,
+    let slurp_output = match Command::new("slurp").output() {
+        Ok(output) => output,
 
-            Err(error) => {
-                print_json(
-                    &SnippingResponse {
-                        success: false,
-                        action: "capture",
-                        path: None,
-                        message: format!(
-                            "Failed to start slurp: {error}"
-                        ),
-                    }
-                );
-
-                return;
-            }
-        };
-
-    if !slurp_output.status.success() {
-        print_json(
-            &SnippingResponse {
+        Err(error) => {
+            print_json(&SnippingResponse {
                 success: false,
                 action: "capture",
                 path: None,
-                message:
-                    "Snipping cancelled"
-                        .to_string(),
-            }
-        );
+                message: format!("Failed to start slurp: {error}"),
+            });
+
+            return;
+        }
+    };
+
+    if !slurp_output.status.success() {
+        print_json(&SnippingResponse {
+            success: false,
+            action: "capture",
+            path: None,
+            message: "Snipping cancelled".to_string(),
+        });
 
         return;
     }
 
-    let geometry =
-        String::from_utf8_lossy(
-            &slurp_output.stdout
-        )
+    let geometry = String::from_utf8_lossy(&slurp_output.stdout)
         .trim()
         .to_string();
 
     if geometry.is_empty() {
-        print_json(
-            &SnippingResponse {
-                success: false,
-                action: "capture",
-                path: None,
-                message:
-                    "No region selected"
-                        .to_string(),
-            }
-        );
+        print_json(&SnippingResponse {
+            success: false,
+            action: "capture",
+            path: None,
+            message: "No region selected".to_string(),
+        });
 
         return;
     }
@@ -132,78 +101,54 @@ pub fn capture() {
     // CREATE OUTPUT DIRECTORY
     // ============================================================
 
-    let directory =
-        snipping_dir();
+    let directory = snipping_dir();
 
-    if let Err(error) =
-        fs::create_dir_all(
-            &directory
-        )
-    {
-        print_json(
-            &SnippingResponse {
-                success: false,
-                action: "capture",
-                path: None,
-                message: format!(
-                    "Failed to create snipping directory: {error}"
-                ),
-            }
-        );
+    if let Err(error) = fs::create_dir_all(&directory) {
+        print_json(&SnippingResponse {
+            success: false,
+            action: "capture",
+            path: None,
+            message: format!("Failed to create snipping directory: {error}"),
+        });
 
         return;
     }
 
-    let filename =
-        format!(
-            "Snip_{}.png",
-            timestamp()
-        );
+    let filename = format!("Snip_{}.png", timestamp());
 
-    let path =
-        directory.join(filename);
+    let path = directory.join(filename);
 
     // ============================================================
     // CAPTURE SELECTED REGION
     // ============================================================
 
-    let grim_status =
-        Command::new("grim")
-            .arg("-g")
-            .arg(&geometry)
-            .arg(&path)
-            .status();
+    let grim_status = Command::new("grim")
+        .arg("-g")
+        .arg(&geometry)
+        .arg(&path)
+        .status();
 
     match grim_status {
-        Ok(status)
-            if status.success() => {}
+        Ok(status) if status.success() => {}
 
         Ok(status) => {
-            print_json(
-                &SnippingResponse {
-                    success: false,
-                    action: "capture",
-                    path: None,
-                    message: format!(
-                        "grim failed with status: {status}"
-                    ),
-                }
-            );
+            print_json(&SnippingResponse {
+                success: false,
+                action: "capture",
+                path: None,
+                message: format!("grim failed with status: {status}"),
+            });
 
             return;
         }
 
         Err(error) => {
-            print_json(
-                &SnippingResponse {
-                    success: false,
-                    action: "capture",
-                    path: None,
-                    message: format!(
-                        "Failed to start grim: {error}"
-                    ),
-                }
-            );
+            print_json(&SnippingResponse {
+                success: false,
+                action: "capture",
+                path: None,
+                message: format!("Failed to start grim: {error}"),
+            });
 
             return;
         }
@@ -213,109 +158,61 @@ pub fn capture() {
     // COPY TO CLIPBOARD
     // ============================================================
 
-    let file =
-        match fs::File::open(
-            &path
-        ) {
-            Ok(file) => file,
+    let file = match fs::File::open(&path) {
+        Ok(file) => file,
 
-            Err(error) => {
-                print_json(
-                    &SnippingResponse {
-                        success: true,
-                        action: "capture",
-                        path:
-                            Some(
-                                path
-                                    .to_string_lossy()
-                                    .to_string()
-                            ),
-                        message: format!(
-                            "Snip saved but failed to open it for clipboard copy: {error}"
-                        ),
-                    }
-                );
+        Err(error) => {
+            print_json(&SnippingResponse {
+                success: true,
+                action: "capture",
+                path: Some(path.to_string_lossy().to_string()),
+                message: format!("Snip saved but failed to open it for clipboard copy: {error}"),
+            });
 
-                return;
-            }
-        };
+            return;
+        }
+    };
 
-    let clipboard_status =
-        Command::new("wl-copy")
-            .arg("--type")
-            .arg("image/png")
-            .stdin(
-                Stdio::from(file)
-            )
-            .stdout(
-                Stdio::null()
-            )
-            .stderr(
-                Stdio::null()
-            )
-            .status();
+    let clipboard_status = Command::new("wl-copy")
+        .arg("--type")
+        .arg("image/png")
+        .stdin(Stdio::from(file))
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
 
     match clipboard_status {
-        Ok(status)
-            if status.success() =>
-        {
-            print_json(
-                &SnippingResponse {
-                    success: true,
-                    action: "capture",
+        Ok(status) if status.success() => {
+            print_json(&SnippingResponse {
+                success: true,
+                action: "capture",
 
-                    path:
-                        Some(
-                            path
-                                .to_string_lossy()
-                                .to_string()
-                        ),
+                path: Some(path.to_string_lossy().to_string()),
 
-                    message:
-                        "Snip saved and copied to clipboard"
-                            .to_string(),
-                }
-            );
+                message: "Snip saved and copied to clipboard".to_string(),
+            });
         }
 
         Ok(status) => {
-            print_json(
-                &SnippingResponse {
-                    success: true,
-                    action: "capture",
+            print_json(&SnippingResponse {
+                success: true,
+                action: "capture",
 
-                    path:
-                        Some(
-                            path
-                                .to_string_lossy()
-                                .to_string()
-                        ),
+                path: Some(path.to_string_lossy().to_string()),
 
-                    message: format!(
-                        "Snip saved, but clipboard copy failed with status: {status}"
-                    ),
-                }
-            );
+                message: format!("Snip saved, but clipboard copy failed with status: {status}"),
+            });
         }
 
         Err(error) => {
-            print_json(
-                &SnippingResponse {
-                    success: true,
-                    action: "capture",
+            print_json(&SnippingResponse {
+                success: true,
+                action: "capture",
 
-                    path:
-                        Some(
-                            path
-                                .to_string_lossy()
-                                .to_string()
-                        ),
+                path: Some(path.to_string_lossy().to_string()),
 
-                    message: format!(
-                        "Snip saved, but failed to start wl-copy: {error}"
-                    ),
-                }
-            );
+                message: format!("Snip saved, but failed to start wl-copy: {error}"),
+            });
         }
     }
 }

@@ -18,7 +18,7 @@ pub use model::*;
 pub use planner::*;
 pub use safety::*;
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -37,26 +37,27 @@ pub fn run_cli(args: &[String]) -> i32 {
     let config_path = DisplayConfigStore::default_config_path();
 
     match cmd {
-        "info" | "status" => {
-            match capture_info(&config_path) {
-                Ok(doc) => {
-                    if pretty {
-                        println!("{}", serde_json::to_string_pretty(&doc).unwrap_or_else(|_| doc.to_string()));
-                    } else {
-                        println!("{doc}");
-                    }
-                    0
+        "info" | "status" => match capture_info(&config_path) {
+            Ok(doc) => {
+                if pretty {
+                    println!(
+                        "{}",
+                        serde_json::to_string_pretty(&doc).unwrap_or_else(|_| doc.to_string())
+                    );
+                } else {
+                    println!("{doc}");
                 }
-                Err(e) => {
-                    if json_output {
-                        println!("{}", json!({"error": e.to_string()}));
-                    } else {
-                        eprintln!("[NexaDisplay] Error querying display info: {e}");
-                    }
-                    1
-                }
+                0
             }
-        }
+            Err(e) => {
+                if json_output {
+                    println!("{}", json!({"error": e.to_string()}));
+                } else {
+                    eprintln!("[NexaDisplay] Error querying display info: {e}");
+                }
+                1
+            }
+        },
 
         "daemon" => {
             println!("[NexaDisplay] Starting Display Manager Daemon...");
@@ -76,7 +77,9 @@ pub fn run_cli(args: &[String]) -> i32 {
             let mode_str = match rest.get(1) {
                 Some(m) => *m,
                 None => {
-                    eprintln!("Usage: nexad display mode <extend|mirror|internal-only|external-only> [right|left|above|below]");
+                    eprintln!(
+                        "Usage: nexad display mode <extend|mirror|internal-only|external-only> [right|left|above|below]"
+                    );
                     return 2;
                 }
             };
@@ -87,7 +90,9 @@ pub fn run_cli(args: &[String]) -> i32 {
                 "internal-only" | "internal" => ProjectionMode::InternalOnly,
                 "external-only" | "external" | "clamshell" => ProjectionMode::ExternalOnly,
                 other => {
-                    eprintln!("Unknown projection mode: {other}. Options: extend, mirror, internal-only, external-only");
+                    eprintln!(
+                        "Unknown projection mode: {other}. Options: extend, mirror, internal-only, external-only"
+                    );
                     return 2;
                 }
             };
@@ -130,7 +135,9 @@ pub fn run_cli(args: &[String]) -> i32 {
             let monitor_name = match rest.get(1) {
                 Some(m) => *m,
                 None => {
-                    eprintln!("Usage: nexad display scale <monitor_name> <scale_value (e.g. 1.25)>");
+                    eprintln!(
+                        "Usage: nexad display scale <monitor_name> <scale_value (e.g. 1.25)>"
+                    );
                     return 2;
                 }
             };
@@ -147,7 +154,10 @@ pub fn run_cli(args: &[String]) -> i32 {
             }) {
                 Ok(()) => {
                     if json_output {
-                        println!("{}", json!({"status": "ok", "monitor": monitor_name, "scale": scale_val}));
+                        println!(
+                            "{}",
+                            json!({"status": "ok", "monitor": monitor_name, "scale": scale_val})
+                        );
                     } else {
                         println!("Set scale for {monitor_name} to {scale_val}");
                     }
@@ -188,7 +198,10 @@ pub fn run_cli(args: &[String]) -> i32 {
             }) {
                 Ok(()) => {
                     if json_output {
-                        println!("{}", json!({"status": "ok", "monitor": monitor_name, "transform": rot}));
+                        println!(
+                            "{}",
+                            json!({"status": "ok", "monitor": monitor_name, "transform": rot})
+                        );
                     } else {
                         println!("Set rotation for {monitor_name} to {rot}");
                     }
@@ -205,7 +218,9 @@ pub fn run_cli(args: &[String]) -> i32 {
             let monitor_name = match rest.get(1) {
                 Some(m) => *m,
                 None => {
-                    eprintln!("Usage: nexad display res <monitor_name> <mode_spec (e.g. 1920x1080@60.00 or preferred)>");
+                    eprintln!(
+                        "Usage: nexad display res <monitor_name> <mode_spec (e.g. 1920x1080@60.00 or preferred)>"
+                    );
                     return 2;
                 }
             };
@@ -226,7 +241,10 @@ pub fn run_cli(args: &[String]) -> i32 {
             }) {
                 Ok(()) => {
                     if json_output {
-                        println!("{}", json!({"status": "ok", "monitor": monitor_name, "mode": mode_spec}));
+                        println!(
+                            "{}",
+                            json!({"status": "ok", "monitor": monitor_name, "mode": mode_spec})
+                        );
                     } else {
                         println!("Set resolution for {monitor_name} to {mode_spec}");
                     }
@@ -259,13 +277,23 @@ pub fn run_cli(args: &[String]) -> i32 {
             println!("Usage: nexad display <command> [options]");
             println!();
             println!("Commands:");
-            println!("  info, status [--json] [--pretty]   Show current displays, topologies, and modes");
-            println!("  daemon                             Run event listener daemon for hotplug/lid");
-            println!("  mode <mode> [direction]            Apply projection mode (extend, mirror, internal-only, external-only)");
+            println!(
+                "  info, status [--json] [--pretty]   Show current displays, topologies, and modes"
+            );
+            println!(
+                "  daemon                             Run event listener daemon for hotplug/lid"
+            );
+            println!(
+                "  mode <mode> [direction]            Apply projection mode (extend, mirror, internal-only, external-only)"
+            );
             println!("  scale <monitor> <value>            Set display scale factor (e.g. 1.25)");
             println!("  rotate <monitor> <0|90|180|270>    Set display rotation");
-            println!("  res <monitor> <mode_spec>          Set display resolution (e.g. 1920x1080@60.00)");
-            println!("  emergency, revert                  Restore known-good display configuration");
+            println!(
+                "  res <monitor> <mode_spec>          Set display resolution (e.g. 1920x1080@60.00)"
+            );
+            println!(
+                "  emergency, revert                  Restore known-good display configuration"
+            );
             0
         }
 
@@ -277,7 +305,11 @@ pub fn run_cli(args: &[String]) -> i32 {
 }
 
 /// Modifies a monitor preference and re-applies the current layout plan.
-fn update_monitor_pref<F>(config_path: &std::path::Path, monitor_name: &str, mutate: F) -> Result<(), DisplayError>
+fn update_monitor_pref<F>(
+    config_path: &std::path::Path,
+    monitor_name: &str,
+    mutate: F,
+) -> Result<(), DisplayError>
 where
     F: FnOnce(&mut SavedMonitorPreference),
 {
@@ -288,7 +320,9 @@ where
         .monitors
         .iter()
         .find(|m| m.name == monitor_name)
-        .ok_or_else(|| DisplayError::DiscoveryError(format!("Monitor '{monitor_name}' not found")))?;
+        .ok_or_else(|| {
+            DisplayError::DiscoveryError(format!("Monitor '{monitor_name}' not found"))
+        })?;
 
     let key = if !target_mon.identity.edid_hash.is_empty() {
         target_mon.identity.edid_hash.clone()
@@ -322,7 +356,11 @@ fn capture_info(config_path: &std::path::Path) -> Result<Value, DisplayError> {
         .monitors
         .iter()
         .map(|m| {
-            let available_modes: Vec<String> = m.available_modes.iter().map(|mode| mode.to_hyprland_mode()).collect();
+            let available_modes: Vec<String> = m
+                .available_modes
+                .iter()
+                .map(|mode| mode.to_hyprland_mode())
+                .collect();
             json!({
                 "name": m.name,
                 "make": m.identity.make,
@@ -394,7 +432,12 @@ fn capture_info(config_path: &std::path::Path) -> Result<Value, DisplayError> {
         }),
     ];
 
-    let primary_name = snapshot.monitors.iter().find(|m| m.enabled_in_compositor).map(|m| m.name.clone()).unwrap_or_default();
+    let primary_name = snapshot
+        .monitors
+        .iter()
+        .find(|m| m.enabled_in_compositor)
+        .map(|m| m.name.clone())
+        .unwrap_or_default();
 
     Ok(json!({
         "current_mode": match current_mode {

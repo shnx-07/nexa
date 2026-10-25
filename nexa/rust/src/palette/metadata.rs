@@ -1,8 +1,4 @@
-use std::{
-    fs,
-    path::Path,
-    process::Command,
-};
+use std::{fs, path::Path, process::Command};
 
 pub struct FileMeta {
     pub format: String,
@@ -42,10 +38,7 @@ fn format_size(bytes: u64) -> String {
 }
 
 fn extract_dimensions(path: &Path) -> (u32, u32) {
-    let output = Command::new("file")
-        .arg("-b")
-        .arg(path)
-        .output();
+    let output = Command::new("file").arg("-b").arg(path).output();
 
     let Ok(output) = output else {
         return (0, 0);

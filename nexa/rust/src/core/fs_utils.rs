@@ -16,8 +16,13 @@ pub fn atomic_write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, content: C) -> Resu
     let tmp_path = parent.join(format!(".{}.tmp.{}", file_stem, std::process::id()));
 
     {
-        let mut file = fs::File::create(&tmp_path)
-            .map_err(|e| format!("Failed to create temporary file {}: {}", tmp_path.display(), e))?;
+        let mut file = fs::File::create(&tmp_path).map_err(|e| {
+            format!(
+                "Failed to create temporary file {}: {}",
+                tmp_path.display(),
+                e
+            )
+        })?;
         file.write_all(content.as_ref())
             .map_err(|e| format!("Failed to write data to {}: {}", tmp_path.display(), e))?;
         file.flush()
@@ -26,6 +31,11 @@ pub fn atomic_write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, content: C) -> Resu
 
     fs::rename(&tmp_path, path).map_err(|e| {
         let _ = fs::remove_file(&tmp_path);
-        format!("Failed to atomically rename {} to {}: {}", tmp_path.display(), path.display(), e)
+        format!(
+            "Failed to atomically rename {} to {}: {}",
+            tmp_path.display(),
+            path.display(),
+            e
+        )
     })
 }

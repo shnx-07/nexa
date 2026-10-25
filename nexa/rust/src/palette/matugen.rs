@@ -1,13 +1,16 @@
-use std::{path::Path, process::Command};
-use serde_json::Value;
 use super::types::PaletteColors;
+use serde_json::Value;
+use std::{path::Path, process::Command};
 
 pub fn extract_palette(path: &Path) -> PaletteColors {
     let mut colors = PaletteColors::default();
+    let scheme = get_scheme_type();
 
     let output = Command::new("matugen")
         .arg("image")
         .arg(path)
+        .arg("-t")
+        .arg(&scheme)
         .arg("--source-color-index")
         .arg("0")
         .arg("--dry-run")
@@ -56,14 +59,22 @@ pub fn extract_palette(path: &Path) -> PaletteColors {
 
 fn extract_color_str(colors: &Value, name: &str) -> Option<String> {
     let role = colors.get(name)?;
-    
+
     // Check role.default.color
-    if let Some(c) = role.get("default").and_then(|d| d.get("color")).and_then(|v| v.as_str()) {
+    if let Some(c) = role
+        .get("default")
+        .and_then(|d| d.get("color"))
+        .and_then(|v| v.as_str())
+    {
         return Some(c.to_uppercase());
     }
 
     // Check role.dark.color
-    if let Some(c) = role.get("dark").and_then(|d| d.get("color")).and_then(|v| v.as_str()) {
+    if let Some(c) = role
+        .get("dark")
+        .and_then(|d| d.get("color"))
+        .and_then(|v| v.as_str())
+    {
         return Some(c.to_uppercase());
     }
 
@@ -73,4 +84,22 @@ fn extract_color_str(colors: &Value, name: &str) -> Option<String> {
     }
 
     None
+}
+
+fn get_scheme_type() -> String {
+    if let Ok(home) = std::env::var("HOME") {
+        let conf_path = Path::new(&home).join(".config/nexa/config/theme.conf");
+        if let Ok(content) = std::fs::read_to_string(conf_path) {
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if let Some(val) = trimmed.strip_prefix("SCHEME_TYPE=") {
+                    let cleaned = val.trim().trim_matches('"').trim_matches('\'');
+                    if !cleaned.is_empty() {
+                        return cleaned.to_string();
+                    }
+                }
+            }
+        }
+    }
+    "scheme-vibrant".to_string()
 }

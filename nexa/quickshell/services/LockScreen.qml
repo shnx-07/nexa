@@ -199,13 +199,20 @@ Singleton {
     // ============================================================
 
     readonly property string wallpaperPath: _wallpaperPath
+    readonly property string wallpaperProxy: _wallpaperProxy
     readonly property string wallpaperType: _wallpaperType
     readonly property string wallpaperThumb: _wallpaperThumb
     readonly property string wallpaperPreview: _wallpaperPreview
-    readonly property string wallpaperSource: _wallpaperPath !== "" ? ("file://" + encodeURI(_wallpaperPath)) : ""
+    readonly property string wallpaperSource: {
+        if (_wallpaperType === "video" && _wallpaperProxy !== "") {
+            return "file://" + encodeURI(_wallpaperProxy);
+        }
+        return _wallpaperPath !== "" ? ("file://" + encodeURI(_wallpaperPath)) : "";
+    }
     readonly property bool wallpaperLoaded: _wallpaperLoaded
 
     property string _wallpaperPath: ""
+    property string _wallpaperProxy: ""
     property string _wallpaperType: "image"
     property string _wallpaperThumb: "file://" + Quickshell.env("HOME") + "/.cache/current_wallpaper"
     property string _wallpaperPreview: "file://" + Quickshell.env("HOME") + "/.cache/current_wallpaper"
@@ -226,12 +233,15 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 const text = String(this.text).trim();
-                const sep = text.indexOf("|");
-                if (sep <= 0) return;
-                const type = text.substring(0, sep);
-                const path = text.substring(sep + 1);
-                root._wallpaperType = type;
+                const parts = text.split("|");
+                if (parts.length < 2) return;
+                const type = parts[0];
+                const path = parts[1];
+                const proxy = parts.length > 2 ? parts[2] : "";
+
+                root._wallpaperProxy = proxy;
                 root._wallpaperPath = path;
+                root._wallpaperType = type;
 
                 const filename = path.substring(path.lastIndexOf("/") + 1);
                 const thumb = Quickshell.env("HOME") + "/.cache/nexa/wallpapers/thumbs/" + filename + ".jpg";

@@ -30,10 +30,13 @@ static LID_INHIBIT_CHILD: Mutex<Option<Child>> = Mutex::new(None);
 /// Executes a raw command against Hyprland's IPC socket (`$HYPRLAND_INSTANCE_SIGNATURE`).
 pub fn hyprctl_command(cmd: &str) -> Result<String, DisplayError> {
     let signature = std::env::var("HYPRLAND_INSTANCE_SIGNATURE").map_err(|_| {
-        DisplayError::IpcError("HYPRLAND_INSTANCE_SIGNATURE environment variable not set".to_string())
+        DisplayError::IpcError(
+            "HYPRLAND_INSTANCE_SIGNATURE environment variable not set".to_string(),
+        )
     })?;
 
-    let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/run/user/1000".to_string());
+    let runtime_dir =
+        std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/run/user/1000".to_string());
     let socket_path = Path::new(&runtime_dir)
         .join("hypr")
         .join(signature)
@@ -236,11 +239,13 @@ pub fn apply_layout_plan(plan: &LayoutPlan) -> Result<(), DisplayError> {
     for mig in &plan.workspace_migrations {
         let lua_cmd = format!(
             r#"eval hl.dispatch(hl.dsp.workspace.move({{ workspace = {}, monitor = "{}" }}))"#,
-
             mig.workspace_id, mig.to_monitor
         );
         if hyprctl_command(&lua_cmd).is_err() {
-            let legacy_cmd = format!("dispatch moveworkspacetomonitor {} {}", mig.workspace_id, mig.to_monitor);
+            let legacy_cmd = format!(
+                "dispatch moveworkspacetomonitor {} {}",
+                mig.workspace_id, mig.to_monitor
+            );
             let _ = hyprctl_command(&legacy_cmd);
         }
     }
@@ -259,7 +264,10 @@ pub fn apply_layout_plan(plan: &LayoutPlan) -> Result<(), DisplayError> {
     }
 
     // Phase 4: Focus primary monitor
-    let lua_focus = format!(r#"eval hl.dispatch(hl.dsp.focus({{ monitor = "{}" }}))"#, plan.primary_monitor);
+    let lua_focus = format!(
+        r#"eval hl.dispatch(hl.dsp.focus({{ monitor = "{}" }}))"#,
+        plan.primary_monitor
+    );
     if hyprctl_command(&lua_focus).is_err() {
         let legacy_focus = format!("dispatch focusmonitor {}", plan.primary_monitor);
         let _ = hyprctl_command(&legacy_focus);
@@ -280,7 +288,9 @@ pub fn refresh_ui_daemons() {
     // Note: "hyprpaper --reload" is NOT a valid flag; SIGHUP is the correct signal.
     let _ = Command::new("pkill").args(["-HUP", "hyprpaper"]).status();
     // swww-daemon: reload wallpaper config by sending SIGUSR1 if running
-    let _ = Command::new("pkill").args(["-USR1", "swww-daemon"]).status();
+    let _ = Command::new("pkill")
+        .args(["-USR1", "swww-daemon"])
+        .status();
 }
 
 /// Manages systemd-logind lid sleep inhibition.

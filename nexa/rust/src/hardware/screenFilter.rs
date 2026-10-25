@@ -1,7 +1,6 @@
 use serde::Serialize;
 use std::{
-    env,
-    fs,
+    env, fs,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -95,14 +94,12 @@ fn load_filter() -> String {
 fn save_filter(filter: &str) -> Result<(), String> {
     let path = config_path();
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|e| {
-            format!("Failed to create config dir {}: {e}", parent.display())
-        })?;
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create config dir {}: {e}", parent.display()))?;
     }
 
-    fs::write(&path, format!("filter={filter}\n")).map_err(|e| {
-        format!("Failed to write {}: {e}", path.display())
-    })
+    fs::write(&path, format!("filter={filter}\n"))
+        .map_err(|e| format!("Failed to write {}: {e}", path.display()))
 }
 
 // ============================================================
@@ -124,9 +121,9 @@ fn run_hyprctl(args: &[&str]) -> Result<(), String> {
 }
 
 fn apply_shader(path: &Path) -> Result<(), String> {
-    let canonical = path.canonicalize().map_err(|e| {
-        format!("Failed to resolve shader path {}: {e}", path.display())
-    })?;
+    let canonical = path
+        .canonicalize()
+        .map_err(|e| format!("Failed to resolve shader path {}: {e}", path.display()))?;
 
     let path_str = canonical
         .to_string_lossy()
@@ -212,9 +209,8 @@ pub fn apply() -> Result<ScreenFilterInfo, String> {
 
 fn ensure_shaders() -> Result<(), String> {
     let dir = shader_dir();
-    fs::create_dir_all(&dir).map_err(|e| {
-        format!("Failed to create shader dir {}: {e}", dir.display())
-    })?;
+    fs::create_dir_all(&dir)
+        .map_err(|e| format!("Failed to create shader dir {}: {e}", dir.display()))?;
 
     write_shader_file(FILTER_CHROMA, CHROMA_SHADER)?;
     write_shader_file(FILTER_GRAYSCALE, GRAYSCALE_SHADER)?;
@@ -229,9 +225,8 @@ fn ensure_shaders() -> Result<(), String> {
 
 fn write_shader_file(name: &str, content: &str) -> Result<(), String> {
     let path = shader_path(name);
-    fs::write(&path, content).map_err(|e| {
-        format!("Failed to write shader file {}: {e}", path.display())
-    })
+    fs::write(&path, content)
+        .map_err(|e| format!("Failed to write shader file {}: {e}", path.display()))
 }
 
 // ------------------------------------------------------------
@@ -391,8 +386,8 @@ pub fn handle(args: &[String]) -> Result<(), String> {
         }
     };
 
-    let json = serde_json::to_string(&result)
-        .map_err(|e| format!("Failed to serialize result: {e}"))?;
+    let json =
+        serde_json::to_string(&result).map_err(|e| format!("Failed to serialize result: {e}"))?;
 
     println!("{json}");
     Ok(())

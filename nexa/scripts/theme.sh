@@ -869,7 +869,7 @@ generate_matugen_canonical() {
       -c "$MATUGEN_EXPORT_CONFIG" \
       image "$source" \
       -t "$current_scheme" \
-      --prefer saturation \
+      --source-color-index 0 \
       -m "$mode" \
       --json hex \
       >"$raw_json" \
@@ -946,6 +946,20 @@ get_theme_source() {
   fi
 
   if [[ -n "${WALLPAPER:-}" && -f "$WALLPAPER" ]]; then
+    local ext="${WALLPAPER##*.}"
+    ext="${ext,,}"
+    case "$ext" in
+      mp4|mkv|mov|webm)
+        local hash
+        hash="$(printf '%s' "$WALLPAPER" | sha256sum | awk '{print $1}')"
+        local fallback="$THEME_CACHE/wallpaper-${hash}.jpg"
+        if [[ -f "$fallback" ]]; then
+          printf '%s\n' "$fallback"
+          return 0
+        fi
+        return 1
+        ;;
+    esac
     printf '%s\n' "$WALLPAPER"
     return 0
   fi
