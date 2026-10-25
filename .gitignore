@@ -2,7 +2,13 @@ nexa/rust/target/
 
 *.log
 *.tmp
+*.bak
+*.backup
+*.swp
+*.swo
+*~
 .cache/
+.DS_Store
 
 # Exclude user transient state & runtime overrides
 nexa/config/wallpaper.conf

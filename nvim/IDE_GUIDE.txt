@@ -1,0 +1,188 @@
+================================================================================
+                    NEXA NEOVIM TERMINAL IDE - USER GUIDE
+================================================================================
+
+This guide explains how to use all the new IDE capabilities configured in your
+Neovim setup. 
+
+NOTE: ALL SHORTCUTS BELOW ARE 100% SPACE-FREE. 
+      None of these shortcuts use the SPACEBAR, so the LazyVim popup menu
+      will never accidentally open.
+
+--------------------------------------------------------------------------------
+1. BASIC EDITING, CLIPBOARD & SELECTION
+--------------------------------------------------------------------------------
+• Select All:
+    [Ctrl + A]
+    Works anywhere (Normal, Visual, and Insert modes). Instantly selects
+    the entire buffer from line 1 to the end.
+
+• Copy to System Clipboard:
+    [Ctrl + C]  (in Visual mode)
+    Copies highlighted text directly to your system clipboard so you can paste
+    it into your browser, discord, terminal, etc.
+
+• Cut to System Clipboard:
+    [Ctrl + X]
+    - In Visual mode: Cuts the highlighted text to your clipboard.
+    - In Normal or Insert mode: Cuts the ENTIRE current line to your clipboard.
+
+• Paste from System Clipboard:
+    [Ctrl + V]
+    Pastes text from your system clipboard at your cursor.
+
+• Save File:
+    [Ctrl + S]
+    Saves the current file instantly without needing to type ":w".
+
+--------------------------------------------------------------------------------
+2. LINE CLONING (DUPLICATION) & MOVING
+--------------------------------------------------------------------------------
+• Duplicate Line Down:
+    [Shift + Alt + Down]   or   [Ctrl + Shift + D]
+    Duplicates the current line immediately below.
+
+• Duplicate Line Up:
+    [Shift + Alt + Up]
+    Duplicates the current line immediately above.
+
+• Duplicate Multi-Line Block:
+    1. Highlight lines in Visual mode (press "V" then move up/down).
+    2. Press [Shift + Alt + Down] or [Ctrl + Shift + D].
+    The entire selected block will be duplicated.
+
+• Move Line or Block Up/Down (Bubble):
+    [Alt + j] : Move current line / selection down one row.
+    [Alt + k] : Move current line / selection up one row.
+
+--------------------------------------------------------------------------------
+3. LANGUAGE-AWARE COMMENTING
+--------------------------------------------------------------------------------
+• Toggle Comment:
+    [Ctrl + K]   (or [gcc] in Normal mode)
+    Comments or uncomments the current line.
+
+• Toggle Multi-line Comment Block:
+    1. Highlight multiple lines in Visual mode.
+    2. Press [Ctrl + K]  (or [gc]).
+    Automatically selects the correct comment syntax for the language:
+      - Python / Bash : # comment
+      - C / C++ / Java / Rust / JS : // comment
+      - HTML : <!-- comment -->
+      - CSS : /* comment */
+      - Embedded JSX / TSX : automatically switches syntax by line!
+
+--------------------------------------------------------------------------------
+4. BRACKET & TAG JUMPING (MATCHUP)
+--------------------------------------------------------------------------------
+• Jump to Matching Bracket or Tag:
+    [%]   or   [Alt + m]
+    Jumps instantly between matching pairs:
+      - Parentheses:   ( <----> )
+      - Braces:        { <----> }
+      - Brackets:      [ <----> ]
+      - HTML/XML tags: <div> <----> </div>
+      - Code blocks:   if <----> else <----> endif
+
+• Rainbow Delimiters:
+    Nested brackets and parentheses are automatically color-coded so you can
+    tell at a glance which opening bracket corresponds to which closing bracket.
+
+--------------------------------------------------------------------------------
+5. AUTOMATIC WORD & SELECTION HIGHLIGHTER (VSCode-Style)
+--------------------------------------------------------------------------------
+• Highlight All Occurrences on Selection:
+    Highlight/select any word or text snippet in Visual mode (press "v" or "V").
+    Every identical occurrence of that word across the current file will
+    INSTANTLY highlight in real-time.
+
+• Highlight All Occurrences on Cursor:
+    In Normal mode, simply placing your cursor over any word or variable
+    automatically highlights all other places that same word appears in the file.
+
+• Jump Between Matching Occurrences:
+    - [ ]] ] : Jump to next occurrence of the highlighted word.
+    - [ [[ ] : Jump to previous occurrence of the highlighted word.
+
+--------------------------------------------------------------------------------
+6. INTERACTIVE DEBUGGER (DAP) - WITH LIVE VARIABLES & RESULTS
+--------------------------------------------------------------------------------
+Supported in Python, Java, Rust, C/C++, Go, Kotlin, etc.
+
+Step-by-Step Debugging:
+  1. Open your code file (e.g. main.py or App.java).
+  2. Move cursor to the line you want to pause on and press:
+       [F9]
+     A red circle (●) will appear in the line-number gutter as a breakpoint.
+  3. Press [F5] to start debugging.
+     Neovim compiles/attaches the debugger, and execution pauses at your breakpoint.
+
+What You See While Paused:
+  • Scopes Panel (Left):
+      Live display of all variables in scope (Locals, Globals, Return values).
+  • Watches Panel (Left):
+      Shows values of custom expressions you are monitoring.
+  • Call Stack (Left):
+      Shows the current thread and function call hierarchy.
+  • Inline Virtual Text:
+      The current live values of variables are printed directly NEXT to the
+      code on the screen (e.g. `user_id = 42`, `status = "active"`).
+  • Changed Variable Highlights:
+      Whenever a variable changes value as you step, it highlights in color.
+
+Debugger Controls (Function & Alt keys - NO SPACE):
+  [F9]           : Toggle breakpoint on current line.
+  [F5]           : Start debugging / Continue to next breakpoint.
+  [F10]          : Step Over (executes current line and stops at next).
+  [F11]          : Step Into (steps inside the function under cursor).
+  [F12]          : Step Out (finishes current function and returns to caller).
+  [F8]  or [Alt+u]: Toggle the graphical Debugger UI windows open / closed.
+  [F4]  or [Alt+e]: Evaluate variable under cursor (shows result in hover popup).
+  [Alt + r]      : Toggle interactive Debug REPL console at bottom.
+  [Shift + F5]   : Terminate / stop debug session and close debug layout.
+
+--------------------------------------------------------------------------------
+7. ONE-KEY CODE RUNNER (WITHOUT DEBUGGER)
+--------------------------------------------------------------------------------
+To run your code quickly in a terminal drawer without setting up breakpoints:
+  [F6]   or   [Ctrl + F5]
+  - Python     : Runs with active virtualenv (.venv/bin/python or python3).
+  - Shell/Bash : Runs with bash.
+  - Rust       : Runs `cargo run`.
+  - Node/JS    : Runs `node <file>`.
+  - Java       : Runs `java <file>`.
+
+• Select Python VirtualEnv:
+  [F2]   or   [Alt + v]   or   type `:VenvSelect`
+  Opens an interactive picker listing local `.venv`, `venv`, Poetry, or Conda
+  environments to switch active interpreter on the fly.
+
+--------------------------------------------------------------------------------
+8. JAVA CODE GENERATORS (CONSTRUCTORS, GETTERS, SETTERS)
+--------------------------------------------------------------------------------
+When editing any `.java` file, you have dedicated non-space shortcuts to scaffold code:
+
+• Generate Constructor:
+    [F7]   or   [Alt + c]   or   type `:GenerateConstructor`
+    1. Place cursor inside your Java class body.
+    2. Press [F7] (or [Alt + c]).
+    3. An interactive picker opens asking which fields to initialize.
+    4. Select the fields and press Enter. The constructor is generated instantly.
+
+• Quick Actions & Code Fixes:
+    [Alt + Enter]
+    In IntelliJ and VSCode, Alt+Enter opens the quick-fix and code generator menu.
+
+• Generate Getters and Setters:
+    [Alt + g]   or   type `:GenerateGettersSetters`
+    Generates accessor methods for your class fields.
+
+• Generate toString():
+    Type `:GenerateToString`
+    Generates a formatted toString() method using selected class properties.
+
+• Organize Imports:
+    [Alt + o]
+    Removes unused imports, resolves ambiguous imports, and sorts them.
+
+================================================================================

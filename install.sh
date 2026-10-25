@@ -91,6 +91,7 @@ PACMAN_PACKAGES=(
     # Build & Development & Programming Toolchains
     base-devel
     git
+    neovim
     rust
     cargo
     gcc
@@ -276,12 +277,43 @@ log_step "Deploying NEXA Dotfiles"
 mkdir -p "$HOME/.config"
 
 for item in "${CONFIG_TARGETS[@]}"; do
+    # Skip nvim here; handled conditionally below with LazyVim override logic
+    if [ "$item" = "nvim" ]; then
+        continue
+    fi
     if [ -e "$DOTFILES_DIR/$item" ]; then
         log_info "Deploying $item -> ~/.config/$item"
         rm -rf "$HOME/.config/$item"
         cp -a "$DOTFILES_DIR/$item" "$HOME/.config/$item"
     fi
 done
+
+# Deploy LazyVim Configuration (Only when LazyVim is installed)
+is_lazyvim_installed() {
+    if command -v nvim >/dev/null 2>&1; then
+        if [ -f "$HOME/.config/nvim/lazyvim.json" ] || \
+           [ -d "$HOME/.local/share/nvim/lazy/LazyVim" ] || \
+           grep -q "lazyvim" "$HOME/.config/nvim/lua/config/lazy.lua" 2>/dev/null; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+if [ -d "$DOTFILES_DIR/nvim" ]; then
+    if is_lazyvim_installed; then
+        log_info "LazyVim detected. Deploying NEXA IDE configurations to ~/.config/nvim (overriding defaults)..."
+        mkdir -p "$HOME/.config/nvim"
+        # Overlay dotfiles to override default LazyVim configs with NEXA customizations
+        cp -a "$DOTFILES_DIR/nvim/." "$HOME/.config/nvim/"
+        log_success "NEXA LazyVim IDE configuration deployed and overridden successfully."
+    else
+        log_warn "LazyVim is not installed. Skipping ~/.config/nvim deployment."
+        log_info "To install LazyVim and deploy NEXA IDE configuration:"
+        log_info "  1. git clone https://github.com/LazyVim/starter ~/.config/nvim"
+        log_info "  2. cp -a $DOTFILES_DIR/nvim/. ~/.config/nvim/"
+    fi
+fi
 
 if [ -f "$DOTFILES_DIR/.zshrc" ]; then
     log_info "Deploying .zshrc -> ~/.zshrc"

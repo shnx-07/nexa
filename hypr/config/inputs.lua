@@ -19,10 +19,9 @@ hl.config({
 })
 
 -- Three-finger horizontal swipe -> switch workspace
-hl.gesture({ fingers = 4, direction = "horizontal", action = "workspace" })
+hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 hl.gesture({ fingers = 3, direction = "down", action = "close" })
 hl.gesture({ fingers = 3, direction = "up", action = "fullscreen" })
-hl.gesture({ fingers = 3, direction = "left", action = "float" })
 
 -- Cursor settings (Hardware cursors enabled for smooth high-refresh rates)
 hl.config({
