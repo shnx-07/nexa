@@ -585,6 +585,26 @@ PanelWindow {
         }
 
         slideshowLastWallpaper = filePath
+
+        Quickshell.execDetached([
+            nexad,
+            "wallpaper",
+            "slideshow",
+            "set",
+            "--current",
+            filePath
+        ])
+
+        Quickshell.execDetached([
+            "quickshell",
+            "ipc",
+            "-p",
+            Quickshell.env("HOME") + "/.config/nexa/quickshell",
+            "call",
+            "wallpaperSlideshow",
+            "reload"
+        ])
+
         closeTimer.restart()
     }
 
@@ -706,6 +726,8 @@ PanelWindow {
     FileView {
         id: slideshowConfigFileView
         path: root.slideshowConfigFile
+        watchChanges: true
+        onFileChanged: reload()
         onLoaded: {
             root.parseSlideshowConfig(text())
         }
@@ -3101,6 +3123,7 @@ PanelWindow {
             root.parseWallpaperConfig(wallpaperConfigFileView.text())
         }
 
+        slideshowConfigFileView.reload()
         if (slideshowConfigFileView.text()) {
             root.parseSlideshowConfig(slideshowConfigFileView.text())
         }

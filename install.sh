@@ -189,8 +189,7 @@ AUR_PACKAGES=(
     auto-cpufreq
     quickshell-git
     matugen-bin
-    awww-git
-    mpvpaper
+    skwd-paper-bin
     hyprsunset
     otf-apple-sf-pro
     otf-apple-fonts
@@ -199,7 +198,6 @@ AUR_PACKAGES=(
     swaync
 )
 
-log_info "Installing AUR packages: ${AUR_PACKAGES[*]}"
 log_info "Installing AUR packages: ${AUR_PACKAGES[*]}"
 $AUR_HELPER -S --needed --noconfirm "${AUR_PACKAGES[@]}" || {
     log_warn "Some AUR packages failed. Checking Quickshell..."

@@ -335,7 +335,10 @@ if hl.plugin and hl.plugin.hyprglass then
 		mask_threshold = 0.03,
 	})
 
-	-- Don't apply glass to awww daemon
+	-- Don't apply glass to wallpaper daemons
+	hg.layer("skwd-paper", {
+		exclude = true,
+	})
 	hg.layer("awww-daemon", {
 		exclude = true,
 	})

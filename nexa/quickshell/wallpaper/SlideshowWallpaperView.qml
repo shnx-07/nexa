@@ -30,6 +30,7 @@ Item {
     onVisibleChanged: {
         if (visible) {
             grid.forceActiveFocus()
+            root.syncCurrentSelection()
         }
     }
 

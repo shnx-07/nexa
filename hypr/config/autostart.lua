@@ -4,11 +4,8 @@ hl.on("hyprland.start", function()
 	-- NEXA / Quickshell
 	hl.exec_cmd("env QS_NO_RELOAD_POPUP=1 QT_IMAGEIO_MAXALLOC=1024 QML_DISABLE_DISK_CACHE=0 QSG_RENDER_LOOP=threaded quickshell -p ~/.config/nexa/quickshell/shell.qml")
 
-	-- Wallpaper daemon
-	hl.exec_cmd("awww-daemon")
-
-	-- give awww a moment to create its socket, then restore
-	hl.exec_cmd("sleep 1 && ~/.config/nexa/scripts/restore-wallpaper.sh")
+	-- Wallpaper restoration (skwd-paper auto-launches on demand)
+	hl.exec_cmd("~/.config/nexa/scripts/restore-wallpaper.sh")
 
 	hl.exec_cmd("playerctld daemon")
 

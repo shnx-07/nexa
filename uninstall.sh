@@ -39,6 +39,9 @@ log_step "Stopping Running NEXA & Shell Processes"
 
 killall quickshell 2>/dev/null || true
 killall nexad 2>/dev/null || true
+killall skwd-paper-v2 2>/dev/null || true
+killall skwd-wall-vk 2>/dev/null || true
+killall skwd-wall-still 2>/dev/null || true
 killall awww-daemon 2>/dev/null || true
 killall mpvpaper 2>/dev/null || true
 

@@ -239,7 +239,7 @@ pub fn next() -> Result<String, String> {
     if target == "Background" || target == "Both" {
         let script = apply_script_path();
         if script.exists() {
-            let _ = Command::new("bash").arg(&script).arg(&selected_str).spawn();
+            let _ = Command::new("bash").arg(&script).arg(&selected_str).status();
         } else {
             let _ = crate::wallpaper::apply_desktop(&selected_str, None);
         }
@@ -303,6 +303,18 @@ pub fn handle_set(args: &[String]) -> Result<(), String> {
             "--target" => {
                 if i + 1 < args.len() {
                     cfg.apply_target = args[i + 1].clone();
+                    i += 1;
+                }
+            }
+            "--current" | "--last-wallpaper" | "--wallpaper" => {
+                if i + 1 < args.len() {
+                    let wall = args[i + 1].clone();
+                    set_last_wallpaper(&wall);
+                    cfg.last_wallpaper = wall;
+                    cfg.last_changed = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs();
                     i += 1;
                 }
             }
