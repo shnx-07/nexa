@@ -5,6 +5,7 @@ import Quickshell.Io
 import Quickshell.Hyprland
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 RowLayout {
     id: root
@@ -232,10 +233,7 @@ RowLayout {
                     height: Nexa.Theme.controlHeightSm
 
                     Behavior on width {
-                        NumberAnimation {
-                            duration: 280
-                            easing.type: Easing.InOutCubic
-                        }
+                        NexaUI.NexaSpring { section: "workspace"; customStiffness: 6.5; customDamping: 0.22 }
                     }
 
                     Rectangle {

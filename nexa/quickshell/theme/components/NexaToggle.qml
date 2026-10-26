@@ -53,11 +53,7 @@ Rectangle {
         // running even under reducedMotion, since a toggle with an
         // instant jump reads as broken rather than economical.
         Behavior on x {
-            NumberAnimation {
-                duration: Nexa.Theme.motionSelection
-                easing.type: Nexa.Theme.easingEmphasized
-                easing.bezierCurve: Nexa.Theme.easingSpringCurve
-            }
+            NexaSpring { section: "sliders" }
         }
         Behavior on color {
             ColorAnimation {

@@ -75,12 +75,13 @@ fn classify(path: &Path) -> Option<&'static str> {
 // SCAN WALLPAPER DIRECTORY
 // ============================================================
 
-fn scan() -> Vec<Wallpaper> {
-    let directory = wallpaper_dir();
+fn scan(custom_dir: Option<&Path>) -> Vec<Wallpaper> {
+    let default_dir = wallpaper_dir();
+    let directory = custom_dir.unwrap_or(&default_dir);
 
     let mut wallpapers = Vec::new();
 
-    let entries = match fs::read_dir(&directory) {
+    let entries = match fs::read_dir(directory) {
         Ok(entries) => entries,
 
         Err(error) => {
@@ -246,8 +247,18 @@ pub fn ensure_thumbnail(path: &Path, kind: &str) -> PathBuf {
 // WALLPAPER LIST
 // ============================================================
 
-pub fn print_list() {
-    for wallpaper in scan() {
+pub fn print_list(dir: Option<&str>) {
+    let custom_path = dir.map(|d| {
+        let mut p = PathBuf::from(d);
+        if d.starts_with("~/") {
+            if let Ok(home) = env::var("HOME") {
+                p = PathBuf::from(home).join(&d[2..]);
+            }
+        }
+        p
+    });
+
+    for wallpaper in scan(custom_path.as_deref()) {
         print_wallpaper(&wallpaper);
     }
 }
@@ -259,7 +270,7 @@ pub fn print_list() {
 pub fn print_search(query: &str) {
     let query = query.trim().to_lowercase();
 
-    for wallpaper in scan() {
+    for wallpaper in scan(None) {
         if query.is_empty() || wallpaper.name.to_lowercase().contains(&query) {
             print_wallpaper(&wallpaper);
         }
@@ -271,7 +282,7 @@ pub fn print_search(query: &str) {
 // ============================================================
 
 pub fn refresh() {
-    let wallpapers = scan();
+    let wallpapers = scan(None);
 
     println!("indexed={}", wallpapers.len());
 }
@@ -360,42 +371,104 @@ pub fn set_lock(path: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn load_current_wallpaper_state() -> (String, Option<PathBuf>) {
+fn load_current_wallpaper_state() -> (String, Option<PathBuf>, String) {
     let config = desktop_config_path();
     let mut prev_type = String::new();
     let mut prev_theme_source = None;
+    let mut prev_wallpaper = String::new();
 
     if let Ok(content) = fs::read_to_string(&config) {
         for line in content.lines() {
             let line = line.trim();
-            if let Some(val) = line.strip_prefix("WALLPAPER_TYPE=") {
-                prev_type = val.trim_matches('"').trim_matches('\'').to_string();
+            if let Some(val) = line.strip_prefix("WALLPAPER=") {
+                prev_wallpaper = config_unescape(val);
+            } else if let Some(val) = line.strip_prefix("WALLPAPER_TYPE=") {
+                prev_type = config_unescape(val);
             } else if let Some(val) = line.strip_prefix("THEME_SOURCE=") {
-                let s = val.trim_matches('"').trim_matches('\'');
+                let s = config_unescape(val);
                 if !s.is_empty() {
                     prev_theme_source = Some(PathBuf::from(s));
                 }
             }
         }
     }
-    (prev_type, prev_theme_source)
+    (prev_type, prev_theme_source, prev_wallpaper)
+}
+
+pub fn resolve_shuffle(dir: Option<&Path>) -> Option<PathBuf> {
+    let default_dir = wallpaper_dir();
+    let base_dir = dir.unwrap_or(&default_dir);
+    if !base_dir.exists() {
+        return None;
+    }
+
+    let (_, _, current_wp) = load_current_wallpaper_state();
+
+    let mut candidates = Vec::new();
+    for entry in walkdir::WalkDir::new(base_dir).max_depth(2).into_iter().flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let s = path.to_string_lossy();
+        if s.contains("/.") || s.contains("/thumbs/") || s.contains("/slideshow_thumbs/") {
+            continue;
+        }
+        if classify(path).is_some() {
+            candidates.push(path.to_path_buf());
+        }
+    }
+
+    if candidates.is_empty() {
+        return None;
+    }
+
+    let eligible: Vec<&PathBuf> = if candidates.len() > 1 && !current_wp.is_empty() {
+        let filtered: Vec<&PathBuf> = candidates
+            .iter()
+            .filter(|p| p.to_string_lossy() != current_wp)
+            .collect();
+        if filtered.is_empty() {
+            candidates.iter().collect()
+        } else {
+            filtered
+        }
+    } else {
+        candidates.iter().collect()
+    };
+
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos() as usize)
+        .unwrap_or(0);
+    let idx = nanos % eligible.len();
+    Some(eligible[idx].clone())
 }
 
 // ============================================================
 // APPLY DESKTOP WALLPAPER
 // ============================================================
 
-pub fn apply_desktop(path: &str, monitor: Option<&str>) -> Result<(), String> {
-    let mut resolved_path = PathBuf::from(path);
-    if path.starts_with("~/") {
-        if let Ok(home) = env::var("HOME") {
-            resolved_path = PathBuf::from(home).join(&path[2..]);
+pub fn apply_desktop(
+    path: &str,
+    monitor: Option<&str>,
+    opt_restore: bool,
+    opt_no_theme: bool,
+) -> Result<(), String> {
+    let resolved_path = if path == "next" || path == "shuffle" || path == "random" {
+        resolve_shuffle(None).ok_or_else(|| "No wallpapers found for shuffle/next".to_string())?
+    } else {
+        let mut p = PathBuf::from(path);
+        if path.starts_with("~/") {
+            if let Ok(home) = env::var("HOME") {
+                p = PathBuf::from(home).join(&path[2..]);
+            }
         }
-    }
-
-    if let Ok(canonical) = resolved_path.canonicalize() {
-        resolved_path = canonical;
-    }
+        if let Ok(c) = p.canonicalize() {
+            p = c;
+        }
+        p
+    };
 
     if !resolved_path.is_file() {
         return Err(format!(
@@ -410,7 +483,7 @@ pub fn apply_desktop(path: &str, monitor: Option<&str>) -> Result<(), String> {
     let monitor_target = monitor.unwrap_or("*");
 
     // 1. Read previous wallpaper state for seamless transition handshake
-    let (prev_kind, prev_thumb) = load_current_wallpaper_state();
+    let (prev_kind, prev_thumb, _) = load_current_wallpaper_state();
 
     // 2. Generate target poster thumbnail if video or gif
     let mut theme_source_path = resolved_path.clone();
@@ -430,6 +503,7 @@ pub fn apply_desktop(path: &str, monitor: Option<&str>) -> Result<(), String> {
         &prev_kind,
         prev_thumb.as_deref(),
         target_thumb.as_deref(),
+        opt_restore,
     )?;
 
     // 4. Save persistent desktop wallpaper config
@@ -438,24 +512,32 @@ pub fn apply_desktop(path: &str, monitor: Option<&str>) -> Result<(), String> {
         let _ = fs::create_dir_all(parent);
     }
 
+    let preview_path = if let Some(ref t) = target_thumb {
+        t.clone()
+    } else {
+        ensure_thumbnail(&resolved_path, kind)
+    };
+
     let contents = format!(
-        "WALLPAPER={}\nWALLPAPER_TYPE={}\nTHEME_SOURCE={}\nMONITOR={}\n",
+        "WALLPAPER={}\nWALLPAPER_TYPE={}\nTHEME_SOURCE={}\nPREVIEW={}\nMONITOR={}\n",
         config_escape(&resolved_path.to_string_lossy()),
         kind,
         config_escape(&theme_source_path.to_string_lossy()),
+        config_escape(&preview_path.to_string_lossy()),
         config_escape(monitor_target)
     );
     let _ = fs::write(&config, contents);
 
     println!("desktop_wallpaper={}|{}", kind, resolved_path.display());
 
-    // 5. Update ScreenTemp and Apply Matugen Theme (Detached asynchronous child processes)
-    let home = env::var("HOME").unwrap_or_else(|_| String::from("."));
-    let theme_script = PathBuf::from(&home).join(".config/nexa/scripts/theme.sh");
-    if theme_script.exists() {
-        let _ = Command::new("bash").arg(&theme_script).arg("apply").spawn();
+    if opt_restore || opt_no_theme {
+        return Ok(());
     }
 
+    // 5. Apply Matugen Theme and update ScreenTemp
+    let _ = crate::palette::theme::apply();
+
+    let home = env::var("HOME").unwrap_or_else(|_| String::from("."));
     let nexad_bin = PathBuf::from(&home).join(".config/nexa/rust/target/release/nexad");
     if nexad_bin.exists() {
         let _ = Command::new(&nexad_bin)
@@ -467,6 +549,103 @@ pub fn apply_desktop(path: &str, monitor: Option<&str>) -> Result<(), String> {
             .spawn();
     }
 
+    Ok(())
+}
+
+pub fn restore_desktop() -> Result<(), String> {
+    let home = env::var("HOME").unwrap_or_else(|_| String::from("."));
+    let slideshow_cfg = PathBuf::from(&home).join(".config/nexa/config/slideshow.json");
+    if slideshow_cfg.exists() {
+        if let Ok(content) = fs::read_to_string(&slideshow_cfg) {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
+                let enabled = v.get("enabled").and_then(|e| e.as_bool()).unwrap_or(false);
+                let paused = v.get("paused").and_then(|p| p.as_bool()).unwrap_or(false);
+                if enabled && !paused {
+                    let _ = super::slideshow::next();
+                    return Ok(());
+                }
+            }
+        }
+    }
+
+    let config = desktop_config_path();
+    if !config.exists() {
+        return Ok(());
+    }
+
+    let contents = fs::read_to_string(&config)
+        .map_err(|e| format!("Failed to read wallpaper config: {e}"))?;
+
+    let mut path = String::new();
+    let mut monitor = String::from("*");
+
+    for line in contents.lines() {
+        let line = line.trim();
+        if let Some(v) = line.strip_prefix("WALLPAPER=") {
+            path = config_unescape(v);
+        } else if let Some(m) = line.strip_prefix("MONITOR=") {
+            monitor = config_unescape(m);
+        }
+    }
+
+    if path.is_empty() {
+        return Ok(());
+    }
+
+    apply_desktop(&path, Some(&monitor), true, true)
+}
+
+pub fn generate_slideshow_thumbs() -> Result<(), String> {
+    let home = env::var("HOME").unwrap_or_else(|_| String::from("."));
+    let wall_dir = PathBuf::from(&home).join("Pictures/Wallpapers/Slideshow");
+    let thumb_dir = PathBuf::from(&home).join(".cache/nexa/wallpapers/slideshow_thumbs");
+
+    if !wall_dir.exists() {
+        return Ok(());
+    }
+    let _ = fs::create_dir_all(&thumb_dir);
+
+    for entry in fs::read_dir(&wall_dir).into_iter().flatten().flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let stem = match path.file_stem() {
+            Some(s) => s.to_string_lossy().to_string(),
+            None => continue,
+        };
+        let target = thumb_dir.join(format!("{stem}.jpg"));
+        if target.exists() {
+            continue;
+        }
+
+        if let Some(kind) = classify(&path) {
+            match kind {
+                "image" => {
+                    let _ = Command::new("ffmpeg")
+                        .args(["-loglevel", "error", "-y", "-i"])
+                        .arg(&path)
+                        .args([
+                            "-vf",
+                            "scale=320:180:force_original_aspect_ratio=increase,crop=320:180",
+                            "-q:v",
+                            "3",
+                        ])
+                        .arg(&target)
+                        .status();
+                }
+                "video" | "gif" => {
+                    let _ = Command::new("ffmpeg")
+                        .args(["-loglevel", "error", "-ss", "00:00:01", "-y", "-i"])
+                        .arg(&path)
+                        .args(["-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "3"])
+                        .arg(&target)
+                        .status();
+                }
+                _ => {}
+            }
+        }
+    }
     Ok(())
 }
 

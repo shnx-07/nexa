@@ -4,3 +4,4 @@ LockSettingsPanel 1.0 SettingsPanel.qml
 LockScreenSettings 1.0 LockScreenSettings.qml
 SystemThemeSettings 1.0 SystemThemeSettings.qml
 BarsSettings 1.0 BarsSettings.qml
+MotionSettings 1.0 MotionSettings.qml

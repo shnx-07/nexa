@@ -54,7 +54,6 @@ Item {
     property bool windowGlow: true
     property real windowDim: 0.0
 
-    readonly property string themeScript: Quickshell.env("HOME") + "/.config/nexa/scripts/theme.sh"
     readonly property string nexad: Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
 
     onVisibleChanged: {
@@ -199,9 +198,9 @@ Item {
 
         root.applying = true
         if (root.stagedStyle === "preset") {
-            applyProcess.command = [root.themeScript, "apply-preset", String(root.stagedPreset), String(root.stagedMode)]
+            applyProcess.command = [root.nexad, "theme", "apply-preset", String(root.stagedPreset), String(root.stagedMode)]
         } else {
-            applyProcess.command = [root.themeScript, "apply-style", String(root.stagedStyle), String(root.stagedMode)]
+            applyProcess.command = [root.nexad, "theme", "apply-style", String(root.stagedStyle), String(root.stagedMode)]
         }
         applyProcess.running = true
     }
@@ -226,7 +225,7 @@ Item {
     }
 
     function nextWallpaper() {
-        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/scripts/wallpaper.sh", "next"])
+        Quickshell.execDetached([root.nexad, "wallpaper", "apply", "next"])
         refreshTimer.restart()
     }
 
@@ -287,7 +286,7 @@ Item {
     // ============================================================
     Process {
         id: statusProcess
-        command: ["sh", "-c", root.themeScript + " status"]
+        command: [root.nexad, "theme", "status"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = text.split("\n")
@@ -328,7 +327,7 @@ Item {
 
     Process {
         id: presetCatalogProcess
-        command: ["sh", "-c", root.themeScript + " presets-json"]
+        command: [root.nexad, "theme", "presets-json"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const output = text.trim()

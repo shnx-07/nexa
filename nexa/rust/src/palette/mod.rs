@@ -1,6 +1,8 @@
 pub mod cache;
 pub mod matugen;
 pub mod metadata;
+pub mod presets;
+pub mod theme;
 pub mod types;
 
 use std::path::Path;

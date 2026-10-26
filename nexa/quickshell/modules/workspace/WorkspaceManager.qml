@@ -1204,13 +1204,8 @@ PanelWindow {
 
 
         Behavior on scale {
-            NumberAnimation {
-                duration:
-                    Nexa.Theme.motionPopup
-
-                easing.type:
-                    Easing.OutCubic
-            }
+            enabled: !Nexa.Theme.reducedMotion
+            NexaUI.NexaSpring { section: "workspace"; customStiffness: 5.5; customDamping: 0.25 }
         }
 
         // ========================================================

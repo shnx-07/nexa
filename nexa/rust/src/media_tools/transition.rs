@@ -107,6 +107,7 @@ pub fn apply_with_handshake(
     _prev_kind: &str,
     _prev_thumb: Option<&Path>,
     _target_thumb: Option<&Path>,
+    is_restore: bool,
 ) -> Result<(), String> {
     let _ = Command::new("pkill").arg("-x").arg("mpvpaper").status();
     let _ = Command::new("pkill").arg("-x").arg("awww-daemon").status();
@@ -116,9 +117,6 @@ pub fn apply_with_handshake(
     } else {
         monitor_target
     };
-
-    let engine = TransitionEngine::new();
-    let effect = engine.random_effect();
 
     let mut cmd = Command::new("skwd-paper-v2");
     cmd.arg("apply");
@@ -138,17 +136,24 @@ pub fn apply_with_handshake(
         _ => {}
     }
 
-    cmd.args([
-        "--replace-all",
-        "--effect",
-        effect.name,
-        "--duration-ms",
-        "950",
-        "--fill-mode",
-        "fill",
-        "--mute",
-        "true",
-    ]);
+    if is_restore {
+        cmd.args(["--fill-mode", "fill", "--mute", "true"]);
+    } else {
+        let engine = TransitionEngine::new();
+        let effect = engine.random_effect();
+
+        cmd.args([
+            "--replace-all",
+            "--effect",
+            effect.name,
+            "--duration-ms",
+            "950",
+            "--fill-mode",
+            "fill",
+            "--mute",
+            "true",
+        ]);
+    }
 
     let status = cmd
         .status()

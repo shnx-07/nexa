@@ -23,7 +23,7 @@ Item {
         "file://" + homeDir + "/.cache/nexa/wallpapers/slideshow_thumbs/"
 
     Component.onCompleted: {
-        Quickshell.execDetached([homeDir + "/.config/nexa/scripts/gen-slideshow-thumbs.sh"])
+        Quickshell.execDetached([homeDir + "/.config/nexa/rust/target/release/nexad", "wallpaper", "slideshow-thumbs"])
         grid.forceActiveFocus()
     }
 

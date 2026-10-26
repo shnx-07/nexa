@@ -5,7 +5,7 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("env QS_NO_RELOAD_POPUP=1 QT_IMAGEIO_MAXALLOC=1024 QML_DISABLE_DISK_CACHE=0 QSG_RENDER_LOOP=threaded quickshell -p ~/.config/nexa/quickshell/shell.qml")
 
 	-- Wallpaper restoration (skwd-paper auto-launches on demand)
-	hl.exec_cmd("~/.config/nexa/scripts/restore-wallpaper.sh")
+	hl.exec_cmd("~/.config/nexa/rust/target/release/nexad wallpaper restore")
 
 	hl.exec_cmd("playerctld daemon")
 

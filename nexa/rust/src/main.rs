@@ -61,7 +61,20 @@ fn main() {
                 return;
             }
             match args[2].as_str() {
-                "list" => wallpaper::print_list(),
+                "list" => {
+                    let dir = args.get(3).map(String::as_str);
+                    wallpaper::print_list(dir);
+                }
+                "restore" => {
+                    if let Err(e) = wallpaper::restore_desktop() {
+                        eprintln!("{e}");
+                    }
+                }
+                "thumbs" | "slideshow-thumbs" => {
+                    if let Err(e) = wallpaper::generate_slideshow_thumbs() {
+                        eprintln!("{e}");
+                    }
+                }
                 "info" => {
                     if args.len() < 4 {
                         eprintln!("Missing wallpaper path");
@@ -96,8 +109,18 @@ fn main() {
                         return;
                     }
                     let path = &args[3];
-                    let monitor = args.get(4).map(String::as_str);
-                    if let Err(e) = wallpaper::apply_desktop(path, monitor) {
+                    let mut monitor = None;
+                    let mut restore = false;
+                    let mut no_theme = false;
+                    for arg in &args[4..] {
+                        match arg.as_str() {
+                            "--restore" => restore = true,
+                            "--no-theme" => no_theme = true,
+                            m if !m.starts_with("--") => monitor = Some(m),
+                            _ => {}
+                        }
+                    }
+                    if let Err(e) = wallpaper::apply_desktop(path, monitor, restore, no_theme) {
                         eprintln!("{e}");
                     }
                 }
@@ -136,6 +159,57 @@ fn main() {
                     }
                 }
                 _ => print_usage(),
+            }
+        }
+
+        "theme" => {
+            if args.len() < 3 {
+                if let Err(e) = palette::theme::apply() {
+                    eprintln!("{e}");
+                }
+                return;
+            }
+            match args[2].as_str() {
+                "apply" => {
+                    if let Err(e) = palette::theme::apply() {
+                        eprintln!("{e}");
+                    }
+                }
+                "status" => palette::theme::print_status(),
+                "presets-json" | "presets" => palette::presets::print_presets_json(),
+                "apply-preset" | "preset" => {
+                    if args.len() < 4 {
+                        eprintln!("Missing preset ID");
+                        return;
+                    }
+                    let preset_id = &args[3];
+                    let mode = args.get(4).map(String::as_str);
+                    if let Err(e) = palette::theme::apply_preset(preset_id, mode) {
+                        eprintln!("{e}");
+                    }
+                }
+                "apply-style" | "style" => {
+                    if args.len() < 4 {
+                        eprintln!("Missing style");
+                        return;
+                    }
+                    let style = &args[3];
+                    let mode = args.get(4).map(String::as_str);
+                    if let Err(e) = palette::theme::apply_style(style, mode) {
+                        eprintln!("{e}");
+                    }
+                }
+                "apply-mode" | "mode" => {
+                    if args.len() < 4 {
+                        eprintln!("Missing mode (dark or light)");
+                        return;
+                    }
+                    let mode = &args[3];
+                    if let Err(e) = palette::theme::apply_mode(mode) {
+                        eprintln!("{e}");
+                    }
+                }
+                _ => eprintln!("Unknown theme command: {}", args[2]),
             }
         }
 

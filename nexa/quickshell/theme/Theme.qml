@@ -61,9 +61,82 @@ QtObject {
         }
     }
 
+    // ============================================================
+    // MOTION & SPRING PHYSICS
+    // ============================================================
+    property bool springEnabled: true
+    property real springStiffness: 7.8
+    property real springDamping: 0.16
+    property real springMass: 1.0
+    property string springPreset: "bouncy"
+
+    property var motionSections: ({
+        "island": true,
+        "popups": true,
+        "clipboard": true,
+        "settings": true,
+        "wallpaper": true,
+        "workspace": true,
+        "sliders": true
+    })
+
+    function useSpring(section) {
+        if (!root.springEnabled || root.reducedMotion) return false;
+        if (section && root.motionSections && root.motionSections[section] !== undefined) {
+            return root.motionSections[section];
+        }
+        return root.springEnabled;
+    }
+
+    property FileView _motionWatcher: FileView {
+        path: Quickshell.env("HOME") + "/.config/nexa/config/motion.json"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const data = JSON.parse(text())
+                if (data) {
+                    if (data.enabled !== undefined) root.springEnabled = data.enabled
+                    if (data.stiffness !== undefined) root.springStiffness = data.stiffness
+                    if (data.damping !== undefined) root.springDamping = data.damping
+                    if (data.mass !== undefined) root.springMass = data.mass
+                    if (data.preset !== undefined) root.springPreset = data.preset
+                    if (data.sections !== undefined) root.motionSections = Object.assign({}, root.motionSections, data.sections)
+                }
+            } catch (e) {}
+        }
+    }
+
+    function saveMotionConfig(stiffness, damping, mass, preset, enabled, sections) {
+        root.springStiffness = stiffness
+        root.springDamping = damping
+        root.springMass = mass
+        root.springPreset = preset
+        root.springEnabled = enabled
+        if (sections) {
+            root.motionSections = Object.assign({}, root.motionSections, sections)
+        }
+
+        const cfg = {
+            "enabled": enabled,
+            "preset": preset,
+            "stiffness": stiffness,
+            "damping": damping,
+            "mass": mass,
+            "sections": root.motionSections
+        }
+        const json = JSON.stringify(cfg, null, 2)
+        Quickshell.execDetached([
+            "sh", "-c",
+            'mkdir -p "$HOME/.config/nexa/config" && printf "%s" "$1" > "$HOME/.config/nexa/config/motion.json"',
+            "_", json
+        ])
+    }
+
     Component.onCompleted: {
         _shapesWatcher.reload();
         _glassWatcher.reload();
+        _motionWatcher.reload();
     }
 
 

@@ -7,6 +7,7 @@ import Quickshell.Bluetooth
 import Quickshell.Networking
 
 import "../theme" as Nexa
+import "../theme/components" as NexaUI
 
 
 PanelWindow {
@@ -1297,26 +1298,18 @@ PanelWindow {
         // ========================================================
 
         Behavior on width {
-            NumberAnimation {
-                duration: Nexa.Theme.animationNormal
-                easing.type: Nexa.Theme.easingDecelerate
-            }
+            enabled: !Nexa.Theme.reducedMotion
+            NexaUI.NexaSpring { section: "island" }
         }
-
 
         Behavior on height {
-            NumberAnimation {
-                duration: Nexa.Theme.animationNormal
-                easing.type: Nexa.Theme.easingDecelerate
-            }
+            enabled: !Nexa.Theme.reducedMotion
+            NexaUI.NexaSpring { section: "island" }
         }
 
-
         Behavior on radius {
-            NumberAnimation {
-                duration: Nexa.Theme.animationNormal
-                easing.type: Nexa.Theme.easingDecelerate
-            }
+            enabled: !Nexa.Theme.reducedMotion
+            NexaUI.NexaSpring { section: "island" }
         }
 
 

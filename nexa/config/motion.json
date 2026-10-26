@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "preset": "fluid",
+  "stiffness": 3.8,
+  "damping": 0.28,
+  "mass": 1,
+  "sections": {
+    "island": true,
+    "popups": true,
+    "clipboard": true,
+    "settings": true,
+    "wallpaper": true,
+    "workspace": true,
+    "sliders": true
+  }
+}

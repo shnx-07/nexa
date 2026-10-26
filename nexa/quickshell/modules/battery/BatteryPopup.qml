@@ -6,6 +6,7 @@ import Quickshell.Io
 import Quickshell.Services.UPower
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 PopupWindow {
@@ -213,13 +214,8 @@ PopupWindow {
 
 
         Behavior on scale {
-            NumberAnimation {
-                duration:
-                    Nexa.Theme.animationNormal
-
-                easing.type:
-                    Nexa.Theme.easingEnter
-            }
+            enabled: !Nexa.Theme.reducedMotion
+            NexaUI.NexaSpring { section: "popups"; customStiffness: 6.0; customDamping: 0.22 }
         }
 
         Behavior on opacity {

@@ -95,12 +95,8 @@ Item {
                 }
 
                 Behavior on width {
-                    enabled: !mouse.pressed
-                    NumberAnimation {
-                        duration: 140
-                        easing.type: Nexa.Theme.easingStandard
-                        easing.bezierCurve: Nexa.Theme.easingFluidCurve
-                    }
+                    enabled: !mouse.pressed && !Nexa.Theme.reducedMotion
+                    NexaSpring { section: "sliders" }
                 }
             }
 

@@ -392,11 +392,8 @@ PopupWindow {
         }
 
         Behavior on scale {
-            NumberAnimation {
-                duration: Nexa.Theme.popEnterDuration
-                easing.type: Nexa.Theme.easingEnter
-                easing.bezierCurve: Nexa.Theme.easingSpringCurve
-            }
+            enabled: !Nexa.Theme.reducedMotion
+            NexaUI.NexaSpring { section: "popups"; customStiffness: 6.0; customDamping: 0.22 }
         }
 
         ColumnLayout {

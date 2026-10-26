@@ -628,10 +628,8 @@ PanelWindow {
         }
 
         Behavior on scale {
-            NumberAnimation {
-                duration: root.clipboardOpen ? Nexa.Theme.animationNormal : Nexa.Theme.animationFast
-                easing.type: root.clipboardOpen ? Nexa.Theme.easingEnter : Nexa.Theme.easingExit
-            }
+            enabled: !Nexa.Theme.reducedMotion
+            NexaUI.NexaSpring { section: "clipboard"; customStiffness: 6.5; customDamping: 0.22 }
         }
 
         // Click outside closes clipboard

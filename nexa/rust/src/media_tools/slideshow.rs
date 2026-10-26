@@ -61,6 +61,7 @@ fn config_path() -> PathBuf {
         .join("slideshow.json")
 }
 
+#[allow(dead_code)]
 fn apply_script_path() -> PathBuf {
     home_dir()
         .join(".config")
@@ -237,12 +238,7 @@ pub fn next() -> Result<String, String> {
     let target = cfg.apply_target.as_str();
 
     if target == "Background" || target == "Both" {
-        let script = apply_script_path();
-        if script.exists() {
-            let _ = Command::new("bash").arg(&script).arg(&selected_str).status();
-        } else {
-            let _ = crate::wallpaper::apply_desktop(&selected_str, None);
-        }
+        let _ = crate::wallpaper::apply_desktop(&selected_str, None, false, false);
     }
 
     if target == "Lock Screen" || target == "Both" {

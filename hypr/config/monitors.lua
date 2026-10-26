@@ -75,7 +75,7 @@ hl.on("monitor.added", function(monitor)
 
 		-- 3. Restart Nexa cleanly and refresh wallpaper on external display
 		hl.exec_cmd(
-			"sleep 0.6 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/scripts/restore-wallpaper.sh"
+			"sleep 0.6 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/rust/target/release/nexad wallpaper restore"
 		)
 	end
 end)
@@ -100,7 +100,7 @@ hl.on("monitor.removed", function(monitor)
 
 		-- 3. Restart Nexa cleanly and refresh wallpaper on laptop screen
 		hl.exec_cmd(
-			"sleep 0.6 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/scripts/restore-wallpaper.sh"
+			"sleep 0.6 && ~/.config/nexa/scripts/nexa-restart.sh && ~/.config/nexa/rust/target/release/nexad wallpaper restore"
 		)
 	end
 end)

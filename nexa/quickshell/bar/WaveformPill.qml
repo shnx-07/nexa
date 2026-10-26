@@ -114,9 +114,12 @@ Rectangle {
     }
 
     Behavior on implicitWidth {
-        NumberAnimation {
-            duration: Nexa.Theme.animationNormal
-            easing.type: Nexa.Theme.easingDecelerate
+        enabled: !Nexa.Theme.reducedMotion
+        SpringAnimation {
+            spring: Nexa.Theme.springEnabled ? Nexa.Theme.springStiffness : 4.0
+            damping: Nexa.Theme.springEnabled ? Nexa.Theme.springDamping : 1.0
+            mass: Nexa.Theme.springMass
+            epsilon: 0.25
         }
     }
 

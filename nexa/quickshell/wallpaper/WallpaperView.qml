@@ -9,6 +9,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import "../theme" as Nexa
+import "../theme/components" as NexaUI
 
 PanelWindow {
     id: root
@@ -454,7 +455,9 @@ PanelWindow {
               + " to background..."
 
           Quickshell.execDetached([
-              applyScript,
+              nexad,
+              "wallpaper",
+              "apply",
               entry.wallPath
           ])
 
@@ -501,7 +504,9 @@ PanelWindow {
               + " to both..."
 
           Quickshell.execDetached([
-              applyScript,
+              nexad,
+              "wallpaper",
+              "apply",
               entry.wallPath
           ])
 
@@ -570,7 +575,9 @@ PanelWindow {
 
         if (slideshowTarget === "Background" || slideshowTarget === "Both") {
             Quickshell.execDetached([
-                applyScript,
+                nexad,
+                "wallpaper",
+                "apply",
                 filePath
             ])
         }
@@ -1018,19 +1025,11 @@ PanelWindow {
                 selected ? 10 : 1
 
             Behavior on width {
-                NumberAnimation {
-                    duration: 340
-                    easing.type: cardRoot.selected ? Easing.OutBack : Easing.OutCubic
-                    easing.overshoot: 1.18
-                }
+                NexaUI.NexaSpring { section: "wallpaper" }
             }
 
             Behavior on height {
-                NumberAnimation {
-                    duration: 340
-                    easing.type: cardRoot.selected ? Easing.OutBack : Easing.OutCubic
-                    easing.overshoot: 1.18
-                }
+                NexaUI.NexaSpring { section: "wallpaper" }
             }
 
             Behavior on opacity {
