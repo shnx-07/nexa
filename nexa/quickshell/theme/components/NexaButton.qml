@@ -8,6 +8,7 @@ Rectangle {
     property string icon: ""
     property bool selected: false
     property bool interactive: true
+    property bool pill: false
     property int iconSize: Nexa.Theme.iconSm
     property int textSize: Nexa.Theme.fontSizeSm
     property int horizontalPadding: Nexa.Theme.spacingMd
@@ -18,7 +19,7 @@ Rectangle {
 
     implicitWidth: content.implicitWidth + horizontalPadding * 2
     implicitHeight: Nexa.Theme.controlHeightMd
-    radius: Nexa.Theme.radiusMd
+    radius: pill ? height / 2 : (Nexa.Theme.nexaRounding === 0 ? 0 : Nexa.Theme.radiusMd)
     antialiasing: true
     opacity: interactive ? Nexa.Theme.opacityFull : Nexa.Theme.opacityDisabled
     color: selected ? Nexa.Theme.selectedSurface
@@ -26,21 +27,25 @@ Rectangle {
                     : hovered ? Nexa.Theme.buttonBackgroundHover
                     : Nexa.Theme.buttonBackground
     border.width: Nexa.Theme.borderThin
-    border.color: selected ? Nexa.Theme.selectedBorder : Nexa.Theme.border
+    border.color: selected ? Nexa.Theme.selectedBorder
+                           : hovered ? Nexa.Theme.edgeHighlightStrong
+                           : Nexa.Theme.border
     scale: pressedState ? Nexa.Theme.pressScale
                         : hovered ? Nexa.Theme.hoverScale
                         : Nexa.Theme.normalScale
     transformOrigin: Item.Center
 
-    // Static glass highlight — a plain gradient fill, no shader,
-    // no animation. Gives the button a touch of continuous-corner
-    // depth instead of a flat color block.
+    // Continuous-corner liquid glass highlight
     Rectangle {
         anchors.fill: parent
         anchors.margins: root.border.width
         radius: Math.max(0, root.radius - root.border.width)
         gradient: Gradient {
-            GradientStop { position: 0.0; color: root.selected ? Nexa.Theme.edgeHighlightStrong : Nexa.Theme.edgeHighlight }
+            GradientStop {
+                position: 0.0
+                color: root.selected ? Nexa.Theme.edgeHighlightStrong
+                                     : (root.hovered ? Nexa.Theme.edgeHighlightStrong : Nexa.Theme.edgeHighlight)
+            }
             GradientStop { position: 0.6; color: "transparent" }
         }
     }
@@ -52,7 +57,7 @@ Rectangle {
         Text {
             visible: root.icon !== ""
             text: root.icon
-            color: root.selected ? Nexa.Theme.primary : Nexa.Theme.text
+            color: root.selected ? Nexa.Theme.primary : (root.hovered ? Nexa.Theme.text : Nexa.Theme.mutedText)
             font.family: Nexa.Theme.iconFontFamily
             font.pixelSize: root.iconSize
             Behavior on color {
@@ -69,7 +74,7 @@ Rectangle {
             color: root.selected ? Nexa.Theme.primary : Nexa.Theme.text
             font.family: Nexa.Theme.fontFamily
             font.pixelSize: root.textSize
-            font.weight: Nexa.Theme.fontWeightMedium
+            font.weight: Nexa.Theme.fontWeightDemiBold
             Behavior on color {
                 ColorAnimation {
                     duration: Nexa.Theme.motionInteraction
@@ -94,14 +99,12 @@ Rectangle {
             easing.bezierCurve: Nexa.Theme.easingFluidCurve
         }
     }
-    // Scale is the one transform-based Behavior here — skip it
-    // under reducedMotion since it's the costliest to animate.
     Behavior on scale {
         enabled: !Nexa.Theme.reducedMotion
-        NumberAnimation {
-            duration: Nexa.Theme.motionInteraction
-            easing.type: Nexa.Theme.easingStandard
-            easing.bezierCurve: Nexa.Theme.easingFluidCurve
+        NexaSpring {
+            section: "popups"
+            customStiffness: 8.0
+            customDamping: 0.28
         }
     }
     Behavior on opacity {

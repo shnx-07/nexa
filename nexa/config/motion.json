@@ -1,6 +1,7 @@
 {
   "enabled": true,
   "preset": "fluid",
+  "hyprAnimationProfile": "slidefade",
   "stiffness": 3.8,
   "damping": 0.28,
   "mass": 1,

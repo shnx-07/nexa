@@ -2,6 +2,7 @@ pub mod core;
 pub mod desktop;
 pub mod display;
 pub mod hardware;
+pub mod hyprland;
 pub mod media_tools;
 pub mod palette;
 pub mod services;
@@ -270,10 +271,16 @@ fn main() {
                 print_usage();
                 return;
             }
-            match args[2].as_str() {
-                "search" => island::open_search(),
-                "command" => island::open_command(),
-                _ => print_usage(),
+            island::call_action(&args[2]);
+        }
+
+        "qs" => {
+            if args.len() < 4 {
+                eprintln!("Usage: nexad qs <target> <method>");
+                return;
+            }
+            if let Err(e) = island::call_qs(&args[2], &args[3]) {
+                eprintln!("NEXA QS error: {e}");
             }
         }
 
@@ -786,6 +793,10 @@ fn main() {
             if code != 0 {
                 std::process::exit(code);
             }
+        }
+
+        "hypr" | "hyprland" => {
+            hyprland::handle_command(&args[2..]);
         }
 
         _ => {

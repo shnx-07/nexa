@@ -1,16 +1,16 @@
 {
-  "volume": 100,
+  "volume": 70,
   "muted": false,
-  "input_volume": 100,
-  "input_muted": false,
-  "brightness": 100,
+  "input_volume": 85,
+  "input_muted": true,
+  "brightness": 43,
   "bluetooth_enabled": false,
   "wifi_enabled": true,
   "airplane_enabled": false,
-  "nightlight_enabled": false,
-  "nightlight_mode": "wallpaper",
-  "nightlight_temperature": 6500,
+  "nightlight_enabled": true,
+  "nightlight_mode": "manual",
+  "nightlight_temperature": 3100,
   "screen_filter": "off",
   "dnd": false,
-  "timestamp": 1792926504
+  "timestamp": 1793131820
 }

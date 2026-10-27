@@ -317,8 +317,8 @@ if hl.plugin and hl.plugin.hyprglass then
 
 		default_theme = "dark",
 
-		-- Apple-style windows by default
-		default_preset = "ios_2",
+		-- Apple-style windows by default  ios_2
+		default_preset = "clear",
 
 		layers = {
 			enabled = true,

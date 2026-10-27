@@ -2,8 +2,8 @@
   "enabled": false,
   "paused": false,
   "interval": "30m",
-  "type_filter": "GIF",
+  "type_filter": "All",
   "apply_target": "Background",
-  "last_wallpaper": "/home/shnx/Pictures/Wallpapers/Slideshow/Fantasy-Lake1.png",
-  "last_changed": 1792924374
+  "last_wallpaper": "/home/shnx/Pictures/Wallpapers/Slideshow/abandoned-trainstation.jpg",
+  "last_changed": 1793116904
 }

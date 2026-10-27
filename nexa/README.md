@@ -100,7 +100,8 @@ If you prefer installing dependencies manually or want a complete breakdown:
 * `breeze` & `breeze-icons` — KDE Breeze icon theme (required for Quickshell native theme icons)
 * `adwaita-icon-theme` — GNOME Adwaita icon theme
 * `matugen-bin` *(AUR)* — Material You dynamic color palette extractor
-* `skwd-paper-bin` *(AUR)* — Unified Vulkan wallpaper engine (Images, Videos & Wallpaper Engine)
+* `awww-git` *(AUR)* — High-performance Wayland wallpaper daemon
+* `mpvpaper` *(AUR)* — Video wallpaper engine
 * `hyprsunset` *(AUR)* — Color temperature / night light daemon
 * `qt5ct` & `qt6ct` — Qt appearance configuration tools
 * `kvantum` — SVG-based Qt theme engine

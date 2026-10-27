@@ -238,23 +238,28 @@ ShellRoot {
         }
     }
 
-    Loader {
-        id: settingsLoader
-        active: false
-        source: "modules/settings/SettingsWindow.qml"
-        onLoaded: {
-            if (item) {
-                item.openWindow()
+    Timer {
+        id: settingsPreloadTimer
+        interval: 1500
+        running: true
+        repeat: false
+        onTriggered: {
+            if (!settingsLoader.active) {
+                settingsLoader.active = true
             }
         }
     }
 
-    Connections {
-        target: settingsLoader.item
-        ignoreUnknownSignals: true
-        function onWindowAliveChanged() {
-            if (settingsLoader.item && !settingsLoader.item.windowAlive) {
-                settingsLoader.active = false
+    Loader {
+        id: settingsLoader
+        active: false
+        source: "modules/settings/SettingsWindow.qml"
+        property var pendingAction: null
+
+        onLoaded: {
+            if (item && pendingAction) {
+                pendingAction()
+                pendingAction = null
             }
         }
     }
@@ -263,10 +268,14 @@ ShellRoot {
         target: "settings"
 
         function open(tabName: string) {
-            if (!settingsLoader.active) {
+            settingsPreloadTimer.stop()
+            if (settingsLoader.item) {
+                settingsLoader.item.openWindow(tabName || "")
+            } else {
+                settingsLoader.pendingAction = function() {
+                    if (settingsLoader.item) settingsLoader.item.openWindow(tabName || "")
+                }
                 settingsLoader.active = true
-            } else if (settingsLoader.item) {
-                settingsLoader.item.openWindow(tabName)
             }
         }
 
@@ -281,10 +290,14 @@ ShellRoot {
         }
 
         function toggle() {
-            if (!settingsLoader.active) {
-                settingsLoader.active = true
-            } else if (settingsLoader.item) {
+            settingsPreloadTimer.stop()
+            if (settingsLoader.item) {
                 settingsLoader.item.toggleWindow()
+            } else {
+                settingsLoader.pendingAction = function() {
+                    if (settingsLoader.item) settingsLoader.item.openWindow()
+                }
+                settingsLoader.active = true
             }
         }
     }
@@ -293,10 +306,14 @@ ShellRoot {
         target: "lockSettings"
 
         function open(tabName: string) {
-            if (!settingsLoader.active) {
+            settingsPreloadTimer.stop()
+            if (settingsLoader.item) {
+                settingsLoader.item.openWindow(tabName || "lock")
+            } else {
+                settingsLoader.pendingAction = function() {
+                    if (settingsLoader.item) settingsLoader.item.openWindow(tabName || "lock")
+                }
                 settingsLoader.active = true
-            } else if (settingsLoader.item) {
-                settingsLoader.item.openWindow(tabName)
             }
         }
 
@@ -311,10 +328,14 @@ ShellRoot {
         }
 
         function toggle() {
-            if (!settingsLoader.active) {
-                settingsLoader.active = true
-            } else if (settingsLoader.item) {
+            settingsPreloadTimer.stop()
+            if (settingsLoader.item) {
                 settingsLoader.item.toggleWindow()
+            } else {
+                settingsLoader.pendingAction = function() {
+                    if (settingsLoader.item) settingsLoader.item.openWindow("lock")
+                }
+                settingsLoader.active = true
             }
         }
     }

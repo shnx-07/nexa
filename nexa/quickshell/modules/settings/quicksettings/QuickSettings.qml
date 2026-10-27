@@ -317,15 +317,16 @@ Item {
                             }
                         }
 
-                        // Dedicated Master Volume Slider Bar (Zero Overlap)
+                        // Dedicated Master Volume Slider Bar (Mist / Control Center Pill)
                         NexaUI.NexaSlider {
                             width: parent.width
-                            sliderHeight: 18
-                            sliderRadius: 6
+                            sliderHeight: 28
                             from: 0
                             to: 100
                             value: audio.volume
-                            icon: ""
+                            icon: audio.muted ? "󰝟" : (audio.volume > 50 ? "󰕾" : (audio.volume > 0 ? "󰖀" : "󰕿"))
+                            iconPosition: "left"
+                            showValue: false
                             onMoved: (val) => audio.setVolume(val)
                             onReleased: (val) => audio.setVolumeImmediate(val)
                         }
@@ -520,15 +521,16 @@ Item {
                             }
                         }
 
-                        // Dedicated Microphone Slider Bar with Live Reactive Pulse
+                        // Dedicated Microphone Slider Bar with Live Reactive Pulse (Pill)
                         NexaUI.NexaSlider {
                             width: parent.width
-                            sliderHeight: 18
-                            sliderRadius: 6
+                            sliderHeight: 28
                             from: 0
                             to: 100
                             value: audio.inputVolume
-                            icon: ""
+                            icon: audio.inputMuted ? "󰍭" : "󰍬"
+                            iconPosition: "left"
+                            showValue: false
                             livePulse: !audio.inputMuted ? audio.micPeak : 0.0
                             onMoved: (val) => audio.setInputVolume(val)
                             onReleased: (val) => audio.setInputVolumeImmediate(val)
@@ -595,15 +597,16 @@ Item {
                             }
                         }
 
-                        // Dedicated Brightness Slider Bar (Zero Overlap)
+                        // Dedicated Brightness Slider Bar (Mist / Control Center Pill)
                         NexaUI.NexaSlider {
                             width: parent.width
-                            sliderHeight: 18
-                            sliderRadius: 6
+                            sliderHeight: 28
                             from: 1
                             to: 100
                             value: brightness.brightness
-                            icon: ""
+                            icon: "󰃠"
+                            iconPosition: "left"
+                            showValue: false
                             onMoved: (val) => brightness.setBrightness(val)
                             onReleased: (val) => brightness.setBrightnessImmediate(val)
                         }
@@ -1176,18 +1179,19 @@ Item {
                             }
                         }
 
-                        // Dedicated Night Light Temperature Slider (Zero Overlap)
+                        // Dedicated Night Light Temperature Slider (Mist Pill)
                         NexaUI.NexaSlider {
                             width: parent.width
-                            sliderHeight: 18
-                            sliderRadius: 6
+                            sliderHeight: 28
                             from: nightLight.minimumTemperature
                             to: nightLight.maximumTemperature
                             stepSize: 50
                             value: nightLight.activeTemperature
                             enabled: nightLight.enabled && !nightLight.wallpaperMode
                             opacity: enabled ? 1.0 : 0.4
-                            icon: ""
+                            icon: "󰌵"
+                            iconPosition: "left"
+                            showValue: false
                             onMoved: (val) => {
                                 if (nightLight.enabled) nightLight.setTemperature(val)
                             }

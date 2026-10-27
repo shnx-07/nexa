@@ -907,6 +907,7 @@ dependencies = [
  "hex",
  "openssl",
  "pam",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",

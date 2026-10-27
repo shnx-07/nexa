@@ -464,7 +464,7 @@ Item {
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "󰚌"
+                                text: "󰏢"
                                 font.family: Nexa.Theme.iconFontFamily
                                 font.pixelSize: 18
                                 color: root.tab === "motion" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text

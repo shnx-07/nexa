@@ -69,6 +69,7 @@ QtObject {
     property real springDamping: 0.16
     property real springMass: 1.0
     property string springPreset: "bouncy"
+    property string hyprAnimationProfile: "slidefade"
 
     property var motionSections: ({
         "island": true,
@@ -101,10 +102,23 @@ QtObject {
                     if (data.damping !== undefined) root.springDamping = data.damping
                     if (data.mass !== undefined) root.springMass = data.mass
                     if (data.preset !== undefined) root.springPreset = data.preset
+                    if (data.hyprAnimationProfile !== undefined) root.hyprAnimationProfile = data.hyprAnimationProfile
                     if (data.sections !== undefined) root.motionSections = Object.assign({}, root.motionSections, data.sections)
                 }
             } catch (e) {}
         }
+    }
+
+    function saveHyprAnimationProfile(profileId) {
+        root.hyprAnimationProfile = profileId
+        saveMotionConfig(root.springStiffness, root.springDamping, root.springMass, root.springPreset, root.springEnabled, root.motionSections)
+        Quickshell.execDetached([
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "hypr",
+            "animations",
+            "profile",
+            profileId
+        ])
     }
 
     function saveMotionConfig(stiffness, damping, mass, preset, enabled, sections) {
@@ -120,6 +134,7 @@ QtObject {
         const cfg = {
             "enabled": enabled,
             "preset": preset,
+            "hyprAnimationProfile": root.hyprAnimationProfile,
             "stiffness": stiffness,
             "damping": damping,
             "mass": mass,
@@ -620,7 +635,13 @@ QtObject {
     // ============================================================
 
     readonly property string fontFamily:
+        "SF Pro Text"
+
+    readonly property string displayFontFamily:
         "SF Pro Display"
+
+    readonly property string roundedFontFamily:
+        "SF Pro Rounded"
 
     readonly property string monoFontFamily:
         "Liga SFMono Nerd Font"
@@ -633,6 +654,9 @@ QtObject {
 
     readonly property string iconFontFamily:
         "Symbols Nerd Font Mono"
+
+    // OpenType feature tokens (tabular numerals for rock-solid numbers)
+    readonly property var fontFeaturesTnum: ({ "tnum": 1 })
 
     // ============================================================
     // LEGACY / COMPATIBILITY ALIASES

@@ -5,6 +5,7 @@ import Quickshell.Io
 import Quickshell.Bluetooth
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 import "../status" as Status
 
 
@@ -112,14 +113,35 @@ Item {
 
 
     // ============================================================
-    // SIZE
+    // SIZE & INLINE HOVER EXPANSION
     // ============================================================
 
-    implicitWidth:
-        Nexa.Theme.controlHeightSm
+    readonly property real compactWidth: Nexa.Theme.controlHeightSm
+    readonly property real maxTextWidth: 150
+
+    readonly property string infoText: {
+        if (!root.enabled)
+            return "Off"
+        if (!root.connected)
+            return "No Device"
+        return root.connectedDeviceName || "Connected"
+    }
+
+    readonly property bool isExpanded: mouse.containsMouse || root.popupVisible
+    readonly property real contentLabelWidth: Math.min(maxTextWidth, labelText.implicitWidth)
+    readonly property real targetWidth: isExpanded
+        ? (compactWidth + Nexa.Theme.spacingXs + contentLabelWidth + Nexa.Theme.spacingXs)
+        : compactWidth
+
+    implicitWidth: targetWidth
 
     implicitHeight:
         Nexa.Theme.controlHeightSm
+
+    Behavior on implicitWidth {
+        enabled: !Nexa.Theme.reducedMotion
+        NexaUI.NexaSpring { section: "popups"; customStiffness: 5.5; customDamping: 0.26 }
+    }
 
 
     // ============================================================
@@ -139,7 +161,7 @@ Item {
             Nexa.Theme.radiusSm
 
         color:
-            mouse.containsMouse
+            (mouse.containsMouse || root.popupVisible)
             ? Nexa.Theme.hover
             : "transparent"
 
@@ -168,35 +190,70 @@ Item {
         }
 
 
-        Text {
-            anchors.centerIn:
-                parent
+        Row {
+            anchors.centerIn: parent
+            spacing: (root.width > root.compactWidth + 2) ? Nexa.Theme.spacingXs : 0
 
-            text:
-                root.enabled
-                ? "󰂯"
-                : "󰂲"
+            Text {
+                id: iconText
+                anchors.verticalCenter: parent.verticalCenter
 
-            color:
-                root.connected
-                ? Nexa.Theme.primary
-                : root.enabled
-                    ? Nexa.Theme.text
-                    : Nexa.Theme.mutedText
+                text:
+                    root.enabled
+                    ? "󰂯"
+                    : "󰂲"
 
-            font {
-                family:
-                    Nexa.Theme.iconFontFamily
+                color:
+                    root.connected
+                    ? Nexa.Theme.primary
+                    : root.enabled
+                        ? Nexa.Theme.text
+                        : Nexa.Theme.mutedText
 
-                pixelSize:
-                    Nexa.Theme.iconSm
+                font {
+                    family:
+                        Nexa.Theme.iconFontFamily
+
+                    pixelSize:
+                        Nexa.Theme.iconSm
+                }
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration:
+                            Nexa.Theme.animationNormal
+                    }
+                }
             }
 
+            Item {
+                id: labelClip
+                anchors.verticalCenter: parent.verticalCenter
+                clip: true
+                visible: width > 0.5
+                width: Math.max(0, Math.min(root.contentLabelWidth, root.width - root.compactWidth - Nexa.Theme.spacingXs))
+                height: labelText.implicitHeight
+                opacity: Math.max(0.0, Math.min(1.0, (root.width - root.compactWidth) / 16.0))
 
-            Behavior on color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationNormal
+                Behavior on opacity {
+                    NumberAnimation { duration: Nexa.Theme.animationFast }
+                }
+
+                Text {
+                    id: labelText
+                    anchors {
+                        left: parent.left
+                        verticalCenter: parent.verticalCenter
+                    }
+                    width: Math.min(root.maxTextWidth, implicitWidth)
+                    elide: Text.ElideRight
+                    text: root.infoText
+                    color: Nexa.Theme.text
+                    font {
+                        family: Nexa.Theme.fontFamily
+                        pixelSize: Nexa.Theme.fontSizeXs
+                        weight: Nexa.Theme.fontWeightMedium
+                    }
                 }
             }
         }
@@ -214,54 +271,9 @@ Item {
             cursorShape:
                 Qt.PointingHandCursor
 
-
-            /*
-             * Top Bar behavior remains unchanged.
-             *
-             * Quick Settings will call:
-             *
-             *     bluetooth.toggle()
-             *
-             * separately.
-             */
             onClicked:
                 root.togglePopup()
         }
-    }
-
-
-    // ============================================================
-    // HOVER
-    // ============================================================
-
-    Status.StatusHover {
-        anchorItem:
-            button
-
-        visible:
-            root.visible
-            && mouse.containsMouse
-            && !root.popupVisible
-
-        title:
-            "Bluetooth"
-
-        rows: [
-            [
-                "Device",
-                root.connected
-                    ? root.connectedDeviceName
-                    : root.enabled
-                        ? "No device"
-                        : "Disabled"
-            ],
-            [
-                "Type",
-                root.connected
-                    ? root.connectedDeviceType
-                    : "—"
-            ]
-        ]
     }
 
 

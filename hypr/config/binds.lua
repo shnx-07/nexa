@@ -1,395 +1,140 @@
--- Keybindings & Shortcuts
+-- ==============================================================================
+-- NEXA & HYPRLAND MASTER KEYBINDINGS (binds.lua)
+-- ==============================================================================
+--
+-- HOW TO CUSTOMIZE YOUR KEYBINDINGS:
+--
+-- 1. CHANGING SHORTCUTS:
+--    Simply edit the key name (e.g. change "Return" to "Enter", or "X" to "Print").
+--    Hit save, and Hyprland reloads it instantly (no compilation needed).
+--
+-- 2. ADDING A NEW APPLICATION SHORTCUT:
+--    Add a line like:
+--      hl.bind(MOD .. " + C", hl.dsp.exec_cmd("google-chrome-stable"))
+--
+-- 3. UNDERSTANDING 'nexad':
+--    'nexad' is the fast Nexa Rust backend tool. It handles heavy operations
+--    (instant scratchpads, Quickshell IPC, volume/brightness with 0ms lag).
+--    You DO NOT need to touch Rust to change bindings—just change the key here!
+-- ==============================================================================
 
 local MOD = "SUPER"
 
--- Applications   check variable.lua for change
-local terminal = TERMINAL
-local fileManager = FILE_MANAGER
-local browser = BROWSER
-local music = MUSIC
+-- Default application definitions (can also be changed in config/variables.lua)
+local terminal = TERMINAL or "kitty"
+local fileManager = FILE_MANAGER or "dolphin"
+local browser = BROWSER or "zen-browser"
+local music = MUSIC or "spotify"
 
--- ============================================================
--- Terminal & Floating Scratchpad Controls (Universal Terminal Support)
--- ============================================================
+-- Path to the compiled Nexa Rust backend binary
+local nexad = (os.getenv("HOME") or "") .. "/.config/nexa/rust/target/release/nexad"
 
-local function is_special_terminal_open()
-	local active_special = hl.get_active_special_workspace()
-	if active_special then
-		local name = tostring(active_special.name or active_special)
-		if name:find("terminal") ~= nil then
-			return true
-		end
-	end
-	local cur_win = hl.get_active_window()
-	if cur_win and cur_win.workspace and tostring(cur_win.workspace.name or ""):find("special:terminal") ~= nil then
-		return true
-	end
-	return false
-end
+-- ==============================================================================
+-- 1. TERMINAL & SCRATCHPAD (SUPER + Return / SUPER + SHIFT + Return)
+-- ==============================================================================
+-- Normal Tiled Terminal: Opens a regular terminal in current workspace
+hl.bind(MOD .. " + Return", hl.dsp.exec_cmd(terminal))
 
-local function is_special_files_open()
-	local active_special = hl.get_active_special_workspace()
-	if active_special then
-		local name = tostring(active_special.name or active_special)
-		if name:find("files") ~= nil then
-			return true
-		end
-	end
-	local cur_win = hl.get_active_window()
-	if cur_win and cur_win.workspace and tostring(cur_win.workspace.name or ""):find("special:files") ~= nil then
-		return true
-	end
-	return false
-end
+-- Persistent Scratchpad Terminal:
+-- Press once: opens/restores terminal in the center with immediate focus.
+-- Press again: hides it away and instantly restores focus to previous window.
+-- Powered by Rust state machine (zero race-condition timers).
+hl.bind(MOD .. " + SHIFT + Return", hl.dsp.exec_cmd(nexad .. " hypr scratchpad terminal"))
 
--- 1. Normal Tiled Terminal (ignored when special terminal is on screen)
-hl.bind(MOD .. " + Return", function()
-	if is_special_terminal_open() then
-		return
-	end
-	hl.dispatch(hl.dsp.exec_cmd(terminal))
-end)
+-- Quick toggle float for currently active window
+hl.bind(MOD .. " + SHIFT + T", hl.dsp.window.float({ action = "toggle" }))
 
--- 2. Toggle Float for Active Terminal (Only if focus is on that terminal)
-hl.bind(MOD .. " + SHIFT + T", function()
-	local win = hl.get_active_window()
-	if win and win.class and win.class ~= "" then
-		local lower = tostring(win.class):lower()
-		if
-			lower:find("kitty")
-			or lower:find("alacritty")
-			or lower:find("ghostty")
-			or lower:find("konsole")
-			or lower:find("wezterm")
-			or lower:find("terminal")
-			or lower:find("foot")
-		then
-			hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
-			hl.dispatch(hl.dsp.window.center())
-		end
-	end
-end)
+-- ==============================================================================
+-- 2. FILE MANAGER & SCRATCHPAD (SUPER + E)
+-- ==============================================================================
+-- Persistent Scratchpad File Manager (Dolphin):
+-- Toggle floating file manager anywhere with instant focus memory.
+-- Automatically slides away the terminal scratchpad (mutual exclusion).
+hl.bind(MOD .. " + E", hl.dsp.exec_cmd(nexad .. " hypr scratchpad files"))
 
--- 3. Scratchpad Terminal (Persistent compact floating window across any workspace)
--- - Press once: opens/restores in the middle of screen with full history & immediate focus
--- - Press again: hides it away and restores focus back to previous active window
-local previous_terminal_window_addr = nil
-local last_terminal_launch_time = 0
-
-hl.bind(MOD .. " + SHIFT + Return", function()
-	local is_open = is_special_terminal_open()
-
-	if is_open then
-		-- A. Close / Hide the scratchpad terminal
-		hl.dispatch(hl.dsp.workspace.toggle_special("terminal"))
-
-		-- B. Restore focus back to previous window
-		if previous_terminal_window_addr then
-			hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(previous_terminal_window_addr) }))
-			previous_terminal_window_addr = nil
-		end
-		return
-	end
-
-	-- OPENING SCRATCHPAD TERMINAL:
-	-- Mutual exclusion: if special:files is currently open, hide it
-	if is_special_files_open() then
-		hl.dispatch(hl.dsp.workspace.toggle_special("files"))
-	end
-
-	-- 1. Remember the currently focused window
-	local cur_win = hl.get_active_window()
-	if cur_win and cur_win.address then
-		local ws_name = tostring((cur_win.workspace and cur_win.workspace.name) or "")
-		if ws_name:find("special:") == nil then
-			previous_terminal_window_addr = cur_win.address
-		end
-	end
-
-	-- 2. Check if a terminal window is already created in special:terminal
-	local wins = hl.get_windows() or {}
-	local scratch_win = nil
-	for _, w in ipairs(wins) do
-		if w.workspace and w.workspace.name == "special:terminal" then
-			scratch_win = w
-			break
-		end
-	end
-
-	-- 3. If not running yet, launch it on special:terminal (with debounce guard)
-	local now = os.time()
-	if not scratch_win then
-		if (now - last_terminal_launch_time) >= 2 then
-			last_terminal_launch_time = now
-			hl.exec_cmd("[workspace special:terminal] " .. (terminal or "kitty"))
-
-			-- On initial launch, the window maps asynchronously (~80-200ms).
-			-- Schedule focus checks so it grabs focus immediately without requiring a mouse click.
-			for _, delay in ipairs({ 80, 160, 260, 400 }) do
-				hl.timer(function()
-					local current_wins = hl.get_windows() or {}
-					for _, w in ipairs(current_wins) do
-						if w.workspace and w.workspace.name == "special:terminal" then
-							hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(w.address) }))
-							break
-						end
-					end
-				end, { timeout = delay, type = "oneshot" })
-			end
-		end
-	end
-
-	-- 4. Toggle special workspace into view
-	hl.dispatch(hl.dsp.workspace.toggle_special("terminal"))
-
-	-- 5. Focus the scratchpad terminal immediately if already mapped
-	if scratch_win then
-		hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(scratch_win.address) }))
-	end
-end)
-
--- ============================================================
--- File Manager & Floating Scratchpad Controls (special:files)
--- ============================================================
-
-local function is_file_manager_window(win)
-	if not win then
-		return false
-	end
-	local cls = tostring(win.class or ""):lower()
-	local icls = tostring(win.initial_class or win.initialClass or ""):lower()
-	return cls:find("dolphin") ~= nil
-		or cls:find("nemo") ~= nil
-		or cls:find("nautilus") ~= nil
-		or cls:find("yazi") ~= nil
-		or cls:find("thunar") ~= nil
-		or icls:find("dolphin") ~= nil
-		or icls:find("nemo") ~= nil
-		or icls:find("nautilus") ~= nil
-		or icls:find("yazi") ~= nil
-		or icls:find("thunar") ~= nil
-end
-
-local previous_files_window_addr = nil
-local last_files_launch_time = 0
-local scratchpad_files_opening = false
-
--- Scratchpad File Manager (Super + E)
--- - Press once: opens/restores in the middle of screen across any workspace with immediate focus
--- - Press again: hides away (preserves running process & tabs) and restores previous focus
--- - Mutual exclusion: automatically hides special:terminal if active
--- - Auto-hide: automatically hides when a file is opened
-hl.bind(MOD .. " + E", function()
-	local is_open = is_special_files_open()
-
-	if is_open then
-		-- A. Close / Hide the scratchpad file manager
-		hl.dispatch(hl.dsp.workspace.toggle_special("files"))
-
-		-- B. Restore focus back to previous active window
-		if previous_files_window_addr then
-			hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(previous_files_window_addr) }))
-			previous_files_window_addr = nil
-		end
-		return
-	end
-
-	-- OPENING SCRATCHPAD FILE MANAGER:
-	scratchpad_files_opening = true
-	hl.timer(function()
-		scratchpad_files_opening = false
-	end, { timeout = 350, type = "oneshot" })
-
-	-- 1. Mutual exclusion: if special:terminal is open, hide it first
-	if is_special_terminal_open() then
-		hl.dispatch(hl.dsp.workspace.toggle_special("terminal"))
-	end
-
-	-- 2. Remember the currently focused window on regular workspace
-	local cur_win = hl.get_active_window()
-	if cur_win and cur_win.address then
-		local ws_name = tostring((cur_win.workspace and cur_win.workspace.name) or "")
-		if ws_name:find("special:") == nil then
-			previous_files_window_addr = cur_win.address
-		end
-	end
-
-	-- 3. Check across ALL workspaces for any existing file manager instance
-	local wins = hl.get_windows() or {}
-	local scratch_win = nil
-	for _, w in ipairs(wins) do
-		if is_file_manager_window(w) then
-			scratch_win = w
-			-- If it exists on a different workspace, move it to special:files
-			local ws_name = tostring((w.workspace and w.workspace.name) or "")
-			if ws_name ~= "special:files" then
-				hl.dispatch(hl.dsp.window.move({ workspace = "special:files", window = "address:" .. tostring(w.address) }))
-			end
-			break
-		end
-	end
-
-	-- 4. If none exists anywhere, launch it on special:files (with 2-second debounce guard)
-	local now = os.time()
-	if not scratch_win then
-		if (now - last_files_launch_time) >= 2 then
-			last_files_launch_time = now
-			hl.exec_cmd("[workspace special:files] " .. (fileManager or "dolphin"))
-
-			-- On initial launch, schedule focus checks so it grabs focus smoothly
-			for _, delay in ipairs({ 80, 160, 260, 450, 700 }) do
-				hl.timer(function()
-					local current_wins = hl.get_windows() or {}
-					for _, w in ipairs(current_wins) do
-						if is_file_manager_window(w) then
-							hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(w.address) }))
-							break
-						end
-					end
-				end, { timeout = delay, type = "oneshot" })
-			end
-		end
-	end
-
-	-- 5. Toggle special:files workspace into view
-	hl.dispatch(hl.dsp.workspace.toggle_special("files"))
-
-	-- 6. Focus the scratchpad file manager immediately if already mapped
-	if scratch_win then
-		hl.dispatch(hl.dsp.focus({ window = "address:" .. tostring(scratch_win.address) }))
-	end
-end)
-
--- Auto-hide special:files when a file or external application window becomes active
-hl.on("window.active", function(win)
-	if not win then
-		return
-	end
-
-	-- Only active when special:files is on screen
-	if not is_special_files_open() then
-		return
-	end
-
-	-- Grace period to avoid auto-hiding during initial toggle animation/mapping
-	if scratchpad_files_opening then
-		return
-	end
-
-	-- If the active window is the file manager itself (or a Dolphin dialog), keep it open
-	if is_file_manager_window(win) then
-		return
-	end
-
-	-- Focus has moved to an external window (e.g. user opened a file)
-	-- If that window inadvertently spawned inside special:files, move it to the active regular workspace
-	local ws_name = tostring((win.workspace and win.workspace.name) or "")
-	if ws_name:find("special:files") ~= nil then
-		hl.dispatch(hl.dsp.window.move({ workspace = "m+0", window = "address:" .. tostring(win.address) }))
-	end
-
-	-- Auto-hide the scratchpad file manager
-	hl.dispatch(hl.dsp.workspace.toggle_special("files"))
-	previous_files_window_addr = nil
-end)
-
+-- Standard application shortcuts
 hl.bind(MOD .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(MOD .. " + M", hl.dsp.exec_cmd(music))
 
--- ============================================================
--- NEXA
--- ============================================================
-
---wallpapers
+-- ==============================================================================
+-- 3. NEXA DESKTOP UI & UTILITIES
+-- ==============================================================================
+-- Wallpaper Picker & Manager
 hl.bind("SUPER + W", hl.dsp.global("nexa:wallpaper"))
+hl.bind(MOD .. " + SHIFT + W", hl.dsp.exec_cmd(nexad .. " qs workspaceManager toggle"))
 
-hl.bind(MOD .. " + SHIFT + W", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call workspaceManager toggle"))
+-- Dynamic Island Search & Command Palette
+hl.bind(MOD .. " + SPACE", hl.dsp.exec_cmd(nexad .. " island search"))
+hl.bind(MOD .. " + SHIFT + SPACE", hl.dsp.exec_cmd(nexad .. " island command"))
 
--- Island Search / Command
-hl.bind(MOD .. " + SPACE", hl.dsp.exec_cmd("~/.config/nexa/rust/target/release/nexad island search"))
+-- Application Launcher (Modal)
+hl.bind(MOD .. " + A", hl.dsp.exec_cmd(nexad .. " qs appLauncher toggle"))
 
-hl.bind(MOD .. " + SHIFT + SPACE", hl.dsp.exec_cmd("~/.config/nexa/rust/target/release/nexad island command"))
+-- Screenshot & Snipping Tools
+hl.bind(MOD .. " + X", hl.dsp.exec_cmd(nexad .. " screenshot capture"))
+hl.bind(MOD .. " + SHIFT + S", hl.dsp.exec_cmd(nexad .. " snipping capture"))
 
--- App Launcher
-hl.bind(MOD .. " + A", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call appLauncher toggle"))
-
--- Screenshot
-hl.bind(MOD .. " + X", hl.dsp.exec_cmd("~/.config/nexa/rust/target/release/nexad screenshot capture"))
-
--- Snipping Tool
-hl.bind(MOD .. " + SHIFT + S", hl.dsp.exec_cmd("~/.config/nexa/rust/target/release/nexad snipping capture"))
-
--- Utility Dock
+-- Utility Dock & Lock Screen
 hl.bind(MOD .. " + SHIFT + D", hl.dsp.global("shnx-shell:utility-dock"))
-
--- LockSCreen
 hl.bind("SUPER + L", hl.dsp.global("nexa:lock"))
-hl.bind(MOD .. " + ALT + L", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call lockSettings toggle"))
--- Clipboard
-hl.bind(MOD .. " + V", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call clipboard toggle"))
+hl.bind(MOD .. " + ALT + L", hl.dsp.exec_cmd(nexad .. " qs lockSettings toggle"))
 
--- File Shelf / Tray
-hl.bind(MOD .. " + SHIFT + F", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call fileShelf toggle"))
+-- Clipboard Manager & File Stash Shelf
+hl.bind(MOD .. " + V", hl.dsp.exec_cmd(nexad .. " qs clipboard toggle"))
+hl.bind(MOD .. " + SHIFT + F", hl.dsp.exec_cmd(nexad .. " qs fileShelf toggle"))
 
--- Window Management
+-- ==============================================================================
+-- 4. WINDOW MANAGEMENT (Native Hyprland C++ - Instant 0ms)
+-- ==============================================================================
+-- Close & Kill
 hl.bind(MOD .. " + SHIFT + Q", hl.dsp.window.close())
 hl.bind(MOD .. " + SHIFT + X", hl.dsp.window.kill())
+
+-- Window State
 hl.bind(MOD .. " + F", hl.dsp.window.fullscreen(mode == 1))
 hl.bind(MOD .. " + T", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(MOD .. " + P", hl.dsp.window.pseudo())
 
--- Mouse Controls
+-- Mouse Drag & Resize
 hl.bind(MOD .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(MOD .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- Focus (Arrow keys)
+-- Focus Movement (Arrow keys)
 hl.bind(MOD .. " + left", hl.dsp.focus({ direction = "left" }))
 hl.bind(MOD .. " + right", hl.dsp.focus({ direction = "right" }))
 hl.bind(MOD .. " + up", hl.dsp.focus({ direction = "up" }))
 hl.bind(MOD .. " + down", hl.dsp.focus({ direction = "down" }))
--- Vim-style focus (uncomment to enable):
--- hl.bind(MOD .. " + h", hl.dsp.focus({ direction = "left" }))
--- hl.bind(MOD .. " + j", hl.dsp.focus({ direction = "down" }))
--- hl.bind(MOD .. " + k", hl.dsp.focus({ direction = "up" }))
--- hl.bind(MOD .. " + l", hl.dsp.focus({ direction = "right" }))
--- WARNING: SUPER + L is currently assigned to Lock Screen (nexa:lock). You must remap or change the lock screen shortcut for this to work.
 
--- Move Window (SHIFT + Arrow keys)
+-- Move Window Position (SHIFT + Arrow keys)
 hl.bind(MOD .. " + SHIFT + left", hl.dsp.window.move({ direction = "left" }))
 hl.bind(MOD .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" }))
 hl.bind(MOD .. " + SHIFT + up", hl.dsp.window.move({ direction = "up" }))
 hl.bind(MOD .. " + SHIFT + down", hl.dsp.window.move({ direction = "down" }))
--- Vim-style move window (uncomment to enable):
--- hl.bind(MOD .. " + SHIFT + h", hl.dsp.window.move({ direction = "left" }))
--- hl.bind(MOD .. " + SHIFT + j", hl.dsp.window.move({ direction = "down" }))
--- hl.bind(MOD .. " + SHIFT + k", hl.dsp.window.move({ direction = "up" }))
--- hl.bind(MOD .. " + SHIFT + l", hl.dsp.window.move({ direction = "right" }))
 
--- Workspace Access (1-10)
+-- ==============================================================================
+-- 5. WORKSPACES (1 - 10)
+-- ==============================================================================
+-- Switch to Workspace (SUPER + 1..0) / Move window to Workspace (SUPER + SHIFT + 1..0)
 for workspace = 1, 10 do
 	local key = (workspace == 10) and 0 or workspace
 	hl.bind(MOD .. " + " .. key, hl.dsp.focus({ workspace = workspace }))
 	hl.bind(MOD .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = workspace }))
 end
 
--- Workspace Cycling
+-- Cycle Workspaces
 hl.bind(MOD .. " + TAB", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(MOD .. " + SHIFT + TAB", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(MOD .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(MOD .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
--- Special Workspace (Scratchpad)
+-- Magic Special Workspace
 hl.bind(MOD .. " + S", hl.dsp.workspace.toggle_special("magic"))
 
--- Show Desktop / Toggle Minimize All (Win+D)
--- ============================================================
--- Show Desktop / Toggle Minimize All (SUPER + D)
--- ============================================================
--- - On W1: press once hides all W1 windows into special:desktop
--- - On W1: press again restores all W1 windows back to W1
--- - If W1 is already hidden, switching to W2 and pressing SUPER + D:
---   automatically restores W1 windows back to W1, and hides W2 windows.
-
+-- ==============================================================================
+-- 6. SHOW DESKTOP / TOGGLE MINIMIZE ALL (SUPER + D)
+-- ==============================================================================
+-- Press once: hides all windows on current workspace to reveal wallpaper.
+-- Press again: restores all windows back with original focus intact.
 local hidden_desktop_workspace = nil
 local hidden_desktop_windows = {}
 
@@ -400,7 +145,7 @@ hl.bind(MOD .. " + D", function()
 	end
 	local current_ws_id = tostring(active_ws.id)
 
-	-- CASE 1: Currently active workspace is already minimized -> RESTORE it!
+	-- If already minimized, restore all windows
 	if hidden_desktop_workspace == current_ws_id then
 		local last_addr = nil
 		for _, addr in ipairs(hidden_desktop_windows) do
@@ -419,7 +164,7 @@ hl.bind(MOD .. " + D", function()
 		return
 	end
 
-	-- CASE 2: Another workspace was minimized earlier -> RESTORE it first in background!
+	-- If a different workspace was minimized, restore it in background first
 	if hidden_desktop_workspace ~= nil and #hidden_desktop_windows > 0 then
 		for _, addr in ipairs(hidden_desktop_windows) do
 			hl.dispatch(hl.dsp.window.move({
@@ -432,7 +177,7 @@ hl.bind(MOD .. " + D", function()
 		hidden_desktop_windows = {}
 	end
 
-	-- CASE 3: Minimize all windows on the CURRENT workspace into special:desktop
+	-- Minimize current workspace windows to temporary stash workspace 99
 	local wins = hl.get_windows() or {}
 	local to_hide = {}
 	for _, w in ipairs(wins) do
@@ -451,92 +196,46 @@ hl.bind(MOD .. " + D", function()
 				silent = true,
 			}))
 		end
-		-- Stay strictly on the current workspace showing empty desktop/wallpaper
 		hl.dispatch(hl.dsp.focus({ workspace = current_ws_id }))
 	end
 end)
 
+-- ==============================================================================
+-- 7. HARDWARE KEYS & MEDIA CONTROLS
+-- ==============================================================================
+-- Volume & Mute Keys (repeating = true allows holding keys smoothly without lag)
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd(nexad .. " island volume-up"), { locked = true, repeating = true })
+hl.bind("F3", hl.dsp.exec_cmd(nexad .. " island volume-up"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd(nexad .. " island volume-down"), { locked = true, repeating = true })
+hl.bind("F2", hl.dsp.exec_cmd(nexad .. " island volume-down"), { locked = true, repeating = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd(nexad .. " island toggle-mute"), { locked = true, repeating = true })
+hl.bind("F1", hl.dsp.exec_cmd(nexad .. " island toggle-mute"), { locked = true, repeating = true })
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd(nexad .. " island toggle-mic-mute"), { locked = true, repeating = true })
+hl.bind("F4", hl.dsp.exec_cmd(nexad .. " island toggle-mic-mute"), { locked = true, repeating = true })
 
--- System Utilities
-hl.bind(MOD .. " + G", hl.dsp.exec_cmd("hyprctl dispatch workspaceopt allgaps toggle"))
-hl.bind(MOD .. " + N", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleControlCenter"))
-hl.bind(MOD .. " + SHIFT + C", hl.dsp.exec_cmd("hyprctl reload"))
+-- Display Backlight Brightness
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(nexad .. " island brightness-up"), { locked = true, repeating = true })
+hl.bind("F6", hl.dsp.exec_cmd(nexad .. " island brightness-up"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(nexad .. " island brightness-down"), { locked = true, repeating = true })
+hl.bind("F5", hl.dsp.exec_cmd(nexad .. " island brightness-down"), { locked = true, repeating = true })
 
--- Media & Brightness Keys
-hl.bind(
-	"XF86AudioRaiseVolume",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland volumeUp"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"F3",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland volumeUp"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86AudioLowerVolume",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland volumeDown"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"F2",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland volumeDown"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86AudioMute",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleMute"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"F1",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleMute"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86AudioMicMute",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleMicMute"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"F4",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleMicMute"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86MonBrightnessUp",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland brightnessUp"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"F6",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland brightnessUp"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86MonBrightnessDown",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland brightnessDown"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"F5",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland brightnessDown"),
-	{ locked = true, repeating = true }
-)
-hl.bind("F8", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleAirplane"), { locked = true })
-hl.bind(
-	"XF86WLAN",
-	hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland toggleAirplane"),
-	{ locked = true }
-)
+-- Network / Airplane Mode
+hl.bind("F8", hl.dsp.exec_cmd(nexad .. " island airplane"), { locked = true })
+hl.bind("XF86WLAN", hl.dsp.exec_cmd(nexad .. " island airplane"), { locked = true })
+
+-- Media Player Controls (via playerctl)
 hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 
--- Session Control
--- hl.bind(MOD .. " + Escape", hl.dsp.exec_cmd("wlogout || hyprshutdown"))
-hl.bind(MOD .. " + Escape", hl.dsp.exec_cmd("qs -p ~/.config/nexa/quickshell ipc call nexaIsland togglePower"))
+-- ==============================================================================
+-- 8. SYSTEM SESSION & POWER
+-- ==============================================================================
+hl.bind(MOD .. " + G", hl.dsp.exec_cmd("hyprctl dispatch workspaceopt allgaps toggle"))
+hl.bind(MOD .. " + N", hl.dsp.exec_cmd(nexad .. " island control-center"))
+hl.bind(MOD .. " + SHIFT + C", hl.dsp.exec_cmd("hyprctl reload"))
+hl.bind(MOD .. " + Escape", hl.dsp.exec_cmd(nexad .. " island power"))
 hl.bind(MOD .. " + SHIFT + M", hl.dsp.exit())
 hl.bind(MOD .. " + SHIFT + P", hl.dsp.exec_cmd("systemctl poweroff"))
 hl.bind(MOD .. " + SHIFT + R", hl.dsp.exec_cmd("systemctl reboot"))

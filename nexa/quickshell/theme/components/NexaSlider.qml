@@ -11,18 +11,25 @@ Item {
     property real stepSize: 1
     property bool interactive: true
 
-    // Dimensions matching reference screenshot (sleek, non-bulky)
-    property int sliderHeight: 34
-    property int sliderRadius: 10
+    // Dimensions: default to sleek continuous pill (height 28, radius 14)
+    property int sliderHeight: 28
+    property int sliderRadius: -1
     property alias pillHeight: root.sliderHeight
     property alias pillRadius: root.sliderRadius
     property color trackColor: Nexa.Theme.cardBackgroundElevated
     property color accentColor: Nexa.Theme.primary
 
-    // Embedded trailing icon (e.g. sun, speaker, mic)
+    // Embedded icon
     property string icon: ""
-    property int iconSize: 15
+    property string iconPosition: "left"
+    property int iconSize: 13
     property bool iconInteractive: false
+
+    // Value readout inside slider (e.g. 70%, 3.8, 0.28)
+    property bool showValue: false
+    property string valuePrefix: ""
+    property string valueSuffix: ""
+    property int valueDecimals: 0
 
     // Live audio pulse reactivity (for mic slider)
     property real livePulse: 0.0
@@ -37,6 +44,9 @@ Item {
     readonly property real normalizedValue:
         to <= from ? 0 : Math.max(0, Math.min(1, (value - from) / (to - from)))
 
+    readonly property int effectiveRadius:
+        root.sliderRadius > 0 ? root.sliderRadius : Math.round(root.sliderHeight / 2)
+
     function valueFromPosition(x) {
         const n = Math.max(0, Math.min(1, x / Math.max(1, track.width)))
         let v = from + n * (to - from)
@@ -49,16 +59,16 @@ Item {
         id: container
         anchors.fill: parent
 
-        // Main Track
+        // Main Track (Apple / Mist liquid glass capsule)
         Rectangle {
             id: track
             anchors.fill: parent
-            radius: root.sliderRadius
+            radius: root.effectiveRadius
             color: root.trackColor
             clip: true
 
             border.width: Nexa.Theme.borderThin
-            border.color: mouse.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.border
+            border.color: mouse.containsMouse ? Nexa.Theme.edgeHighlightStrong : Nexa.Theme.border
 
             Behavior on color {
                 ColorAnimation {
@@ -76,7 +86,21 @@ Item {
                 }
             }
 
-            // 1. Progress Fill
+            // Glass reflection highlight on track
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 1
+                radius: Math.max(0, track.radius - 1)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: mouse.containsMouse ? Nexa.Theme.edgeHighlightStrong : Nexa.Theme.edgeHighlight
+                    }
+                    GradientStop { position: 0.55; color: "transparent" }
+                }
+            }
+
+            // 1. Progress Fill (continuous rounded capsule)
             Rectangle {
                 id: progressFill
                 anchors.left: parent.left
@@ -97,6 +121,16 @@ Item {
                 Behavior on width {
                     enabled: !mouse.pressed && !Nexa.Theme.reducedMotion
                     NexaSpring { section: "sliders" }
+                }
+
+                // Inner glass sheen on progress fill
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.22) }
+                        GradientStop { position: 0.55; color: "transparent" }
+                    }
                 }
             }
 
@@ -120,21 +154,22 @@ Item {
                 }
             }
 
-            // 2. Trailing Icon (sun / speaker / mic)
+            // 2. Embedded Leading Icon (Left - Mist Control Center Style)
             Item {
-                id: iconArea
-                width: 40
+                id: leadingIconArea
+                width: 32
                 height: parent.height
-                anchors.right: parent.right
-                anchors.rightMargin: 8
-                visible: root.icon !== ""
+                anchors.left: parent.left
+                anchors.leftMargin: 10
+                visible: root.icon !== "" && root.iconPosition === "left"
+                z: 3
 
                 Text {
                     anchors.centerIn: parent
                     text: root.icon
                     font.family: Nexa.Theme.iconFontFamily
                     font.pixelSize: root.iconSize
-                    color: root.normalizedValue > 0.88 ? Nexa.Theme.primaryContainerText : Nexa.Theme.text
+                    color: (progressFill.width > 28) ? Nexa.Theme.onPrimary : Nexa.Theme.text
                     opacity: 0.95
 
                     Behavior on color {
@@ -154,48 +189,90 @@ Item {
                     onClicked: root.iconClicked()
                 }
             }
-        }
 
-        // 3. Vertical Divider Line (Matches reference screenshot: slightly taller than track)
-        Rectangle {
-            id: dividerLine
-            width: 2.5
-            height: track.height + 4
-            radius: 1.25
-            anchors.verticalCenter: track.verticalCenter
-            x: Math.max(0, Math.min(track.width - width, track.width * root.normalizedValue - width / 2))
-            visible: root.normalizedValue > 0.005 && root.normalizedValue < 0.995
-            color: Nexa.Theme.onPrimary
-            opacity: mouse.pressed ? 1.0 : (mouse.containsMouse ? 0.95 : 0.9)
+            // 3. Embedded Trailing Icon (Right - for backward compatibility)
+            Item {
+                id: trailingIconArea
+                width: 32
+                height: parent.height
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                visible: root.icon !== "" && root.iconPosition === "right"
+                z: 3
 
-            Behavior on x {
-                enabled: !mouse.pressed
-                NumberAnimation {
-                    duration: 140
-                    easing.type: Nexa.Theme.easingStandard
-                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
+                Text {
+                    anchors.centerIn: parent
+                    text: root.icon
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: root.iconSize
+                    color: root.normalizedValue > 0.88 ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                    opacity: 0.95
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: Nexa.Theme.animationFast
+                            easing.type: Nexa.Theme.easingStandard
+                            easing.bezierCurve: Nexa.Theme.easingFluidCurve
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: root.iconInteractive
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: root.iconClicked()
+                }
+            }
+
+            // 4. Value Readout (Right aligned inside track)
+            Text {
+                id: valueText
+                anchors.right: parent.right
+                anchors.rightMargin: (root.icon !== "" && root.iconPosition === "right") ? 42 : 14
+                anchors.verticalCenter: parent.verticalCenter
+                visible: root.showValue
+                z: 3
+
+                text: root.valuePrefix + (root.valueDecimals > 0 ? root.value.toFixed(root.valueDecimals) : Math.round(root.value)) + root.valueSuffix
+                color: (progressFill.width > (parent.width - 60)) ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                font {
+                    family: Nexa.Theme.fontFamily
+                    pixelSize: Nexa.Theme.fontSizeXs
+                    weight: Nexa.Theme.fontWeightDemiBold
+                    features: Nexa.Theme.fontFeaturesTnum
+                }
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Nexa.Theme.animationFast
+                        easing.type: Nexa.Theme.easingStandard
+                        easing.bezierCurve: Nexa.Theme.easingFluidCurve
+                    }
                 }
             }
         }
 
-        // 4. Interaction Mouse Area (NO WHEEL EVENT - PREVENTS SCROLL ACCIDENTS)
+        // 5. Interaction Mouse Area (Prevents scroll stealing)
         MouseArea {
             id: mouse
             anchors.fill: parent
-            anchors.rightMargin: root.iconInteractive ? 44 : 0
+            anchors.leftMargin: (root.iconInteractive && root.iconPosition === "left") ? 40 : 0
+            anchors.rightMargin: (root.iconInteractive && root.iconPosition === "right") ? 40 : 0
             enabled: root.interactive
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             preventStealing: true
 
             onPressed: event => {
-                root.value = root.valueFromPosition(event.x)
+                root.value = root.valueFromPosition(event.x + anchors.leftMargin)
                 root.moved(root.value)
             }
 
             onPositionChanged: event => {
                 if (!pressed) return
-                root.value = root.valueFromPosition(event.x)
+                root.value = root.valueFromPosition(event.x + anchors.leftMargin)
                 root.moved(root.value)
             }
 

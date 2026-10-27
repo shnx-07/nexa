@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell.Services.UPower
 import Quickshell
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 Item {
@@ -16,8 +17,28 @@ Item {
         ready && !UPower.onBattery
 
 
-    implicitWidth: 54
+    readonly property real compactWidth: 54
+
+    readonly property string statusText: {
+        if (!root.ready) return "Unavailable"
+        if (root.percent >= 100 && root.charging) return "Fully Charged"
+        if (root.charging) return "Charging"
+        return "On Battery"
+    }
+
+    readonly property bool isExpanded: mouse.containsMouse || popup.visible
+    readonly property real contentLabelWidth: statusTextItem.implicitWidth
+    readonly property real targetWidth: isExpanded
+        ? (compactWidth + contentLabelWidth + Nexa.Theme.spacingXs)
+        : compactWidth
+
+    implicitWidth: targetWidth
     implicitHeight: Nexa.Theme.controlHeightSm
+
+    Behavior on implicitWidth {
+        enabled: !Nexa.Theme.reducedMotion
+        NexaUI.NexaSpring { section: "popups"; customStiffness: 5.5; customDamping: 0.26 }
+    }
 
 
     Rectangle {
@@ -26,7 +47,7 @@ Item {
         anchors.fill: parent
         radius: Nexa.Theme.nexaRounding === 0 ? 0 : Nexa.Theme.radiusSm
 
-        color: mouse.containsMouse
+        color: (mouse.containsMouse || popup.visible)
             ? Nexa.Theme.hover
             : "transparent"
 
@@ -174,6 +195,35 @@ Item {
                     weight: Nexa.Theme.fontWeightMedium
                 }
             }
+
+            Item {
+                id: statusClip
+                anchors.verticalCenter: parent.verticalCenter
+                clip: true
+                visible: width > 0.5
+                width: Math.max(0, Math.min(root.contentLabelWidth, root.width - root.compactWidth))
+                height: statusTextItem.implicitHeight
+                opacity: Math.max(0.0, Math.min(1.0, (root.width - root.compactWidth) / 16.0))
+
+                Behavior on opacity {
+                    NumberAnimation { duration: Nexa.Theme.animationFast }
+                }
+
+                Text {
+                    id: statusTextItem
+                    anchors {
+                        left: parent.left
+                        verticalCenter: parent.verticalCenter
+                    }
+                    text: "· " + root.statusText
+                    color: Nexa.Theme.mutedText
+                    font {
+                        family: Nexa.Theme.fontFamily
+                        pixelSize: Nexa.Theme.fontSizeXs
+                        weight: Nexa.Theme.fontWeightMedium
+                    }
+                }
+            }
         }
 
 
@@ -200,108 +250,6 @@ Item {
         id: popup
 
         anchorItem: button
-    }
-
-    // ============================================================
-    // HOVER INFO
-    // ============================================================
-
-    PopupWindow {
-        id: hoverPopup
-
-        visible:
-            mouse.containsMouse
-            && !popup.visible
-
-        implicitWidth: 150
-        implicitHeight: 52
-
-        color: "transparent"
-
-
-        anchor {
-            item: button
-
-            rect.x: button.width / 2
-            rect.y: button.height + Nexa.Theme.spacingXs
-
-            rect.width: 1
-            rect.height: 1
-
-            edges: Edges.Top
-            gravity: Edges.Bottom
-        }
-
-
-        Rectangle {
-            anchors.fill: parent
-
-            radius: Nexa.Theme.radiusSm
-            color: Nexa.Theme.popupBackground
-
-            border {
-                width: Nexa.Theme.borderThin
-                color: Nexa.Theme.border
-            }
-
-            // Entrance: fade + scale spring
-            opacity: hoverPopup.visible ? 1.0 : 0.0
-            scale:  hoverPopup.visible ? 1.0 : 0.95
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: Nexa.Theme.animationFast
-                    easing.type: Nexa.Theme.easingEnter
-                }
-            }
-
-            Behavior on scale {
-                NumberAnimation {
-                    duration: Nexa.Theme.animationFast
-                    easing.type: Nexa.Theme.easingEmphasized
-                }
-            }
-
-
-            Column {
-                anchors {
-                    left: parent.left
-                    verticalCenter: parent.verticalCenter
-                    leftMargin: Nexa.Theme.spacingMd
-                }
-
-                spacing: 2
-
-
-                Text {
-                    text: "Battery"
-
-                    color: Nexa.Theme.text
-
-                    font {
-                        family: Nexa.Theme.fontFamily
-                        pixelSize: Nexa.Theme.fontSizeXs
-                        weight: Nexa.Theme.fontWeightDemiBold
-                    }
-                }
-
-
-                Text {
-                    text:
-                        root.ready
-                        ? root.percent + "% · "
-                          + (root.charging ? "Charging" : "On battery")
-                        : "Unavailable"
-
-                    color: Nexa.Theme.mutedText
-
-                    font {
-                        family: Nexa.Theme.fontFamily
-                        pixelSize: Nexa.Theme.fontSize2Xs
-                    }
-                }
-            }
-        }
     }   // ------------------------------------------------------------
     // NOTIFICATIONS
     //

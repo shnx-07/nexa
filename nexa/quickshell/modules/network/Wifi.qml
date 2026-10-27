@@ -5,6 +5,7 @@ import Quickshell.Io
 import Quickshell.Networking
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 import "../status" as Status
 
 
@@ -115,14 +116,35 @@ Item {
 
 
     // ============================================================
-    // SIZE
+    // SIZE & INLINE HOVER EXPANSION
     // ============================================================
 
-    implicitWidth:
-        Nexa.Theme.controlHeightSm
+    readonly property real compactWidth: Nexa.Theme.controlHeightSm
+    readonly property real maxTextWidth: 160
+
+    readonly property string infoText: {
+        if (!root.enabled)
+            return "Off"
+        if (!root.connected)
+            return "Disconnected"
+        return root.ssid ? (root.ssid + " · " + root.strength + "%") : (root.strength + "%")
+    }
+
+    readonly property bool isExpanded: mouse.containsMouse || popup.visible
+    readonly property real contentLabelWidth: Math.min(maxTextWidth, labelText.implicitWidth)
+    readonly property real targetWidth: isExpanded
+        ? (compactWidth + Nexa.Theme.spacingXs + contentLabelWidth + Nexa.Theme.spacingXs)
+        : compactWidth
+
+    implicitWidth: targetWidth
 
     implicitHeight:
         Nexa.Theme.controlHeightSm
+
+    Behavior on implicitWidth {
+        enabled: !Nexa.Theme.reducedMotion
+        NexaUI.NexaSpring { section: "popups"; customStiffness: 5.5; customDamping: 0.26 }
+    }
 
 
     // ============================================================
@@ -142,7 +164,7 @@ Item {
             Nexa.Theme.radiusSm
 
         color:
-            mouse.containsMouse
+            (mouse.containsMouse || popup.visible)
             ? Nexa.Theme.hover
             : "transparent"
 
@@ -171,47 +193,82 @@ Item {
         }
 
 
-        Text {
-            anchors.centerIn:
-                parent
+        Row {
+            anchors.centerIn: parent
+            spacing: (root.width > root.compactWidth + 2) ? Nexa.Theme.spacingXs : 0
 
-            text: {
-                if (!root.enabled)
-                    return "󰤭"
+            Text {
+                id: iconText
+                anchors.verticalCenter: parent.verticalCenter
 
-                if (!root.connected)
-                    return "󰤭"
+                text: {
+                    if (!root.enabled)
+                        return "󰤭"
 
-                if (root.strength >= 75)
-                    return "󰤨"
+                    if (!root.connected)
+                        return "󰤭"
 
-                if (root.strength >= 50)
-                    return "󰤥"
+                    if (root.strength >= 75)
+                        return "󰤨"
 
-                if (root.strength >= 25)
-                    return "󰤢"
+                    if (root.strength >= 50)
+                        return "󰤥"
 
-                return "󰤟"
+                    if (root.strength >= 25)
+                        return "󰤢"
+
+                    return "󰤟"
+                }
+
+                color:
+                    root.connected
+                    ? Nexa.Theme.text
+                    : Nexa.Theme.mutedText
+
+                font {
+                    family:
+                        Nexa.Theme.iconFontFamily
+
+                    pixelSize:
+                        Nexa.Theme.iconSm
+                }
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration:
+                            Nexa.Theme.animationNormal
+                    }
+                }
             }
 
-            color:
-                root.connected
-                ? Nexa.Theme.text
-                : Nexa.Theme.mutedText
+            Item {
+                id: labelClip
+                anchors.verticalCenter: parent.verticalCenter
+                clip: true
+                visible: width > 0.5
+                width: Math.max(0, Math.min(root.contentLabelWidth, root.width - root.compactWidth - Nexa.Theme.spacingXs))
+                height: labelText.implicitHeight
+                opacity: Math.max(0.0, Math.min(1.0, (root.width - root.compactWidth) / 16.0))
 
-            font {
-                family:
-                    Nexa.Theme.iconFontFamily
+                Behavior on opacity {
+                    NumberAnimation { duration: Nexa.Theme.animationFast }
+                }
 
-                pixelSize:
-                    Nexa.Theme.iconSm
-            }
-
-
-            Behavior on color {
-                ColorAnimation {
-                    duration:
-                        Nexa.Theme.animationNormal
+                Text {
+                    id: labelText
+                    anchors {
+                        left: parent.left
+                        verticalCenter: parent.verticalCenter
+                    }
+                    width: Math.min(root.maxTextWidth, implicitWidth)
+                    elide: Text.ElideRight
+                    text: root.infoText
+                    color: Nexa.Theme.text
+                    font {
+                        family: Nexa.Theme.fontFamily
+                        pixelSize: Nexa.Theme.fontSizeXs
+                        weight: Nexa.Theme.fontWeightMedium
+                    }
                 }
             }
         }
@@ -229,59 +286,9 @@ Item {
             cursorShape:
                 Qt.PointingHandCursor
 
-
-            /*
-             * IMPORTANT:
-             *
-             * Top Bar behavior stays exactly the same.
-             *
-             * Clicking the Top Bar icon opens/closes
-             * WifiPopup.
-             *
-             * Quick Settings will call:
-             *
-             *     wifi.toggle()
-             *
-             * separately.
-             */
             onClicked:
                 root.togglePopup()
         }
-    }
-
-
-    // ============================================================
-    // HOVER
-    // ============================================================
-
-    Status.StatusHover {
-        anchorItem:
-            button
-
-        visible:
-            root.visible
-            && mouse.containsMouse
-            && !popup.visible
-
-        title:
-            "Wi-Fi"
-
-        rows: [
-            [
-                "Network",
-                root.connected
-                    ? root.ssid
-                    : root.enabled
-                        ? "Disconnected"
-                        : "Disabled"
-            ],
-            [
-                "Signal",
-                root.connected
-                    ? root.strength + "%"
-                    : "—"
-            ]
-        ]
     }
 
 

@@ -33,7 +33,7 @@ Item {
 
     Timer {
         id: stressTimer
-        interval: 360
+        interval: 380
         repeat: true
         running: false
         property int step: 0
@@ -50,7 +50,7 @@ Item {
         anchors.fill: parent
         anchors.margins: 18
         contentWidth: width
-        contentHeight: contentCol.implicitHeight + 40
+        contentHeight: contentCol.implicitHeight + 20
         boundsBehavior: Flickable.StopAtBounds
         clip: true
 
@@ -78,10 +78,10 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "󰚌"
+                        text: "󰏢"
                         font.family: Nexa.Theme.iconFontFamily
                         font.pixelSize: 22
-                        color: Nexa.Theme.onPrimaryContainer
+                        color: Nexa.Theme.primary
                     }
                 }
 
@@ -109,13 +109,13 @@ Item {
                 RowLayout {
                     spacing: 8
 
-                    // Revert All to Nexa Default
+                    // Revert All to Classic Nexa Default
                     Rectangle {
-                        width: defTxt.implicitWidth + 24
+                        width: defTxt.implicitWidth + 28
                         height: 32
-                        radius: root.rad(6)
+                        radius: root.rad(16)
                         color: !Nexa.Theme.springEnabled ? Nexa.Theme.secondaryContainer : (defHov.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                        border.width: !Nexa.Theme.springEnabled ? 1.5 : Nexa.Theme.borderThin
+                        border.width: Nexa.Theme.borderThin
                         border.color: !Nexa.Theme.springEnabled ? Nexa.Theme.secondary : Nexa.Theme.border
 
                         RowLayout {
@@ -129,10 +129,10 @@ Item {
                             }
                             Text {
                                 id: defTxt
-                                text: "Nexa Default (All)"
+                                text: "Classic Easing (All)"
                                 font.family: Nexa.Theme.fontFamily
                                 font.pixelSize: 11
-                                font.weight: !Nexa.Theme.springEnabled ? Font.Bold : Font.Medium
+                                font.weight: !Nexa.Theme.springEnabled ? Font.Bold : Font.Normal
                                 color: !Nexa.Theme.springEnabled ? Nexa.Theme.onSecondaryContainer : Nexa.Theme.text
                             }
                         }
@@ -159,19 +159,20 @@ Item {
 
                     // Apply Spring to All
                     Rectangle {
-                        width: springAllTxt.implicitWidth + 24
+                        width: springAllTxt.implicitWidth + 28
                         height: 32
-                        radius: root.rad(6)
+                        radius: root.rad(16)
                         color: Nexa.Theme.springEnabled ? Nexa.Theme.primaryContainer : (spHov.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                        border.width: Nexa.Theme.springEnabled ? 1.5 : Nexa.Theme.borderThin
+                        border.width: Nexa.Theme.borderThin
                         border.color: Nexa.Theme.springEnabled ? Nexa.Theme.primary : Nexa.Theme.border
 
                         RowLayout {
                             anchors.centerIn: parent
                             spacing: 6
                             Text {
-                                text: "⚡"
-                                font.pixelSize: 11
+                                text: "󱐋"
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 13
                                 color: Nexa.Theme.springEnabled ? Nexa.Theme.primary : Nexa.Theme.text
                             }
                             Text {
@@ -179,7 +180,7 @@ Item {
                                 text: "Spring Physics (All)"
                                 font.family: Nexa.Theme.fontFamily
                                 font.pixelSize: 11
-                                font.weight: Nexa.Theme.springEnabled ? Font.Bold : Font.Medium
+                                font.weight: Nexa.Theme.springEnabled ? Font.Bold : Font.Normal
                                 color: Nexa.Theme.springEnabled ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
                             }
                         }
@@ -199,7 +200,7 @@ Item {
                                     "workspace": true,
                                     "sliders": true
                                 };
-                                Nexa.Theme.saveMotionConfig(7.8, 0.16, 1.0, "bouncy", true, allSections);
+                                Nexa.Theme.saveMotionConfig(3.8, 0.28, 1.0, "fluid", true, allSections);
                             }
                         }
                     }
@@ -211,7 +212,7 @@ Item {
             // ────────────────────────────────────────────────────────────
             Rectangle {
                 Layout.fillWidth: true
-                height: 250
+                height: 230
                 radius: root.rad(14)
                 color: Nexa.Theme.surfaceContainer
                 border.width: Nexa.Theme.borderThin
@@ -219,8 +220,8 @@ Item {
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 12
+                    anchors.margins: 14
+                    spacing: 10
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -235,91 +236,110 @@ Item {
 
                         Item { Layout.fillWidth: true }
 
-                        // Preset preview pills
-                        RowLayout {
-                            spacing: 6
+                        // Modern Unified Segmented Capsule Bar
+                        Rectangle {
+                            implicitWidth: segRow.implicitWidth + 8
+                            implicitHeight: 32
+                            radius: root.rad(16)
+                            color: Nexa.Theme.surfaceContainerHigh
+                            border.width: Nexa.Theme.borderThin
+                            border.color: Nexa.Theme.border
 
-                            Repeater {
-                                model: [
-                                    { id: "pill", label: "Pill", w: 220, h: 48, r: 24 },
-                                    { id: "osd", label: "OSD", w: 280, h: 56, r: 28 },
-                                    { id: "player", label: "Player", w: 380, h: 130, r: 24 },
-                                    { id: "notif", label: "Card", w: 440, h: 200, r: 28 }
-                                ]
+                            Row {
+                                id: segRow
+                                anchors.centerIn: parent
+                                spacing: 3
 
-                                Rectangle {
-                                    width: pLbl.implicitWidth + 16
-                                    height: 26
-                                    radius: root.rad(13)
-                                    color: root.activePreset === modelData.id ? Nexa.Theme.primary : (pHov.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: 1
-                                    border.color: root.activePreset === modelData.id ? Nexa.Theme.primary : Nexa.Theme.border
+                                Repeater {
+                                    model: [
+                                        { id: "pill", label: "Pill", w: 220, h: 48, r: 24 },
+                                        { id: "osd", label: "OSD", w: 280, h: 56, r: 28 },
+                                        { id: "player", label: "Player", w: 380, h: 120, r: 24 },
+                                        { id: "notif", label: "Card", w: 440, h: 160, r: 28 }
+                                    ]
 
-                                    Text {
-                                        id: pLbl
-                                        anchors.centerIn: parent
-                                        text: modelData.label
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: 11
-                                        font.weight: root.activePreset === modelData.id ? Font.Bold : Font.Normal
-                                        color: root.activePreset === modelData.id ? Nexa.Theme.onPrimary : Nexa.Theme.text
-                                    }
+                                    Rectangle {
+                                        width: pLbl.implicitWidth + 22
+                                        height: 26
+                                        radius: root.rad(13)
+                                        readonly property bool isSelected: root.activePreset === modelData.id && !stressTimer.running
+                                        color: isSelected ? Nexa.Theme.primary : (pHov.containsMouse ? Nexa.Theme.surfaceContainerHighest : "transparent")
 
-                                    MouseArea {
-                                        id: pHov
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            stressTimer.running = false;
-                                            root.setPreviewPreset(modelData.id, modelData.w, modelData.h, modelData.r);
+                                        Text {
+                                            id: pLbl
+                                            anchors.centerIn: parent
+                                            text: modelData.label
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: 11
+                                            font.weight: isSelected ? Font.Bold : Font.Normal
+                                            color: isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        }
+
+                                        MouseArea {
+                                            id: pHov
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                stressTimer.running = false;
+                                                root.setPreviewPreset(modelData.id, modelData.w, modelData.h, modelData.r);
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            // Stress test toggle
-                            Rectangle {
-                                width: stressLbl.implicitWidth + 18
-                                height: 26
-                                radius: root.rad(13)
-                                color: stressTimer.running ? "#f59e0b" : Nexa.Theme.surfaceContainerHigh
-                                border.width: 1
-                                border.color: stressTimer.running ? "#fbbf24" : Nexa.Theme.border
-
-                                RowLayout {
-                                    id: stressLbl
-                                    anchors.centerIn: parent
-                                    spacing: 4
-                                    Text {
-                                        text: stressTimer.running ? "⏹" : "⚡"
-                                        font.pixelSize: 11
-                                        color: stressTimer.running ? "#000000" : "#fbbf24"
-                                    }
-                                    Text {
-                                        text: stressTimer.running ? "Stop Test" : "Stress Test"
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: 11
-                                        font.bold: true
-                                        color: stressTimer.running ? "#000000" : "#fbbf24"
-                                    }
+                                // Subtle separator
+                                Rectangle {
+                                    width: 1
+                                    height: 16
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Nexa.Theme.border
                                 }
 
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: stressTimer.running = !stressTimer.running
+                                // Auto Cycle / Stress Test Button
+                                Rectangle {
+                                    width: stressLbl.implicitWidth + 22
+                                    height: 26
+                                    radius: root.rad(13)
+                                    color: stressTimer.running ? Nexa.Theme.primary : (stressHov.containsMouse ? Nexa.Theme.surfaceContainerHighest : "transparent")
+
+                                    RowLayout {
+                                        id: stressLbl
+                                        anchors.centerIn: parent
+                                        spacing: 5
+                                        Text {
+                                            text: stressTimer.running ? "󰅖" : "󱐋"
+                                            font.family: Nexa.Theme.iconFontFamily
+                                            font.pixelSize: 12
+                                            color: stressTimer.running ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        }
+                                        Text {
+                                            text: stressTimer.running ? "Stop Test" : "Auto Cycle"
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: 11
+                                            font.weight: stressTimer.running ? Font.Bold : Font.Normal
+                                            color: stressTimer.running ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: stressHov
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: stressTimer.running = !stressTimer.running
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // Morphing Stage
+                    // Morphing Stage (Deep glass stage canvas)
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         radius: root.rad(10)
-                        color: Nexa.Theme.surfaceContainerLowest
+                        color: Nexa.Theme.glassMode ? Qt.rgba(0, 0, 0, 0.45) : Qt.rgba(0, 0, 0, 0.32)
                         border.width: 1
                         border.color: Nexa.Theme.border
                         clip: true
@@ -382,15 +402,25 @@ Item {
                 ColumnLayout {
                     id: presetCol
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 12
+                    anchors.margins: 14
+                    spacing: 10
 
-                    Text {
-                        text: "Physical Presets"
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 13
-                        font.bold: true
-                        color: Nexa.Theme.text
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Text {
+                            text: "Physical Presets"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 13
+                            font.bold: true
+                            color: Nexa.Theme.text
+                        }
+                        Item { Layout.fillWidth: true }
+                        Text {
+                            text: "Curated harmonic parameters"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 11
+                            color: Nexa.Theme.mutedText
+                        }
                     }
 
                     RowLayout {
@@ -399,11 +429,11 @@ Item {
 
                         Repeater {
                             model: [
-                                { id: "classic", name: "Nexa Default", sub: "Original 220ms (Zero Bounce)", s: 4.0, d: 1.0, m: 1.0, icon: "󰅖", classic: true },
-                                { id: "bouncy", name: "Bouncy & Elastic", sub: "Stiffness 7.8, Damping 0.16", s: 7.8, d: 0.16, m: 1.0, icon: "󰑮", classic: false },
-                                { id: "fluid", name: "Apple Fluid", sub: "Stiffness 3.8, Damping 0.28", s: 3.8, d: 0.28, m: 1.0, icon: "󰚌", classic: false },
-                                { id: "snappy", name: "Crisp Snappy", sub: "Stiffness 5.5, Damping 0.35", s: 5.5, d: 0.35, m: 1.0, icon: "󰅒", classic: false },
-                                { id: "gentle", name: "Smooth Gentle", sub: "Stiffness 2.8, Damping 0.30", s: 2.8, d: 0.30, m: 1.0, icon: "󰖲", classic: false }
+                                { id: "classic", name: "Classic Linear", sub: "220ms · 0 Bounce", s: 4.0, d: 1.0, m: 1.0, icon: "󰅖", classic: true },
+                                { id: "fluid", name: "Apple Fluid", sub: "k: 3.8 · c: 0.28", s: 3.8, d: 0.28, m: 1.0, icon: "󰀵", classic: false },
+                                { id: "snappy", name: "Crisp Snappy", sub: "k: 5.5 · c: 0.35", s: 5.5, d: 0.35, m: 1.0, icon: "󰅒", classic: false },
+                                { id: "gentle", name: "Smooth Gentle", sub: "k: 2.8 · c: 0.30", s: 2.8, d: 0.30, m: 1.0, icon: "󰖲", classic: false },
+                                { id: "bouncy", name: "Bouncy & Elastic", sub: "k: 7.8 · c: 0.16", s: 7.8, d: 0.16, m: 1.0, icon: "󰑮", classic: false }
                             ]
 
                             Rectangle {
@@ -415,34 +445,41 @@ Item {
                                 border.width: isSelected ? 1.5 : Nexa.Theme.borderThin
                                 border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
 
-                                RowLayout {
+                                ColumnLayout {
                                     anchors.fill: parent
-                                    anchors.margins: 12
-                                    spacing: 10
+                                    anchors.margins: 10
+                                    spacing: 4
 
-                                    Text {
-                                        text: modelData.icon
-                                        font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: 20
-                                        color: isSelected ? Nexa.Theme.primary : Nexa.Theme.text
-                                    }
-
-                                    ColumnLayout {
+                                    RowLayout {
                                         Layout.fillWidth: true
-                                        spacing: 2
+                                        spacing: 8
+
                                         Text {
+                                            text: modelData.icon
+                                            font.family: Nexa.Theme.iconFontFamily
+                                            font.pixelSize: 18
+                                            color: isSelected ? Nexa.Theme.primary : Nexa.Theme.text
+                                        }
+
+                                        Text {
+                                            Layout.fillWidth: true
                                             text: modelData.name
                                             font.family: Nexa.Theme.fontFamily
                                             font.pixelSize: 12
                                             font.bold: true
+                                            elide: Text.ElideRight
                                             color: isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
                                         }
-                                        Text {
-                                            text: modelData.sub
-                                            font.family: Nexa.Theme.fontFamily
-                                            font.pixelSize: 10
-                                            color: Nexa.Theme.mutedText
-                                        }
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: modelData.sub
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: 11
+                                        font.features: Nexa.Theme.fontFeaturesTnum
+                                        elide: Text.ElideRight
+                                        color: isSelected ? Nexa.Theme.primary : Nexa.Theme.mutedText
                                     }
                                 }
 
@@ -463,116 +500,293 @@ Item {
             }
 
             // ────────────────────────────────────────────────────────────
-            // 4. GRANULAR SECTION SELECTORS
+            // 4. MOTION ROUTING & FINE-TUNE PARAMETERS (Side-by-Side Symmetrical)
             // ────────────────────────────────────────────────────────────
-            Rectangle {
+            RowLayout {
                 Layout.fillWidth: true
-                implicitHeight: secCol.implicitHeight + 24
-                radius: root.rad(14)
-                color: Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                spacing: 14
 
-                ColumnLayout {
-                    id: secCol
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 14
+                // 4A. Section Motion Routing (Left Column ~56% width)
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 550
+                    Layout.fillHeight: true
+                    implicitHeight: secCol.implicitHeight + 28
+                    radius: root.rad(14)
+                    color: Nexa.Theme.surfaceContainer
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.border
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Text {
-                            text: "Section Motion Routing"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 13
-                            font.bold: true
-                            color: Nexa.Theme.text
-                        }
-                        Item { Layout.fillWidth: true }
-                        Text {
-                            text: "Choose Spring Physics or Nexa Default per module"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 11
-                            color: Nexa.Theme.mutedText
-                        }
-                    }
-
-                    Repeater {
-                        model: [
-                            { id: "island", name: "Dynamic Island", desc: "Fluid expansion of width, height, and corner radius", icon: "󰈺" },
-                            { id: "popups", name: "System Popups (Battery, WiFi, Bluetooth)", desc: "Entrance scale, opacity, and progress meter transitions", icon: "󰂯" },
-                            { id: "clipboard", name: "Clipboard Manager", desc: "Modal scale pop-in and item selection animations", icon: "󰅌" },
-                            { id: "settings", name: "Settings Window & Modals", desc: "Dialog zoom, sidebar transitions, and tab indicator slides", icon: "󰒓" },
-                            { id: "wallpaper", name: "Wallpaper Picker & Slideshow", desc: "Grid thumbnail expansion, card selection & preview capsule", icon: "󰸉" },
-                            { id: "workspace", name: "Workspace Switcher & Manager", desc: "Workspace bar active indicator pill and overview window scaling", icon: "󰍹" },
-                            { id: "sliders", name: "Sliders & Toggle Switches", desc: "Smooth track progress fill and tactile switch thumb flick", icon: "󱐋" }
-                        ]
+                    ColumnLayout {
+                        id: secCol
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 9
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 12
+                            Text {
+                                text: "Section Motion Routing"
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 13
+                                font.bold: true
+                                color: Nexa.Theme.text
+                            }
+                            Item { Layout.fillWidth: true }
+                            Text {
+                                text: "Toggle per module"
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 11
+                                color: Nexa.Theme.mutedText
+                            }
+                        }
 
-                            Rectangle {
-                                width: 34
-                                height: 34
-                                radius: root.rad(8)
-                                color: Nexa.Theme.useSpring(modelData.id) ? Nexa.Theme.primaryContainer : Nexa.Theme.surfaceContainerHigh
-                                border.width: 1
-                                border.color: Nexa.Theme.border
+                        Repeater {
+                            model: [
+                                { id: "island", name: "Dynamic Island", desc: "Fluid expansion & radius morphing", icon: "󰈺" },
+                                { id: "popups", name: "System Popups", desc: "Battery, WiFi, Bluetooth entrance scale", icon: "󰂯" },
+                                { id: "clipboard", name: "Clipboard Manager", desc: "Modal scale pop-in & item transitions", icon: "󰅌" },
+                                { id: "settings", name: "Settings Window & Modals", desc: "Dialog zoom & tab indicator slides", icon: "󰒓" },
+                                { id: "wallpaper", name: "Wallpaper Picker", desc: "Grid thumbnail & preview capsule", icon: "󰸉" },
+                                { id: "workspace", name: "Workspace Switcher", desc: "Active indicator pill & overview zoom", icon: "󰍹" },
+                                { id: "sliders", name: "Sliders & Toggle Switches", desc: "Smooth track fill & tactile flick", icon: "󱐋" }
+                            ]
 
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: modelData.icon
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: 16
-                                    color: Nexa.Theme.useSpring(modelData.id) ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                Rectangle {
+                                    width: 30
+                                    height: 30
+                                    radius: root.rad(7)
+                                    color: Nexa.Theme.useSpring(modelData.id) ? Nexa.Theme.primaryContainer : Nexa.Theme.surfaceContainerHigh
+                                    border.width: 1
+                                    border.color: Nexa.Theme.border
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: modelData.icon
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: 15
+                                        color: Nexa.Theme.useSpring(modelData.id) ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    spacing: 1
+                                    Text {
+                                        text: modelData.name
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: 12
+                                        font.bold: true
+                                        color: Nexa.Theme.text
+                                    }
+                                    Text {
+                                        text: modelData.desc
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: 10
+                                        color: Nexa.Theme.mutedText
+                                    }
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                NexaUI.NexaToggle {
+                                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                    checked: Nexa.Theme.useSpring(modelData.id)
+                                    onToggled: {
+                                        let s = Object.assign({}, Nexa.Theme.motionSections);
+                                        s[modelData.id] = checked;
+                                        Nexa.Theme.saveMotionConfig(Nexa.Theme.springStiffness, Nexa.Theme.springDamping, Nexa.Theme.springMass, Nexa.Theme.springPreset, Nexa.Theme.springEnabled, s);
+                                    }
                                 }
                             }
+                        }
+                    }
+                }
 
-                            ColumnLayout {
+                // 4B. Fine-Tune Physics Parameters (Right Column ~44% width - 3 vertically stacked sliders)
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 420
+                    Layout.fillHeight: true
+                    implicitHeight: slidersCol.implicitHeight + 28
+                    radius: root.rad(14)
+                    color: Nexa.Theme.surfaceContainer
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.border
+
+                    ColumnLayout {
+                        id: slidersCol
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 12
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Text {
+                                text: "Fine-Tune Physics Parameters"
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 13
+                                font.bold: true
+                                color: Nexa.Theme.text
+                            }
+                            Item { Layout.fillWidth: true }
+                            Text {
+                                text: "Real-time tuning"
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 11
+                                color: Nexa.Theme.mutedText
+                            }
+                        }
+
+                        // 1. Stiffness (k)
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 1
                                 Text {
-                                    text: modelData.name
+                                    text: "Spring Stiffness (k)"
                                     font.family: Nexa.Theme.fontFamily
                                     font.pixelSize: 12
-                                    font.bold: true
+                                    font.weight: Nexa.Theme.fontWeightDemiBold
                                     color: Nexa.Theme.text
                                 }
+                                Item { Layout.fillWidth: true }
                                 Text {
-                                    text: modelData.desc
+                                    text: Nexa.Theme.springStiffness.toFixed(1)
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 12
+                                    font.weight: Nexa.Theme.fontWeightDemiBold
+                                    font.features: Nexa.Theme.fontFeaturesTnum
+                                    color: Nexa.Theme.primary
+                                }
+                            }
+
+                            NexaUI.NexaSlider {
+                                Layout.fillWidth: true
+                                sliderHeight: 28
+                                from: 1.0
+                                to: 12.0
+                                stepSize: 0.1
+                                value: Nexa.Theme.springStiffness
+                                icon: "󱐋"
+                                iconPosition: "left"
+                                onMoved: (val) => {
+                                    Nexa.Theme.saveMotionConfig(val, Nexa.Theme.springDamping, Nexa.Theme.springMass, "custom", true, Nexa.Theme.motionSections);
+                                }
+                            }
+                        }
+
+                        // 2. Damping (c)
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Text {
+                                    text: "Damping Friction (c)"
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 12
+                                    font.weight: Nexa.Theme.fontWeightDemiBold
+                                    color: Nexa.Theme.text
+                                }
+                                Item { Layout.fillWidth: true }
+                                Text {
+                                    text: Nexa.Theme.springDamping.toFixed(2)
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 12
+                                    font.weight: Nexa.Theme.fontWeightDemiBold
+                                    font.features: Nexa.Theme.fontFeaturesTnum
+                                    color: Nexa.Theme.primary
+                                }
+                            }
+
+                            NexaUI.NexaSlider {
+                                Layout.fillWidth: true
+                                sliderHeight: 28
+                                from: 0.05
+                                to: 0.80
+                                stepSize: 0.01
+                                value: Nexa.Theme.springDamping
+                                icon: "󰑮"
+                                iconPosition: "left"
+                                onMoved: (val) => {
+                                    Nexa.Theme.saveMotionConfig(Nexa.Theme.springStiffness, val, Nexa.Theme.springMass, "custom", true, Nexa.Theme.motionSections);
+                                }
+                            }
+                        }
+
+                        // 3. Inertial Mass (m)
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Text {
+                                    text: "Inertial Mass (m)"
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 12
+                                    font.weight: Nexa.Theme.fontWeightDemiBold
+                                    color: Nexa.Theme.text
+                                }
+                                Item { Layout.fillWidth: true }
+                                Text {
+                                    text: Nexa.Theme.springMass.toFixed(1)
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 12
+                                    font.weight: Nexa.Theme.fontWeightDemiBold
+                                    font.features: Nexa.Theme.fontFeaturesTnum
+                                    color: Nexa.Theme.primary
+                                }
+                            }
+
+                            NexaUI.NexaSlider {
+                                Layout.fillWidth: true
+                                sliderHeight: 28
+                                from: 0.5
+                                to: 3.0
+                                stepSize: 0.1
+                                value: Nexa.Theme.springMass
+                                icon: "󰓡"
+                                iconPosition: "left"
+                                onMoved: (val) => {
+                                    Nexa.Theme.saveMotionConfig(Nexa.Theme.springStiffness, Nexa.Theme.springDamping, val, "custom", true, Nexa.Theme.motionSections);
+                                }
+                            }
+                        }
+
+                        Item { Layout.fillHeight: true }
+
+                        // Info pill at the bottom of the sliders card
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 36
+                            radius: root.rad(8)
+                            color: Nexa.Theme.surfaceContainerHigh
+                            border.width: 1
+                            border.color: Nexa.Theme.border
+
+                            RowLayout {
+                                anchors.centerIn: parent
+                                spacing: 8
+                                Text {
+                                    text: "󰏢"
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 14
+                                    color: Nexa.Theme.primary
+                                }
+                                Text {
+                                    text: "Active Preset: " + Nexa.Theme.springPreset.toUpperCase()
                                     font.family: Nexa.Theme.fontFamily
                                     font.pixelSize: 11
+                                    font.weight: Font.DemiBold
                                     color: Nexa.Theme.mutedText
-                                }
-                            }
-
-                            // Badge indicating state
-                            Rectangle {
-                                width: modeBadgeTxt.implicitWidth + 14
-                                height: 24
-                                radius: root.rad(12)
-                                color: Nexa.Theme.useSpring(modelData.id) ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.16) : Nexa.Theme.surfaceContainerHigh
-                                border.width: 1
-                                border.color: Nexa.Theme.useSpring(modelData.id) ? Nexa.Theme.primary : Nexa.Theme.border
-
-                                Text {
-                                    id: modeBadgeTxt
-                                    anchors.centerIn: parent
-                                    text: Nexa.Theme.useSpring(modelData.id) ? "⚡ Spring" : "↺ Default"
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: 10
-                                    font.bold: true
-                                    color: Nexa.Theme.useSpring(modelData.id) ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                }
-                            }
-
-                            NexaUI.NexaToggle {
-                                checked: Nexa.Theme.useSpring(modelData.id)
-                                onToggled: {
-                                    let s = Object.assign({}, Nexa.Theme.motionSections);
-                                    s[modelData.id] = checked;
-                                    Nexa.Theme.saveMotionConfig(Nexa.Theme.springStiffness, Nexa.Theme.springDamping, Nexa.Theme.springMass, Nexa.Theme.springPreset, Nexa.Theme.springEnabled, s);
                                 }
                             }
                         }
@@ -581,131 +795,113 @@ Item {
             }
 
             // ────────────────────────────────────────────────────────────
-            // 5. FINE-TUNE PARAMETERS
+            // 5. HYPRLAND COMPOSITOR TRANSITIONS & ANIMATION PROFILES
             // ────────────────────────────────────────────────────────────
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: slidersCol.implicitHeight + 24
+                implicitHeight: hyprAnimCol.implicitHeight + 24
                 radius: root.rad(14)
                 color: Nexa.Theme.surfaceContainer
                 border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.border
 
                 ColumnLayout {
-                    id: slidersCol
+                    id: hyprAnimCol
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 16
+                    anchors.margins: 14
+                    spacing: 12
 
-                    Text {
-                        text: "Fine-Tune Physics Parameters"
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: 13
-                        font.bold: true
-                        color: Nexa.Theme.text
-                    }
-
-                    // Stiffness
-                    ColumnLayout {
+                    RowLayout {
                         Layout.fillWidth: true
-                        spacing: 6
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Text {
-                                text: "Spring Stiffness (k)"
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 12
-                                color: Nexa.Theme.text
-                            }
-                            Item { Layout.fillWidth: true }
-                            Text {
-                                text: Nexa.Theme.springStiffness.toFixed(1)
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 12
-                                font.bold: true
-                                color: Nexa.Theme.primary
-                            }
+                        Text {
+                            text: "Hyprland Compositor Animation Profiles"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 13
+                            font.bold: true
+                            color: Nexa.Theme.text
                         }
-
-                        Slider {
-                            Layout.fillWidth: true
-                            from: 1.0
-                            to: 12.0
-                            stepSize: 0.1
-                            value: Nexa.Theme.springStiffness
-                            onMoved: {
-                                Nexa.Theme.saveMotionConfig(value, Nexa.Theme.springDamping, Nexa.Theme.springMass, "custom", true, Nexa.Theme.motionSections);
-                            }
+                        Item { Layout.fillWidth: true }
+                        Text {
+                            text: "Instant live cubic beziers & workspace transitions"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 11
+                            color: Nexa.Theme.mutedText
                         }
                     }
 
-                    // Damping
-                    ColumnLayout {
+                    GridLayout {
                         Layout.fillWidth: true
-                        spacing: 6
+                        columns: 4
+                        columnSpacing: 10
+                        rowSpacing: 10
 
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Text {
-                                text: "Damping Friction (c)"
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 12
-                                color: Nexa.Theme.text
-                            }
-                            Item { Layout.fillWidth: true }
-                            Text {
-                                text: Nexa.Theme.springDamping.toFixed(2)
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 12
-                                font.bold: true
-                                color: Nexa.Theme.primary
-                            }
-                        }
+                        Repeater {
+                            model: [
+                                { id: "fluid", name: "Apple Fluid", sub: "Natural damping · Smooth", icon: "󰀵" },
+                                { id: "bouncy", name: "Elastic Bouncy", sub: "Spring recoil · Overshoot", icon: "󰑮" },
+                                { id: "slidefade", name: "Slide & Fade", sub: "Modern Wayland crossfade", icon: "󰖲" },
+                                { id: "snappy", name: "Crisp Snappy", sub: "120ms ultra-fast speed", icon: "󰅒" },
+                                { id: "cinematic", name: "Cinematic Gentle", sub: "Velvety smooth 400ms curves", icon: "󰏢" },
+                                { id: "pop", name: "Arcade Pop", sub: "Center 50% pop-in scale", icon: "󱐋" },
+                                { id: "minimal", name: "Minimal Fade", sub: "Zero motion · Opacity only", icon: "󰅖" },
+                                { id: "game", name: "Game Mode", sub: "Instant 0ms cut · 0 latency", icon: "󰊴" }
+                            ]
 
-                        Slider {
-                            Layout.fillWidth: true
-                            from: 0.05
-                            to: 0.80
-                            stepSize: 0.01
-                            value: Nexa.Theme.springDamping
-                            onMoved: {
-                                Nexa.Theme.saveMotionConfig(Nexa.Theme.springStiffness, value, Nexa.Theme.springMass, "custom", true, Nexa.Theme.motionSections);
-                            }
-                        }
-                    }
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 60
+                                radius: root.rad(10)
+                                readonly property bool isSelected: Nexa.Theme.hyprAnimationProfile === modelData.id
+                                color: isSelected ? Nexa.Theme.primaryContainer : (animHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
+                                border.width: isSelected ? 1.5 : Nexa.Theme.borderThin
+                                border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
 
-                    // Mass
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 6
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 3
 
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Text {
-                                text: "Inertial Mass (m)"
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 12
-                                color: Nexa.Theme.text
-                            }
-                            Item { Layout.fillWidth: true }
-                            Text {
-                                text: Nexa.Theme.springMass.toFixed(1)
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 12
-                                font.bold: true
-                                color: Nexa.Theme.primary
-                            }
-                        }
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 8
 
-                        Slider {
-                            Layout.fillWidth: true
-                            from: 0.5
-                            to: 3.0
-                            stepSize: 0.1
-                            value: Nexa.Theme.springMass
-                            onMoved: {
-                                Nexa.Theme.saveMotionConfig(Nexa.Theme.springStiffness, Nexa.Theme.springDamping, value, "custom", true, Nexa.Theme.motionSections);
+                                        Text {
+                                            text: modelData.icon
+                                            font.family: Nexa.Theme.iconFontFamily
+                                            font.pixelSize: 16
+                                            color: isSelected ? Nexa.Theme.primary : Nexa.Theme.text
+                                        }
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.name
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: 12
+                                            font.bold: true
+                                            elide: Text.ElideRight
+                                            color: isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                        }
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: modelData.sub
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: 10
+                                        elide: Text.ElideRight
+                                        color: isSelected ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: animHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        Nexa.Theme.saveHyprAnimationProfile(modelData.id);
+                                    }
+                                }
                             }
                         }
                     }
