@@ -1,21 +1,18 @@
--- Autostart Services & Daemons
+-- ============================================================
+-- NEXA / Hyprland Autostart Services & Daemons
+-- ============================================================
+-- All session daemons, single-instance verification, and staged
+-- boot sequencing are managed by the compiled Rust subsystem
+-- (nexad hypr autostart run).
+--
+-- To inspect or modify autostart services, see:
+--   ~/.config/nexa/rust/src/hyprland/autostart.rs
+--
+-- Status & Health:
+--   nexad hypr autostart status
+-- ============================================================
 
+local nexad = (os.getenv("HOME") or "") .. "/.config/nexa/rust/target/release/nexad"
 hl.on("hyprland.start", function()
-	-- NEXA / Quickshell
-	hl.exec_cmd("env QS_NO_RELOAD_POPUP=1 QT_IMAGEIO_MAXALLOC=1024 QML_DISABLE_DISK_CACHE=0 QSG_RENDER_LOOP=threaded quickshell -p ~/.config/nexa/quickshell/shell.qml")
-
-	-- Wallpaper restoration (skwd-paper auto-launches on demand)
-	hl.exec_cmd("~/.config/nexa/rust/target/release/nexad wallpaper restore")
-
-	hl.exec_cmd("playerctld daemon")
-
-	hl.exec_cmd("systemctl --user start plasma-polkit-agent.service")
-
-	-- Clipboard history daemon with image size safety (prevents memory spikes)
-	hl.exec_cmd("wl-paste --type text --watch cliphist store")
-	hl.exec_cmd("wl-paste --type image --watch cliphist store")
-
-	hl.exec_cmd("hyprpm reload")
-
-	hl.exec_cmd("hypridle")
+	hl.exec_cmd(nexad .. " hypr autostart run")
 end)

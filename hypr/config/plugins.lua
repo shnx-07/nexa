@@ -2,6 +2,15 @@
 -- Hyprland Plugins Configuration
 -- ============================================================
 
+-- Ensure plugin binaries are pre-loaded before parsing plugin options
+-- (prevents the momentary Hyprland "unknown option" config error on cold boot)
+if hl.plugin and hl.plugin.load then
+	local user = os.getenv("USER") or "shnx"
+	local cache = "/var/cache/hyprpm/" .. user
+	pcall(hl.plugin.load, cache .. "/dynamic-cursors/dynamic-cursors.so")
+	pcall(hl.plugin.load, cache .. "/HyprGlass/hyprglass.so")
+end
+
 -- ------------------------------------------------------------
 -- HYPRGLASS (Liquid Glass Effect)
 -- Frosted blur, edge refraction, chromatic aberration, specular
@@ -348,9 +357,10 @@ end
 -- DYNAMIC CURSORS (VirtCode)
 -- Realistic physics: stretch, tilt, rotate, and shake to find
 -- ------------------------------------------------------------
-hl.config({
-	plugin = {
-		dynamic_cursors = {
+if hl.plugin and hl.plugin.dynamic_cursors then
+	hl.config({
+		plugin = {
+			dynamic_cursors = {
 
 			-- enables the plugin
 			enabled = true,
@@ -480,3 +490,4 @@ hl.config({
 		},
 	},
 })
+end

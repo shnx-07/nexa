@@ -1,5 +1,7 @@
 pub mod animations;
+pub mod autostart;
 pub mod binds;
+pub mod decorations;
 pub mod rules;
 
 use std::env;
@@ -108,7 +110,7 @@ pub fn query_json<T: for<'de> serde::Deserialize<'de>>(section: &str) -> Result<
         .map_err(|e| format!("Failed to parse hyprctl JSON for {section}: {e}"))
 }
 
-/// Listens to Hyprland's real-time event socket (.socket2.sock) and triggers dynamic rules.
+/// Listens to Hyprland's real-time event socket (.socket2.sock).
 pub fn run_daemon() -> Result<(), String> {
     let socket_path = get_event_socket_path()
         .ok_or_else(|| "Could not locate Hyprland event socket (.socket2.sock)".to_string())?;
@@ -122,22 +124,8 @@ pub fn run_daemon() -> Result<(), String> {
 
     for line in reader.lines() {
         if let Ok(l) = line {
-            if l.starts_with("openwindow>>") {
-                if let Some(payload) = l.strip_prefix("openwindow>>") {
-                    let parts: Vec<&str> = payload.splitn(4, ',').collect();
-                    if parts.len() >= 4 {
-                        let addr = parts[0];
-                        let ws = parts[1];
-                        let class = parts[2];
-                        let title = parts[3];
-                        rules::on_window_open(addr, ws, class, title);
-                    }
-                }
-            } else if l.starts_with("closewindow>>") {
-                if let Some(addr) = l.strip_prefix("closewindow>>") {
-                    rules::on_window_close(addr);
-                }
-            }
+            // Reserved for future lightweight telemetry
+            let _ = l;
         }
     }
 
@@ -147,7 +135,7 @@ pub fn run_daemon() -> Result<(), String> {
 /// Entry point for `nexad hypr <subcommand>` CLI
 pub fn handle_command(args: &[String]) {
     if args.is_empty() {
-        eprintln!("Usage: nexad hypr [daemon|scratchpad|rules|animations] ...");
+        eprintln!("Usage: nexad hypr [daemon|scratchpad|rules|animations|decorations|autostart] ...");
         return;
     }
 
@@ -167,9 +155,19 @@ pub fn handle_command(args: &[String]) {
             }
         }
         "rules" => {
-            let target_addr = args.get(1).map(String::as_str);
-            if let Err(e) = rules::apply_rules(target_addr) {
-                eprintln!("[NEXA Rules Error]: {e}");
+            let sub = args.get(1).map(String::as_str).unwrap_or("sync");
+            match sub {
+                "sync" => {
+                    if let Err(e) = rules::sync_rules() {
+                        eprintln!("[NEXA Rules Sync Error]: {e}");
+                    }
+                }
+                "list" => {
+                    rules::print_rules_summary();
+                }
+                other => {
+                    eprintln!("Unknown rules subcommand: '{other}'. Use 'sync' or 'list'.");
+                }
             }
         }
         "animations" => {
@@ -193,6 +191,117 @@ pub fn handle_command(args: &[String]) {
                     }
                 }
                 other => eprintln!("Unknown animation subcommand: {other}"),
+            }
+        }
+        "decorations" => {
+            let sub = args.get(1).map(String::as_str).unwrap_or("sync");
+            match sub {
+                "sync" => {
+                    if let Err(e) = decorations::sync_decorations() {
+                        eprintln!("[NEXA Decorations Sync Error]: {e}");
+                    }
+                }
+                "status" | "list" => {
+                    decorations::print_status();
+                }
+                "set" => {
+                    let mut rounding = None;
+                    let mut border = None;
+                    let mut nexa_rounding = None;
+                    let mut shadow = None;
+                    let mut shadow_range = None;
+                    let mut dim_inactive = None;
+                    let mut dim_strength = None;
+
+                    let mut i = 2;
+                    while i < args.len() {
+                        match args[i].as_str() {
+                            "--rounding" => {
+                                if let Some(val) = args.get(i + 1) {
+                                    rounding = val.parse::<i32>().ok();
+                                    i += 1;
+                                }
+                            }
+                            "--border" => {
+                                if let Some(val) = args.get(i + 1) {
+                                    border = val.parse::<i32>().ok();
+                                    i += 1;
+                                }
+                            }
+                            "--nexa-rounding" => {
+                                if let Some(val) = args.get(i + 1) {
+                                    nexa_rounding = val.parse::<i32>().ok();
+                                    i += 1;
+                                }
+                            }
+                            "--shadow" => {
+                                if let Some(val) = args.get(i + 1) {
+                                    shadow = match val.to_lowercase().as_str() {
+                                        "true" | "1" | "on" => Some(true),
+                                        "false" | "0" | "off" => Some(false),
+                                        _ => None,
+                                    };
+                                    i += 1;
+                                }
+                            }
+                            "--shadow-range" => {
+                                if let Some(val) = args.get(i + 1) {
+                                    shadow_range = val.parse::<i32>().ok();
+                                    i += 1;
+                                }
+                            }
+                            "--dim" => {
+                                if let Some(val) = args.get(i + 1) {
+                                    dim_strength = val.parse::<f64>().ok();
+                                    i += 1;
+                                }
+                            }
+                            "--dim-inactive" => {
+                                if let Some(val) = args.get(i + 1) {
+                                    dim_inactive = match val.to_lowercase().as_str() {
+                                        "true" | "1" | "on" => Some(true),
+                                        "false" | "0" | "off" => Some(false),
+                                        _ => None,
+                                    };
+                                    i += 1;
+                                }
+                            }
+                            _ => {}
+                        }
+                        i += 1;
+                    }
+
+                    if let Err(e) = decorations::set_decoration(
+                        rounding,
+                        border,
+                        nexa_rounding,
+                        shadow,
+                        shadow_range,
+                        dim_inactive,
+                        dim_strength,
+                    ) {
+                        eprintln!("[NEXA Decorations Set Error]: {e}");
+                    }
+                }
+                other => {
+                    eprintln!("Unknown decorations subcommand: '{other}'. Use 'sync', 'set', or 'status'.");
+                }
+            }
+        }
+        "autostart" => {
+            let sub = args.get(1).map(String::as_str).unwrap_or("status");
+            match sub {
+                "run" | "start" => {
+                    if let Err(e) = autostart::run_autostart() {
+                        eprintln!("[NEXA Autostart Error]: {e}");
+                    }
+                }
+                "status" | "list" => {
+                    autostart::print_status();
+                }
+                other => {
+                    eprintln!("Unknown autostart subcommand: '{other}'. Use 'run' or 'status'.");
+                }
             }
         }
         other => {

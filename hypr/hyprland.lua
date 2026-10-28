@@ -1,6 +1,5 @@
 -- Custom Modular Hyprland Configuration (Extracted from hyprland_myown.lua)
 
-require("config.colors")
 require("config.variables")
 require("config.autostart")
 require("config.environment")

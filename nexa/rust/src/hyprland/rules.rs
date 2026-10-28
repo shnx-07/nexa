@@ -1,162 +1,166 @@
-use super::{binds, dispatch, query_json};
-use serde::Deserialize;
+use super::hypr_command;
 
-#[derive(Debug, Deserialize, Default, Clone)]
-pub struct MonitorInfo {
-    pub id: i32,
-    pub name: String,
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
-    #[serde(default = "default_scale")]
-    pub scale: f64,
-    pub focused: bool,
-    #[serde(default)]
-    pub reserved: [i32; 4],
+/// Returns the complete, pre-compiled Lua batch script containing all Nexa Hyprland rules.
+pub fn generate_rules_lua() -> &'static str {
+    r#"
+-- 1. Base System & Compatibility Rules
+hl.window_rule({ name = "suppress-maximize-events", match = { class = ".*" }, suppress_event = "maximize" })
+hl.window_rule({ name = "fix-xwayland-drags", match = { class = "^$", title = "^$", xwayland = true, float = true, fullscreen = false, pin = false }, no_focus = true })
+hl.window_rule({ name = "move-hyprland-run", match = { class = "hyprland-run" }, move = "20 monitor_h-120", float = true })
+hl.window_rule({ match = { float = true }, center = true, persistent_size = true })
+
+-- 2. Picture-in-Picture (Dual match title + initial_title)
+hl.window_rule({ match = { title = "^([Pp]icture[-\\s]?[Ii]n[-\\s]?[Pp]icture)(.*)$" }, float = true, keep_aspect_ratio = true, size = { "max(monitor_w, monitor_h)*0.25", "min(monitor_w, monitor_h)*0.25" }, pin = true })
+hl.window_rule({ match = { initial_title = "^([Pp]icture[-\\s]?[Ii]n[-\\s]?[Pp]icture)(.*)$" }, float = true, keep_aspect_ratio = true, size = { "max(monitor_w, monitor_h)*0.25", "min(monitor_w, monitor_h)*0.25" }, pin = true })
+
+-- 3. Universal Modals & Web Popups
+hl.window_rule({ match = { modal = true }, float = true, center = true })
+hl.window_rule({ match = { class = "^(chrome-.*|chromium-.*|brave-.*)$" }, float = true, center = true, size = { "monitor_w*0.55", "monitor_h*0.65" } })
+hl.window_rule({ match = { initial_class = "^(chrome-.*|chromium-.*|brave-.*)$" }, float = true, center = true, size = { "monitor_w*0.55", "monitor_h*0.65" } })
+
+-- 4. Common Dialogs, File Pickers, Modals & OAuth
+local modalMatches = {
+    { title = "^(Open|Authentication Required|Add Folder to Workspace|Choose Files|Save As|Confirm to replace files|File Operation Progress)$" },
+    { initial_title = "^(Open File|Save As|Choose Files|Open)$" },
+    { class = "^([Xx]dg-desktop-portal-gtk)$" },
+    { initial_class = "^([Xx]dg-desktop-portal-gtk)$" },
+    { title = "^(File Upload|Choose wallpaper|Library)(.*)$" },
+    { class = "^(.*dialog.*)$" },
+    { title = "^(.*dialog.*)$" },
+    { class = "^(hyprland-share-picker)$" },
+    { class = "^(firefox|zen.*|google-chrome|chromium|Brave-browser)$", title = "^(Extension: .*|Library|Page Info|Password Required|Sign in.*|Log in.*|.*OAuth.*|DevTools.*|Print)$" },
+    { class = "^(firefox|zen.*)$", title = "^(About Mozilla Firefox|Opening .*)$" },
+}
+for _, m in ipairs(modalMatches) do
+    hl.window_rule({ match = m, float = true, center = true })
+end
+
+-- 5. Utility Windows (Settings, Audio, Bluetooth, Network)
+local floatApps = {
+    { class = "^(kvantummanager|qt[56]ct|nwg-look)$" },
+    { class = "^(org.pulseaudio.pavucontrol|blueman-manager|nm-applet|nm-connection-editor)$" },
+    { class = "^(.*[Cc]alc.*)$" },
+    { class = "^(org\\.kde\\.keditfiletype)$" },
+    { class = "^(.*satty.*)$", title = "^(Satty)$" },
+    { title = "^(Winetricks.*|Protontricks.*)$" },
+}
+for _, m in ipairs(floatApps) do
+    hl.window_rule({ match = m, float = true })
+end
+
+-- 6. Gaming & Steam Workspace Rules
+local gamingApps = "^(steam_app.*|gamescope)$"
+local gamingWorkspace = "name:gaming"
+hl.window_rule({ match = { content = "game" }, workspace = gamingWorkspace })
+hl.window_rule({ match = { xdg_tag = "^(.*game.*)$" }, workspace = gamingWorkspace, fullscreen_state = 2, content = "game", sync_fullscreen = true })
+hl.window_rule({ match = { class = gamingApps }, workspace = gamingWorkspace })
+hl.window_rule({ match = { class = "^(steam)$", title = "^(Friends List)$" }, float = true })
+hl.window_rule({ match = { class = "^(steam)$", title = "^(Launching\\.{3})$" }, float = true, center = true, workspace = gamingWorkspace })
+
+-- 7. Opacity Overrides (100% Solid Opacity for Video & Terminal)
+local terminals = "^(kitty|ghostty|[Kk]onsole|Alacritty|gnome-terminal|xfce[0-9]?-terminal|wezterm)$"
+hl.window_rule({ match = { class = "^(firefox|zen.*)$" }, opacity = "1.0 override" })
+hl.window_rule({ match = { class = terminals }, opacity = "1.0 override" })
+hl.window_rule({ match = { class = "^(mpv|org.kde.haruna|.*plex.*|org\\.kde\\.gwenview|.*vlc.*)$" }, opacity = "1.0 override" })
+
+-- 8. Terminal Floating & Scratchpad Geometry
+hl.window_rule({
+    name = "terminal-floating-geometry",
+    match = { class = terminals, float = true },
+    center = true,
+    size = { "monitor_w*0.55", "monitor_h*0.52" },
+})
+hl.window_rule({
+    name = "terminal-scratchpad-geometry",
+    match = { workspace = "special:terminal", class = terminals },
+    float = true,
+    center = true,
+    size = { "monitor_w*0.55", "monitor_h*0.52" },
+})
+
+-- 9. File Manager Floating & Scratchpad Geometry
+local fileManagerApps = "^(org\\.kde\\.dolphin|dolphin|nemo|Nemo|thunar|Thunar|nautilus|[Yy]azi.*)$"
+hl.window_rule({
+    name = "files-scratchpad-geometry",
+    match = { workspace = "special:files", class = fileManagerApps },
+    float = true,
+    center = true,
+    size = { "monitor_w*0.55", "monitor_h*0.55" },
+})
+hl.window_rule({
+    name = "files-scratchpad-geometry-initial",
+    match = { workspace = "special:files", initial_class = fileManagerApps },
+    float = true,
+    center = true,
+    size = { "monitor_w*0.55", "monitor_h*0.55" },
+})
+hl.window_rule({
+    name = "files-floating-geometry",
+    match = { class = fileManagerApps, float = true },
+    center = true,
+    size = { "monitor_w*0.55", "monitor_h*0.55" },
+})
+
+-- Yazi File Manager (Opens Floating & Centered just like Dolphin)
+hl.window_rule({ match = { class = "^([Yy]azi.*)$" }, float = true, center = true, size = { "monitor_w*0.55", "monitor_h*0.55" } })
+hl.window_rule({ match = { initial_class = "^([Yy]azi.*)$" }, float = true, center = true, size = { "monitor_w*0.55", "monitor_h*0.55" } })
+hl.window_rule({ match = { title = "^(.*[Yy]azi.*)$" }, float = true, center = true, size = { "monitor_w*0.55", "monitor_h*0.55" } })
+hl.window_rule({ match = { initial_title = "^(.*[Yy]azi.*)$" }, float = true, center = true, size = { "monitor_w*0.55", "monitor_h*0.55" } })
+hl.window_rule({ match = { class = terminals, title = "^(.*[Yy]azi.*)$" }, float = true, center = true, size = { "monitor_w*0.55", "monitor_h*0.55" } })
+hl.window_rule({ match = { class = terminals, initial_title = "^(.*[Yy]azi.*)$" }, float = true, center = true, size = { "monitor_w*0.55", "monitor_h*0.55" } })
+
+-- 10. Specific Application Floating & Sizing Rules
+hl.window_rule({ match = { class = "^(.*\\.exe)$" }, float = true, center = true, fullscreen_state = 0 })
+hl.window_rule({ match = { class = "^(.*[Ll]auncher.*)$" }, float = true })
+hl.window_rule({ match = { class = "^(vesktop|discord)$" } })
+hl.window_rule({ match = { class = "^(.*[Cc]alc.*)$" }, float = true, size = { "max(monitor_w, monitor_h)*0.17", "min(monitor_w, monitor_h)*0.43" } })
+hl.window_rule({ match = { class = "^(org\\.kde\\.keditfiletype)$" }, float = true })
+hl.window_rule({ match = { class = "^(org\\.kde\\.ark)$" }, size = { "max(monitor_w, monitor_h)*0.40", "min(monitor_w, monitor_h)*0.40" } })
+hl.window_rule({ match = { class = "^(.*satty.*)$", title = "^(Satty)$" }, min_size = { "max(monitor_w, monitor_h)*0.35", "min(monitor_w, monitor_h)*0.35" }, float = true })
+hl.window_rule({ match = { class = "^(dev\\.)?(noctalia\\.Noctalia(\\.Settings)?)$" }, float = true, size = { "monitor_w*0.70", "monitor_h*0.70" } })
+
+-- 11. Layer Rules (Nexa Power Menu Blur)
+hl.layer_rule({ match = { namespace = "shnx-power-menu" }, blur = true, ignore_alpha = 0.15 })
+"#
 }
 
-fn default_scale() -> f64 {
-    1.0
-}
+/// Injects all compiled window & layer rules directly into the Hyprland compositor
+/// via direct UNIX domain socket IPC.
+pub fn sync_rules() -> Result<(), String> {
+    let script = generate_rules_lua();
 
-/// Retrieves the currently focused monitor to calculate pixel-perfect bounds.
-pub fn get_focused_monitor() -> Option<MonitorInfo> {
-    if let Ok(monitors) = query_json::<Vec<MonitorInfo>>("monitors") {
-        if let Some(m) = monitors.iter().find(|m| m.focused).cloned() {
-            return Some(m);
-        }
-        return monitors.first().cloned();
-    }
-    None
-}
+    // Clean and compact lines with proper newline separation for Lua blocks
+    let clean_script: String = script
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty() && !l.starts_with("--"))
+        .collect::<Vec<&str>>()
+        .join("\n");
 
-/// Checks if a window is Picture-in-Picture.
-pub fn is_pip(title: &str) -> bool {
-    let t = title.to_lowercase();
-    t.contains("picture-in-picture") || t.contains("picture in picture")
-}
+    let cmd = format!("eval {clean_script}");
+    let resp = hypr_command(&cmd)?;
 
-/// Checks if a window is a modal, dialog, or popup.
-pub fn is_modal_or_dialog(class: &str, title: &str) -> bool {
-    let c = class.to_lowercase();
-    let t = title.to_lowercase();
-
-    if c.contains("dialog")
-        || c == "xdg-desktop-portal-gtk"
-        || c == "hyprland-share-picker"
-        || c.contains("pavucontrol")
-        || c.contains("blueman-manager")
-        || c.contains("calc")
-    {
-        return true;
-    }
-
-    let modal_titles = [
-        "open file",
-        "save as",
-        "authentication required",
-        "choose files",
-        "file operation progress",
-        "confirm",
-        "library",
-        "page info",
-        "sign in",
-        "log in",
-        "oauth",
-    ];
-
-    for mt in &modal_titles {
-        if t.contains(mt) {
-            return true;
-        }
-    }
-
-    false
-}
-
-/// Triggered in real time when any window maps on screen.
-pub fn on_window_open(addr: &str, workspace: &str, class: &str, title: &str) {
-    let formatted_addr = if addr.starts_with("0x") {
-        addr.to_string()
+    if resp != "ok" && !resp.is_empty() {
+        eprintln!("[NEXA Rules] sync response: {resp}");
     } else {
-        format!("0x{addr}")
-    };
-
-    println!("[NEXA Rules] Window opened: addr={formatted_addr}, class='{class}', title='{title}', ws='{workspace}'");
-
-    // 1. PICTURE-IN-PICTURE: Snap to bottom-right corner of focused display
-    if is_pip(title) {
-        println!("[NEXA Rules] Picture-in-Picture detected: snapping to bottom-right corner...");
-        let mon = get_focused_monitor().unwrap_or(MonitorInfo {
-            width: 1920,
-            height: 1080,
-            scale: 1.0,
-            ..Default::default()
-        });
-
-        let eff_w = (mon.width as f64 / mon.scale) as i32;
-        let eff_h = (mon.height as f64 / mon.scale) as i32;
-
-        let pip_w = 460;
-        let pip_h = (pip_w as f64 * (9.0 / 16.0)) as i32;
-
-        let target_x = mon.x + eff_w - pip_w - 24;
-        let target_y = mon.y + eff_h - pip_h - 24;
-
-        let _ = dispatch(&format!(r#"hl.dsp.window.float({{ action = "set", window = "address:{formatted_addr}" }})"#));
-        let _ = dispatch(&format!(r#"hl.dsp.window.pin({{ action = "set", window = "address:{formatted_addr}" }})"#));
-        let _ = dispatch(&format!(r#"hl.dsp.window.resize({{ window = "address:{formatted_addr}", x = {pip_w}, y = {pip_h} }})"#));
-        let _ = dispatch(&format!(r#"hl.dsp.window.move({{ window = "address:{formatted_addr}", x = {target_x}, y = {target_y} }})"#));
-        return;
+        println!("[NEXA Rules] Successfully synced all window & layer rules to Hyprland compositor.");
     }
 
-    // 3. MODAL DIALOGS: Auto-float and center
-    if is_modal_or_dialog(class, title) {
-        println!("[NEXA Rules] Modal dialog detected: auto-floating and centering...");
-        let _ = dispatch(&format!(r#"hl.dsp.window.float({{ action = "set", window = "address:{formatted_addr}" }})"#));
-        let _ = dispatch(&format!(r#"hl.dsp.window.center({{ window = "address:{formatted_addr}" }})"#));
-        return;
-    }
-
-    // 4. SCRATCHPAD AUTO-SLIDEAWAY: If external application opened while Files scratchpad is up
-    if !workspace.starts_with("special:") && !class.to_lowercase().contains("dolphin") {
-        if binds::is_special_workspace_open("files") {
-            println!("[NEXA Rules] External app opened, auto-hiding Files scratchpad...");
-            let _ = dispatch(r#"hl.dsp.workspace.toggle_special("files")"#);
-        }
-    }
-}
-
-/// Triggered in real time when any window closes.
-pub fn on_window_close(_addr: &str) {
-    // Window close hook reserved for future rules
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct HyprClient {
-    pub address: String,
-    pub class: String,
-    pub title: String,
-    pub workspace: ClientWorkspace,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct ClientWorkspace {
-    pub id: i32,
-    pub name: String,
-}
-
-/// Applies rules manually to currently open windows (e.g. from CLI).
-pub fn apply_rules(target_addr: Option<&str>) -> Result<(), String> {
-    let clients: Vec<HyprClient> = query_json("clients")?;
-    for c in clients {
-        if let Some(addr) = target_addr {
-            if !c.address.ends_with(addr) && !addr.ends_with(&c.address) {
-                continue;
-            }
-        }
-        on_window_open(&c.address, &c.workspace.name, &c.class, &c.title);
-    }
     Ok(())
+}
+
+/// Prints a summary of the active rule catalog managed by Rust.
+pub fn print_rules_summary() {
+    println!("\nNEXA Compiled Hyprland Rules Catalog:\n");
+    println!("  1. System & Compatibility    (Maximize suppress, XWayland drag fix, hyprland-run)");
+    println!("  2. Picture-in-Picture       (Dual title matching, 16:9 ratio, auto-pin)");
+    println!("  3. Universal Modals          (modal=true, browser popups, OAuth, devtools)");
+    println!("  4. Common Dialogs            (File pickers, GTK portals, share pickers, logins)");
+    println!("  5. Utility Windows           (Pavucontrol, Blueman, NM, Kvantum, Qt5/6ct, Calc)");
+    println!("  6. Gaming & Steam            (Routing to 'gaming' workspace, Friends list float)");
+    println!("  7. Opacity Overrides         (100% solid opacity for video players & terminals)");
+    println!("  8. Scratchpad Geometry       (Special:terminal 55%x52%, special:files 55%x55%)");
+    println!("  9. Specific App Sizing       (Satty, Ark, Noctalia, Yazi centered & sized)");
+    println!(" 10. Layer Rules               (shnx-power-menu blur & alpha)\n");
+    println!("Usage: nexad hypr rules sync\n");
 }
