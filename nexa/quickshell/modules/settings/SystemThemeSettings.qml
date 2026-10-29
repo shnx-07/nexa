@@ -51,8 +51,8 @@ Item {
     property int windowRounding: Nexa.Theme.windowRounding
     property int nexaRounding: Nexa.Theme.nexaRounding
     property int windowBorderSize: Nexa.Theme.windowBorderSize
-    property bool windowGlow: true
-    property real windowDim: 0.0
+    property bool windowGlow: Nexa.Theme.windowGlow !== undefined ? Nexa.Theme.windowGlow : true
+    property real windowDim: Nexa.Theme.windowDim !== undefined ? Nexa.Theme.windowDim : 0.0
 
     readonly property string nexad: Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
 
@@ -234,8 +234,12 @@ Item {
         interval: 50
         repeat: false
         onTriggered: {
-            const script = Quickshell.env("HOME") + "/.config/nexa/scripts/apply-shapes.sh"
-            Quickshell.execDetached([script, root.windowRounding.toString(), root.windowBorderSize.toString(), root.nexaRounding.toString(), "standard"])
+            Quickshell.execDetached([
+                root.nexad, "hypr", "decorations", "set",
+                "--rounding", root.windowRounding.toString(),
+                "--border", root.windowBorderSize.toString(),
+                "--nexa-rounding", root.nexaRounding.toString()
+            ])
         }
     }
 
@@ -262,13 +266,20 @@ Item {
 
     function setWindowGlow(on) {
         root.windowGlow = on
-        Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { shadow = { enabled = " + (on ? "true" : "false") + ", range = 30 } } })"])
+        Nexa.Theme.windowGlow = on
+        Quickshell.execDetached([
+            root.nexad, "hypr", "decorations", "set",
+            "--shadow", on ? "true" : "false"
+        ])
     }
 
     function setWindowDim(dim) {
         root.windowDim = dim
-        const enabled = dim > 0.001
-        Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { dim_inactive = " + (enabled ? "true" : "false") + ", dim_strength = " + dim + " } })"])
+        Nexa.Theme.windowDim = dim
+        Quickshell.execDetached([
+            root.nexad, "hypr", "decorations", "set",
+            "--dim", dim.toString()
+        ])
     }
 
     Timer {

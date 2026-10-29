@@ -3,49 +3,49 @@ import QtQuick
 
 QtObject {
     // Primary
-    readonly property color primary: "#ffb4aa"
-    readonly property color on_primary: "#690003"
-    readonly property color primaryContainer: "#930005"
-    readonly property color on_primary_container: "#ffdad5"
+    readonly property color primary: "#b1c5ff"
+    readonly property color on_primary: "#002c70"
+    readonly property color primaryContainer: "#00419e"
+    readonly property color on_primary_container: "#dae2ff"
 
     // Secondary
-    readonly property color secondary: "#f4ba9f"
-    readonly property color on_secondary: "#4b2715"
-    readonly property color secondaryContainer: "#653d29"
-    readonly property color on_secondary_container: "#ffdbcc"
+    readonly property color secondary: "#c3c3eb"
+    readonly property color on_secondary: "#2c2d4d"
+    readonly property color secondaryContainer: "#434465"
+    readonly property color on_secondary_container: "#e1e0ff"
 
     // Tertiary
-    readonly property color tertiary: "#fab981"
-    readonly property color on_tertiary: "#4c2700"
-    readonly property color tertiaryContainer: "#683c0e"
-    readonly property color on_tertiary_container: "#ffdcc1"
+    readonly property color tertiary: "#cfbef7"
+    readonly property color on_tertiary: "#352857"
+    readonly property color tertiaryContainer: "#4c3f6f"
+    readonly property color on_tertiary_container: "#e9ddff"
 
     // Background
-    readonly property color background: "#1e100e"
-    readonly property color on_background: "#f9dcd8"
+    readonly property color background: "#10131c"
+    readonly property color on_background: "#e0e2ef"
 
     // Surface hierarchy
-    readonly property color surface: "#1e100e"
-    readonly property color surfaceDim: "#1e100e"
-    readonly property color surfaceBright: "#473532"
+    readonly property color surface: "#10131c"
+    readonly property color surfaceDim: "#10131c"
+    readonly property color surfaceBright: "#363943"
 
-    readonly property color surfaceContainerLowest: "#180b09"
-    readonly property color surfaceContainerLow: "#271816"
-    readonly property color surfaceContainer: "#2b1c1a"
-    readonly property color surfaceContainerHigh: "#372624"
-    readonly property color surfaceContainerHighest: "#42302e"
+    readonly property color surfaceContainerLowest: "#0b0e17"
+    readonly property color surfaceContainerLow: "#181b25"
+    readonly property color surfaceContainer: "#1c1f29"
+    readonly property color surfaceContainerHigh: "#272a34"
+    readonly property color surfaceContainerHighest: "#31343f"
 
     // Surface content
-    readonly property color on_surface: "#f9dcd8"
-    readonly property color on_surface_variant: "#dcc0bd"
+    readonly property color on_surface: "#e0e2ef"
+    readonly property color on_surface_variant: "#c4c6d3"
 
-    readonly property color inverseSurface: "#f9dcd8"
-    readonly property color inverse_on_surface: "#3d2c2a"
-    readonly property color inversePrimary: "#c0000a"
+    readonly property color inverseSurface: "#e0e2ef"
+    readonly property color inverse_on_surface: "#2d303a"
+    readonly property color inversePrimary: "#0057ce"
 
     // Outline
-    readonly property color outline: "#a38b88"
-    readonly property color outlineVariant: "#554240"
+    readonly property color outline: "#8e909c"
+    readonly property color outlineVariant: "#434651"
     readonly property color shadow: "#000000"
     readonly property color scrim: "#000000"
 

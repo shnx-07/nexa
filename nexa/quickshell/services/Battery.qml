@@ -11,6 +11,6 @@ Singleton {
     readonly property bool charging: UPower.displayDevice ? !UPower.onBattery : false
 
     onChargingChanged: {
-        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/scripts/power-sync.sh"])
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "hypr", "idle", "sync"])
     }
 }

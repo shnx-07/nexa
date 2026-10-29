@@ -2,6 +2,7 @@ pub mod animations;
 pub mod autostart;
 pub mod binds;
 pub mod decorations;
+pub mod idle;
 pub mod rules;
 
 use std::env;
@@ -135,11 +136,14 @@ pub fn run_daemon() -> Result<(), String> {
 /// Entry point for `nexad hypr <subcommand>` CLI
 pub fn handle_command(args: &[String]) {
     if args.is_empty() {
-        eprintln!("Usage: nexad hypr [daemon|scratchpad|terminal|rules|animations|decorations|autostart] ...");
+        eprintln!("Usage: nexad hypr [daemon|scratchpad|terminal|rules|animations|decorations|autostart|idle] ...");
         return;
     }
 
     match args[0].as_str() {
+        "idle" => {
+            idle::handle_command(&args[1..]);
+        }
         "daemon" => {
             if let Err(e) = run_daemon() {
                 eprintln!("[NEXA Hypr Daemon Error]: {e}");

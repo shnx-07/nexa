@@ -34,13 +34,7 @@ fn run_command(program: &str, args: &[&str]) -> Result<(), String> {
 // ============================================================
 
 fn lock() -> Result<(), String> {
-    // Temporary backend until the native NEXA lock screen
-    // is implemented.
-    //
-    // We intentionally keep the command registered now so
-    // Power.qml will not need changing later.
-
-    Err("NEXA lock screen is not implemented yet".to_string())
+    crate::desktop::lock::trigger_lock()
 }
 
 // ============================================================

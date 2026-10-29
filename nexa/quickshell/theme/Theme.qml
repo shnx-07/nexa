@@ -38,6 +38,8 @@ QtObject {
     property int windowRounding: 10
     property int nexaRounding: 14
     property int windowBorderSize: 0
+    property bool windowGlow: true
+    property real windowDim: 0.0
 
     property FileView _shapesWatcher: FileView {
         path: Quickshell.env("HOME") + "/.config/nexa/config/shapes.json"
@@ -56,6 +58,12 @@ QtObject {
                 }
                 if (data && data.border_size !== undefined) {
                     root.windowBorderSize = data.border_size
+                }
+                if (data && data.shadow_enabled !== undefined) {
+                    root.windowGlow = data.shadow_enabled
+                }
+                if (data && data.dim_strength !== undefined) {
+                    root.windowDim = data.dim_strength
                 }
             } catch (e) {}
         }

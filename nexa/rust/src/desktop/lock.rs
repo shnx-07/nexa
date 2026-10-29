@@ -4,6 +4,7 @@ use std::env;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
+use std::process::Command;
 
 pub fn runtime_dir() -> PathBuf {
     let base = match env::var("XDG_RUNTIME_DIR") {
@@ -21,9 +22,31 @@ pub fn lock_flag_path() -> PathBuf {
     runtime_dir().join("locked")
 }
 
+/// Triggers the Nexa Lock Screen via Hyprland global shortcut and Quickshell IPC.
+pub fn trigger_lock() -> Result<(), String> {
+    let home = env::var("HOME").unwrap_or_else(|_| "/home/shnx".to_string());
+    let qs_path = format!("{}/.config/nexa/quickshell", home);
+
+    // Dispatch native Hyprland global shortcut
+    let hypr_status = Command::new("hyprctl")
+        .args(["dispatch", "global", "nexa:lock"])
+        .output();
+
+    let dispatched = hypr_status.map(|o| o.status.success()).unwrap_or(false);
+
+    // Also send Quickshell IPC call if global shortcut wasn't handled
+    if !dispatched {
+        let _ = Command::new("qs")
+            .args(["-p", &qs_path, "ipc", "call", "lockScreen", "lock"])
+            .output();
+    }
+
+    Ok(())
+}
+
 pub fn handle(args: &[String]) -> Result<(), String> {
     if args.is_empty() {
-        return Err("Usage: nexad lock <auth|status>".to_string());
+        return Err("Usage: nexad lock <auth|status|trigger>".to_string());
     }
 
     match args[0].as_str() {
@@ -33,6 +56,7 @@ pub fn handle(args: &[String]) -> Result<(), String> {
             println!("{}", json!({ "locked": is_locked }));
             Ok(())
         }
+        "trigger" | "screen" => trigger_lock(),
         action => Err(format!("Unknown lock action: {action}")),
     }
 }

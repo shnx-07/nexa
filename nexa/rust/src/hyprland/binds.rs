@@ -1,7 +1,7 @@
 use super::{dispatch, query_json};
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::fs;
+use std::fs::{self, File, OpenOptions};
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
@@ -66,12 +66,20 @@ struct ScratchpadState {
     active_kind: Option<String>,
 }
 
-fn state_path() -> PathBuf {
+fn runtime_file(name: &str) -> PathBuf {
     if let Ok(runtime) = env::var("XDG_RUNTIME_DIR") {
-        PathBuf::from(runtime).join("nexa_scratchpad.json")
+        PathBuf::from(runtime).join(name)
     } else {
-        PathBuf::from("/tmp/nexa_scratchpad.json")
+        PathBuf::from("/tmp").join(name)
     }
+}
+
+fn state_path() -> PathBuf {
+    runtime_file("nexa_scratchpad.json")
+}
+
+fn lock_path() -> PathBuf {
+    runtime_file("nexa_scratchpad.lock")
 }
 
 fn load_state() -> ScratchpadState {
@@ -94,6 +102,38 @@ fn debug(msg: &str) {
     if env::var_os("NEXA_DEBUG").is_some() {
         eprintln!("[nexa scratchpad] {msg}");
     }
+}
+
+// ---------------------------------------------------------------------------
+// Locking
+//
+// Every operation that reads/modifies scratchpad state or spawns a window
+// holds this lock, so two key presses (or a keypress and the event daemon)
+// can never interleave. The lock is released when the returned File is dropped
+// (or automatically by the OS if the process dies).
+// ---------------------------------------------------------------------------
+
+fn open_lock_file() -> Option<File> {
+    OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .open(lock_path())
+        .ok()
+}
+
+/// Non-blocking: returns None if another toggle is already running.
+/// Used by key presses so that extra presses during a toggle are dropped.
+fn try_acquire_lock() -> Option<File> {
+    let f = open_lock_file()?;
+    f.try_lock().ok().map(|_| f)
+}
+
+/// Blocking: waits for any in-progress toggle to finish.
+/// Used by the event daemon so it never interleaves with a toggle.
+fn acquire_lock_blocking() -> Option<File> {
+    let f = open_lock_file()?;
+    f.lock().ok().map(|_| f)
 }
 
 /// Mutable access to the (previous window, previous cursor) slots for one scratchpad kind.
@@ -268,6 +308,8 @@ fn lua_escape(s: &str) -> String {
 /// Restores focus (and cursor) to the window that was active before the scratchpad
 /// opened. Safe to call repeatedly: it consumes the saved state, so a second call is a no-op.
 /// `force_kind` is used by the explicit hide path; the daemon passes None.
+///
+/// Callers must already hold the scratchpad lock.
 fn restore_previous(force_kind: Option<&str>) {
     let mut state = load_state();
 
@@ -312,12 +354,32 @@ fn restore_previous(force_kind: Option<&str>) {
 /// (`activespecial>>,MONITOR`). This covers closing the scratchpad window,
 /// which empties and auto-hides the special workspace without going through
 /// `toggle_scratchpad`.
+///
+/// Takes a blocking lock so it cannot interleave with an in-progress toggle.
+/// NOTE: do not call this from the same thread that is inside `toggle_scratchpad`.
 pub fn restore_focus_after_scratchpad_closed() {
     thread::sleep(Duration::from_millis(50));
+    let Some(_guard) = acquire_lock_blocking() else {
+        debug("could not acquire lock for focus restore");
+        return;
+    };
     restore_previous(None);
 }
 
+/// Public entry point. Serialized with a non-blocking file lock: if another
+/// toggle is already running (including a cold launch waiting for the window
+/// to map), this keypress is ignored. That guarantees at most one scratchpad
+/// window gets spawned.
 pub fn toggle_scratchpad(kind: &str) -> Result<(), String> {
+    let Some(_guard) = try_acquire_lock() else {
+        debug("another scratchpad toggle is in progress; ignoring keypress");
+        return Ok(());
+    };
+    toggle_scratchpad_inner(kind)
+    // _guard dropped here -> lock released
+}
+
+fn toggle_scratchpad_inner(kind: &str) -> Result<(), String> {
     let is_open = is_special_workspace_open(kind);
     debug(&format!("kind={kind} is_open={is_open}"));
 
@@ -389,7 +451,8 @@ pub fn toggle_scratchpad(kind: &str) -> Result<(), String> {
         }
     } else {
         // COLD LAUNCH: start silently in the special workspace with floating geometry,
-        // then wait until the window has mapped.
+        // then wait until the window has mapped. The lock is held for the whole wait,
+        // so a second keypress cannot spawn a duplicate.
         let (w, h) = get_target_dimensions(kind);
         let command_to_run = match kind {
             "terminal" => {

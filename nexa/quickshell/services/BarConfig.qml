@@ -16,6 +16,7 @@ Singleton {
     property bool showTray: true
     property bool showBattery: true
     property bool showNetwork: true
+    property bool showSettings: true
     property bool showPower: true
     property bool showMusic: true
 
@@ -50,6 +51,7 @@ Singleton {
                 if (d.show_tray !== undefined) root.showTray = d.show_tray;
                 if (d.show_battery !== undefined) root.showBattery = d.show_battery;
                 if (d.show_network !== undefined) root.showNetwork = d.show_network;
+                if (d.show_settings !== undefined) root.showSettings = d.show_settings;
                 if (d.show_power !== undefined) root.showPower = d.show_power;
                 if (d.show_music !== undefined) root.showMusic = d.show_music;
             } catch (_) {}
@@ -68,6 +70,7 @@ Singleton {
             show_tray: root.showTray,
             show_battery: root.showBattery,
             show_network: root.showNetwork,
+            show_settings: root.showSettings,
             show_power: root.showPower,
             show_music: root.showMusic
         };
@@ -107,6 +110,7 @@ Singleton {
             case "tray": root.showTray = !root.showTray; break;
             case "battery": root.showBattery = !root.showBattery; break;
             case "network": root.showNetwork = !root.showNetwork; break;
+            case "settings": root.showSettings = !root.showSettings; break;
             case "power": root.showPower = !root.showPower; break;
             case "music": root.showMusic = !root.showMusic; break;
         }

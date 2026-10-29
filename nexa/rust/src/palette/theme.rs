@@ -369,8 +369,10 @@ pub fn render_canonical(canonical_path: &Path, mode: &str) -> Result<(), String>
     // Live reload Kitty
     let _ = Command::new("pkill").args(["-SIGUSR1", "kitty"]).status();
 
-    // Live reload Hyprland window borders
-    let _ = Command::new("hyprctl").arg("reload").status();
+    // Live reload Hyprland window borders via instant socket sync (0ms, zero desktop stutter)
+    if let Err(e) = crate::hyprland::decorations::sync_decorations() {
+        eprintln!("[NEXA Theme] Failed to sync Hyprland border colors: {e}");
+    }
 
     Ok(())
 }

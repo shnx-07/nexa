@@ -16,7 +16,6 @@ Item {
     signal requestClose()
 
     readonly property string configPath: Quickshell.env("HOME") + "/.config/nexa/config/power.json"
-    readonly property string syncScript: Quickshell.env("HOME") + "/.config/nexa/scripts/power-sync.sh"
 
     // Configuration state
     property int screenOffBattery: 300
@@ -69,15 +68,15 @@ Item {
             "battery_saver_enabled": root.batterySaverEnabled,
             "battery_saver_threshold": root.batterySaverThreshold
         };
-        var jsonStr = JSON.stringify(cfg, null, 2);
-        saveProcess.command = ["bash", "-c", "cat << 'EOF' > " + root.configPath + "\n" + jsonStr + "\nEOF\n" + root.syncScript];
+        var jsonStr = JSON.stringify(cfg);
+        saveProcess.command = [Nexa.Theme.nexadBin, "hypr", "idle", "set", jsonStr];
         saveProcess.running = true;
         showToast("✓ Power settings applied & synced");
     }
 
     Process {
         id: loadProcess
-        command: ["cat", root.configPath]
+        command: [Nexa.Theme.nexadBin, "hypr", "idle", "get"]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (this.text && this.text.trim() !== "") {

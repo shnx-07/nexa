@@ -192,6 +192,36 @@ PanelWindow {
                 }
 
                 BarPill {
+                    id: settingsPill
+                    visible: Services.BarConfig.showSettings
+                    extraWidth: 0
+                    implicitWidth: Nexa.Theme.controlHeightSm
+
+                    Item {
+                        implicitWidth: Nexa.Theme.controlHeightSm
+                        implicitHeight: Nexa.Theme.controlHeightSm
+
+                        NexaUI.NexaIconButton {
+                            anchors.fill: parent
+                            radius: height / 2
+                            icon: "󰒓"
+                            iconColor: Nexa.Theme.text
+                            onClicked: {
+                                Quickshell.execDetached([
+                                    "qs",
+                                    "-p",
+                                    Quickshell.env("HOME") + "/.config/nexa/quickshell",
+                                    "ipc",
+                                    "call",
+                                    "settings",
+                                    "toggle"
+                                ])
+                            }
+                        }
+                    }
+                }
+
+                BarPill {
                     id: powerPill
                     visible: Services.BarConfig.showPower
                     extraWidth: 0
@@ -256,6 +286,34 @@ PanelWindow {
 
                     NetworkModule.Network {
                         anchors.centerIn: parent
+                    }
+                }
+
+                Rectangle {
+                    visible: Services.BarConfig.showSettings
+                    width: Nexa.Theme.controlHeightSm
+                    height: Nexa.Theme.controlHeightSm
+                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
+                    color: Nexa.Theme.surfaceContainer
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.border
+
+                    NexaUI.NexaIconButton {
+                        anchors.fill: parent
+                        radius: height / 2
+                        icon: "󰒓"
+                        iconColor: Nexa.Theme.text
+                        onClicked: {
+                            Quickshell.execDetached([
+                                "qs",
+                                "-p",
+                                Quickshell.env("HOME") + "/.config/nexa/quickshell",
+                                "ipc",
+                                "call",
+                                "settings",
+                                "toggle"
+                            ])
+                        }
                     }
                 }
 
