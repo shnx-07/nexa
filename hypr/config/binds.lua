@@ -32,8 +32,8 @@ local nexad = (os.getenv("HOME") or "") .. "/.config/nexa/rust/target/release/ne
 -- ==============================================================================
 -- 1. TERMINAL & SCRATCHPAD (SUPER + Return / SUPER + SHIFT + Return)
 -- ==============================================================================
--- Normal Tiled Terminal: Opens a regular terminal in current workspace
-hl.bind(MOD .. " + Return", hl.dsp.exec_cmd(terminal))
+-- Normal Tiled Terminal: Opens a regular terminal in current workspace (suppressed if scratchpad is open)
+hl.bind(MOD .. " + Return", hl.dsp.exec_cmd(nexad .. " hypr terminal"))
 
 -- Persistent Scratchpad Terminal:
 -- Press once: opens/restores terminal in the center with immediate focus.

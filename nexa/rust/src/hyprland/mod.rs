@@ -135,7 +135,7 @@ pub fn run_daemon() -> Result<(), String> {
 /// Entry point for `nexad hypr <subcommand>` CLI
 pub fn handle_command(args: &[String]) {
     if args.is_empty() {
-        eprintln!("Usage: nexad hypr [daemon|scratchpad|rules|animations|decorations|autostart] ...");
+        eprintln!("Usage: nexad hypr [daemon|scratchpad|terminal|rules|animations|decorations|autostart] ...");
         return;
     }
 
@@ -151,6 +151,11 @@ pub fn handle_command(args: &[String]) {
                 return;
             }
             if let Err(e) = binds::toggle_scratchpad(&args[1]) {
+                eprintln!("[NEXA Hypr Error]: {e}");
+            }
+        }
+        "terminal" => {
+            if let Err(e) = binds::handle_normal_terminal() {
                 eprintln!("[NEXA Hypr Error]: {e}");
             }
         }

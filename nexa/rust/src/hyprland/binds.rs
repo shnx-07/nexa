@@ -169,6 +169,26 @@ fn any_special_open() -> bool {
     }
 }
 
+/// True if either the terminal scratchpad (SUPER + SHIFT + RETURN)
+/// or the files scratchpad (SUPER + E) is currently active on screen.
+pub fn is_scratchpad_active() -> bool {
+    is_special_workspace_open("terminal") || is_special_workspace_open("files")
+}
+
+/// Handles standard terminal launch (SUPER + Return).
+/// If any scratchpad is active on screen, this does nothing to prevent opening an extra terminal.
+pub fn handle_normal_terminal() -> Result<(), String> {
+    if is_scratchpad_active() {
+        debug("Scratchpad active on screen; suppressing normal terminal launch (SUPER + Return)");
+        return Ok(());
+    }
+
+    let term = env::var("TERMINAL").unwrap_or_else(|_| "kitty".to_string());
+    debug(&format!("Launching normal terminal: {term}"));
+    let _ = dispatch(&format!(r#"hl.dsp.exec_cmd("{term}")"#));
+    Ok(())
+}
+
 /// Polls until a client exists in the given workspace, or the timeout passes.
 fn wait_for_client(target_ws: &str, timeout_ms: u64) -> bool {
     let steps = timeout_ms / 25;
