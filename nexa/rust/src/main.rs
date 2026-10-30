@@ -10,7 +10,7 @@ pub mod services;
 // Re-exports so internal code and CLI commands continue to work seamlessly
 pub use core::{state, system};
 pub use desktop::{island, lock, power, shelf, workspace};
-pub use hardware::{audio, brightness, network, screenFilter, screenTemp};
+pub use hardware::{audio, brightness, network, screenFilter, screenTemp, sound};
 pub use media_tools::{media, recorder, screenshot, slideshow, snipping, wallpaper};
 pub use services::{
     appLauncher, clipboard, command, commandSearch, notifications, search, weather,
@@ -797,6 +797,18 @@ fn main() {
 
         "hypr" | "hyprland" => {
             hyprland::handle_command(&args[2..]);
+        }
+
+        "sound" => {
+            if args.len() < 3 {
+                if let Err(e) = sound::handle(&["get".to_string()]) {
+                    eprintln!("{e}");
+                }
+                return;
+            }
+            if let Err(e) = sound::handle(&args[2..]) {
+                eprintln!("{e}");
+            }
         }
 
         _ => {

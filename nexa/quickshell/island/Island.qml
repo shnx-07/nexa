@@ -326,20 +326,28 @@ PanelWindow {
         if (root.full || root.specialModeActive) return
         root.osdType = "volume"
         root.osdMuted = false
+        const prevValue = root.osdValue
         root.osdValue = Math.min(1.0, root.osdValue + 0.05)
         root.osdActive = true
         osdDismissTimer.restart()
         Quickshell.execDetached(["wpctl", "set-volume", "-l", "1", "@DEFAULT_AUDIO_SINK@", "5%+"])
+        if (prevValue < 0.999) {
+            Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "volumne"])
+        }
         volumeSyncTimer.restart()
     }
 
     function triggerVolumeDown(): void {
         if (root.full || root.specialModeActive) return
         root.osdType = "volume"
+        const prevValue = root.osdValue
         root.osdValue = Math.max(0.0, root.osdValue - 0.05)
         root.osdActive = true
         osdDismissTimer.restart()
         Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"])
+        if (prevValue > 0.001) {
+            Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "volumne"])
+        }
         volumeSyncTimer.restart()
     }
 
@@ -431,6 +439,7 @@ PanelWindow {
     readonly property bool onBattery: UPower.onBattery
     property bool batteryInitialized: false
     property bool lowBatteryWarned: false
+    property bool batteryFullWarned: false
 
     function triggerBatteryOsd(charging: bool, pct: int): void {
         if (root.full || root.specialModeActive) return
@@ -442,6 +451,11 @@ PanelWindow {
         root.osdActive = true
         osdDismissTimer.interval = 2600
         osdDismissTimer.restart()
+        if (charging) {
+            Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "charging_cable_insert"])
+        } else {
+            Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "charging_cable_remove"])
+        }
     }
 
     function triggerLowBatteryAlert(pct: int): void {
@@ -454,6 +468,7 @@ PanelWindow {
         root.osdActive = true
         osdDismissTimer.interval = 5000
         osdDismissTimer.restart()
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "low_battery"])
     }
 
     function checkBatteryLevel(): void {
@@ -465,7 +480,17 @@ PanelWindow {
                 root.lowBatteryWarned = true
                 root.triggerLowBatteryAlert(pct)
             }
-        } else if (!root.onBattery || pct > 30) {
+        } else if (!root.onBattery) {
+            root.lowBatteryWarned = false
+            if (pct >= 100) {
+                if (!root.batteryFullWarned) {
+                    root.batteryFullWarned = true
+                    Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "Full-battery-charge"])
+                }
+            } else {
+                root.batteryFullWarned = false
+            }
+        } else if (pct > 30) {
             root.lowBatteryWarned = false
         }
     }
@@ -501,6 +526,7 @@ PanelWindow {
     }
 
     onOnBatteryChanged: {
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "hypr", "idle", "sync"])
         if (!root.batteryInitialized || !root.batteryReady) return
         const pct = Math.round(batteryDevice.percentage * 100)
         root.applyPowerState(root.onBattery)

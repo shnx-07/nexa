@@ -5,3 +5,4 @@ pub mod network;
 pub mod screenFilter;
 #[allow(non_snake_case)]
 pub mod screenTemp;
+pub mod sound;

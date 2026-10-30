@@ -1,0 +1,14 @@
+{
+  "master_enabled": true,
+  "master_volume": 80,
+  "sounds": {
+    "volumne": {
+      "enabled": true,
+      "volume": 100
+    },
+    "lock": {
+      "enabled": true,
+      "volume": 60
+    }
+  }
+}

@@ -76,7 +76,9 @@ pub fn capture() {
     let status = Command::new("grim").arg(&path).status();
 
     match status {
-        Ok(status) if status.success() => {}
+        Ok(status) if status.success() => {
+            crate::hardware::sound::play_sound("screenshot_sound");
+        }
 
         Ok(status) => {
             print_json(&ScreenshotResponse {

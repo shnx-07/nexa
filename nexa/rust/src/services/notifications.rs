@@ -638,6 +638,7 @@ impl NotificationServer {
 
         if !load_dnd() {
             write_transient_event(&notification);
+            crate::hardware::sound::play_sound("notification");
         }
 
         notifications.insert(0, notification);
@@ -957,6 +958,8 @@ pub async fn clear() -> zbus::Result<()> {
     // This prevents stale notification cards remaining in
     // notifications.json.
     // --------------------------------------------------------
+
+    crate::hardware::sound::play_sound("trash");
 
     if cleared < total {
         write_state(&[]);

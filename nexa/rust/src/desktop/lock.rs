@@ -41,6 +41,8 @@ pub fn trigger_lock() -> Result<(), String> {
             .output();
     }
 
+    crate::hardware::sound::play_sound("lock");
+
     Ok(())
 }
 
@@ -88,6 +90,7 @@ fn authenticate_from_stdin() -> Result<(), String> {
 
     match auth_result {
         Ok(()) => {
+            crate::hardware::sound::play_sound("unlock");
             println!("{}", json!({ "success": true }));
             Ok(())
         }

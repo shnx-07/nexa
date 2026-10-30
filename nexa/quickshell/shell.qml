@@ -13,6 +13,8 @@ import "services" as Services
 ShellRoot {
     Component.onCompleted: {
         Services.DesktopTheme.manage = true
+        // Ensure Battery service is initialized at startup
+        const _ = Services.Battery.percentage
     }
 
     Connections {

@@ -1,0 +1,3 @@
+module Nexa.Settings.Sound
+SoundSettings 1.0 SoundSettings.qml
+

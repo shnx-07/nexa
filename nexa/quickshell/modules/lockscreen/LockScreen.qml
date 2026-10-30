@@ -87,6 +87,7 @@ Item {
 
         Quickshell.execDetached(["mkdir", "-p", root.runtimeDir])
         Quickshell.execDetached(["touch", root.lockFlag])
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "lock"])
         sessionLock.locked = true
     }
 
@@ -99,6 +100,7 @@ Item {
             "NEXA lockscreen: releasing session"
         )
 
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "unlock"])
         Quickshell.execDetached(["rm", "-f", root.lockFlag])
         sessionLock.locked = false
 

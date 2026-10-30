@@ -10,6 +10,7 @@ import "../../services" as Services
 import "../profile" as ProfileModule
 import "../display" as DisplayModule
 import "power" as PowerModule
+import "sound" as SoundModule
 
 // SettingsPanel: Unified settings modal with left sidebar navigation.
 Item {
@@ -22,7 +23,7 @@ Item {
     Keys.onEscapePressed: root.close()
 
     property string tab: "profile"
-    readonly property var tabs: ["profile", "display", "power", "bars", "motion", "lock", "system"]
+    readonly property var tabs: ["profile", "sound", "display", "power", "bars", "motion", "lock", "system"]
     function rad(n) {
         if (Nexa.Theme.nexaRounding === 0) return 0;
         return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
@@ -51,7 +52,7 @@ Item {
     }
 
     function openTab(which) {
-        if (which === "system" || which === "profile" || which === "display" || which === "bars" || which === "motion" || which === "lock" || which === "power")
+        if (which === "system" || which === "profile" || which === "sound" || which === "display" || which === "bars" || which === "motion" || which === "lock" || which === "power")
             tab = which;
         else
             tab = "profile";
@@ -302,6 +303,46 @@ Item {
                                 font.pixelSize: 14
                                 font.weight: root.tab === "profile" ? Font.Bold : Font.Medium
                                 color: root.tab === "profile" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                            }
+                        }
+                    }
+
+                    // Nav Option 1.5: Sound & Audio
+                    ClickableRect {
+                        id: soundNavBtn
+                        anchors.left: parent.left
+                        anchors.leftMargin: 6
+                        width: parent.width - 26
+                        height: 42
+                        radius: root.rad(10)
+                        color: root.tab === "sound"
+                            ? Nexa.Theme.primaryContainer
+                            : (soundNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
+                        border.width: root.tab === "sound" ? 1.5 : 1
+                        border.color: root.tab === "sound" ? Nexa.Theme.primary : (soundNavBtn.hovered ? Nexa.Theme.border : "transparent")
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.tab = "sound"
+
+                        Row {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 12
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "󰕾"
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 18
+                                color: root.tab === "sound" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                            }
+
+                            StyledText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Sound & Audio"
+                                font.pixelSize: 14
+                                font.weight: root.tab === "sound" ? Font.Bold : Font.Medium
+                                color: root.tab === "sound" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
                             }
                         }
                     }
@@ -592,6 +633,7 @@ Item {
                         StyledText {
                             text: {
                                 if (root.tab === "profile") return "Profile";
+                                if (root.tab === "sound") return "Sound & Audio";
                                 if (root.tab === "display") return "Display Settings";
                                 if (root.tab === "power") return "Power & Sleep Settings";
                                 if (root.tab === "bars") return "Bars & Panels";
@@ -607,6 +649,7 @@ Item {
                         StyledText {
                             text: {
                                 if (root.tab === "profile") return "User account & system identity";
+                                if (root.tab === "sound") return "Hardware output, microphone monitor & desktop acoustic effects";
                                 if (root.tab === "display") return "Display layout, resolution & scaling";
                                 if (root.tab === "power") return "Battery, screen backlight timeouts & sleep behaviors";
                                 if (root.tab === "bars") return "Status bar layout, components & appearance";
@@ -747,6 +790,7 @@ Item {
                         anchors.fill: parent
                         sourceComponent: {
                             if (root.tab === "profile") return profileTabComponent;
+                            if (root.tab === "sound") return soundTabComponent;
                             if (root.tab === "display") return displayTabComponent;
                             if (root.tab === "power") return powerTabComponent;
                             if (root.tab === "bars") return barsTabComponent;
@@ -757,6 +801,13 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    Component {
+        id: soundTabComponent
+        SoundModule.SoundSettings {
+            onRequestClose: root.close()
         }
     }
 
