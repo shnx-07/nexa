@@ -31,6 +31,7 @@ Item {
     property int currentPage: 0
 
     signal requestClose()
+    signal requestOpenClock()
 
 
     // ============================================================
@@ -52,7 +53,34 @@ Item {
             Layout.preferredHeight: 38
             spacing: Nexa.Theme.spacingMd
 
-            // Left: Title / Breadcrumb
+            // Left: Back to Clock
+            Rectangle {
+                Layout.alignment: Qt.AlignVCenter
+                width: 32
+                height: 32
+                radius: 16
+                color: clockBtnMouse.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainer
+                border.width: 1
+                border.color: Nexa.Theme.border
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "󰥔"
+                    color: Nexa.Theme.text
+                    font.family: Nexa.Theme.iconFontFamily
+                    font.pixelSize: 15
+                }
+
+                MouseArea {
+                    id: clockBtnMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.requestOpenClock()
+                }
+            }
+
+            // Title / Breadcrumb
             Row {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: Nexa.Theme.spacingSm

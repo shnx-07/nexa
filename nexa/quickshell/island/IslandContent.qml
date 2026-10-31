@@ -5,7 +5,6 @@ import Quickshell.Io
 import "../theme" as Nexa
 import "../modules/clock"
 import "../modules/media"
-import "../modules/systeminfo"
 import "../modules/search"
 import "../modules/command"
 import "../modules/recorder"
@@ -190,6 +189,8 @@ Item {
 
     // search n command
     signal requestCloseSpecialMode()
+    signal requestOpenControlCenter(int page)
+    signal requestOpenClockSection()
     property string specialMode: "none"
 
     readonly property bool specialModeActive:
@@ -689,23 +690,28 @@ Item {
 
 
             Repeater {
-                model: [
-                    {
-                        name: "clock",
-                        icon: "󰥔",
-                        label: "Clock"
-                    },
-                    {
-                        name: "music",
-                        icon: "󰎆",
-                        label: "Music"
-                    },
-                    {
-                        name: "system",
-                        icon: "󰍛",
-                        label: "System"
+                model: {
+                    var items = [
+                        {
+                            name: "clock",
+                            icon: "󰥔",
+                            label: "Clock"
+                        },
+                        {
+                            name: "controlCenter",
+                            icon: "󰂚",
+                            label: "Panel"
+                        }
+                    ];
+                    if (root.mediaContextActive || root.section === "music") {
+                        items.push({
+                            name: "music",
+                            icon: "󰎆",
+                            label: "Music"
+                        });
                     }
-                ]
+                    return items;
+                }
 
 
                 delegate: Rectangle {
@@ -837,8 +843,11 @@ Item {
 
 
                         onClicked: {
-                            root.section =
-                                sectionButton.modelData.name
+                            if (sectionButton.modelData.name === "controlCenter") {
+                                root.requestOpenControlCenter(0);
+                            } else {
+                                root.section = sectionButton.modelData.name;
+                            }
                         }
                     }
                 }
@@ -870,52 +879,6 @@ Item {
         }
 
 
-        // ========================================================
-        // NON-CLOCK SECTION AREA
-        //
-        // Clock does NOT render here.
-        // The persistent clockModule already owns Clock content.
-        //
-        // Music / System / Theme appear in this area.
-        // ========================================================
-
-        Item {
-            id: alternateSectionArea
-
-            anchors {
-                top: navigationDivider.bottom
-                left: parent.left
-                right: parent.right
-                bottom: parent.bottom
-
-                topMargin: Nexa.Theme.spacingMd
-                leftMargin: Nexa.Theme.spacingLg
-                rightMargin: Nexa.Theme.spacingLg
-                bottomMargin: Nexa.Theme.spacingLg
-            }
-
-
-            visible:
-                root.section !== "clock"
-
-
-            Loader {
-                id: sectionLoader
-
-                anchors.fill: parent
-
-                sourceComponent: {
-                    switch (root.section) {
-
-                    case "system":
-                        return systemInfoComponent
-
-                    default:
-                        return null
-                    }
-                }
-            }
-        }
     }
 
 
@@ -1012,6 +975,11 @@ Item {
             if (item) {
                 item.currentPage = root.pendingControlCenterPage
                 item.requestClose.connect(root.requestCloseSpecialMode)
+                item.requestOpenClock.connect(function() {
+                    root.requestCloseSpecialMode()
+                    root.section = "clock"
+                    root.requestOpenClockSection()
+                })
             }
         }
 
@@ -1050,21 +1018,5 @@ Item {
             powerIslandLoader.item.triggerKeyNumber(keyNum)
         }
     }
-
-    // ============================================================
-    // TEMPORARY SYSTEM PLACEHOLDER
-    //
-    // Later replaced by:
-    // modules/systeminfo/SystemInfo.qml
-    // ============================================================
-
-    Component {
-        id: systemInfoComponent
-
-        SystemInfo {
-            anchors.fill: parent
-        }
-    }
-
 
 }

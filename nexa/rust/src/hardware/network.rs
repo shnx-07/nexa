@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     ffi::OsStr,
     fs,
     process::Command,
@@ -8,6 +8,108 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+use zbus::blocking::Connection;
+use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
+
+type ManagedObjects = HashMap<OwnedObjectPath, HashMap<String, HashMap<String, OwnedValue>>>;
+
+fn val_to_str<'a>(val: &'a OwnedValue) -> Option<&'a str> {
+    match &**val {
+        Value::Str(s) => Some(s.as_str()),
+        _ => None,
+    }
+}
+
+fn val_to_string(val: &OwnedValue) -> Option<String> {
+    val_to_str(val).map(|s| s.to_string())
+}
+
+fn val_to_path(val: &OwnedValue) -> Option<OwnedObjectPath> {
+    match &**val {
+        Value::ObjectPath(p) => OwnedObjectPath::try_from(p.as_str()).ok(),
+        Value::Str(s) => OwnedObjectPath::try_from(s.as_str()).ok(),
+        _ => None,
+    }
+}
+
+fn val_to_bool(val: &OwnedValue) -> Option<bool> {
+    match &**val {
+        Value::Bool(b) => Some(*b),
+        _ => None,
+    }
+}
+
+fn val_to_u32(val: &OwnedValue) -> Option<u32> {
+    match &**val {
+        Value::U32(v) => Some(*v),
+        Value::U16(v) => Some(*v as u32),
+        Value::U8(v) => Some(*v as u32),
+        Value::I32(v) => Some(*v as u32),
+        _ => None,
+    }
+}
+
+fn val_to_u8(val: &OwnedValue) -> Option<u8> {
+    match &**val {
+        Value::U8(v) => Some(*v),
+        Value::U32(v) => Some(*v as u8),
+        _ => None,
+    }
+}
+
+fn val_to_ssid(val: &OwnedValue) -> Option<String> {
+    match &**val {
+        Value::Array(arr) => {
+            let bytes: Vec<u8> = arr
+                .iter()
+                .filter_map(|v| match v {
+                    Value::U8(b) => Some(*b),
+                    _ => None,
+                })
+                .collect();
+            if bytes.is_empty() {
+                None
+            } else {
+                Some(String::from_utf8_lossy(&bytes).trim().to_string())
+            }
+        }
+        Value::Str(s) => {
+            let trimmed = s.as_str().trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        }
+        _ => None,
+    }
+}
+
+fn val_to_ipv4(val: &OwnedValue) -> Option<String> {
+    match &**val {
+        Value::Array(arr) => {
+            for item in arr.iter() {
+                if let Value::Dict(dict) = item {
+                    for (k, v) in dict.iter() {
+                        if let Value::Str(key) = k {
+                            if key.as_str() == "address" {
+                                let unwrapped = match v {
+                                    Value::Value(inner) => inner.as_ref(),
+                                    other => other,
+                                };
+                                if let Value::Str(addr) = unwrapped {
+                                    return Some(addr.as_str().to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
 
 // ============================================================
 // PUBLIC DATA
@@ -17,6 +119,7 @@ use std::{
 pub struct WifiInfo {
     pub enabled: bool,
     pub connected: bool,
+    pub has_internet: bool,
 
     pub interface: String,
     pub ssid: String,
@@ -60,6 +163,7 @@ pub struct BluetoothDevice {
     pub paired: bool,
     pub connected: bool,
     pub trusted: bool,
+    pub battery_percentage: Option<u8>,
 }
 
 // ============================================================
@@ -89,6 +193,133 @@ impl NetworkService {
     // ========================================================
 
     pub fn wifi_info(&self) -> Result<WifiInfo, String> {
+        if let Ok(info) = self.wifi_info_dbus() {
+            return Ok(info);
+        }
+        self.wifi_info_legacy()
+    }
+
+    fn wifi_info_dbus(&self) -> Result<WifiInfo, String> {
+        let conn = Connection::system()
+            .map_err(|e| format!("Failed to connect to system bus: {e}"))?;
+
+        let managed = get_nm_managed_objects(&conn)?;
+
+        let mut enabled = true;
+        let mut has_internet = false;
+        let root_path = OwnedObjectPath::try_from("/org/freedesktop/NetworkManager").unwrap();
+        if let Some(nm_root) = managed.get(&root_path) {
+            if let Some(nm_iface) = nm_root.get("org.freedesktop.NetworkManager") {
+                if let Some(val) = nm_iface.get("WirelessEnabled") {
+                    if let Some(b) = val_to_bool(val) {
+                        enabled = b;
+                    }
+                }
+                if let Some(val) = nm_iface.get("Connectivity") {
+                    if let Some(c) = val_to_u32(val) {
+                        has_internet = c == 4; // NM_CONNECTIVITY_FULL
+                    }
+                }
+            }
+        }
+
+        // Find wireless device (DeviceType == 2)
+        let mut interface = String::new();
+        let mut active_ap_path: Option<OwnedObjectPath> = None;
+        let mut ip4_config_path: Option<OwnedObjectPath> = None;
+
+        for (_path, ifaces) in &managed {
+            if let Some(dev) = ifaces.get("org.freedesktop.NetworkManager.Device") {
+                let dev_type = dev.get("DeviceType").and_then(val_to_u32).unwrap_or(0);
+                if dev_type == 2 {
+                    if let Some(iface_val) = dev.get("Interface") {
+                        if let Some(s) = val_to_string(iface_val) {
+                            interface = s;
+                        }
+                    }
+                    if let Some(ip4_val) = dev.get("Ip4Config") {
+                        if let Some(p) = val_to_path(ip4_val) {
+                            if p.as_str() != "/" {
+                                ip4_config_path = Some(p);
+                            }
+                        }
+                    }
+                    if let Some(wireless) = ifaces.get("org.freedesktop.NetworkManager.Device.Wireless") {
+                        if let Some(ap_val) = wireless.get("ActiveAccessPoint") {
+                            if let Some(p) = val_to_path(ap_val) {
+                                if p.as_str() != "/" {
+                                    active_ap_path = Some(p);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        let mut connected = false;
+        let mut ssid = String::new();
+        let mut signal = 0u8;
+        let mut security = String::new();
+        let mut frequency_mhz = 0u32;
+        let mut band = String::new();
+
+        if let Some(ap_p) = active_ap_path {
+            if let Some(ap_ifaces) = managed.get(&ap_p) {
+                if let Some(ap) = ap_ifaces.get("org.freedesktop.NetworkManager.AccessPoint") {
+                    connected = true;
+                    ssid = ap.get("Ssid").and_then(val_to_ssid).unwrap_or_default();
+                    signal = ap.get("Strength").and_then(val_to_u8).unwrap_or(0);
+                    if let Some(f) = ap.get("Frequency").and_then(val_to_u32) {
+                        frequency_mhz = f;
+                        band = band_from_frequency(f);
+                    }
+                    let rsn = ap.get("RsnFlags").and_then(val_to_u32).unwrap_or(0);
+                    let wpa = ap.get("WpaFlags").and_then(val_to_u32).unwrap_or(0);
+                    let flags = ap.get("Flags").and_then(val_to_u32).unwrap_or(0);
+                    security = security_from_flags(rsn, wpa, flags);
+                }
+            }
+        }
+
+        // IPv4 from IP4Config
+        let mut ipv4 = String::new();
+        if let Some(ip_p) = ip4_config_path {
+            if let Some(ip_ifaces) = managed.get(&ip_p) {
+                if let Some(ip4) = ip_ifaces.get("org.freedesktop.NetworkManager.IP4Config") {
+                    if let Some(addr_data_val) = ip4.get("AddressData") {
+                        if let Some(addr) = val_to_ipv4(addr_data_val) {
+                            ipv4 = addr;
+                        }
+                    }
+                }
+            }
+        }
+
+        let (download_bps, upload_bps) = if interface.is_empty() {
+            (0, 0)
+        } else {
+            self.traffic_rate(&interface)
+        };
+
+        Ok(WifiInfo {
+            enabled,
+            connected,
+            has_internet: connected && has_internet,
+            interface,
+            ssid,
+            signal,
+            security,
+            frequency_mhz,
+            band,
+            ipv4,
+            download_bps,
+            upload_bps,
+        })
+    }
+
+    fn wifi_info_legacy(&self) -> Result<WifiInfo, String> {
         let enabled = run("nmcli", ["radio", "wifi"])? == "enabled";
 
         let interface = wifi_interface().unwrap_or_default();
@@ -109,10 +340,16 @@ impl NetworkService {
             self.traffic_rate(&interface)
         };
 
+        let has_internet = current.is_some()
+            && run("nmcli", ["networking", "connectivity"])
+                .map(|s| s.trim() == "full")
+                .unwrap_or(false);
+
         Ok(WifiInfo {
             enabled,
 
             connected: current.is_some(),
+            has_internet,
 
             interface,
 
@@ -138,6 +375,109 @@ impl NetworkService {
     // ========================================================
 
     pub fn wifi_scan(&self, force: bool) -> Result<Vec<WifiNetwork>, String> {
+        if let Ok(networks) = self.wifi_scan_dbus(force) {
+            return Ok(networks);
+        }
+        self.wifi_scan_legacy(force)
+    }
+
+    fn wifi_scan_dbus(&self, force: bool) -> Result<Vec<WifiNetwork>, String> {
+        let conn = Connection::system()
+            .map_err(|e| format!("Failed to connect to system bus: {e}"))?;
+
+        let managed = get_nm_managed_objects(&conn)?;
+
+        // Find wireless device path and active AP path
+        let mut wifi_dev_path: Option<OwnedObjectPath> = None;
+        let mut active_ap_path: Option<OwnedObjectPath> = None;
+
+        for (path, ifaces) in &managed {
+            if let Some(dev) = ifaces.get("org.freedesktop.NetworkManager.Device") {
+                let dev_type = dev.get("DeviceType").and_then(val_to_u32).unwrap_or(0);
+                if dev_type == 2 {
+                    wifi_dev_path = Some(path.clone());
+                    if let Some(wireless) = ifaces.get("org.freedesktop.NetworkManager.Device.Wireless") {
+                        if let Some(ap_val) = wireless.get("ActiveAccessPoint") {
+                            if let Some(p) = val_to_path(ap_val) {
+                                if p.as_str() != "/" {
+                                    active_ap_path = Some(p);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        if force {
+            if let Some(ref dev_p) = wifi_dev_path {
+                let empty_options: HashMap<&str, OwnedValue> = HashMap::new();
+                let _ = conn.call_method(
+                    Some("org.freedesktop.NetworkManager"),
+                    dev_p,
+                    Some("org.freedesktop.NetworkManager.Device.Wireless"),
+                    "RequestScan",
+                    &(empty_options),
+                );
+            }
+        }
+
+        let saved = saved_wifi_ssids_dbus(&conn, &managed);
+
+        let mut networks = Vec::new();
+
+        for (path, ifaces) in &managed {
+            if let Some(ap) = ifaces.get("org.freedesktop.NetworkManager.AccessPoint") {
+                let ssid = ap.get("Ssid").and_then(val_to_ssid).unwrap_or_default();
+
+                if ssid.is_empty() {
+                    continue;
+                }
+
+                let signal = ap.get("Strength").and_then(val_to_u8).unwrap_or(0);
+                let frequency = ap.get("Frequency").and_then(val_to_u32).unwrap_or(0);
+
+                let rsn = ap.get("RsnFlags").and_then(val_to_u32).unwrap_or(0);
+                let wpa = ap.get("WpaFlags").and_then(val_to_u32).unwrap_or(0);
+                let flags = ap.get("Flags").and_then(val_to_u32).unwrap_or(0);
+
+                let security = security_from_flags(rsn, wpa, flags);
+                let band = band_from_frequency(frequency);
+                let known = saved.contains(&ssid);
+                let connected = active_ap_path.as_ref().map(|p| p == path).unwrap_or(false);
+
+                let network = WifiNetwork {
+                    ssid: ssid.clone(),
+                    signal,
+                    security,
+                    frequency_mhz: frequency,
+                    band,
+                    known,
+                    connected,
+                };
+
+                if let Some(existing) = networks.iter_mut().find(|n: &&mut WifiNetwork| n.ssid == network.ssid) {
+                    if network.connected || (!existing.connected && network.signal > existing.signal) {
+                        *existing = network;
+                    }
+                } else {
+                    networks.push(network);
+                }
+            }
+        }
+
+        networks.sort_by(|a, b| {
+            if a.connected != b.connected {
+                return b.connected.cmp(&a.connected);
+            }
+            b.signal.cmp(&a.signal)
+        });
+
+        Ok(networks)
+    }
+
+    fn wifi_scan_legacy(&self, force: bool) -> Result<Vec<WifiNetwork>, String> {
         let rescan = if force { "yes" } else { "no" };
 
         let output = run(
@@ -217,10 +557,27 @@ impl NetworkService {
     // ========================================================
 
     pub fn wifi_set_enabled(&self, enabled: bool) -> Result<(), String> {
-        run(
-            "nmcli",
-            ["radio", "wifi", if enabled { "on" } else { "off" }],
-        )?;
+        let set_dbus = || -> Result<(), String> {
+            let conn = Connection::system()
+                .map_err(|e| format!("Failed to connect to system bus: {e}"))?;
+            let prop_val = zbus::zvariant::Value::from(enabled);
+            conn.call_method(
+                Some("org.freedesktop.NetworkManager"),
+                "/org/freedesktop/NetworkManager",
+                Some("org.freedesktop.DBus.Properties"),
+                "Set",
+                &("org.freedesktop.NetworkManager", "WirelessEnabled", prop_val),
+            )
+            .map_err(|e| format!("Failed to set WirelessEnabled: {e}"))?;
+            Ok(())
+        };
+
+        if let Err(_) = set_dbus() {
+            run(
+                "nmcli",
+                ["radio", "wifi", if enabled { "on" } else { "off" }],
+            )?;
+        }
 
         let _ = crate::state::update_state(|s| {
             s.wifi_enabled = enabled;
@@ -272,6 +629,13 @@ impl NetworkService {
     // ========================================================
 
     pub fn bluetooth_info(&self) -> Result<BluetoothInfo, String> {
+        if let Ok(info) = get_bluetooth_info_dbus() {
+            return Ok(info);
+        }
+        self.bluetooth_info_legacy()
+    }
+
+    fn bluetooth_info_legacy(&self) -> Result<BluetoothInfo, String> {
         // --------------------------------------------------------
         // ADAPTER POWER STATE
         // --------------------------------------------------------
@@ -384,6 +748,15 @@ impl NetworkService {
 
             let trusted = info.lines().any(|line| line.trim() == "Trusted: yes");
 
+            let battery_percentage = info.lines().find_map(|line| {
+                let l = line.trim();
+                if l.starts_with("Battery Percentage:") {
+                    l.split('(').nth(1)?.strip_suffix(')')?.parse::<u8>().ok()
+                } else {
+                    None
+                }
+            });
+
             devices.push(BluetoothDevice {
                 address: address.to_string(),
 
@@ -396,6 +769,7 @@ impl NetworkService {
                 connected,
 
                 trusted,
+                battery_percentage,
             });
         }
 
@@ -614,6 +988,101 @@ impl NetworkService {
     }
 }
 
+pub fn run_watch() -> Result<(), String> {
+    let service = NetworkService::new();
+    let mut prev_wifi_enabled = true;
+    let mut prev_wifi_connected = false;
+    let mut prev_bt_enabled = false;
+    let mut prev_bt_connected_addrs: HashSet<String> = HashSet::new();
+
+    if let Ok(wifi) = service.wifi_info() {
+        prev_wifi_enabled = wifi.enabled;
+        prev_wifi_connected = wifi.connected;
+    }
+    if let Ok(bt) = service.bluetooth_info() {
+        prev_bt_enabled = bt.enabled;
+        prev_bt_connected_addrs = bt
+            .devices
+            .iter()
+            .filter(|d| d.connected)
+            .map(|d| d.address.clone())
+            .collect();
+    }
+
+    loop {
+        thread::sleep(Duration::from_millis(1500));
+        let wifi = service.wifi_info().ok();
+        let bt = service.bluetooth_info().ok();
+
+        // 1. Wi-Fi changes
+        if let Some(ref w) = wifi {
+            if w.enabled != prev_wifi_enabled {
+                if !w.enabled {
+                    let _ = crate::desktop::island::trigger_wifi_osd("Wi-Fi", 0, false);
+                } else if !w.connected {
+                    let _ = crate::desktop::island::trigger_wifi_osd("Wi-Fi", 0, true);
+                }
+                prev_wifi_enabled = w.enabled;
+            }
+
+            if w.connected != prev_wifi_connected {
+                if w.connected && !w.ssid.is_empty() {
+                    let _ = crate::desktop::island::trigger_wifi_osd(
+                        &w.ssid,
+                        w.signal as u32,
+                        w.has_internet,
+                    );
+                }
+                prev_wifi_connected = w.connected;
+            }
+        }
+
+        // 2. Bluetooth changes
+        if let Some(ref b) = bt {
+            for dev in &b.devices {
+                if dev.connected && !prev_bt_connected_addrs.contains(&dev.address) {
+                    let _ = crate::desktop::island::trigger_bluetooth_osd(&dev.name, &dev.device_type);
+                }
+            }
+
+            let curr_connected: HashSet<String> = b
+                .devices
+                .iter()
+                .filter(|d| d.connected)
+                .map(|d| d.address.clone())
+                .collect();
+
+            prev_bt_connected_addrs = curr_connected;
+        }
+
+        // Update settings-state.json atomically
+        let _ = crate::state::update_state(|s| {
+            if let Some(ref w) = wifi {
+                s.wifi_enabled = w.enabled;
+                s.wifi_connected = w.connected;
+                s.wifi_ssid = w.ssid.clone();
+                s.wifi_signal = w.signal;
+                s.wifi_has_internet = w.has_internet;
+            }
+            if let Some(ref b) = bt {
+                s.bluetooth_enabled = b.enabled;
+                let connected_dev = b.devices.iter().find(|d| d.connected);
+                s.bluetooth_connected = connected_dev.is_some();
+                s.bluetooth_device_name = connected_dev
+                    .map(|d| d.name.clone())
+                    .unwrap_or_default();
+                s.bluetooth_device_type = connected_dev
+                    .map(|d| d.device_type.clone())
+                    .unwrap_or_default();
+                s.bluetooth_device_battery = connected_dev
+                    .and_then(|d| d.battery_percentage)
+                    .map(|b| b as i32)
+                    .unwrap_or(-1);
+            }
+        });
+    }
+}
+
 // ============================================================
 // NETWORKMANAGER HELPERS
 // ============================================================
@@ -757,6 +1226,171 @@ fn wifi_profile_uuid(ssid: &str) -> Option<String> {
     }
 
     None
+}
+
+fn security_from_flags(rsn_flags: u32, wpa_flags: u32, flags: u32) -> String {
+    if rsn_flags != 0 && wpa_flags != 0 {
+        "WPA1 WPA2".to_string()
+    } else if rsn_flags != 0 {
+        "WPA2".to_string()
+    } else if wpa_flags != 0 {
+        "WPA1".to_string()
+    } else if (flags & 0x1) != 0 {
+        "WEP".to_string()
+    } else {
+        "--".to_string()
+    }
+}
+
+fn get_nm_managed_objects(conn: &Connection) -> Result<ManagedObjects, String> {
+    let reply = conn
+        .call_method(
+            Some("org.freedesktop.NetworkManager"),
+            "/org/freedesktop",
+            Some("org.freedesktop.DBus.ObjectManager"),
+            "GetManagedObjects",
+            &(),
+        )
+        .map_err(|e| format!("NM GetManagedObjects failed: {e}"))?;
+
+    reply
+        .body()
+        .deserialize()
+        .map_err(|e| format!("Failed to parse NM managed objects: {e}"))
+}
+
+fn saved_wifi_ssids_dbus(conn: &Connection, managed: &ManagedObjects) -> HashSet<String> {
+    let mut saved = HashSet::new();
+
+    for (path, ifaces) in managed {
+        if ifaces.contains_key("org.freedesktop.NetworkManager.Settings.Connection") {
+            if let Ok(reply) = conn.call_method(
+                Some("org.freedesktop.NetworkManager"),
+                path,
+                Some("org.freedesktop.NetworkManager.Settings.Connection"),
+                "GetSettings",
+                &(),
+            ) {
+                type ConnSettings = HashMap<String, HashMap<String, OwnedValue>>;
+                if let Ok(settings) = reply.body().deserialize::<ConnSettings>() {
+                    if let Some(wireless) = settings.get("802-11-wireless") {
+                        if let Some(ssid) = wireless.get("ssid").and_then(val_to_ssid) {
+                            if !ssid.is_empty() {
+                                saved.insert(ssid);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if saved.is_empty() {
+        return saved_wifi_ssids();
+    }
+
+    saved
+}
+
+fn get_bluetooth_info_dbus() -> Result<BluetoothInfo, String> {
+    let connection = Connection::system()
+        .map_err(|e| format!("Failed to connect to system bus: {e}"))?;
+
+    let reply = connection
+        .call_method(
+            Some("org.bluez"),
+            "/",
+            Some("org.freedesktop.DBus.ObjectManager"),
+            "GetManagedObjects",
+            &(),
+        )
+        .map_err(|e| format!("GetManagedObjects failed: {e}"))?;
+
+    type ManagedObjects = HashMap<OwnedObjectPath, HashMap<String, HashMap<String, OwnedValue>>>;
+    let managed: ManagedObjects = reply
+        .body()
+        .deserialize()
+        .map_err(|e| format!("Failed to parse BlueZ objects: {e}"))?;
+
+    let mut enabled = false;
+    let mut devices = Vec::new();
+
+    for (_path, interfaces) in managed {
+        if let Some(adapter) = interfaces.get("org.bluez.Adapter1") {
+            if let Some(powered_val) = adapter.get("Powered") {
+                if let Ok(powered) = <bool>::try_from(powered_val) {
+                    if powered {
+                        enabled = true;
+                    }
+                }
+            }
+        }
+
+        if let Some(device) = interfaces.get("org.bluez.Device1") {
+            let address = device
+                .get("Address")
+                .and_then(|v| <&str>::try_from(v).ok())
+                .unwrap_or_default()
+                .to_string();
+
+            if address.is_empty() {
+                continue;
+            }
+
+            let name = device
+                .get("Name")
+                .or_else(|| device.get("Alias"))
+                .and_then(|v| <&str>::try_from(v).ok())
+                .unwrap_or("Unknown")
+                .to_string();
+
+            let device_type = device
+                .get("Icon")
+                .and_then(|v| <&str>::try_from(v).ok())
+                .unwrap_or("device")
+                .to_string();
+
+            let paired = device
+                .get("Paired")
+                .and_then(|v| <bool>::try_from(v).ok())
+                .unwrap_or(false);
+
+            let connected = device
+                .get("Connected")
+                .and_then(|v| <bool>::try_from(v).ok())
+                .unwrap_or(false);
+
+            let trusted = device
+                .get("Trusted")
+                .and_then(|v| <bool>::try_from(v).ok())
+                .unwrap_or(false);
+
+            let battery_percentage = interfaces
+                .get("org.bluez.Battery1")
+                .and_then(|b| b.get("Percentage"))
+                .and_then(|v| <u8>::try_from(v).ok());
+
+            devices.push(BluetoothDevice {
+                address,
+                name,
+                device_type,
+                paired,
+                connected,
+                trusted,
+                battery_percentage,
+            });
+        }
+    }
+
+    devices.sort_by(|a, b| {
+        let rank_a = bluetooth_device_rank(a);
+        let rank_b = bluetooth_device_rank(b);
+        rank_a
+            .cmp(&rank_b)
+            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+    });
+
+    Ok(BluetoothInfo { enabled, devices })
 }
 
 fn bluetooth_device_rank(device: &BluetoothDevice) -> u8 {

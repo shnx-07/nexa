@@ -1,6 +1,6 @@
 import QtQuick
-import Quickshell.Services.UPower
 import Quickshell
+import "../../services" as Services
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
 
@@ -8,13 +8,10 @@ import "../../theme/components" as NexaUI
 Item {
     id: root
 
-    readonly property var battery: UPower.displayDevice
-    readonly property bool ready: battery && battery.ready
-    readonly property int percent:
-        ready ? Math.round(battery.percentage * 100) : 0
-
-    readonly property bool charging:
-        ready && !UPower.onBattery
+    readonly property bool ready: true
+    readonly property int percent: Services.SystemState.batteryPercentage
+    readonly property bool charging: Services.SystemState.batteryCharging
+    readonly property bool onBattery: Services.SystemState.onBattery
 
 
     readonly property real compactWidth: 54

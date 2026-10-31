@@ -43,6 +43,30 @@ ShellRoot {
     }
 
     Process {
+        id: powerWatcherStartup
+
+        command: [
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "power",
+            "watch"
+        ]
+
+        running: true
+    }
+
+    Process {
+        id: networkWatcherStartup
+
+        command: [
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "network",
+            "watch"
+        ]
+
+        running: true
+    }
+
+    Process {
         id: settingsStateRestore
 
         command: [

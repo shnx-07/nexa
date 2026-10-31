@@ -43,6 +43,70 @@ pub fn call_qs(target: &str, method: &str) -> Result<(), String> {
     Ok(())
 }
 
+pub fn trigger_battery_osd(charging: bool, pct: u32) -> Result<(), String> {
+    let config_path = quickshell_path()?;
+    let status = Command::new("qs")
+        .arg("-p")
+        .arg(&config_path)
+        .args(["ipc", "call", "nexaIsland", "triggerBatteryOsd", &charging.to_string(), &pct.to_string()])
+        .status()
+        .map_err(|error| format!("failed to launch qs ipc: {error}"))?;
+
+    if !status.success() {
+        return Err(format!("qs ipc triggerBatteryOsd failed with status: {status}"));
+    }
+
+    Ok(())
+}
+
+pub fn trigger_low_battery_alert(pct: u32) -> Result<(), String> {
+    let config_path = quickshell_path()?;
+    let status = Command::new("qs")
+        .arg("-p")
+        .arg(&config_path)
+        .args(["ipc", "call", "nexaIsland", "triggerLowBatteryAlert", &pct.to_string()])
+        .status()
+        .map_err(|error| format!("failed to launch qs ipc: {error}"))?;
+
+    if !status.success() {
+        return Err(format!("qs ipc triggerLowBatteryAlert failed with status: {status}"));
+    }
+
+    Ok(())
+}
+
+pub fn trigger_wifi_osd(ssid: &str, strength: u32, has_internet: bool) -> Result<(), String> {
+    let config_path = quickshell_path()?;
+    let status = Command::new("qs")
+        .arg("-p")
+        .arg(&config_path)
+        .args(["ipc", "call", "nexaIsland", "triggerWifiOsd", ssid, &strength.to_string(), &has_internet.to_string()])
+        .status()
+        .map_err(|error| format!("failed to launch qs ipc: {error}"))?;
+
+    if !status.success() {
+        return Err(format!("qs ipc triggerWifiOsd failed with status: {status}"));
+    }
+
+    Ok(())
+}
+
+pub fn trigger_bluetooth_osd(name: &str, icon: &str) -> Result<(), String> {
+    let config_path = quickshell_path()?;
+    let status = Command::new("qs")
+        .arg("-p")
+        .arg(&config_path)
+        .args(["ipc", "call", "nexaIsland", "triggerBluetoothOsd", name, icon])
+        .status()
+        .map_err(|error| format!("failed to launch qs ipc: {error}"))?;
+
+    if !status.success() {
+        return Err(format!("qs ipc triggerBluetoothOsd failed with status: {status}"));
+    }
+
+    Ok(())
+}
+
 pub fn call_action(action: &str) {
     let method = match action {
         "search" => "openSearch",

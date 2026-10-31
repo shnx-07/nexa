@@ -14,6 +14,10 @@ pub struct HyprClientRef {
     pub workspace: WorkspaceRef,
     #[serde(default)]
     pub floating: bool,
+    #[serde(default)]
+    pub at: Vec<i32>,
+    #[serde(default)]
+    pub size: Vec<i32>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -53,6 +57,9 @@ pub struct MonitorRef {
     pub focused: bool,
     #[serde(rename = "specialWorkspace", default)]
     pub special_workspace: Option<WorkspaceRef>,
+    /// The regular workspace underneath any visible special workspace.
+    #[serde(rename = "activeWorkspace", default)]
+    pub active_workspace: Option<WorkspaceRef>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -64,6 +71,10 @@ struct ScratchpadState {
     last_cursor_files: Option<(i32, i32)>,
     /// Which scratchpad we opened and have not yet restored focus for.
     active_kind: Option<String>,
+    /// Address of the window that *owns* each scratchpad (kitty / the file manager).
+    /// Anything else that shows up in the special workspace is not part of the scratchpad.
+    window_terminal: Option<String>,
+    window_files: Option<String>,
 }
 
 fn runtime_file(name: &str) -> PathBuf {
@@ -148,6 +159,61 @@ fn slots<'a>(
     }
 }
 
+/// Mutable access to the "owner window" slot for one scratchpad kind.
+fn window_slot<'a>(s: &'a mut ScratchpadState, kind: &str) -> Option<&'a mut Option<String>> {
+    match kind {
+        "terminal" => Some(&mut s.window_terminal),
+        "files" => Some(&mut s.window_files),
+        _ => None,
+    }
+}
+
+/// Makes sure the state knows which window owns the scratchpad `kind`.
+/// Keeps the recorded owner if it is still alive in the special workspace,
+/// otherwise adopts the first window found there.
+fn claim_scratchpad_window(
+    state: &mut ScratchpadState,
+    kind: &str,
+    target_ws: &str,
+    clients: &[HyprClientRef],
+) {
+    let Some(slot) = window_slot(state, kind) else {
+        return;
+    };
+    let still_there = slot.as_ref().map_or(false, |a| {
+        clients
+            .iter()
+            .any(|c| &c.address == a && c.workspace.name == target_ws)
+    });
+    if !still_there {
+        *slot = clients
+            .iter()
+            .find(|c| c.workspace.name == target_ws)
+            .map(|c| c.address.clone());
+    }
+}
+
+/// Address of the window that owns the scratchpad, falling back to the first
+/// window in the special workspace.
+fn owner_address(kind: &str, target_ws: &str) -> Option<String> {
+    let mut state = load_state();
+    let owner = window_slot(&mut state, kind).and_then(|s| s.clone());
+    let clients: Vec<HyprClientRef> = query_json("clients").unwrap_or_default();
+
+    if let Some(o) = owner {
+        if clients
+            .iter()
+            .any(|c| c.address == o && c.workspace.name == target_ws)
+        {
+            return Some(o);
+        }
+    }
+    clients
+        .into_iter()
+        .find(|c| c.workspace.name == target_ws)
+        .map(|c| c.address)
+}
+
 fn focused_monitor() -> Option<MonitorRef> {
     query_json::<Vec<MonitorRef>>("monitors").ok().and_then(|ms| {
         ms.iter()
@@ -215,18 +281,10 @@ pub fn is_scratchpad_active() -> bool {
     is_special_workspace_open("terminal") || is_special_workspace_open("files")
 }
 
-/// Handles standard terminal launch (SUPER + Return).
-/// If any scratchpad is active on screen, this does nothing to prevent opening an extra terminal.
+/// Handles standard terminal launch (SUPER + Return). Instant execution with zero lag.
 pub fn handle_normal_terminal() -> Result<(), String> {
-    if is_scratchpad_active() {
-        debug("Scratchpad active on screen; suppressing normal terminal launch (SUPER + Return)");
-        return Ok(());
-    }
-
     let term = env::var("TERMINAL").unwrap_or_else(|_| "kitty".to_string());
-    debug(&format!("Launching normal terminal: {term}"));
-    let _ = dispatch(&format!(r#"hl.dsp.exec_cmd("{term}")"#));
-    Ok(())
+    dispatch(&format!(r#"hl.dsp.exec_cmd("{term}")"#))
 }
 
 /// Polls until a client exists in the given workspace, or the timeout passes.
@@ -241,6 +299,22 @@ fn wait_for_client(target_ws: &str, timeout_ms: u64) -> bool {
         thread::sleep(Duration::from_millis(25));
     }
     false
+}
+
+/// Polls until the window `addr` lives on a regular (non-special) workspace.
+fn wait_until_on_regular_workspace(addr: &str, timeout_ms: u64) -> Option<HyprClientRef> {
+    let steps = timeout_ms / 25;
+    for _ in 0..steps {
+        if let Ok(clients) = query_json::<Vec<HyprClientRef>>("clients") {
+            if let Some(c) = clients.into_iter().find(|c| c.address == addr) {
+                if !c.workspace.name.starts_with("special:") {
+                    return Some(c);
+                }
+            }
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+    None
 }
 
 /// Polls until the special workspace `kind` is (or is not) shown on a monitor.
@@ -287,14 +361,14 @@ fn focus_window(addr: &str) -> bool {
     false
 }
 
-/// Moves focus to the scratchpad window once it is on screen.
-fn focus_scratchpad(target_ws: &str) {
+/// Moves focus to the scratchpad's own window once it is on screen.
+fn focus_scratchpad(kind: &str, target_ws: &str) {
     // Park the cursor over the (centered) scratchpad so follow_mouse
     // does not hand focus back to the window underneath.
     let (cx, cy) = get_monitor_center();
     let _ = dispatch(&format!(r#"hl.dsp.cursor.move({{ x = {cx}, y = {cy} }})"#));
 
-    if let Some(addr) = find_client_address(target_ws) {
+    if let Some(addr) = owner_address(kind, target_ws).or_else(|| find_client_address(target_ws)) {
         focus_window(&addr);
     } else {
         debug("no client found to focus");
@@ -366,6 +440,158 @@ pub fn restore_focus_after_scratchpad_closed() {
     restore_previous(None);
 }
 
+// ---------------------------------------------------------------------------
+// Stray windows (e.g. a text editor opened from the file manager)
+// ---------------------------------------------------------------------------
+
+/// Windows of the same class as the scratchpad owner (file manager dialogs such as
+/// Properties, Rename, copy progress) must stay inside the scratchpad.
+/// Extra classes can be kept via NEXA_FILES_KEEP_CLASSES="class1,class2".
+fn is_helper_window(stray_class: &str, owner_class: &str) -> bool {
+    if stray_class.eq_ignore_ascii_case(owner_class) {
+        return true;
+    }
+    if let Ok(list) = env::var("NEXA_FILES_KEEP_CLASSES") {
+        return list
+            .split(',')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .any(|k| k.eq_ignore_ascii_case(stray_class));
+    }
+    false
+}
+
+/// Called by the event daemon on `openwindow>>ADDRESS,WORKSPACE,CLASS,TITLE`.
+/// Pass the raw payload after `>>`. If the new window landed inside the files
+/// scratchpad but is not the file manager itself, it is moved to the regular
+/// workspace underneath, the scratchpad is hidden, and the new window gets focus.
+///
+/// Takes a blocking lock, so a cold launch in progress finishes first (and the
+/// file manager's own window is recognised as the owner).
+pub fn handle_window_opened(event_data: &str) {
+    let raw = event_data.split(',').next().unwrap_or("").trim();
+    if raw.is_empty() {
+        return;
+    }
+    let addr = if raw.starts_with("0x") {
+        raw.to_string()
+    } else {
+        format!("0x{raw}")
+    };
+
+    // Let Hyprland finish placing the window.
+    thread::sleep(Duration::from_millis(60));
+
+    let Some(_guard) = acquire_lock_blocking() else {
+        debug("could not acquire lock for new window handling");
+        return;
+    };
+    adopt_stray_window(&addr);
+}
+
+/// Callers must already hold the scratchpad lock.
+fn adopt_stray_window(addr: &str) {
+    let target_ws = "special:files";
+
+    let clients: Vec<HyprClientRef> = query_json("clients").unwrap_or_default();
+    let Some(stray) = clients.iter().find(|c| c.address == addr) else {
+        return;
+    };
+    if stray.workspace.name != target_ws {
+        return;
+    }
+
+    let mut state = load_state();
+    let owner_addr = match state.window_files.clone() {
+        Some(o) => o,
+        None => {
+            if let Some(owner) = clients
+                .iter()
+                .find(|c| c.workspace.name == target_ws && c.address != addr)
+            {
+                state.window_files = Some(owner.address.clone());
+                save_state(&state);
+                owner.address.clone()
+            } else {
+                debug("no known owner for the files scratchpad; leaving new window alone");
+                return;
+            }
+        }
+    };
+    if owner_addr == addr {
+        return;
+    }
+    let Some(owner) = clients
+        .iter()
+        .find(|c| c.address == owner_addr && c.workspace.name == target_ws)
+    else {
+        debug("files scratchpad owner is gone; leaving new window alone");
+        return;
+    };
+    if is_helper_window(&stray.class, &owner.class) {
+        debug(&format!(
+            "keeping helper window '{}' inside the scratchpad",
+            stray.class
+        ));
+        return;
+    }
+
+    // Destination: the regular workspace that sits underneath the special one.
+    let dest = focused_monitor()
+        .and_then(|m| m.active_workspace)
+        .map(|w| w.id)
+        .filter(|&id| id > 0)
+        .unwrap_or(1);
+
+    debug(&format!(
+        "moving stray window {} ({}) out of the scratchpad to workspace {dest}",
+        addr, stray.class
+    ));
+
+    let was_open = is_special_workspace_open("files");
+
+    if let Err(e) = dispatch(&format!(
+        r#"hl.dsp.window.move({{ workspace = {dest}, follow = false, window = "address:{addr}" }})"#
+    )) {
+        debug(&format!("move failed: {e:?}"));
+        return;
+    }
+
+    if wait_until_on_regular_workspace(addr, 600).is_none() {
+        debug("window did not leave the special workspace");
+        return;
+    }
+
+    // Scratchpad was hidden already: the window is simply out now, nothing else to do.
+    if !was_open {
+        return;
+    }
+
+    // We are deliberately NOT returning focus to the previous window, so drop the
+    // saved restore target. The close event from our own hide then becomes a no-op.
+    if state.active_kind.as_deref() == Some("files") {
+        state.active_kind = None;
+    }
+    state.last_active_files = None;
+    state.last_cursor_files = None;
+    save_state(&state);
+
+    // Hide the scratchpad so the new window is visible straight away.
+    let _ = dispatch(r#"hl.dsp.workspace.toggle_special("files")"#);
+    wait_for_special("files", false, 800);
+
+    // Park the cursor on the new window so follow_mouse does not steal focus,
+    // then focus it.
+    if let Some(c) = wait_until_on_regular_workspace(addr, 400) {
+        if c.at.len() == 2 && c.size.len() == 2 && c.size[0] > 0 && c.size[1] > 0 {
+            let cx = c.at[0] + c.size[0] / 2;
+            let cy = c.at[1] + c.size[1] / 2;
+            let _ = dispatch(&format!(r#"hl.dsp.cursor.move({{ x = {cx}, y = {cy} }})"#));
+        }
+    }
+    focus_window(addr);
+}
+
 /// Public entry point. Serialized with a non-blocking file lock: if another
 /// toggle is already running (including a cold launch waiting for the window
 /// to map), this keypress is ignored. That guarantees at most one scratchpad
@@ -435,7 +661,14 @@ fn toggle_scratchpad_inner(kind: &str) -> Result<(), String> {
 
     let target_ws = format!("special:{kind}");
     let clients: Vec<HyprClientRef> = query_json("clients").unwrap_or_default();
-    let existing = clients.iter().find(|c| c.workspace.name == target_ws).cloned();
+
+    // Identify the window that actually belongs to this scratchpad.
+    claim_scratchpad_window(&mut state, kind, &target_ws, &clients);
+    let owner_addr = window_slot(&mut state, kind).and_then(|s| s.clone());
+    let existing = owner_addr
+        .as_ref()
+        .and_then(|a| clients.iter().find(|c| &c.address == a))
+        .cloned();
     debug(&format!("existing_client={}", existing.is_some()));
 
     if let Some(client) = existing {
@@ -477,6 +710,10 @@ fn toggle_scratchpad_inner(kind: &str) -> Result<(), String> {
         // Let the window finish its first configure and apply its rules.
         thread::sleep(Duration::from_millis(60));
         debug("client mapped");
+
+        // Record the freshly mapped window as the owner of this scratchpad.
+        let fresh: Vec<HyprClientRef> = query_json("clients").unwrap_or_default();
+        claim_scratchpad_window(&mut state, kind, &target_ws, &fresh);
     }
 
     // Mark this scratchpad as the one to restore focus from, then show it.
@@ -493,6 +730,6 @@ fn toggle_scratchpad_inner(kind: &str) -> Result<(), String> {
         return Err(format!("{target_ws} did not become visible"));
     }
 
-    focus_scratchpad(&target_ws);
+    focus_scratchpad(kind, &target_ws);
     Ok(())
 }

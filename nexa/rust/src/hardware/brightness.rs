@@ -1,5 +1,6 @@
 use serde::Serialize;
-use std::process::Command;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Serialize)]
 pub struct BrightnessInfo {
@@ -8,100 +9,144 @@ pub struct BrightnessInfo {
     pub maximum: u64,
 }
 
-fn run_brightnessctl(args: &[&str]) -> Result<String, String> {
-    let output = Command::new("brightnessctl")
-        .args(args)
-        .output()
-        .map_err(|error| format!("failed to execute brightnessctl: {error}"))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-
-        return Err(format!("brightnessctl failed: {}", stderr.trim()));
+/// Discovers the active backlight device under /sys/class/backlight
+fn find_backlight_device() -> Result<PathBuf, String> {
+    let backlight_dir = Path::new("/sys/class/backlight");
+    if !backlight_dir.exists() {
+        return Err("No /sys/class/backlight directory found on system".to_string());
     }
 
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    let entries = fs::read_dir(backlight_dir)
+        .map_err(|e| format!("Failed to read /sys/class/backlight: {e}"))?;
+
+    let mut candidate: Option<PathBuf> = None;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.join("brightness").exists() && path.join("max_brightness").exists() {
+            // If we find an amdgpu or intel device, prioritize it over firmware/acpi
+            let name = path.file_name().unwrap_or_default().to_string_lossy();
+            if name.contains("amdgpu") || name.contains("intel") {
+                return Ok(path);
+            }
+            if candidate.is_none() {
+                candidate = Some(path);
+            }
+        }
+    }
+
+    candidate.ok_or_else(|| "No valid backlight device found under /sys/class/backlight".to_string())
 }
 
+/// Reads current brightness and maximum brightness directly from sysfs
 pub fn info() -> Result<BrightnessInfo, String> {
-    let output = run_brightnessctl(&["-m"])?;
+    let dev = find_backlight_device()?;
 
-    let fields: Vec<&str> = output.split(',').collect();
+    let cur_str = fs::read_to_string(dev.join("brightness"))
+        .map_err(|e| format!("Failed to read brightness from sysfs: {e}"))?;
+    let max_str = fs::read_to_string(dev.join("max_brightness"))
+        .map_err(|e| format!("Failed to read max_brightness from sysfs: {e}"))?;
 
-    if fields.len() < 5 {
-        return Err(format!("unable to parse brightnessctl output: {output}"));
+    let current: u64 = cur_str.trim().parse()
+        .map_err(|e| format!("Failed to parse brightness value '{cur_str}': {e}"))?;
+    let maximum: u64 = max_str.trim().parse()
+        .map_err(|e| format!("Failed to parse max_brightness value '{max_str}': {e}"))?;
+
+    if maximum == 0 {
+        return Err("Invalid max_brightness: 0".to_string());
     }
 
-    let current = fields[2]
-        .parse::<u64>()
-        .map_err(|_| "invalid current brightness".to_string())?;
-
-    let percentage = fields[3]
-        .trim_end_matches('%')
-        .parse::<u32>()
-        .map_err(|_| "invalid brightness percentage".to_string())?;
-
-    let maximum = fields[4]
-        .parse::<u64>()
-        .map_err(|_| "invalid maximum brightness".to_string())?;
+    let percentage = (((current as f64) / (maximum as f64) * 100.0).round() as u32).clamp(1, 100);
 
     Ok(BrightnessInfo {
-        brightness: percentage.min(100),
+        brightness: percentage,
         current,
         maximum,
     })
 }
 
+/// Writes target raw brightness. Tries direct sysfs write first; falls back to systemd login1 D-Bus.
+fn write_raw_brightness(dev: &Path, raw_value: u64) -> Result<(), String> {
+    let brightness_path = dev.join("brightness");
+
+    // 1. Try direct sysfs write (fastest if permissions allow)
+    if let Ok(()) = fs::write(&brightness_path, raw_value.to_string()) {
+        return Ok(());
+    }
+
+    // 2. Fallback: Call org.freedesktop.login1 SetBrightness over system D-Bus via zbus
+    let dev_name = dev
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| "Invalid device path".to_string())?;
+
+    let connection = zbus::blocking::Connection::system()
+        .map_err(|e| format!("Failed to connect to system D-Bus: {e}"))?;
+
+    // Call method: SetBrightness(type: "backlight", device: dev_name, brightness: raw_value as u32)
+    let raw_u32 = raw_value.min(u32::MAX as u64) as u32;
+
+    connection
+        .call_method(
+            Some("org.freedesktop.login1"),
+            "/org/freedesktop/login1/session/auto",
+            Some("org.freedesktop.login1.Session"),
+            "SetBrightness",
+            &("backlight", dev_name, raw_u32),
+        )
+        .map_err(|e| format!("login1 SetBrightness D-Bus call failed: {e}"))?;
+
+    Ok(())
+}
+
+/// Sets screen brightness to a specific percentage (1-100)
 pub fn set(brightness: u32) -> Result<BrightnessInfo, String> {
-    let brightness = brightness.clamp(1, 100);
+    let target_pct = brightness.clamp(1, 100);
+    let dev = find_backlight_device()?;
 
-    let value = format!("{brightness}%");
+    let max_str = fs::read_to_string(dev.join("max_brightness"))
+        .map_err(|e| format!("Failed to read max_brightness from sysfs: {e}"))?;
+    let maximum: u64 = max_str.trim().parse()
+        .map_err(|e| format!("Failed to parse max_brightness value: {e}"))?;
 
-    run_brightnessctl(&["set", &value])?;
+    let raw_target = ((target_pct as f64 / 100.0) * maximum as f64).round() as u64;
+    let raw_target = raw_target.clamp(1, maximum);
 
-    let res = info()?;
+    write_raw_brightness(&dev, raw_target)?;
+
+    let res = BrightnessInfo {
+        brightness: target_pct,
+        current: raw_target,
+        maximum,
+    };
+
     let _ = crate::state::update_state(|s| {
         s.brightness = res.brightness;
     });
+
     Ok(res)
 }
 
+/// Increases screen brightness by percentage amount
 pub fn up(amount: u32) -> Result<BrightnessInfo, String> {
-    let amount = amount.min(100);
-
-    let value = format!("+{amount}%");
-
-    run_brightnessctl(&["set", &value])?;
-
-    let res = info()?;
-    let _ = crate::state::update_state(|s| {
-        s.brightness = res.brightness;
-    });
-    Ok(res)
+    let current_info = info()?;
+    let new_pct = (current_info.brightness + amount).min(100);
+    set(new_pct)
 }
 
+/// Decreases screen brightness by percentage amount
 pub fn down(amount: u32) -> Result<BrightnessInfo, String> {
-    let amount = amount.min(100);
-
-    let value = format!("{amount}%-");
-
-    run_brightnessctl(&["set", &value])?;
-
-    let res = info()?;
-    let _ = crate::state::update_state(|s| {
-        s.brightness = res.brightness;
-    });
-    Ok(res)
+    let current_info = info()?;
+    let new_pct = current_info.brightness.saturating_sub(amount).max(1);
+    set(new_pct)
 }
 
 fn print_json(result: Result<BrightnessInfo, String>) -> Result<(), String> {
     let info = result?;
-
     println!(
         "{}",
         serde_json::to_string(&info).map_err(|error| error.to_string())?
     );
-
     Ok(())
 }
 

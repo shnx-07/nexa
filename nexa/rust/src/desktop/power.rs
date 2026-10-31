@@ -74,6 +74,37 @@ fn shutdown() -> Result<(), String> {
 }
 
 // ============================================================
+// PROFILE
+// ============================================================
+
+fn set_profile(profile: &str) -> Result<(), String> {
+    if run_command("powerprofilesctl", &["set", profile]).is_ok() {
+        return Ok(());
+    }
+
+    let gov = match profile {
+        "power-saver" | "powersave" | "saver" => "powersave",
+        "performance" => "performance",
+        _ => "schedutil",
+    };
+
+    if run_command("cpupower", &["frequency-set", "-g", gov]).is_ok() {
+        return Ok(());
+    }
+
+    if let Ok(entries) = std::fs::read_dir("/sys/devices/system/cpu") {
+        for entry in entries.flatten() {
+            let gov_file = entry.path().join("cpufreq/scaling_governor");
+            if gov_file.exists() {
+                let _ = std::fs::write(gov_file, gov);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+// ============================================================
 // COMMAND HANDLER
 // ============================================================
 
@@ -83,6 +114,17 @@ pub fn handle(args: &[String]) -> Result<(), String> {
     }
 
     match args[0].as_str() {
+        "status" | "info" => crate::hardware::battery::handle(&["status".to_string()]),
+
+        "watch" | "daemon" => crate::hardware::battery::handle(&["watch".to_string()]),
+
+        "profile" => {
+            if args.len() < 2 {
+                return Err("Missing profile name".to_string());
+            }
+            set_profile(&args[1])
+        }
+
         "lock" => lock(),
 
         "suspend" => suspend(),

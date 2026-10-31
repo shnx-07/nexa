@@ -97,6 +97,26 @@ pub fn run_autostart() -> Result<(), String> {
         let _ = spawn_detached("hypridle", &[], &[]);
     }
 
+    // Native power & battery daemon
+    if !is_running_pattern("nexad.*power.*watch") && !is_running_pattern("nexad.*battery.*watch") {
+        let _ = spawn_detached(&nexad_bin, &["power", "watch"], &[]);
+    }
+
+    // Native network & bluetooth watcher
+    if !is_running_pattern("nexad.*network.*watch") {
+        let _ = spawn_detached(&nexad_bin, &["network", "watch"], &[]);
+    }
+
+    // Native system hardware performance monitor
+    if !is_running_pattern("nexad.*system.*monitor.*watch") {
+        let _ = spawn_detached(&nexad_bin, &["system", "monitor", "watch"], &[]);
+    }
+
+    // Native Hyprland event socket daemon (window tracking & scratchpad focus restore)
+    if !is_running_pattern("nexad.*hypr.*daemon") {
+        let _ = spawn_detached(&nexad_bin, &["hypr", "daemon"], &[]);
+    }
+
     println!("[NEXA Autostart] Staged boot sequence completed successfully.");
     Ok(())
 }

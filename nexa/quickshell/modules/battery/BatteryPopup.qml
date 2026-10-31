@@ -3,7 +3,7 @@ import QtQuick.Layouts
 
 import Quickshell
 import Quickshell.Io
-import Quickshell.Services.UPower
+import "../../services" as Services
 
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
@@ -16,52 +16,50 @@ PopupWindow {
     property string currentProfile: "balanced"
 
     // ============================================================
-    // BATTERY SOURCES
-    //
-    // displayDevice:
-    // - percentage
-    // - charging state
-    // - remaining / charging time
-    // - wattage
-    //
-    // physicalBattery:
-    // - battery health
+    // BATTERY STATE (RUST NEXAD BACKEND)
     // ============================================================
 
-    readonly property var battery:
-        UPower.displayDevice
+    property int percent: Services.SystemState.batteryPercentage
+    property bool charging: Services.SystemState.batteryCharging
+    property real watts: 0.0
+    property real health: 100
+    property int timeToFull: 0
+    property int timeToEmpty: 0
 
-    readonly property var physicalBattery: {
-        for (let i = 0; i < UPower.devices.values.length; i++) {
-            const device = UPower.devices.values[i]
-
-            if (device.isLaptopBattery)
-                return device
+    Process {
+        id: batteryStatusProc
+        command: [
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "battery",
+            "status"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const data = JSON.parse(this.text.trim())
+                    root.percent = data.percentage ?? root.percent
+                    root.charging = data.charging ?? root.charging
+                    root.watts = data.power_watts ?? root.watts
+                    root.health = data.health_percentage ?? root.health
+                    root.timeToFull = data.time_to_full ?? 0
+                    root.timeToEmpty = data.time_to_empty ?? 0
+                } catch (e) {}
+            }
         }
+    }
 
-        return null
+    Timer {
+        interval: 3000
+        repeat: true
+        running: root.visible
+        onTriggered: {
+            if (!batteryStatusProc.running) {
+                batteryStatusProc.running = true
+            }
+        }
     }
 
 
-    readonly property int percent:
-        battery && battery.ready
-        ? Math.round(battery.percentage * 100)
-        : 0
-
-    readonly property bool charging:
-        battery && battery.ready
-        && !UPower.onBattery
-
-    readonly property real watts:
-        battery && battery.ready
-        ? Math.abs(battery.changeRate)
-        : 0
-
-    readonly property real health:
-        physicalBattery
-        && physicalBattery.healthSupported
-        ? physicalBattery.healthPercentage
-        : 0
 
 
     implicitWidth: 380
@@ -99,6 +97,9 @@ PopupWindow {
         if (visible) {
             root.animatedPercent = 0
             arcSweepTimer.start()
+            if (!batteryStatusProc.running) {
+                batteryStatusProc.running = true
+            }
         }
     }
 
@@ -161,8 +162,9 @@ PopupWindow {
 
     function setProfile(profile) {
         profileProcess.exec([
-            "powerprofilesctl",
-            "set",
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "power",
+            "profile",
             profile
         ])
 
@@ -417,7 +419,7 @@ PopupWindow {
 
                                 text:
                                     root.charging
-                                    ? "Charging"
+                                    ? (root.percent >= 100 ? "Fully Charged" : "Charging")
                                     : "On battery"
 
                                 color:
@@ -506,10 +508,10 @@ PopupWindow {
                                     text:
                                         root.charging
                                         ? root.formatTime(
-                                            root.battery.timeToFull
+                                            root.timeToFull
                                           )
                                         : root.formatTime(
-                                            root.battery.timeToEmpty
+                                            root.timeToEmpty
                                           )
 
                                     color:
@@ -847,8 +849,7 @@ PopupWindow {
 
                         Text {
                             text:
-                                root.physicalBattery
-                                && root.physicalBattery.healthSupported
+                                root.health > 0
                                 ? Math.round(root.health) + "%"
                                 : "Unavailable"
 
@@ -890,8 +891,7 @@ PopupWindow {
                                 parent.height
 
                             width:
-                                root.physicalBattery
-                                && root.physicalBattery.healthSupported
+                                root.health > 0
                                 ? parent.width
                                   * Math.min(
                                         1,

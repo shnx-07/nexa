@@ -2,8 +2,8 @@ import QtQuick
 
 import Quickshell
 import Quickshell.Io
-import Quickshell.Bluetooth
 
+import "../../services" as Services
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
 import "../status" as Status
@@ -14,54 +14,26 @@ Item {
 
 
     // ============================================================
-    // PUBLIC STATE
+    // PUBLIC STATE (From Rust SystemState)
     // ============================================================
 
-    readonly property var adapter:
-        Bluetooth.defaultAdapter
-
-
     readonly property bool enabled:
-        adapter !== null
-        && adapter.enabled
-
-
-    readonly property var connectedDevice: {
-        for (
-            let device
-            of Bluetooth.devices.values
-        ) {
-            if (device.connected)
-                return device
-        }
-
-        return null
-    }
-
+        Services.SystemState.bluetoothEnabled
 
     readonly property bool connected:
-        connectedDevice !== null
-
+        Services.SystemState.bluetoothConnected
 
     readonly property string connectedDeviceName:
-        connected
-        ? connectedDevice.name
-        : ""
-
+        Services.SystemState.bluetoothDeviceName
 
     readonly property string connectedDeviceType:
-        connected
-        ? connectedDevice.icon
-        : ""
-
+        Services.SystemState.bluetoothDeviceType
 
     readonly property bool popupVisible:
         popupLoader.item ? popupLoader.item.visible : false
 
-
     readonly property string nexad:
-        Quickshell.env("HOME")
-        + "/.config/nexa/rust/target/release/nexad"
+        Services.SystemState.nexadPath
 
 
     // ============================================================

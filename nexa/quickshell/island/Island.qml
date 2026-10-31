@@ -2,12 +2,12 @@ import QtQuick
 import Quickshell.Io
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Services.UPower
 import Quickshell.Bluetooth
 import Quickshell.Networking
 
 import "../theme" as Nexa
 import "../theme/components" as NexaUI
+import "../services" as Services
 
 
 PanelWindow {
@@ -33,7 +33,7 @@ PanelWindow {
     // - Escape close
     //
     // Feature UI DOES NOT belong here.
-    // Clock / music / system / theme / notifications etc.
+    // Clock / music / notifications / quick settings etc.
     // belong in IslandContent.qml or reusable modules.
     // ============================================================
 
@@ -227,11 +227,13 @@ PanelWindow {
         onTriggered: volumeQueryProcess.running = true
     }
 
-    Timer {
-        id: brightnessSyncTimer
-        interval: 120
-        repeat: false
-        onTriggered: brightnessQueryProcess.running = true
+    Connections {
+        target: Services.SystemState
+        function onBrightnessChanged() {
+            if (root.osdType === "brightness" || !root.osdActive) {
+                root.osdValue = Math.max(0.01, Math.min(1.0, Services.SystemState.brightness / 100.0))
+            }
+        }
     }
 
     Timer {
@@ -267,24 +269,6 @@ PanelWindow {
         }
     }
 
-    Process {
-        id: brightnessQueryProcess
-        command: ["brightnessctl", "-m"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const parts = this.text.trim().split(",")
-                if (parts.length >= 4 && parts[3].endsWith("%")) {
-                    const pct = parseFloat(parts[3].replace("%", ""))
-                    if (!isNaN(pct)) {
-                        if (root.osdType === "brightness" || !root.osdActive) {
-                            root.osdValue = Math.max(0.0, Math.min(1.0, pct / 100.0))
-                        }
-                        statePersistDebounceTimer.restart()
-                    }
-                }
-            }
-        }
-    }
 
     Process {
         id: airplaneToggleProcess
@@ -367,8 +351,12 @@ PanelWindow {
         root.osdValue = Math.min(1.0, root.osdValue + 0.05)
         root.osdActive = true
         osdDismissTimer.restart()
-        Quickshell.execDetached(["brightnessctl", "-e4", "-n2", "set", "5%+"])
-        brightnessSyncTimer.restart()
+        Quickshell.execDetached([
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "brightness",
+            "up",
+            "5"
+        ])
     }
 
     function triggerBrightnessDown(): void {
@@ -377,8 +365,12 @@ PanelWindow {
         root.osdValue = Math.max(0.01, root.osdValue - 0.05)
         root.osdActive = true
         osdDismissTimer.restart()
-        Quickshell.execDetached(["brightnessctl", "-e4", "-n2", "set", "5%-"])
-        brightnessSyncTimer.restart()
+        Quickshell.execDetached([
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "brightness",
+            "down",
+            "5"
+        ])
     }
 
     Timer {
@@ -431,15 +423,8 @@ PanelWindow {
     }
 
     // ============================================================
-    // BATTERY HARDWARE WATCHER (APPLE MAGSAFE STYLE)
+    // BATTERY HARDWARE OSD (DRIVEN NATIVELY BY RUST DAEMON)
     // ============================================================
-
-    readonly property var batteryDevice: UPower.displayDevice
-    readonly property bool batteryReady: batteryDevice && batteryDevice.ready
-    readonly property bool onBattery: UPower.onBattery
-    property bool batteryInitialized: false
-    property bool lowBatteryWarned: false
-    property bool batteryFullWarned: false
 
     function triggerBatteryOsd(charging: bool, pct: int): void {
         if (root.full || root.specialModeActive) return
@@ -451,11 +436,6 @@ PanelWindow {
         root.osdActive = true
         osdDismissTimer.interval = 2600
         osdDismissTimer.restart()
-        if (charging) {
-            Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "charging_cable_insert"])
-        } else {
-            Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "charging_cable_remove"])
-        }
     }
 
     function triggerLowBatteryAlert(pct: int): void {
@@ -468,80 +448,6 @@ PanelWindow {
         root.osdActive = true
         osdDismissTimer.interval = 5000
         osdDismissTimer.restart()
-        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "low_battery"])
-    }
-
-    function checkBatteryLevel(): void {
-        if (!root.batteryInitialized || !root.batteryReady) return
-        const pct = Math.round(batteryDevice.percentage * 100)
-
-        if (root.onBattery && pct <= 25) {
-            if (!root.lowBatteryWarned) {
-                root.lowBatteryWarned = true
-                root.triggerLowBatteryAlert(pct)
-            }
-        } else if (!root.onBattery) {
-            root.lowBatteryWarned = false
-            if (pct >= 100) {
-                if (!root.batteryFullWarned) {
-                    root.batteryFullWarned = true
-                    Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "Full-battery-charge"])
-                }
-            } else {
-                root.batteryFullWarned = false
-            }
-        } else if (pct > 30) {
-            root.lowBatteryWarned = false
-        }
-    }
-
-    function applyPowerState(onBat: bool): void {
-        if (onBat) {
-            Quickshell.execDetached(["powerprofilesctl", "set", "power-saver"])
-            Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false } } })"])
-        } else {
-            Quickshell.execDetached(["powerprofilesctl", "set", "balanced"])
-            Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { blur = { enabled = true }, shadow = { enabled = true } } })"])
-        }
-    }
-
-    Timer {
-        id: batteryInitTimer
-        interval: 2000
-        running: true
-        repeat: false
-        onTriggered: {
-            root.batteryInitialized = true
-            root.applyPowerState(root.onBattery)
-            root.checkBatteryLevel()
-        }
-    }
-
-    Connections {
-        target: root.batteryReady ? root.batteryDevice : null
-
-        function onPercentageChanged() {
-            root.checkBatteryLevel()
-        }
-    }
-
-    onOnBatteryChanged: {
-        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "hypr", "idle", "sync"])
-        if (!root.batteryInitialized || !root.batteryReady) return
-        const pct = Math.round(batteryDevice.percentage * 100)
-        root.applyPowerState(root.onBattery)
-
-        if (root.onBattery && pct <= 25) {
-            if (!root.lowBatteryWarned) {
-                root.lowBatteryWarned = true
-                root.triggerLowBatteryAlert(pct)
-            }
-        } else {
-            if (!root.onBattery) {
-                root.lowBatteryWarned = false
-            }
-            root.triggerBatteryOsd(!root.onBattery, pct)
-        }
     }
 
 
@@ -599,6 +505,7 @@ PanelWindow {
         else if (devIcon.includes("keyboard")) iconName = "󰌌"
         else if (devIcon.includes("phone")) iconName = "󰏲"
         else if (devIcon.includes("gamepad") || devIcon.includes("controller")) iconName = "󰊖"
+        else if (device.icon && device.icon.length > 0) iconName = device.icon
         root.osdIcon = iconName
 
         let batt = 0
@@ -826,8 +733,8 @@ PanelWindow {
             root.triggerNumLockOsd(enabled)
         }
 
-        function triggerBatteryOsd(charging: bool, pct: int): void {
-            root.triggerBatteryOsd(charging, pct)
+        function triggerBatteryOsd(charging: string, pct: int): void {
+            root.triggerBatteryOsd(charging === "true" || charging === "1", pct)
         }
 
         function triggerLowBatteryAlert(pct: int): void {
@@ -835,16 +742,22 @@ PanelWindow {
         }
 
         function triggerBluetoothOsd(name: string, icon: string): void {
+            let batt = Services.SystemState.bluetoothDeviceBattery
             root.triggerBluetoothOsd({
-                name: name || "AirPods Pro",
-                icon: icon || "audio-headset",
-                batteryAvailable: true,
-                batteryPercentage: 94
+                name: (name && name.length > 0) ? name : (Services.SystemState.bluetoothDeviceName || "Bluetooth Device"),
+                icon: (icon && icon.length > 0) ? icon : (Services.SystemState.bluetoothDeviceType || "audio-headset"),
+                batteryAvailable: batt > 0,
+                batteryPercentage: batt > 0 ? batt : 0
             })
         }
 
-        function triggerWifiOsd(ssid: string, strength: int, hasInternet: bool): void {
-            root.triggerWifiOsd(ssid || "Home_5G", strength || 92, hasInternet !== false)
+        function triggerWifiOsd(ssid: string, strength: int, hasInternet: string): void {
+            const hasNet = (hasInternet === "true" || hasInternet === "1")
+            root.triggerWifiOsd(
+                (ssid && ssid.length > 0) ? ssid : (Services.SystemState.wifiSsid || "Wi-Fi Network"),
+                strength > 0 ? strength : (Services.SystemState.wifiSignal || 80),
+                hasNet
+            )
         }
 
         function volumeUp(): void {
@@ -1099,6 +1012,8 @@ PanelWindow {
                 return root.osdBatteryWidth
             if (root.osdType === "battery_low")
                 return root.osdBluetoothWidth
+            if (root.osdType === "bluetooth")
+                return root.osdBluetoothWidth
             if (root.osdType === "wifi")
                 return root.osdWifiWidth
             if (root.osdType === "capslock" || root.osdType === "numlock")
@@ -1148,6 +1063,8 @@ PanelWindow {
             if (root.osdType === "battery")
                 return root.osdBatteryHeight
             if (root.osdType === "battery_low")
+                return root.osdBluetoothHeight
+            if (root.osdType === "bluetooth")
                 return root.osdBluetoothHeight
             if (root.osdType === "wifi")
                 return root.osdWifiHeight
@@ -1573,6 +1490,15 @@ PanelWindow {
               onRequestCloseSpecialMode:
                   root.closeIsland()
 
+              onRequestOpenControlCenter: page => {
+                  root.openControlCenter(page)
+              }
+
+              onRequestOpenClockSection: {
+                  root.full = true
+                  root.hovered = false
+                  islandFocus.forceActiveFocus()
+              }
 
               onNotificationPreviewActivated: {
                   Quickshell.execDetached([
@@ -1594,7 +1520,9 @@ PanelWindow {
     Component.onCompleted: {
         volumeQueryProcess.running = true
         micQueryProcess.running = true
-        brightnessQueryProcess.running = true
         airplaneQueryProcess.running = true
+        if (Services.SystemState.brightness > 0) {
+            root.osdValue = Math.max(0.01, Math.min(1.0, Services.SystemState.brightness / 100.0))
+        }
     }
 }

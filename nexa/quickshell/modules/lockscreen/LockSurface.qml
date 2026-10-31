@@ -7,7 +7,6 @@ import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
-import Quickshell.Services.UPower
 
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
@@ -119,10 +118,9 @@ Item {
     // SYSTEM TELEMETRY (BATTERY / HOST)
     // ============================================================
 
-    readonly property var batteryDev: UPower.displayDevice
-    readonly property bool batteryAvailable: batteryDev && batteryDev.isBattery
-    readonly property int batteryPct: batteryDev ? Math.round(batteryDev.percentage * 100) : 100
-    readonly property bool isCharging: batteryDev ? (batteryDev.charging || !UPower.onBattery) : false
+    readonly property bool batteryAvailable: true
+    readonly property int batteryPct: Services.SystemState.batteryPercentage
+    readonly property bool isCharging: Services.SystemState.batteryCharging
 
     function suspendSystem() {
         Quickshell.execDetached(["systemctl", "suspend"])

@@ -186,9 +186,17 @@ PanelWindow {
                 }
 
                 BarPill {
-                    id: networkPill
+                    id: wifiPill
                     visible: Services.BarConfig.showNetwork
-                    NetworkModule.Network {}
+                    extraWidth: 0
+                    NetworkModule.Wifi {}
+                }
+
+                BarPill {
+                    id: bluetoothPill
+                    visible: Services.BarConfig.showNetwork
+                    extraWidth: 0
+                    NetworkModule.Bluetooth {}
                 }
 
                 BarPill {
@@ -284,7 +292,21 @@ PanelWindow {
                     border.width: Nexa.Theme.borderThin
                     border.color: Nexa.Theme.border
 
-                    NetworkModule.Network {
+                    NetworkModule.Wifi {
+                        anchors.centerIn: parent
+                    }
+                }
+
+                Rectangle {
+                    visible: Services.BarConfig.showNetwork
+                    width: Nexa.Theme.controlHeightSm
+                    height: Nexa.Theme.controlHeightSm
+                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
+                    color: Nexa.Theme.surfaceContainer
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.border
+
+                    NetworkModule.Bluetooth {
                         anchors.centerIn: parent
                     }
                 }

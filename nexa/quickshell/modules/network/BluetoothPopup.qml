@@ -4,8 +4,8 @@ import QtQuick.Layouts
 
 import Quickshell
 import Quickshell.Io
-import Quickshell.Bluetooth
 
+import "../../services" as Services
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
 
@@ -25,13 +25,10 @@ PopupWindow {
     property int postActionPolls: 0
 
     readonly property string nexad:
-        Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
-
-    readonly property var adapter:
-        Bluetooth.defaultAdapter
+        Services.SystemState.nexadPath
 
     readonly property bool enabled:
-        root.adapter !== null && root.adapter.enabled
+        Services.SystemState.bluetoothEnabled
 
     property bool optimisticEnabled: root.enabled
 
@@ -39,8 +36,7 @@ PopupWindow {
         root.optimisticEnabled = root.enabled
     }
 
-    readonly property bool scanning:
-        root.adapter !== null && root.adapter.discovering
+    property bool scanning: false
 
     // Device Groups from BlueZ / nexad
     readonly property var connectedDevices:
@@ -171,16 +167,18 @@ PopupWindow {
         if (actionProcess.running) return
         const nextState = !root.optimisticEnabled
         root.optimisticEnabled = nextState
-        if (root.adapter && root.adapter.enabled && root.adapter.discovering) {
-            root.adapter.discovering = false
+        if (root.scanning) {
+            root.scanning = false
         }
         runBluetooth([nextState ? "on" : "off"], "toggle")
     }
 
     function toggleDiscovery() {
-        if (!root.adapter || !root.adapter.enabled) return
-        root.adapter.discovering = !root.adapter.discovering
-        if (root.adapter.discovering) {
+        if (!root.enabled) return
+        const nextScan = !root.scanning
+        root.scanning = nextScan
+        runBluetooth(["scan", nextScan ? "on" : "off"], "scan")
+        if (nextScan) {
             root.refreshInfo()
         }
     }

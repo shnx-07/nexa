@@ -175,6 +175,24 @@ pub fn handle(args: &[String]) {
             }
         },
 
+        // ====================================================
+        // SYSTEM MONITOR & HISTORY
+        // ====================================================
+        "monitor" => match args[1].as_str() {
+            "history" => crate::hardware::system_monitor::get_cached_history().and_then(print_json),
+            "current" => {
+                let mut sampler = crate::hardware::system_monitor::SystemSampler::new();
+                std::thread::sleep(std::time::Duration::from_millis(150));
+                let snap = sampler.sample();
+                print_json(snap)
+            }
+            "watch" | "daemon" => crate::hardware::system_monitor::run_watch(),
+            _ => {
+                print_usage();
+                return;
+            }
+        },
+
         _ => {
             print_usage();
             return;

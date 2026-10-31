@@ -46,6 +46,39 @@ pub struct SettingsState {
     #[serde(default)]
     pub dnd: bool,
 
+    #[serde(default)]
+    pub battery_percentage: u32,
+
+    #[serde(default)]
+    pub battery_charging: bool,
+
+    #[serde(default)]
+    pub on_battery: bool,
+
+    #[serde(default)]
+    pub wifi_connected: bool,
+
+    #[serde(default)]
+    pub wifi_ssid: String,
+
+    #[serde(default)]
+    pub wifi_signal: u8,
+
+    #[serde(default = "default_true")]
+    pub wifi_has_internet: bool,
+
+    #[serde(default)]
+    pub bluetooth_connected: bool,
+
+    #[serde(default)]
+    pub bluetooth_device_name: String,
+
+    #[serde(default)]
+    pub bluetooth_device_type: String,
+
+    #[serde(default = "default_minus_one")]
+    pub bluetooth_device_battery: i32,
+
     #[serde(default = "current_timestamp")]
     pub timestamp: u64,
 }
@@ -78,6 +111,9 @@ fn default_nightlight_temp() -> u32 {
 fn default_filter() -> String {
     "off".to_string()
 }
+fn default_minus_one() -> i32 {
+    -1
+}
 
 impl Default for SettingsState {
     fn default() -> Self {
@@ -95,6 +131,17 @@ impl Default for SettingsState {
             nightlight_temperature: default_nightlight_temp(),
             screen_filter: default_filter(),
             dnd: false,
+            battery_percentage: 100,
+            battery_charging: false,
+            on_battery: false,
+            wifi_connected: false,
+            wifi_ssid: String::new(),
+            wifi_signal: 0,
+            wifi_has_internet: true,
+            bluetooth_connected: false,
+            bluetooth_device_name: String::new(),
+            bluetooth_device_type: String::new(),
+            bluetooth_device_battery: -1,
             timestamp: current_timestamp(),
         }
     }
@@ -169,41 +216,30 @@ pub fn sync_from_system() -> SettingsState {
         state.brightness = info.brightness;
     }
 
+    // Battery & Power State
+    if let Ok(bat) = crate::hardware::battery::status() {
+        state.battery_percentage = bat.percentage;
+        state.battery_charging = bat.charging;
+        state.on_battery = bat.on_battery;
+    }
+
     // 4. Bluetooth State
-    let bt_enabled = Command::new("bluetoothctl")
-        .args(["show"])
-        .output()
-        .map(|out| {
-            let s = String::from_utf8_lossy(&out.stdout);
-            s.contains("Powered: yes")
-        })
-        .unwrap_or_else(|_| {
-            crate::network::NetworkService::new()
-                .bluetooth_info()
-                .map(|i| i.enabled)
-                .unwrap_or(state.bluetooth_enabled)
-        });
-    state.bluetooth_enabled = bt_enabled;
+    let net_svc = crate::network::NetworkService::new();
+    if let Ok(info) = net_svc.bluetooth_info() {
+        state.bluetooth_enabled = info.enabled;
+        let connected_dev = info.devices.iter().find(|d| d.connected);
+        state.bluetooth_connected = connected_dev.is_some();
+        state.bluetooth_device_name = connected_dev.map(|d| d.name.clone()).unwrap_or_default();
+        state.bluetooth_device_type = connected_dev.map(|d| d.device_type.clone()).unwrap_or_default();
+    }
 
     // 5. WiFi State
-    let wifi_enabled = Command::new("nmcli")
-        .args(["radio", "wifi"])
-        .output()
-        .map(|out| {
-            let s = String::from_utf8_lossy(&out.stdout);
-            s.trim() == "enabled"
-        })
-        .unwrap_or_else(|_| {
-            Command::new("rfkill")
-                .args(["list", "wifi"])
-                .output()
-                .map(|out| {
-                    let s = String::from_utf8_lossy(&out.stdout);
-                    !s.contains("Soft blocked: yes") && !s.contains("Hard blocked: yes")
-                })
-                .unwrap_or(state.wifi_enabled)
-        });
-    state.wifi_enabled = wifi_enabled;
+    if let Ok(wifi) = net_svc.wifi_info() {
+        state.wifi_enabled = wifi.enabled;
+        state.wifi_connected = wifi.connected;
+        state.wifi_ssid = wifi.ssid;
+        state.wifi_signal = wifi.signal;
+    }
 
     // 6. Airplane Mode
     let airplane_state = crate::system::load_state();
@@ -306,9 +342,7 @@ pub fn restore_all(force: bool) -> Result<(), String> {
         .status();
 
     // 4. Screen Brightness
-    let _ = Command::new("brightnessctl")
-        .args(["set", &format!("{}%", state.brightness.clamp(1, 100))])
-        .status();
+    let _ = crate::brightness::set(state.brightness);
 
     // 5. Screen Temperature / Night Light
     let mut st = crate::screenTemp::load_state();

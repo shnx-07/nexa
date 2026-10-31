@@ -52,6 +52,43 @@ hl.bind(MOD .. " + SHIFT + T", hl.dsp.window.float({ action = "toggle" }))
 -- Automatically slides away the terminal scratchpad (mutual exclusion).
 hl.bind(MOD .. " + E", hl.dsp.exec_cmd(nexad .. " hypr scratchpad files"))
 
+-- Auto-adopt any external app opened from Dolphin to the regular workspace
+local function is_file_manager(cls, icls)
+	local c = tostring(cls or ""):lower()
+	local ic = tostring(icls or ""):lower()
+	return c:find("dolphin") ~= nil
+		or c:find("nemo") ~= nil
+		or c:find("thunar") ~= nil
+		or c:find("nautilus") ~= nil
+		or c:find("yazi") ~= nil
+		or ic:find("dolphin") ~= nil
+		or ic:find("nemo") ~= nil
+		or ic:find("thunar") ~= nil
+		or ic:find("nautilus") ~= nil
+		or ic:find("yazi") ~= nil
+end
+
+hl.on("window.open", function(win)
+	local addr = win and win.address and tostring(win.address)
+	if not addr then
+		return
+	end
+
+	hl.timer(function()
+		for _, w in ipairs(hl.get_windows() or {}) do
+			if tostring(w.address) == addr then
+				local ws = w.workspace and tostring(w.workspace.name or "") or ""
+				if ws == "special:files" and not is_file_manager(w.class, w.initial_class or w.initialClass) and tostring(w.class or "") ~= "" then
+					hl.dispatch(hl.dsp.window.move({ workspace = "m+0", window = "address:" .. addr }))
+					hl.dispatch(hl.dsp.workspace.toggle_special("files"))
+					hl.dispatch(hl.dsp.focus({ window = "address:" .. addr }))
+				end
+				break
+			end
+		end
+	end, { timeout = 50, type = "oneshot" })
+end)
+
 -- Standard application shortcuts
 hl.bind(MOD .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(MOD .. " + M", hl.dsp.exec_cmd(music))

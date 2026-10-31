@@ -10,6 +10,8 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
 use std::process::Command;
+use std::thread;
+use std::time::Duration;
 
 /// Resolves the Hyprland UNIX domain command socket path.
 /// `$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket.sock`
@@ -113,24 +115,48 @@ pub fn query_json<T: for<'de> serde::Deserialize<'de>>(section: &str) -> Result<
 
 /// Listens to Hyprland's real-time event socket (.socket2.sock).
 pub fn run_daemon() -> Result<(), String> {
-    let socket_path = get_event_socket_path()
-        .ok_or_else(|| "Could not locate Hyprland event socket (.socket2.sock)".to_string())?;
+    loop {
+        let socket_path = match get_event_socket_path() {
+            Some(p) => p,
+            None => {
+                thread::sleep(Duration::from_secs(1));
+                continue;
+            }
+        };
 
-    println!("[NEXA Hypr Daemon] Connecting to event socket at {:?}", socket_path);
-    let stream = UnixStream::connect(&socket_path)
-        .map_err(|e| format!("Failed to connect to .socket2.sock: {e}"))?;
+        let stream = match UnixStream::connect(&socket_path) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("[NEXA Hypr Daemon] Failed to connect to .socket2.sock: {e}; retrying in 1s...");
+                thread::sleep(Duration::from_secs(1));
+                continue;
+            }
+        };
 
-    println!("[NEXA Hypr Daemon] Listening for window & workspace events...");
-    let reader = BufReader::new(stream);
+        println!("[NEXA Hypr Daemon] Listening for window & workspace events on {:?}...", socket_path);
+        let reader = BufReader::new(stream);
 
-    for line in reader.lines() {
-        if let Ok(l) = line {
-            // Reserved for future lightweight telemetry
-            let _ = l;
+        for line in reader.lines() {
+            if let Ok(l) = line {
+                if let Some((event, data)) = l.trim().split_once(">>") {
+                    match event {
+                        "openwindow" => {
+                            let data = data.to_string();
+                            std::thread::spawn(move || binds::handle_window_opened(&data));
+                        }
+                        "activespecial" => {
+                            if data.starts_with(',') {
+                                std::thread::spawn(|| binds::restore_focus_after_scratchpad_closed());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
         }
-    }
 
-    Ok(())
+        thread::sleep(Duration::from_millis(500));
+    }
 }
 
 /// Entry point for `nexad hypr <subcommand>` CLI
@@ -318,4 +344,3 @@ pub fn handle_command(args: &[String]) {
         }
     }
 }
-

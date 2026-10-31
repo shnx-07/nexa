@@ -2,8 +2,8 @@ import QtQuick
 
 import Quickshell
 import Quickshell.Io
-import Quickshell.Networking
 
+import "../../services" as Services
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
 import "../status" as Status
@@ -14,62 +14,26 @@ Item {
 
 
     // ============================================================
-    // PUBLIC STATE
+    // PUBLIC STATE (From Rust SystemState)
     // ============================================================
 
-    readonly property var device: {
-        for (let d of Networking.devices.values) {
-            if (d.type === DeviceType.Wifi)
-                return d
-        }
-
-        return null
-    }
-
-
-    readonly property var network: {
-        if (!device)
-            return null
-
-        for (let n of device.networks.values) {
-            if (n.connected)
-                return n
-        }
-
-        return null
-    }
-
-
     readonly property bool enabled:
-        Networking.wifiEnabled
-        && Networking.wifiHardwareEnabled
-
+        Services.SystemState.wifiEnabled
 
     readonly property bool connected:
-        device !== null
-        && device.connected
-        && network !== null
-
+        Services.SystemState.wifiConnected
 
     readonly property string ssid:
-        connected && network
-        ? network.name
-        : ""
-
+        Services.SystemState.wifiSsid
 
     readonly property int strength:
-        connected
-        ? Math.round(network.signalStrength * 100)
-        : 0
-
+        Services.SystemState.wifiSignal
 
     readonly property bool popupVisible:
         popup.visible
 
-
     readonly property string nexad:
-        Quickshell.env("HOME")
-        + "/.config/nexa/rust/target/release/nexad"
+        Services.SystemState.nexadPath
 
 
     // ============================================================

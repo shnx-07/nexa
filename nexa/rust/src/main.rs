@@ -10,7 +10,7 @@ pub mod services;
 // Re-exports so internal code and CLI commands continue to work seamlessly
 pub use core::{state, system};
 pub use desktop::{island, lock, power, shelf, workspace};
-pub use hardware::{audio, brightness, network, screenFilter, screenTemp, sound};
+pub use hardware::{audio, battery, brightness, network, screenFilter, screenTemp, sound};
 pub use media_tools::{media, recorder, screenshot, slideshow, snipping, wallpaper};
 pub use services::{
     appLauncher, clipboard, command, commandSearch, notifications, search, weather,
@@ -366,6 +366,16 @@ fn main() {
         }
 
         "network" => {
+            if args.len() < 3 {
+                print_usage();
+                return;
+            }
+            if args[2] == "watch" || args[2] == "daemon" {
+                if let Err(e) = network::run_watch() {
+                    eprintln!("Network watcher failed: {e}");
+                }
+                return;
+            }
             if args.len() < 4 {
                 print_usage();
                 return;
@@ -784,6 +794,12 @@ fn main() {
                 return;
             }
             if let Err(error) = power::handle(&args[2..]) {
+                eprintln!("{error}");
+            }
+        }
+
+        "battery" => {
+            if let Err(error) = battery::handle(&args[2..]) {
                 eprintln!("{error}");
             }
         }

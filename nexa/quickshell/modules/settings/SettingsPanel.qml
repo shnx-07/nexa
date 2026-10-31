@@ -23,7 +23,7 @@ Item {
     Keys.onEscapePressed: root.close()
 
     property string tab: "profile"
-    readonly property var tabs: ["profile", "sound", "display", "power", "bars", "motion", "lock", "system"]
+    readonly property var tabs: ["profile", "performance", "sound", "display", "power", "bars", "motion", "lock", "system"]
     function rad(n) {
         if (Nexa.Theme.nexaRounding === 0) return 0;
         return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
@@ -52,7 +52,7 @@ Item {
     }
 
     function openTab(which) {
-        if (which === "system" || which === "profile" || which === "sound" || which === "display" || which === "bars" || which === "motion" || which === "lock" || which === "power")
+        if (which === "performance" || which === "system" || which === "profile" || which === "sound" || which === "display" || which === "bars" || which === "motion" || which === "lock" || which === "power")
             tab = which;
         else
             tab = "profile";
@@ -303,6 +303,46 @@ Item {
                                 font.pixelSize: 14
                                 font.weight: root.tab === "profile" ? Font.Bold : Font.Medium
                                 color: root.tab === "profile" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                            }
+                        }
+                    }
+
+                    // Nav Option 1.2: Performance
+                    ClickableRect {
+                        id: perfNavBtn
+                        anchors.left: parent.left
+                        anchors.leftMargin: 6
+                        width: parent.width - 26
+                        height: 42
+                        radius: root.rad(10)
+                        color: root.tab === "performance"
+                            ? Nexa.Theme.primaryContainer
+                            : (perfNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
+                        border.width: root.tab === "performance" ? 1.5 : 1
+                        border.color: root.tab === "performance" ? Nexa.Theme.primary : (perfNavBtn.hovered ? Nexa.Theme.border : "transparent")
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.tab = "performance"
+
+                        Row {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 12
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "󰍛"
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 18
+                                color: root.tab === "performance" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                            }
+
+                            StyledText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Performance"
+                                font.pixelSize: 14
+                                font.weight: root.tab === "performance" ? Font.Bold : Font.Medium
+                                color: root.tab === "performance" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
                             }
                         }
                     }
@@ -633,6 +673,7 @@ Item {
                         StyledText {
                             text: {
                                 if (root.tab === "profile") return "Profile";
+                                if (root.tab === "performance") return "System Performance";
                                 if (root.tab === "sound") return "Sound & Audio";
                                 if (root.tab === "display") return "Display Settings";
                                 if (root.tab === "power") return "Power & Sleep Settings";
@@ -649,6 +690,7 @@ Item {
                         StyledText {
                             text: {
                                 if (root.tab === "profile") return "User account & system identity";
+                                if (root.tab === "performance") return "Live resource metrics, historical telemetry & active process monitor";
                                 if (root.tab === "sound") return "Hardware output, microphone monitor & desktop acoustic effects";
                                 if (root.tab === "display") return "Display layout, resolution & scaling";
                                 if (root.tab === "power") return "Battery, screen backlight timeouts & sleep behaviors";
@@ -790,6 +832,7 @@ Item {
                         anchors.fill: parent
                         sourceComponent: {
                             if (root.tab === "profile") return profileTabComponent;
+                            if (root.tab === "performance") return performanceTabComponent;
                             if (root.tab === "sound") return soundTabComponent;
                             if (root.tab === "display") return displayTabComponent;
                             if (root.tab === "power") return powerTabComponent;
@@ -822,6 +865,13 @@ Item {
             onOpenLockTab: {
                 root.tab = "lock";
             }
+        }
+    }
+
+    Component {
+        id: performanceTabComponent
+        PerformanceSettings {
+            onRequestClose: root.close()
         }
     }
 

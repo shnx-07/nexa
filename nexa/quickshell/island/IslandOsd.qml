@@ -53,6 +53,10 @@ Item {
             return Nexa.Theme.warning
         case "airplane":
             return root.airplaneEnabled ? Nexa.Theme.info : Nexa.Theme.mutedText
+        case "bluetooth":
+            return (root.subtitle === "Turned Off" || root.subtitle === "Disconnected") ? Nexa.Theme.mutedText : Nexa.Theme.info
+        case "wifi":
+            return root.hasInternet ? Nexa.Theme.info : Nexa.Theme.warning
         case "capslock":
         case "numlock":
             return root.lockEnabled ? Nexa.Theme.success : Nexa.Theme.mutedText

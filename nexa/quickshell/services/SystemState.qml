@@ -21,6 +21,17 @@ Item {
     property int nightlightTemperature: 5000
     property string screenFilter: "off"
     property bool dnd: false
+    property int batteryPercentage: 100
+    property bool batteryCharging: false
+    property bool onBattery: false
+    property bool wifiConnected: false
+    property string wifiSsid: ""
+    property int wifiSignal: 0
+    property bool wifiHasInternet: true
+    property bool bluetoothConnected: false
+    property string bluetoothDeviceName: ""
+    property string bluetoothDeviceType: ""
+    property int bluetoothDeviceBattery: -1
     property real timestamp: 0
 
     readonly property string statePath: Quickshell.env("HOME") + "/.config/nexa/config/settings-state.json"
@@ -32,9 +43,20 @@ Item {
         path: root.statePath
         watchChanges: true
 
+        onFileChanged: {
+            stateFile.reload()
+        }
+
         onLoaded: {
             root.parseState(stateFile.text())
         }
+    }
+
+    Timer {
+        interval: 3000
+        repeat: true
+        running: true
+        onTriggered: stateFile.reload()
     }
 
     function parseState(raw) {
@@ -56,6 +78,17 @@ Item {
                 root.nightlightTemperature = data.nightlight_temperature ?? root.nightlightTemperature
                 root.screenFilter = data.screen_filter ?? root.screenFilter
                 root.dnd = data.dnd ?? root.dnd
+                root.batteryPercentage = data.battery_percentage ?? root.batteryPercentage
+                root.batteryCharging = data.battery_charging ?? root.batteryCharging
+                root.onBattery = data.on_battery ?? root.onBattery
+                root.wifiConnected = data.wifi_connected ?? root.wifiConnected
+                root.wifiSsid = data.wifi_ssid ?? root.wifiSsid
+                root.wifiSignal = data.wifi_signal ?? root.wifiSignal
+                root.wifiHasInternet = data.wifi_has_internet ?? root.wifiHasInternet
+                root.bluetoothConnected = data.bluetooth_connected ?? root.bluetoothConnected
+                root.bluetoothDeviceName = data.bluetooth_device_name ?? root.bluetoothDeviceName
+                root.bluetoothDeviceType = data.bluetooth_device_type ?? root.bluetoothDeviceType
+                root.bluetoothDeviceBattery = data.bluetooth_device_battery ?? root.bluetoothDeviceBattery
             }
         } catch (e) {
             // Ignore partial/in-flight reads safely without throwing errors
