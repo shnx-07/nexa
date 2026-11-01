@@ -14,7 +14,7 @@ use std::{
 pub struct SlideshowConfig {
     pub enabled: bool,
     pub paused: bool,
-    pub interval: String,     // "5m", "10m", "15m", "30m", "1h"
+    pub interval: String,     // "1m", "5m", "10m", "15m", "30m", "1h"
     pub type_filter: String,  // "All", "Image", "GIF", "Video"
     pub apply_target: String, // "Background", "Lock Screen", "Both"
     #[serde(default)]
@@ -33,7 +33,7 @@ impl Default for SlideshowConfig {
             apply_target: "Background".to_string(),
             last_wallpaper: String::new(),
             last_changed: 0,
-        }
+            }
     }
 }
 
@@ -59,15 +59,6 @@ fn config_path() -> PathBuf {
         .join("nexa")
         .join("config")
         .join("slideshow.json")
-}
-
-#[allow(dead_code)]
-fn apply_script_path() -> PathBuf {
-    home_dir()
-        .join(".config")
-        .join("nexa")
-        .join("scripts")
-        .join("wallpaper.sh")
 }
 
 fn last_wallpaper_cache_path() -> PathBuf {
@@ -110,10 +101,6 @@ pub fn save_config(cfg: &SlideshowConfig) -> Result<(), String> {
     Ok(())
 }
 
-// ============================================================
-// RANDOM NUMBER GENERATOR (NO EXTERNAL CRATE)
-// ============================================================
-
 fn random_index(max: usize) -> usize {
     if max <= 1 {
         return 0;
@@ -129,10 +116,6 @@ fn random_index(max: usize) -> usize {
     (x as usize) % max
 }
 
-// ============================================================
-// FILE CLASSIFICATION
-// ============================================================
-
 fn classify_type(path: &Path) -> Option<&'static str> {
     let ext = path.extension()?.to_str()?.to_lowercase();
     match ext.as_str() {
@@ -142,10 +125,6 @@ fn classify_type(path: &Path) -> Option<&'static str> {
         _ => None,
     }
 }
-
-// ============================================================
-// NOTIFICATION HELPER
-// ============================================================
 
 fn notify_empty_folder() {
     let _ = Command::new("notify-send")
@@ -166,7 +145,6 @@ pub fn next() -> Result<String, String> {
     let cfg = load_config();
     let dir = slideshow_dir();
 
-    // 1. Ensure directory exists
     if !dir.exists() {
         let _ = fs::create_dir_all(&dir);
         notify_empty_folder();
@@ -176,7 +154,6 @@ pub fn next() -> Result<String, String> {
         ));
     }
 
-    // 2. Scan valid files in directory
     let read_dir = fs::read_dir(&dir)
         .map_err(|e| format!("Failed to read slideshow directory {}: {e}", dir.display()))?;
 
@@ -186,7 +163,6 @@ pub fn next() -> Result<String, String> {
         let path = entry.path();
         if path.is_file() {
             if let Some(kind) = classify_type(&path) {
-                // Filter by configured type
                 if cfg.type_filter == "All" || cfg.type_filter.eq_ignore_ascii_case(kind) {
                     candidates.push(path);
                 }
@@ -194,7 +170,6 @@ pub fn next() -> Result<String, String> {
         }
     }
 
-    // 3. Graceful fallback if fewer than 2 candidates
     if candidates.len() < 2 {
         notify_empty_folder();
         if candidates.is_empty() {
@@ -204,7 +179,6 @@ pub fn next() -> Result<String, String> {
         }
     }
 
-    // 4. Random selection (avoiding immediate repeat if >1 candidate exists)
     let last_wall = get_last_wallpaper();
     let eligible: Vec<&PathBuf> = if candidates.len() > 1 && !last_wall.is_empty() {
         let filtered: Vec<&PathBuf> = candidates
@@ -234,15 +208,14 @@ pub fn next() -> Result<String, String> {
     updated_cfg.last_changed = now;
     let _ = save_config(&updated_cfg);
 
-    // 5. Apply according to apply_target
     let target = cfg.apply_target.as_str();
 
     if target == "Background" || target == "Both" {
-        let _ = crate::wallpaper::apply_desktop(&selected_str, None, false, false);
+        let _ = super::apply::apply_desktop(&selected_str, None, false, false);
     }
 
     if target == "Lock Screen" || target == "Both" {
-        let _ = crate::wallpaper::set_lock(&selected_str);
+        let _ = super::apply::set_lock(&selected_str);
     }
 
     println!(
@@ -330,3 +303,4 @@ pub fn handle_set(args: &[String]) -> Result<(), String> {
     print_status();
     Ok(())
 }
+

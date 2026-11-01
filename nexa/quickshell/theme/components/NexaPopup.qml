@@ -20,6 +20,11 @@ Popup {
         border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.borderStrong
 
+        NexaShaderSubstrate {
+            anchors.fill: parent
+            radius: parent.radius
+        }
+
         NexaShadow {
             elevation: 1
             cornerRadius: root.cornerRadius

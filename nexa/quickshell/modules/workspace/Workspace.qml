@@ -182,6 +182,12 @@ RowLayout {
         border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.border
 
+        NexaUI.NexaShaderSubstrate {
+            anchors.fill: parent
+            radius: parent.radius
+            showSpecularLine: false
+        }
+
         MouseArea {
             id: containerWheelArea
             anchors.fill: parent
@@ -309,6 +315,12 @@ RowLayout {
         color: Nexa.Theme.surfaceContainer
         border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.border
+
+        NexaUI.NexaShaderSubstrate {
+            anchors.fill: parent
+            radius: parent.radius
+            showSpecularLine: false
+        }
 
         Behavior on implicitWidth {
             NumberAnimation {

@@ -1,6 +1,11 @@
 [General]
 Name=Nexa
 ColorScheme=Nexa
+TerminalApplication=kitty
+
+[KDE]
+contrast=4
+widgetStyle=kvantum
 
 [Colors:Window]
 BackgroundNormal={{rgb.background}}

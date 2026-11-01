@@ -52,6 +52,7 @@ Item {
     property bool isTrimSuccess: false
 
     readonly property string historyPath: Quickshell.env("HOME") + "/.cache/nexa/system-history.json"
+    readonly property string activeFlagPath: Quickshell.env("HOME") + "/.cache/nexa/perf_active"
 
     function parseTelemetry(content) {
         if (!content || content.length < 10) return;
@@ -115,20 +116,26 @@ Item {
         }
     }
 
+    // Heartbeat: signals nexad that someone is actively watching
     Timer {
-        id: refreshTimer
-        interval: 1000
+        id: activeHeartbeatTimer
+        interval: 2000
         repeat: true
         running: root.visible
+        triggeredOnStart: true
         onTriggered: {
-            historyFileView.reload();
-            root.parseTelemetry(historyFileView.text());
+            Quickshell.execDetached(["touch", root.activeFlagPath]);
         }
     }
 
     Component.onCompleted: {
+        Quickshell.execDetached(["touch", root.activeFlagPath]);
         historyFileView.reload();
         root.parseTelemetry(historyFileView.text());
+    }
+
+    Component.onDestruction: {
+        Quickshell.execDetached(["rm", "-f", root.activeFlagPath]);
     }
 
     function trimMemory() {

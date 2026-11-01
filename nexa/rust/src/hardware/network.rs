@@ -992,7 +992,6 @@ pub fn run_watch() -> Result<(), String> {
     let service = NetworkService::new();
     let mut prev_wifi_enabled = true;
     let mut prev_wifi_connected = false;
-    let mut prev_bt_enabled = false;
     let mut prev_bt_connected_addrs: HashSet<String> = HashSet::new();
 
     if let Ok(wifi) = service.wifi_info() {
@@ -1000,7 +999,6 @@ pub fn run_watch() -> Result<(), String> {
         prev_wifi_connected = wifi.connected;
     }
     if let Ok(bt) = service.bluetooth_info() {
-        prev_bt_enabled = bt.enabled;
         prev_bt_connected_addrs = bt
             .devices
             .iter()

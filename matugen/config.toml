@@ -35,6 +35,10 @@ output_path = "~/.config/qt5ct/colors/nexa.conf"
 input_path = "~/.config/matugen/templates/kde-preset.colors"
 output_path = "~/.local/share/color-schemes/Nexa.colors"
 
+[templates.kdeglobals]
+input_path = "~/.config/matugen/templates/kde-preset.colors"
+output_path = "~/.config/kdeglobals"
+
 [templates.btop]
 input_path = "~/.config/matugen/templates/btop-preset.theme"
 output_path = "~/.config/btop/themes/nexa.theme"

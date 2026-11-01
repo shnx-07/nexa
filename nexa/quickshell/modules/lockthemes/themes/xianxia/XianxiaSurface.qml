@@ -222,7 +222,7 @@ Item {
         property color mistColor: Xian.mist
         property color goldColor: Xian.gold
 
-        fragmentShader: Qt.resolvedUrl("../../../../shaders/lock_ink_backdrop.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/lock_ink_backdrop.frag.qsb")
     }
 
     LockInput {
@@ -253,7 +253,7 @@ Item {
         property color inkColor: Xian.ink
         property color goldColor: Xian.gold
 
-        fragmentShader: Qt.resolvedUrl("../../../../shaders/lock_ink_dissolve.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/lock_ink_dissolve.frag.qsb")
     }
 
     Rectangle {

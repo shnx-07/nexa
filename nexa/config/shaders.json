@@ -1,0 +1,52 @@
+{
+  "active": "off",
+  "opacity": 1,
+  "speed": 0.6,
+  "intensity": 0.65,
+  "contrast_veil": 0.2,
+  "pause_when_hidden": true,
+  "presets": {
+    "liquid_glass": {
+      "name": "Liquid Glass",
+      "subtitle": "Prismatic Caustics",
+      "icon": "󰄛",
+      "file": "theme/glass_liquid.frag.qsb"
+    },
+    "starfall": {
+      "name": "Falling Stars",
+      "subtitle": "4 Comets & Starfall",
+      "icon": "󰇒",
+      "file": "theme/starfall.frag.qsb"
+    },
+    "off": {
+      "name": "Default (Off)",
+      "subtitle": "Clean Dark Glass",
+      "icon": "󰛐",
+      "file": ""
+    },
+    "aurora": {
+      "name": "Aurora Waves",
+      "subtitle": "Ethereal Curtains",
+      "icon": "󰂚",
+      "file": "theme/aurora.frag.qsb"
+    },
+    "liquidglass": {
+      "name": "Glass",
+      "subtitle": "test",
+      "icon": "󰄛",
+      "file": "theme/liquidglass.frag.qsb"
+    },
+    "rain_glass": {
+      "name": "Rain Glass",
+      "subtitle": "Raining Strom",
+      "icon": "🌧",
+      "file": "theme/rain_glass.frag.qsb"
+    },
+    "noirhalftone": {
+      "name": "Noirhalftone",
+      "subtitle": "Black",
+      "icon": "⚫",
+      "file": "theme/noirhalftone.frag.qsb"
+    }
+  }
+}

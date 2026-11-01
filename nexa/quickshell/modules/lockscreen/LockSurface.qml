@@ -599,6 +599,12 @@ Item {
                 duration: 220
             }
         }
+
+        NexaUI.NexaShaderSubstrate {
+            anchors.fill: parent
+            radius: 0
+            showSpecularLine: false
+        }
     }
 
     // ============================================================

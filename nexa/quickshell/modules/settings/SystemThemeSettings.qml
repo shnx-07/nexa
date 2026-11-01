@@ -16,7 +16,22 @@ Item {
     // ============================================================
     // STATE & REPOSITORIES
     // ============================================================
-    property string activeSubTab: "presets" // "presets", "wallpaper", "windows"
+    property string activeSubTab: Nexa.Theme.currentThemeSubTab
+
+    Connections {
+        target: Nexa.Theme
+        function onCurrentThemeSubTabChanged() {
+            if (root.activeSubTab !== Nexa.Theme.currentThemeSubTab) {
+                root.activeSubTab = Nexa.Theme.currentThemeSubTab
+            }
+        }
+    }
+
+    Binding {
+        target: Nexa.Theme
+        property: "currentThemeSubTab"
+        value: root.activeSubTab
+    }
 
     onActiveSubTabChanged: {
         if (activeSubTab === "presets") {
@@ -434,32 +449,35 @@ Item {
             Layout.preferredHeight: 38
             spacing: 12
 
-            // Sub-tabs bar: Presets | Wallpaper & Material | Windows & Effects
+            // Sub-tabs bar: Presets | Wallpaper & Material | Windows & Effects | Shaders & Glass
             Rectangle {
                 Layout.preferredHeight: 38
-                Layout.preferredWidth: 550
+                Layout.preferredWidth: subTabsRow.implicitWidth + 8
                 radius: Nexa.Theme.radiusSm
                 color: Nexa.Theme.cardBackground
                 border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.border
 
                 RowLayout {
+                    id: subTabsRow
                     anchors.fill: parent
                     anchors.margins: 3
-                    spacing: 3
+                    spacing: 4
 
                     Repeater {
                         model: [
                             { id: "presets", label: "Presets", icon: "󰏘" },
                             { id: "wallpaper", label: "Wallpaper & Material", icon: "󰸉" },
-                            { id: "windows", label: "Windows & Effects", icon: "󰍹" }
+                            { id: "windows", label: "Windows & Effects", icon: "󰍹" },
+                            { id: "filters", label: "Filters", icon: "󰹑" },
+                            { id: "shaders", label: "Shaders & Glass", icon: "󰄛" }
                         ]
 
                         Rectangle {
                             id: tabPill
                             required property var modelData
-                            Layout.fillWidth: true
                             Layout.fillHeight: true
+                            Layout.preferredWidth: pillContent.implicitWidth + 24
                             radius: Nexa.Theme.radiusXs
 
                             readonly property bool isSelected: root.activeSubTab === modelData.id
@@ -471,8 +489,9 @@ Item {
                             Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
 
                             Row {
+                                id: pillContent
                                 anchors.centerIn: parent
-                                spacing: 6
+                                spacing: 8
 
                                 Text {
                                     text: tabPill.modelData.icon
@@ -668,15 +687,29 @@ Item {
 
                 windowRounding: root.windowRounding
                 nexaRounding: root.nexaRounding
+                islandRounding: Nexa.Theme.islandRounding
                 windowBorderSize: root.windowBorderSize
                 windowGlow: root.windowGlow
                 windowDim: root.windowDim
 
                 onSetRoundingRequested: r => root.setRounding(r)
                 onSetNexaRoundingRequested: nr => root.setNexaRounding(nr)
+                onSetIslandRoundingRequested: ir => Nexa.Theme.setIslandRounding(ir)
                 onSetBorderSizeRequested: b => root.setBorderSize(b)
                 onSetWindowGlowRequested: g => root.setWindowGlow(g)
                 onSetWindowDimRequested: d => root.setWindowDim(d)
+            }
+
+            // 4. Screen Filters View
+            ThemeViews.FiltersTab {
+                anchors.fill: parent
+                visible: root.activeSubTab === "filters"
+            }
+
+            // 5. Shaders & Surface Materials View
+            ThemeViews.ShadersTab {
+                anchors.fill: parent
+                visible: root.activeSubTab === "shaders"
             }
         }
     }

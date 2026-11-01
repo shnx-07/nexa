@@ -15,3 +15,4 @@ NexaTextField 1.0 NexaTextField.qml
 NexaToggle 1.0 NexaToggle.qml
 NexaTooltip 1.0 NexaTooltip.qml
 NexaSpring 1.0 NexaSpring.qml
+NexaShaderSubstrate 1.0 NexaShaderSubstrate.qml

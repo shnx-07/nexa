@@ -4,6 +4,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 
 import "../../theme" as Nexa
+import "../../theme/components" as NexaUI
 
 
 PanelWindow {
@@ -40,48 +41,22 @@ PanelWindow {
     WlrLayershell.namespace: "nexa-power"
 
 
+    readonly property string nexadBin:
+        Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
+
     // ============================================================
     // POWER COMMAND
     // ============================================================
     function runLockAction() {
-        console.log(
-            "NEXA power action: lock"
-        )
-
-        lockProcess.command = [
-            "hyprctl",
-            "dispatch",
-            "global",
-            "nexa:lock"
-        ]
-
-        lockProcess.running = true
-
+        console.log("NEXA power action: lock")
+        Quickshell.execDetached([root.nexadBin, "power", "lock"])
         root.visible = false
     }
+
     function runPowerAction(action) {
-        console.log(
-            "NEXA power action:",
-            action
-        )
-
-        powerProcess.command = [
-            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
-            "power",
-            action
-        ]
-
-        powerProcess.running = true
-
+        console.log("NEXA power action:", action)
+        Quickshell.execDetached([root.nexadBin, "power", action])
         root.visible = false
-    }
-
-    Process {
-        id: lockProcess
-    }
-
-    Process {
-        id: powerProcess
     }
 
 
@@ -169,6 +144,11 @@ PanelWindow {
         )
 
         border.width: 0
+
+        NexaUI.NexaShaderSubstrate {
+            anchors.fill: parent
+            radius: parent.radius
+        }
 
 
         // Spring entrance when popup opens
@@ -360,7 +340,6 @@ PanelWindow {
 
 
         border.width: 0
-
 
         // ========================================================
         // SCALE

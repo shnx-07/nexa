@@ -113,6 +113,6 @@ Item {
         property color tintColor: LockTheme.base
         property color dotColor: LockTheme.ink
 
-        fragmentShader: Qt.resolvedUrl("../../../../shaders/lock_backdrop.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/lock_backdrop.frag.qsb")
     }
 }

@@ -79,6 +79,17 @@ Item {
         Quickshell.execDetached(["qs", "-p", Quickshell.env("HOME") + "/.config/nexa/quickshell", "ipc", "call", "lockScreen", "lock"]);
     }
 
+    // Defer process execution so modal open animation runs at full framerate
+    Timer {
+        interval: 180
+        running: true
+        repeat: false
+        onTriggered: {
+            sysInfoProc.running = true;
+            avatarFinder.running = true;
+        }
+    }
+
     // ── System Info Collector ─────────────────────────────────────────────────
     Process {
         id: sysInfoProc
@@ -97,7 +108,7 @@ Item {
                 "( . \"$HOME/.config/nexa/config/lockscreen.conf\" 2>/dev/null; printf 'LOCK_WALLPAPER %s\\n' \"$WALLPAPER\"; printf 'LOCK_WALLPAPER_TYPE %s\\n' \"${WALLPAPER_TYPE:-image}\"; ); "
             ].join("")
         ]
-        running: true
+        running: false
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = text.trim().split("\n");
@@ -136,7 +147,7 @@ Item {
             "  if [ -f \"$f\" ]; then echo \"$f\"; exit 0; fi; " +
             "done; exit 1"
         ]
-        running: true
+        running: false
         stdout: StdioCollector {
             onStreamFinished: {
                 const p = text.trim();

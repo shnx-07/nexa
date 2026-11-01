@@ -162,7 +162,7 @@ Item {
                 property color tintColor: "black"
                 property color dotColor: "black"
 
-                fragmentShader: Qt.resolvedUrl("../shaders/lock_backdrop.frag.qsb")
+                fragmentShader: Qt.resolvedUrl("../../../shaders/lockScreenShaders/lock_backdrop.frag.qsb")
             }
 
             Rectangle {
@@ -786,7 +786,7 @@ Item {
                 property color rimColor: decor.accent2
                 property color glowColor: "black"
 
-                fragmentShader: Qt.resolvedUrl("../shaders/heraldry.frag.qsb")
+                fragmentShader: Qt.resolvedUrl("../../../shaders/lockScreenShaders/heraldry.frag.qsb")
             }
 
             Repeater {

@@ -11,6 +11,7 @@ import "../profile" as ProfileModule
 import "../display" as DisplayModule
 import "power" as PowerModule
 import "sound" as SoundModule
+import "../../theme/components" as NexaUI
 
 // SettingsPanel: Unified settings modal with left sidebar navigation.
 Item {
@@ -23,7 +24,7 @@ Item {
     Keys.onEscapePressed: root.close()
 
     property string tab: "profile"
-    readonly property var tabs: ["profile", "performance", "sound", "display", "power", "bars", "motion", "lock", "system"]
+    readonly property var tabs: ["profile", "performance", "sound", "display", "power", "bars", "decorations", "motion", "lock", "system"]
     function rad(n) {
         if (Nexa.Theme.nexaRounding === 0) return 0;
         return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
@@ -52,7 +53,7 @@ Item {
     }
 
     function openTab(which) {
-        if (which === "performance" || which === "system" || which === "profile" || which === "sound" || which === "display" || which === "bars" || which === "motion" || which === "lock" || which === "power")
+        if (which === "performance" || which === "system" || which === "profile" || which === "sound" || which === "display" || which === "bars" || which === "decorations" || which === "motion" || which === "lock" || which === "power")
             tab = which;
         else
             tab = "profile";
@@ -109,6 +110,11 @@ Item {
         clip: true
         opacity: 0
         scale: 0.94
+
+        NexaUI.NexaShaderSubstrate {
+            anchors.fill: parent
+            radius: panel.radius
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -521,6 +527,46 @@ Item {
 
                     Item { width: 1; height: 4 }
 
+                    // Nav Option: Decorations
+                    ClickableRect {
+                        id: decorNavBtn
+                        anchors.left: parent.left
+                        anchors.leftMargin: 6
+                        width: parent.width - 26
+                        height: 42
+                        radius: root.rad(10)
+                        color: root.tab === "decorations"
+                            ? Nexa.Theme.primaryContainer
+                            : (decorNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
+                        border.width: root.tab === "decorations" ? 1.5 : 1
+                        border.color: root.tab === "decorations" ? Nexa.Theme.primary : (decorNavBtn.hovered ? Nexa.Theme.border : "transparent")
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.tab = "decorations"
+
+                        Row {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 12
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: ""
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 18
+                                color: root.tab === "decorations" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                            }
+
+                            StyledText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Decorations"
+                                font.pixelSize: 14
+                                font.weight: root.tab === "decorations" ? Font.Bold : Font.Medium
+                                color: root.tab === "decorations" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                            }
+                        }
+                    }
+
                     // Nav Option: Motion & Physics
                     ClickableRect {
                         id: motionNavBtn
@@ -678,6 +724,7 @@ Item {
                                 if (root.tab === "display") return "Display Settings";
                                 if (root.tab === "power") return "Power & Sleep Settings";
                                 if (root.tab === "bars") return "Bars & Panels";
+                                if (root.tab === "decorations") return "Bar Decorations";
                                 if (root.tab === "motion") return "Motion & Physics";
                                 if (root.tab === "system") return "System Themes";
                                 return "Lock Screen Themes";
@@ -695,6 +742,7 @@ Item {
                                 if (root.tab === "display") return "Display layout, resolution & scaling";
                                 if (root.tab === "power") return "Battery, screen backlight timeouts & sleep behaviors";
                                 if (root.tab === "bars") return "Status bar layout, components & appearance";
+                                if (root.tab === "decorations") return "Ambient horizon rail, constellation beads & music soundwave effects";
                                 if (root.tab === "motion") return "Harmonic spring physics, momentum and interactive timings";
                                 if (root.tab === "system") return "Desktop customization and appearance";
                                 return (root.shuffle ? "Shuffle: each lock picks one of the selected themes" : "Pick the design used when you lock");
@@ -837,6 +885,7 @@ Item {
                             if (root.tab === "display") return displayTabComponent;
                             if (root.tab === "power") return powerTabComponent;
                             if (root.tab === "bars") return barsTabComponent;
+                            if (root.tab === "decorations") return decorationsTabComponent;
                             if (root.tab === "motion") return motionTabComponent;
                             if (root.tab === "system") return systemTabComponent;
                             return lockTabComponent;
@@ -844,6 +893,13 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    Component {
+        id: decorationsTabComponent
+        DecorationsSettings {
+            onRequestClose: root.close()
         }
     }
 

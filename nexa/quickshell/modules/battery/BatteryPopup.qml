@@ -200,6 +200,11 @@ PopupWindow {
                 Nexa.Theme.border
         }
 
+        NexaUI.NexaShaderSubstrate {
+            anchors.fill: parent
+            radius: panel.radius
+        }
+
 
         scale:
             root.visible

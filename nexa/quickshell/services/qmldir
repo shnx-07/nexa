@@ -5,3 +5,4 @@ singleton Battery 1.0 Battery.qml
 singleton Media 1.0 Media.qml
 singleton BarConfig 1.0 BarConfig.qml
 singleton SystemState 1.0 SystemState.qml
+singleton AudioVisualizer 1.0 AudioVisualizer.qml

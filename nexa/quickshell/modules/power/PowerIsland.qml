@@ -65,48 +65,22 @@ Item {
     }
 
 
+    readonly property string nexadBin:
+        Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
+
     // ============================================================
     // POWER COMMAND
     // ============================================================
     function runLockAction() {
-        console.log(
-            "NEXA power action: lock"
-        )
-
-        lockProcess.command = [
-            "hyprctl",
-            "dispatch",
-            "global",
-            "nexa:lock"
-        ]
-
-        lockProcess.running = true
-
+        console.log("NEXA power action: lock")
+        Quickshell.execDetached([root.nexadBin, "power", "lock"])
         root.requestClose()
     }
+
     function runPowerAction(action) {
-        console.log(
-            "NEXA power action:",
-            action
-        )
-
-        powerProcess.command = [
-            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
-            "power",
-            action
-        ]
-
-        powerProcess.running = true
-
+        console.log("NEXA power action:", action)
+        Quickshell.execDetached([root.nexadBin, "power", action])
         root.requestClose()
-    }
-
-    Process {
-        id: lockProcess
-    }
-
-    Process {
-        id: powerProcess
     }
 
 

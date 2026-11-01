@@ -26,7 +26,7 @@ pub fn get_info(path: &Path) -> WallpaperInfo {
     let is_video = matches!(ext.as_str(), "mp4" | "mkv" | "mov" | "webm");
 
     let image_path = if is_video {
-        crate::media_tools::wallpaper::ensure_thumbnail(path, "video")
+        crate::wallpaper::ensure_thumbnail(path, "video")
     } else {
         path.to_path_buf()
     };

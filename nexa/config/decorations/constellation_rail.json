@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "style": "constellation",
+  "mode": "workspaces",
+  "direction": "left-to-right",
+  "speed": 1.2,
+  "glow_intensity": 0.95,
+  "particle_count": 8,
+  "line_opacity": 0.4
+}

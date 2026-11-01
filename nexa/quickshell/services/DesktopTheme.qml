@@ -811,7 +811,7 @@ Singleton {
 
     FileView {
         id: template
-        path: Quickshell.shellPath("shaders/" + (adapter.theme || "none") + "_screen.frag.in")
+        path: Quickshell.shellPath("shaders/lockScreenShaders/" + (adapter.theme || "none") + "_screen.frag.in")
         printErrors: false
         onPathChanged: root._templateId = ""
         onLoaded: {

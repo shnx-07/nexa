@@ -368,6 +368,11 @@ PopupWindow {
         border.width: Nexa.Theme.borderThin
         border.color: Nexa.Theme.borderStrong
 
+        NexaUI.NexaShaderSubstrate {
+            anchors.fill: parent
+            radius: parent.radius
+        }
+
         // Continuous-corner top glass highlight
         Rectangle {
             anchors.fill: parent

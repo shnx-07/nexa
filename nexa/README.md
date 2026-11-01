@@ -265,7 +265,7 @@ If you prefer installing dependencies manually or want a complete breakdown:
 │   └── wallpaper/       # 3D Wallpaper Carousel & WallpaperSlideshowScheduler
 ├── rust/                # Rust backend (nexad)
 │   └── src/             # search.rs, shelf.rs, slideshow.rs, state.rs, wallpaper.rs, etc.
-└── scripts/             # Helper scripts (nexa-restart.sh, nexa-start.sh, wallpaper.sh)
+└── scripts/             # Helper scripts (nexa.sh)
 ```
 
 ---

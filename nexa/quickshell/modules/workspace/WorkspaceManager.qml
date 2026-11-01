@@ -1208,6 +1208,11 @@ PanelWindow {
             NexaUI.NexaSpring { section: "workspace"; customStiffness: 5.5; customDamping: 0.25 }
         }
 
+        NexaUI.NexaShaderSubstrate {
+            anchors.fill: parent
+            radius: board.radius
+        }
+
         // ========================================================
         // TITLE
         // ========================================================

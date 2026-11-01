@@ -37,6 +37,7 @@ Item {
     property string soundDir: Quickshell.env("HOME") + "/.config/nexa/sounds"
     property var soundList: []
     property bool sinkSelectorOpen: false
+    property string activeCategory: "all" // "all", "power", "security", "system"
 
     // Toast status notification
     property string toastMessage: ""
@@ -71,6 +72,15 @@ Item {
 
     function getMeta(name) {
         return soundMeta[name] || { icon: "󰎆", category: "Sound Effect" };
+    }
+
+    function matchesCategory(name) {
+        if (root.activeCategory === "all") return true;
+        const cat = root.getMeta(name).category;
+        if (root.activeCategory === "power") return cat === "Power & Battery";
+        if (root.activeCategory === "security") return cat === "Security & Session";
+        if (root.activeCategory === "system") return cat !== "Power & Battery" && cat !== "Security & Session";
+        return true;
     }
 
     // ────────────────────────────────────────────────────────────
@@ -161,7 +171,7 @@ Item {
         anchors.margins: 4
         clip: true
         contentWidth: width
-        contentHeight: contentCol.implicitHeight + 64
+        contentHeight: contentCol.implicitHeight + 48
         boundsBehavior: Flickable.StopAtBounds
 
         NexaUI.NexaSmoothScroll {}
@@ -170,15 +180,16 @@ Item {
             id: contentCol
             width: parent.width - 24
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 18
+            spacing: 14
 
             // ════════════════════════════════════════════════════════
             // 1. HARDWARE AUDIO & MICROPHONE HERO CARD
             // ════════════════════════════════════════════════════════
             Rectangle {
                 width: parent.width
-                implicitHeight: hwCardContent.implicitHeight + 36
-                radius: root.rad(16)
+                implicitHeight: hwCardContent.implicitHeight + 28
+                height: implicitHeight
+                radius: root.rad(14)
                 color: Nexa.Theme.cardBackground
                 border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.border
@@ -200,9 +211,9 @@ Item {
                         left: parent.left
                         right: parent.right
                         top: parent.top
-                        margins: 18
+                        margins: 14
                     }
-                    spacing: 16
+                    spacing: 14
 
                     // Header row
                     RowLayout {
@@ -210,16 +221,16 @@ Item {
                         spacing: 10
 
                         Rectangle {
-                            width: 38
-                            height: 38
-                            radius: root.rad(10)
+                            width: 34
+                            height: 34
+                            radius: root.rad(9)
                             color: Nexa.Theme.primaryContainer
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "󰓃"
                                 font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 20
+                                font.pixelSize: 18
                                 color: Nexa.Theme.onPrimaryContainer
                             }
                         }
@@ -230,7 +241,7 @@ Item {
 
                             StyledText {
                                 text: "Audio Devices & Hardware"
-                                font.pixelSize: 15
+                                font.pixelSize: 14
                                 font.weight: Font.Bold
                                 color: Nexa.Theme.text
                             }
@@ -246,8 +257,8 @@ Item {
                         ClickableRect {
                             id: sinkDropdownBtn
                             visible: audio.sinks && audio.sinks.length > 0
-                            implicitHeight: 32
-                            implicitWidth: sinkBtnRow.implicitWidth + 24
+                            implicitHeight: 30
+                            implicitWidth: sinkBtnRow.implicitWidth + 22
                             radius: root.rad(8)
                             color: root.sinkSelectorOpen ? Nexa.Theme.primaryContainer : (sinkDropdownBtn.hovered ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainer)
                             border.width: Nexa.Theme.borderThin
@@ -272,7 +283,7 @@ Item {
                                         return "󰕾";
                                     }
                                     font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: 14
+                                    font.pixelSize: 13
                                     color: root.sinkSelectorOpen ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.primary
                                 }
 
@@ -287,7 +298,7 @@ Item {
                                         }
                                         return "Select Device";
                                     }
-                                    font.pixelSize: 12
+                                    font.pixelSize: 11
                                     font.weight: Font.Medium
                                     color: root.sinkSelectorOpen ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
                                 }
@@ -295,7 +306,7 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.sinkSelectorOpen ? "▴" : "▾"
-                                    font.pixelSize: 11
+                                    font.pixelSize: 10
                                     color: root.sinkSelectorOpen ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.mutedText
                                 }
                             }
@@ -327,7 +338,7 @@ Item {
                             delegate: ClickableRect {
                                 required property var modelData
                                 width: parent.width
-                                height: 38
+                                height: 36
                                 radius: root.rad(8)
                                 color: modelData.active ? Nexa.Theme.primaryContainer : (hovered ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.cardBackgroundElevated)
                                 border.width: Nexa.Theme.borderThin
@@ -342,12 +353,12 @@ Item {
                                     anchors.fill: parent
                                     anchors.leftMargin: 12
                                     anchors.rightMargin: 12
-                                    spacing: 12
+                                    spacing: 10
 
                                     Text {
                                         text: modelData.icon || "󰕾"
                                         font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: 16
+                                        font.pixelSize: 15
                                         color: modelData.active ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.primary
                                     }
 
@@ -381,13 +392,13 @@ Item {
                     // Two columns: Left (Master Output) | Right (Microphone & VU meter)
                     Row {
                         width: parent.width
-                        spacing: 16
+                        spacing: 12
 
                         // ── Left: Master Output ────────────────────────────────
                         Rectangle {
                             width: (parent.width - parent.spacing) / 2
-                            implicitHeight: outputSubCol.implicitHeight + 24
-                            radius: root.rad(12)
+                            implicitHeight: outputSubCol.implicitHeight + 20
+                            radius: root.rad(10)
                             color: Nexa.Theme.surfaceContainerLow
                             border.width: Nexa.Theme.borderThin
                             border.color: Nexa.Theme.border
@@ -398,9 +409,9 @@ Item {
                                     left: parent.left
                                     right: parent.right
                                     top: parent.top
-                                    margins: 12
+                                    margins: 10
                                 }
-                                spacing: 10
+                                spacing: 8
 
                                 RowLayout {
                                     width: parent.width
@@ -408,7 +419,7 @@ Item {
                                     Text {
                                         text: audio.muted ? "󰝟" : (audio.volume > 50 ? "󰕾" : (audio.volume > 0 ? "󰖀" : "󰕿"))
                                         font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: 18
+                                        font.pixelSize: 16
                                         color: audio.muted ? Nexa.Theme.error : Nexa.Theme.primary
                                         MouseArea {
                                             anchors.fill: parent
@@ -419,7 +430,7 @@ Item {
 
                                     StyledText {
                                         text: "Master Output"
-                                        font.pixelSize: 13
+                                        font.pixelSize: 12
                                         font.weight: Font.DemiBold
                                         color: Nexa.Theme.text
                                     }
@@ -434,7 +445,7 @@ Item {
 
                                     StyledText {
                                         text: audio.volume + "%"
-                                        font.pixelSize: 13
+                                        font.pixelSize: 12
                                         font.weight: Font.Bold
                                         font.family: Nexa.Theme.monoFontFamily
                                         color: Nexa.Theme.text
@@ -446,7 +457,7 @@ Item {
                                     from: 0
                                     to: 100
                                     value: audio.volume
-                                    sliderHeight: 28
+                                    sliderHeight: 22
                                     accentColor: audio.muted ? Nexa.Theme.mutedText : Nexa.Theme.primary
                                     onMoved: val => audio.setVolume(val)
                                     onReleased: val => audio.setVolumeImmediate(val)
@@ -457,8 +468,8 @@ Item {
                         // ── Right: Microphone & Live VU Meter ──────────────────
                         Rectangle {
                             width: (parent.width - parent.spacing) / 2
-                            implicitHeight: micSubCol.implicitHeight + 24
-                            radius: root.rad(12)
+                            implicitHeight: micSubCol.implicitHeight + 20
+                            radius: root.rad(10)
                             color: Nexa.Theme.surfaceContainerLow
                             border.width: Nexa.Theme.borderThin
                             border.color: Nexa.Theme.border
@@ -469,9 +480,9 @@ Item {
                                     left: parent.left
                                     right: parent.right
                                     top: parent.top
-                                    margins: 12
+                                    margins: 10
                                 }
-                                spacing: 10
+                                spacing: 8
 
                                 RowLayout {
                                     width: parent.width
@@ -479,7 +490,7 @@ Item {
                                     Text {
                                         text: audio.inputMuted ? "󰍭" : "󰍬"
                                         font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: 18
+                                        font.pixelSize: 16
                                         color: audio.inputMuted ? Nexa.Theme.error : Nexa.Theme.primary
                                         MouseArea {
                                             anchors.fill: parent
@@ -490,7 +501,7 @@ Item {
 
                                     StyledText {
                                         text: "Microphone Input"
-                                        font.pixelSize: 13
+                                        font.pixelSize: 12
                                         font.weight: Font.DemiBold
                                         color: Nexa.Theme.text
                                     }
@@ -505,7 +516,7 @@ Item {
 
                                     StyledText {
                                         text: audio.inputVolume + "%"
-                                        font.pixelSize: 13
+                                        font.pixelSize: 12
                                         font.weight: Font.Bold
                                         font.family: Nexa.Theme.monoFontFamily
                                         color: Nexa.Theme.text
@@ -517,7 +528,7 @@ Item {
                                     from: 0
                                     to: 100
                                     value: audio.inputVolume
-                                    sliderHeight: 28
+                                    sliderHeight: 22
                                     livePulse: audio.inputMuted ? 0.0 : audio.micPeak
                                     accentColor: audio.inputMuted ? Nexa.Theme.mutedText : Nexa.Theme.primary
                                     onMoved: val => audio.setInputVolume(val)
@@ -527,14 +538,14 @@ Item {
                                 // ── Live Animated Mic VU Meter ──────────────────────
                                 Column {
                                     width: parent.width
-                                    spacing: 4
+                                    spacing: 3
 
                                     RowLayout {
                                         width: parent.width
 
                                         StyledText {
                                             text: "INPUT LEVEL (VU METER)"
-                                            font.pixelSize: 9
+                                            font.pixelSize: 8
                                             font.weight: Font.Bold
                                             font.letterSpacing: 0.5
                                             color: Nexa.Theme.mutedText
@@ -544,35 +555,33 @@ Item {
 
                                         StyledText {
                                             text: audio.inputMuted ? "MUTED" : Math.round(audio.micPeak * 100) + "% PEAK"
-                                            font.pixelSize: 9
+                                            font.pixelSize: 8
                                             font.weight: Font.Bold
                                             font.family: Nexa.Theme.monoFontFamily
                                             color: audio.inputMuted ? Nexa.Theme.mutedText : (audio.micPeak > 0.85 ? Nexa.Theme.error : Nexa.Theme.primary)
                                         }
                                     }
 
-                                    // VU Segment Meter Track
                                     Rectangle {
                                         width: parent.width
-                                        height: 8
-                                        radius: 4
+                                        height: 6
+                                        radius: 3
                                         color: Nexa.Theme.cardBackgroundElevated
                                         clip: true
 
-                                        // Filled Level Bar
                                         Rectangle {
                                             id: vuFill
                                             anchors.left: parent.left
                                             anchors.top: parent.top
                                             anchors.bottom: parent.bottom
                                             width: parent.width * (audio.inputMuted ? 0 : Math.max(0.02, audio.micPeak))
-                                            radius: 4
+                                            radius: 3
 
                                             gradient: Gradient {
                                                 orientation: Gradient.Horizontal
-                                                GradientStop { position: 0.0; color: "#10b981" } // green
-                                                GradientStop { position: 0.7; color: "#f59e0b" } // amber
-                                                GradientStop { position: 0.95; color: "#ef4444" } // red
+                                                GradientStop { position: 0.0; color: "#10b981" }
+                                                GradientStop { position: 0.7; color: "#f59e0b" }
+                                                GradientStop { position: 0.95; color: "#ef4444" }
                                             }
 
                                             Behavior on width {
@@ -592,8 +601,9 @@ Item {
             // ════════════════════════════════════════════════════════
             Rectangle {
                 width: parent.width
-                implicitHeight: effectsMasterContent.implicitHeight + 36
-                radius: root.rad(16)
+                implicitHeight: effectsMasterContent.implicitHeight + 28
+                height: implicitHeight
+                radius: root.rad(14)
                 color: Nexa.Theme.cardBackground
                 border.width: Nexa.Theme.borderThin
                 border.color: Nexa.Theme.border
@@ -614,26 +624,26 @@ Item {
                         left: parent.left
                         right: parent.right
                         top: parent.top
-                        margins: 18
+                        margins: 14
                     }
-                    spacing: 16
+                    spacing: 12
 
                     // Master Title & Toggle Row
                     RowLayout {
                         width: parent.width
-                        spacing: 12
+                        spacing: 10
 
                         Rectangle {
-                            width: 38
-                            height: 38
-                            radius: root.rad(10)
+                            width: 34
+                            height: 34
+                            radius: root.rad(9)
                             color: root.masterEnabled ? Nexa.Theme.primaryContainer : Nexa.Theme.surfaceContainer
 
                             Text {
                                 anchors.centerIn: parent
                                 text: root.masterEnabled ? "󰕾" : "󰝟"
                                 font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 20
+                                font.pixelSize: 18
                                 color: root.masterEnabled ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.mutedText
                             }
                         }
@@ -644,7 +654,7 @@ Item {
 
                             StyledText {
                                 text: "Desktop Sound Effects"
-                                font.pixelSize: 15
+                                font.pixelSize: 14
                                 font.weight: Font.Bold
                                 color: Nexa.Theme.text
                             }
@@ -659,8 +669,8 @@ Item {
                         // Open Folder Button
                         ClickableRect {
                             id: openFolderBtn
-                            implicitHeight: 34
-                            implicitWidth: folderBtnRow.implicitWidth + 24
+                            implicitHeight: 30
+                            implicitWidth: folderBtnRow.implicitWidth + 20
                             radius: root.rad(8)
                             color: openFolderBtn.hovered ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainer
                             border.width: Nexa.Theme.borderThin
@@ -671,20 +681,20 @@ Item {
                             Row {
                                 id: folderBtnRow
                                 anchors.centerIn: parent
-                                spacing: 8
+                                spacing: 6
 
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "󰉋"
                                     font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: 16
+                                    font.pixelSize: 15
                                     color: Nexa.Theme.primary
                                 }
 
                                 StyledText {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "Sounds Folder"
-                                    font.pixelSize: 12
+                                    font.pixelSize: 11
                                     font.weight: Font.Medium
                                     color: Nexa.Theme.text
                                 }
@@ -700,77 +710,72 @@ Item {
                         }
                     }
 
-                    // Master Effects Volume Slider
-                    Column {
+                    // Sleek Inline Master Volume Slider Row
+                    RowLayout {
                         width: parent.width
-                        spacing: 8
+                        spacing: 12
                         opacity: root.masterEnabled ? 1.0 : 0.45
                         enabled: root.masterEnabled
 
-                        RowLayout {
-                            width: parent.width
-
-                            StyledText {
-                                text: "Effects Master Volume"
-                                font.pixelSize: 12
-                                font.weight: Font.DemiBold
-                                color: Nexa.Theme.text
-                            }
-
-                            Item { Layout.fillWidth: true }
-
-                            StyledText {
-                                text: root.masterVolume + "%"
-                                font.pixelSize: 12
-                                font.weight: Font.Bold
-                                font.family: Nexa.Theme.monoFontFamily
-                                color: Nexa.Theme.text
-                            }
+                        StyledText {
+                            text: "Effects Master Volume"
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            color: Nexa.Theme.text
                         }
 
+                        Item { Layout.fillWidth: true }
+
                         NexaUI.NexaSlider {
-                            width: parent.width
+                            Layout.preferredWidth: 260
                             from: 0
                             to: 100
                             value: root.masterVolume
-                            sliderHeight: 28
+                            sliderHeight: 20
+                            accentColor: Nexa.Theme.primary
                             onMoved: val => root.setMasterVolume(val)
                             onReleased: val => root.setMasterVolume(val)
                         }
+
+                        StyledText {
+                            Layout.preferredWidth: 36
+                            horizontalAlignment: Text.AlignRight
+                            text: root.masterVolume + "%"
+                            font.pixelSize: 12
+                            font.weight: Font.Bold
+                            font.family: Nexa.Theme.monoFontFamily
+                            color: Nexa.Theme.text
+                        }
                     }
 
-                    // Informational callout
+                    // Compact Informational Callout
                     Rectangle {
                         width: parent.width
-                        implicitHeight: hintRow.implicitHeight + 14
-                        radius: root.rad(8)
+                        height: 28
+                        radius: root.rad(6)
                         color: Nexa.Theme.surfaceContainerLow
                         border.width: Nexa.Theme.borderThin
                         border.color: Nexa.Theme.border
 
                         RowLayout {
-                            id: hintRow
-                            anchors {
-                                left: parent.left
-                                right: parent.right
-                                verticalCenter: parent.verticalCenter
-                                margins: 12
-                            }
-                            spacing: 10
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 8
 
                             Text {
                                 text: "󰋼"
                                 font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 16
+                                font.pixelSize: 13
                                 color: Nexa.Theme.primary
                             }
 
                             StyledText {
                                 Layout.fillWidth: true
-                                text: "You can customize any sound by dropping a file with matching name into ~/.config/nexa/sounds. Formats supported: .mp3, .wav, .ogg, .flac, .opus, .aac."
-                                font.pixelSize: 11
+                                text: "Custom sounds: drop .mp3, .wav, .ogg, or .flac files into ~/.config/nexa/sounds"
+                                font.pixelSize: 10
                                 color: Nexa.Theme.mutedText
-                                wrapMode: Text.WordWrap
+                                elide: Text.ElideRight
                             }
                         }
                     }
@@ -778,230 +783,320 @@ Item {
             }
 
             // ════════════════════════════════════════════════════════
-            // 3. SYSTEM EVENT SOUNDS (10 INDIVIDUAL SOUND CARDS)
+            // 3. SYSTEM EVENT SOUNDS (STREAMLINED GROUPED LIST)
             // ════════════════════════════════════════════════════════
-            Item {
+            RowLayout {
                 width: parent.width
-                height: 24
+                height: implicitHeight
+                spacing: 10
 
-                StyledText {
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "SYSTEM SOUND EVENTS"
-                    font.pixelSize: 11
-                    font.weight: Font.Bold
-                    font.letterSpacing: 1.0
-                    color: Nexa.Theme.mutedText
-                }
-            }
+                Column {
+                    Layout.fillWidth: true
+                    spacing: 1
 
-            Repeater {
-                model: root.soundList
-                delegate: Rectangle {
-                    required property var modelData
-                    required property int index
-
-                    width: parent.width
-                    implicitHeight: cardCol.implicitHeight + 24
-                    radius: root.rad(14)
-                    color: Nexa.Theme.cardBackground
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
-                    opacity: root.masterEnabled ? (modelData.enabled ? 1.0 : 0.6) : 0.45
-
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.margins: parent.border.width
-                        radius: Math.max(0, parent.radius - parent.border.width)
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlight }
-                            GradientStop { position: 0.3; color: "transparent" }
-                        }
+                    StyledText {
+                        text: "SYSTEM SOUND EVENTS"
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        font.letterSpacing: 0.8
+                        color: Nexa.Theme.mutedText
                     }
 
-                    Column {
-                        id: cardCol
-                        anchors {
-                            left: parent.left
-                            right: parent.right
-                            top: parent.top
-                            margins: 14
-                        }
-                        spacing: 12
+                    StyledText {
+                        text: "Per-event volume calibration, format status and preview"
+                        font.pixelSize: 10
+                        color: Nexa.Theme.mutedText
+                        opacity: 0.8
+                    }
+                }
 
-                        // Top Row: Icon, Title & Meta, Format Badge, Toggle
-                        RowLayout {
-                            width: parent.width
-                            spacing: 12
+                // Category Filter Chips
+                Row {
+                    spacing: 6
 
-                            // Sound Event Icon
-                            Rectangle {
-                                width: 36
-                                height: 36
-                                radius: root.rad(9)
-                                color: modelData.enabled ? Nexa.Theme.primaryContainer : Nexa.Theme.surfaceContainer
+                    Repeater {
+                        model: [
+                            { id: "all", label: "All (10)" },
+                            { id: "power", label: "Power & Battery", icon: "󱐋" },
+                            { id: "security", label: "Security", icon: "󰌾" },
+                            { id: "system", label: "Alerts & Actions", icon: "󰕾" }
+                        ]
+
+                        delegate: ClickableRect {
+                            required property var modelData
+                            implicitHeight: 26
+                            implicitWidth: chipRow.implicitWidth + 18
+                            radius: root.rad(13)
+                            color: root.activeCategory === modelData.id
+                                ? Nexa.Theme.primaryContainer
+                                : (hovered ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainerLow)
+                            border.width: Nexa.Theme.borderThin
+                            border.color: root.activeCategory === modelData.id ? Nexa.Theme.primary : Nexa.Theme.border
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.activeCategory = modelData.id
+
+                            Row {
+                                id: chipRow
+                                anchors.centerIn: parent
+                                spacing: 5
 
                                 Text {
-                                    anchors.centerIn: parent
-                                    text: root.getMeta(modelData.name).icon
+                                    visible: modelData.icon !== undefined
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: modelData.icon || ""
                                     font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: 18
-                                    color: modelData.enabled ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.mutedText
+                                    font.pixelSize: 11
+                                    color: root.activeCategory === modelData.id ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.primary
+                                }
+
+                                StyledText {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: modelData.label
+                                    font.pixelSize: 11
+                                    font.weight: root.activeCategory === modelData.id ? Font.Bold : Font.Normal
+                                    color: root.activeCategory === modelData.id ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
                                 }
                             }
+                        }
+                    }
+                }
+            }
 
-                            // Sound Title, Category & Description
-                            Column {
-                                Layout.fillWidth: true
-                                spacing: 2
+            // Grouped Sound Events Container
+            Rectangle {
+                width: parent.width
+                implicitHeight: soundItemsCol.implicitHeight + 4
+                height: implicitHeight
+                radius: root.rad(14)
+                color: Nexa.Theme.cardBackground
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.border
+                clip: true
 
-                                Row {
-                                    spacing: 8
+                // Specular highlight
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: parent.border.width
+                    radius: Math.max(0, parent.radius - parent.border.width)
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlight }
+                        GradientStop { position: 0.2; color: "transparent" }
+                    }
+                }
 
-                                    StyledText {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: modelData.display_name
-                                        font.pixelSize: 13
-                                        font.weight: Font.Bold
-                                        color: Nexa.Theme.text
+                Column {
+                    id: soundItemsCol
+                    width: parent.width
+
+                    Repeater {
+                        model: root.soundList
+                        delegate: Item {
+                            id: itemDelegate
+                            required property var modelData
+                            required property int index
+
+                            readonly property bool itemMatches: root.matchesCategory(modelData.name)
+                            visible: height > 0
+                            width: parent.width
+                            height: itemMatches ? 52 : 0
+                            clip: true
+
+                            opacity: root.masterEnabled ? (modelData.enabled ? 1.0 : 0.5) : 0.4
+
+                            Behavior on height {
+                                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                            }
+
+                            // Subtle hover background
+                            Rectangle {
+                                anchors.fill: parent
+                                color: rowHover.containsMouse ? Nexa.Theme.surfaceContainerHigh : "transparent"
+                                opacity: 0.45
+                            }
+
+                            MouseArea {
+                                id: rowHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                acceptedButtons: Qt.NoButton
+                            }
+
+                            RowLayout {
+                                anchors {
+                                    left: parent.left
+                                    right: parent.right
+                                    verticalCenter: parent.verticalCenter
+                                    leftMargin: 14
+                                    rightMargin: 14
+                                }
+                                spacing: 10
+
+                                // Sound Event Icon (32x32)
+                                Rectangle {
+                                    width: 32
+                                    height: 32
+                                    radius: root.rad(8)
+                                    color: modelData.enabled && root.masterEnabled
+                                        ? Nexa.Theme.primaryContainer
+                                        : Nexa.Theme.surfaceContainer
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: root.getMeta(modelData.name).icon
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: 16
+                                        color: modelData.enabled && root.masterEnabled
+                                            ? Nexa.Theme.onPrimaryContainer
+                                            : Nexa.Theme.mutedText
                                     }
+                                }
 
-                                    // Category Chip
-                                    Rectangle {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        height: 18
-                                        width: catText.implicitWidth + 12
-                                        radius: root.rad(4)
-                                        color: Nexa.Theme.surfaceContainerHigh
+                                // Sound Title & Category / Description
+                                Column {
+                                    Layout.fillWidth: true
+                                    spacing: 1
+
+                                    Row {
+                                        spacing: 8
 
                                         StyledText {
-                                            id: catText
-                                            anchors.centerIn: parent
-                                            text: root.getMeta(modelData.name).category
-                                            font.pixelSize: 9
+                                            text: modelData.display_name
+                                            font.pixelSize: 12
                                             font.weight: Font.DemiBold
-                                            color: Nexa.Theme.mutedText
+                                            color: Nexa.Theme.text
+                                        }
+
+                                        // Category chip
+                                        Rectangle {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            height: 16
+                                            width: catText.implicitWidth + 8
+                                            radius: root.rad(4)
+                                            color: Nexa.Theme.surfaceContainerHigh
+
+                                            StyledText {
+                                                id: catText
+                                                anchors.centerIn: parent
+                                                text: root.getMeta(modelData.name).category
+                                                font.pixelSize: 9
+                                                font.weight: Font.Medium
+                                                color: Nexa.Theme.mutedText
+                                            }
+                                        }
+                                    }
+
+                                    StyledText {
+                                        text: modelData.description
+                                        font.pixelSize: 10
+                                        color: Nexa.Theme.mutedText
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                // Play Preview Button (Compact 28x28 circular pill)
+                                ClickableRect {
+                                    id: playBtn
+                                    implicitWidth: 28
+                                    implicitHeight: 28
+                                    radius: root.rad(14)
+                                    enabled: root.masterEnabled && modelData.enabled
+                                    color: playBtn.hovered ? Nexa.Theme.primaryContainer : Nexa.Theme.surfaceContainerHigh
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: playBtn.hovered ? Nexa.Theme.primary : Nexa.Theme.border
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.previewSound(modelData.name, modelData.volume)
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        anchors.horizontalCenterOffset: 1
+                                        text: "󰐊"
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: 13
+                                        color: playBtn.hovered ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.primary
+                                    }
+                                }
+
+                                // Compact Inline Slider + Percentage Readout
+                                RowLayout {
+                                    spacing: 6
+                                    enabled: root.masterEnabled && modelData.enabled
+
+                                    NexaUI.NexaSlider {
+                                        Layout.preferredWidth: 125
+                                        from: 0
+                                        to: 100
+                                        value: modelData.volume
+                                        sliderHeight: 18
+                                        accentColor: Nexa.Theme.primary
+                                        onMoved: val => root.setSoundVolume(modelData.name, val)
+                                        onReleased: val => root.setSoundVolume(modelData.name, val)
+                                    }
+
+                                    StyledText {
+                                        Layout.preferredWidth: 32
+                                        horizontalAlignment: Text.AlignRight
+                                        text: modelData.volume + "%"
+                                        font.pixelSize: 11
+                                        font.weight: Font.Bold
+                                        font.family: Nexa.Theme.monoFontFamily
+                                        color: Nexa.Theme.text
+                                    }
+                                }
+
+                                // Format Badge
+                                Rectangle {
+                                    height: 20
+                                    implicitWidth: formatRow.implicitWidth + 12
+                                    radius: root.rad(5)
+                                    color: modelData.file_found ? Nexa.Theme.surfaceContainerLow : Nexa.Theme.errorContainer
+                                    border.width: Nexa.Theme.borderThin
+                                    border.color: modelData.file_found ? Nexa.Theme.border : Nexa.Theme.error
+
+                                    Row {
+                                        id: formatRow
+                                        anchors.centerIn: parent
+                                        spacing: 4
+
+                                        Rectangle {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: 5
+                                            height: 5
+                                            radius: 2.5
+                                            color: modelData.file_found ? "#10b981" : Nexa.Theme.error
+                                        }
+
+                                        StyledText {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: modelData.file_found ? modelData.file_ext.toUpperCase() : "MISSING"
+                                            font.pixelSize: 9
+                                            font.weight: Font.Bold
+                                            font.family: Nexa.Theme.monoFontFamily
+                                            color: modelData.file_found ? Nexa.Theme.text : Nexa.Theme.error
                                         }
                                     }
                                 }
 
-                                StyledText {
-                                    text: modelData.description
-                                    font.pixelSize: 11
-                                    color: Nexa.Theme.mutedText
+                                Item { Layout.preferredWidth: 2 }
+
+                                // Per-Sound Enable Toggle
+                                NexaUI.NexaToggle {
+                                    checked: modelData.enabled
+                                    enabled: root.masterEnabled
+                                    onToggled: chk => root.setSoundEnabled(modelData.name, chk)
                                 }
                             }
 
-                            // Format Badge
+                            // Divider line between items
                             Rectangle {
-                                height: 22
-                                width: formatRow.implicitWidth + 14
-                                radius: root.rad(6)
-                                color: modelData.file_found ? Nexa.Theme.surfaceContainerLow : Nexa.Theme.errorContainer
-                                border.width: Nexa.Theme.borderThin
-                                border.color: modelData.file_found ? Nexa.Theme.border : Nexa.Theme.error
-
-                                Row {
-                                    id: formatRow
-                                    anchors.centerIn: parent
-                                    spacing: 5
-
-                                    Rectangle {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: 6
-                                        height: 6
-                                        radius: 3
-                                        color: modelData.file_found ? "#10b981" : Nexa.Theme.error
-                                    }
-
-                                    StyledText {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: modelData.file_found ? modelData.file_ext.toUpperCase() : "MISSING"
-                                        font.pixelSize: 10
-                                        font.weight: Font.Bold
-                                        font.family: Nexa.Theme.monoFontFamily
-                                        color: modelData.file_found ? Nexa.Theme.text : Nexa.Theme.error
-                                    }
-                                }
-                            }
-
-                            Item { width: 4 }
-
-                            // Per-Sound Enable Toggle
-                            NexaUI.NexaToggle {
-                                checked: modelData.enabled
-                                enabled: root.masterEnabled
-                                onToggled: chk => root.setSoundEnabled(modelData.name, chk)
-                            }
-                        }
-
-                        // Divider line
-                        Rectangle {
-                            width: parent.width
-                            height: 1
-                            color: Nexa.Theme.divider
-                            opacity: 0.5
-                        }
-
-                        // Bottom Control Row: Play Preview Button + Volume Slider + Percentage
-                        RowLayout {
-                            width: parent.width
-                            spacing: 12
-                            enabled: root.masterEnabled && modelData.enabled
-
-                            // Play Preview Button
-                            ClickableRect {
-                                id: previewBtn
-                                implicitHeight: 30
-                                implicitWidth: previewRow.implicitWidth + 20
-                                radius: root.rad(8)
-                                color: previewBtn.hovered ? Nexa.Theme.primaryContainer : Nexa.Theme.surfaceContainerHigh
-                                border.width: Nexa.Theme.borderThin
-                                border.color: previewBtn.hovered ? Nexa.Theme.primary : Nexa.Theme.border
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.previewSound(modelData.name, modelData.volume)
-
-                                Row {
-                                    id: previewRow
-                                    anchors.centerIn: parent
-                                    spacing: 6
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "󰐊"
-                                        font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: 13
-                                        color: Nexa.Theme.primary
-                                    }
-
-                                    StyledText {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "Preview"
-                                        font.pixelSize: 11
-                                        font.weight: Font.Medium
-                                        color: Nexa.Theme.text
-                                    }
-                                }
-                            }
-
-                            // Individual Sound Volume Slider
-                            NexaUI.NexaSlider {
-                                Layout.fillWidth: true
-                                from: 0
-                                to: 100
-                                value: modelData.volume
-                                sliderHeight: 26
-                                onMoved: val => root.setSoundVolume(modelData.name, val)
-                                onReleased: val => root.setSoundVolume(modelData.name, val)
-                            }
-
-                            // Volume Percentage Text
-                            StyledText {
-                                text: modelData.volume + "%"
-                                font.pixelSize: 12
-                                font.weight: Font.Bold
-                                font.family: Nexa.Theme.monoFontFamily
-                                color: Nexa.Theme.text
+                                anchors.bottom: parent.bottom
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.leftMargin: 14
+                                anchors.rightMargin: 14
+                                height: 1
+                                color: Nexa.Theme.divider
+                                opacity: 0.35
+                                visible: itemMatches && index < root.soundList.length - 1
                             }
                         }
                     }
@@ -1045,4 +1140,3 @@ Item {
         }
     }
 }
-

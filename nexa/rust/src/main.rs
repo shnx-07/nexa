@@ -6,12 +6,15 @@ pub mod hyprland;
 pub mod media_tools;
 pub mod palette;
 pub mod services;
+pub mod decorations;
+pub mod wallpaper;
 
 // Re-exports so internal code and CLI commands continue to work seamlessly
 pub use core::{state, system};
 pub use desktop::{island, lock, power, shelf, workspace};
 pub use hardware::{audio, battery, brightness, network, screenFilter, screenTemp, sound};
-pub use media_tools::{media, recorder, screenshot, slideshow, snipping, wallpaper};
+pub use media_tools::{media, recorder, screenshot, snipping};
+pub use wallpaper::slideshow;
 pub use services::{
     appLauncher, clipboard, command, commandSearch, notifications, search, weather,
 };
@@ -56,15 +59,38 @@ fn main() {
     }
 
     match args[1].as_str() {
+        "visualizer" | "cava" => {
+            crate::media_tools::visualizer::handle_cli(&args[2..]);
+        }
+        "decoration" | "decorations" => {
+            decorations::dispatch(&args[2..]);
+        }
         "wallpaper" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
             match args[2].as_str() {
-                "list" => {
-                    let dir = args.get(3).map(String::as_str);
-                    wallpaper::print_list(dir);
+                "list" | "list-json" => {
+                    let mut filter = None;
+                    let mut dir = None;
+                    let mut as_json = args[2] == "list-json";
+
+                    for arg in &args[3..] {
+                        if arg == "--json" {
+                            as_json = true;
+                        } else if matches!(arg.to_lowercase().as_str(), "all" | "image" | "gif" | "video") {
+                            filter = Some(arg.as_str());
+                        } else if !arg.starts_with("--") {
+                            dir = Some(arg.as_str());
+                        }
+                    }
+
+                    if as_json {
+                        wallpaper::print_list_json(filter, dir);
+                    } else {
+                        wallpaper::print_list(dir);
+                    }
                 }
                 "restore" => {
                     if let Err(e) = wallpaper::restore_desktop() {
@@ -88,7 +114,21 @@ fn main() {
                         eprintln!("Missing search query");
                         return;
                     }
-                    wallpaper::print_search(&args[3..].join(" "));
+                    let mut as_json = false;
+                    let mut query_parts = Vec::new();
+                    for arg in &args[3..] {
+                        if arg == "--json" {
+                            as_json = true;
+                        } else {
+                            query_parts.push(arg.as_str());
+                        }
+                    }
+                    let query = query_parts.join(" ");
+                    if as_json {
+                        wallpaper::print_search_json(&query);
+                    } else {
+                        wallpaper::print_search(&query);
+                    }
                 }
                 "lock-set" => {
                     if args.len() < 4 {
@@ -113,15 +153,30 @@ fn main() {
                     let mut monitor = None;
                     let mut restore = false;
                     let mut no_theme = false;
-                    for arg in &args[4..] {
-                        match arg.as_str() {
+                    let mut target = "Background";
+
+                    let mut i = 4;
+                    while i < args.len() {
+                        match args[i].as_str() {
                             "--restore" => restore = true,
                             "--no-theme" => no_theme = true,
+                            "--target" => {
+                                if i + 1 < args.len() {
+                                    target = &args[i + 1];
+                                    i += 1;
+                                }
+                            }
                             m if !m.starts_with("--") => monitor = Some(m),
                             _ => {}
                         }
+                        i += 1;
                     }
-                    if let Err(e) = wallpaper::apply_desktop(path, monitor, restore, no_theme) {
+
+                    if target == "Background" {
+                        if let Err(e) = wallpaper::apply_desktop(path, monitor, restore, no_theme) {
+                            eprintln!("{e}");
+                        }
+                    } else if let Err(e) = wallpaper::apply_target(path, target, monitor) {
                         eprintln!("{e}");
                     }
                 }

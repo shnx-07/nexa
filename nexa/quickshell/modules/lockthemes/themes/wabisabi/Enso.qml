@@ -21,5 +21,5 @@ ShaderEffect {
     readonly property real itemWidth: width
     readonly property real itemHeight: height
 
-    fragmentShader: Qt.resolvedUrl("../../../../shaders/enso.frag.qsb")
+    fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/enso.frag.qsb")
 }

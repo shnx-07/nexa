@@ -233,7 +233,7 @@ Item {
         property color inkColor: Wabi.sumi
         property color ageColor: "#9c7a52"
 
-        fragmentShader: Qt.resolvedUrl("../../../../shaders/lock_washi.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/lock_washi.frag.qsb")
     }
 
     LockInput {
@@ -844,7 +844,7 @@ Item {
         property color paperColor: Wabi.paper
         property color stainColor: "#8a6a44"
 
-        fragmentShader: Qt.resolvedUrl("../../../../shaders/lock_sabi.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/lock_sabi.frag.qsb")
     }
 
     Rectangle {

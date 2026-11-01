@@ -205,13 +205,55 @@ PanelWindow {
         listProcess.command = [
             nexad,
             "wallpaper",
-            "list"
+            "list",
+            "--json"
         ]
 
         listProcess.running = true
     }
 
     function parseWallpaperList(output) {
+        if (!output || output.trim() === "") return;
+        try {
+            const trimmed = output.trim();
+            if (trimmed.startsWith("{")) {
+                const data = JSON.parse(trimmed);
+                if (data.current_desktop && data.current_desktop.length > 0) {
+                    root.currentWallpaperPath = data.current_desktop;
+                }
+                const items = data.wallpapers || [];
+                let hasChanges = items.length !== wallpaperModel.count;
+                if (!hasChanges) {
+                    for (let i = 0; i < items.length; ++i) {
+                        const cur = wallpaperModel.get(i);
+                        if (!cur || cur.wallPath !== items[i].path) {
+                            hasChanges = true;
+                            break;
+                        }
+                    }
+                }
+                if (hasChanges || !loaded) {
+                    wallpaperModel.clear();
+                    for (let i = 0; i < items.length; ++i) {
+                        const it = items[i];
+                        wallpaperModel.append({
+                            wallType: it.kind,
+                            wallPath: it.path,
+                            wallThumb: it.thumb,
+                            wallProxy: it.proxy,
+                            wallName: it.name
+                        });
+                    }
+                }
+                updateVisibleSelection();
+                loaded = true;
+                statusText = items.length === 0 ? "No wallpapers found" : "";
+                return;
+            }
+        } catch (e) {
+            console.warn("[WallpaperView] JSON parse error, falling back to legacy line parser:", e);
+        }
+
         const lines = String(output)
             .split("\n")
             .filter(line => line.trim() !== "")
@@ -236,164 +278,94 @@ PanelWindow {
             })
         }
 
-        // Reconcile: check if items actually changed
-        let hasChanges = false
-        if (newItems.length !== wallpaperModel.count) {
-            hasChanges = true
-        } else {
+        let hasLineChanges = newItems.length !== wallpaperModel.count;
+        if (!hasLineChanges) {
             for (let i = 0; i < newItems.length; ++i) {
-                const current = wallpaperModel.get(i)
-                if (!current || current.wallPath !== newItems[i].wallPath) {
-                    hasChanges = true
-                    break
+                const cur = wallpaperModel.get(i);
+                if (!cur || cur.wallPath !== newItems[i].wallPath) {
+                    hasLineChanges = true;
+                    break;
                 }
             }
         }
-
-        if (hasChanges || !loaded) {
+        if (hasLineChanges || !loaded) {
             wallpaperModel.clear()
             for (let i = 0; i < newItems.length; ++i) {
                 wallpaperModel.append(newItems[i])
             }
         }
         updateVisibleSelection()
-
         loaded = true
-
-        if (wallpaperModel.count === 0)
-            statusText = "No wallpapers found"
-        else
-            statusText = ""
+        statusText = wallpaperModel.count === 0 ? "No wallpapers found" : ""
     }
 
     function matchesFilter(type, name) {
-        if (currentFilter === "All")
-            return true
-
-        if (currentFilter === "Image")
-            return type === "image"
-
-        if (currentFilter === "GIF")
-            return type === "gif"
-
-        if (currentFilter === "Video")
-            return type === "video"
-
-        return true
+        if (currentFilter === "All") return true;
+        if (currentFilter === "Image") return type === "image";
+        if (currentFilter === "GIF") return type === "gif";
+        if (currentFilter === "Video") return type === "video";
+        return true;
     }
 
     function findNextValid(start, direction) {
-        if (wallpaperModel.count <= 0)
-            return -1
-
-        let index = start
-
+        if (wallpaperModel.count <= 0) return -1;
+        let index = start;
         for (let i = 0; i < wallpaperModel.count; ++i) {
-            index =
-                (
-                    index
-                    + direction
-                    + wallpaperModel.count
-                )
-                % wallpaperModel.count
-
-            const item =
-                wallpaperModel.get(index)
-
-            if (
-                matchesFilter(
-                    item.wallType,
-                    item.wallName
-                )
-            ) {
-                return index
+            index = (index + direction + wallpaperModel.count) % wallpaperModel.count;
+            const item = wallpaperModel.get(index);
+            if (item && matchesFilter(item.wallType, item.wallName)) {
+                return index;
             }
         }
-
-        return -1
+        return -1;
     }
 
     function firstValidIndex() {
-        for (
-            let i = 0;
-            i < wallpaperModel.count;
-            ++i
-        ) {
-            const item =
-                wallpaperModel.get(i)
-
-            if (
-                matchesFilter(
-                    item.wallType,
-                    item.wallName
-                )
-            ) {
-                return i
+        for (let i = 0; i < wallpaperModel.count; ++i) {
+            const item = wallpaperModel.get(i);
+            if (item && matchesFilter(item.wallType, item.wallName)) {
+                return i;
             }
         }
-
-        return -1
+        return -1;
     }
 
     function visibleCount() {
-        let count = 0
-
-        for (
-            let i = 0;
-            i < wallpaperModel.count;
-            ++i
-        ) {
-            const item =
-                wallpaperModel.get(i)
-
-            if (
-                matchesFilter(
-                    item.wallType,
-                    item.wallName
-                )
-            ) {
-                ++count
+        let count = 0;
+        for (let i = 0; i < wallpaperModel.count; ++i) {
+            const item = wallpaperModel.get(i);
+            if (item && matchesFilter(item.wallType, item.wallName)) {
+                ++count;
             }
         }
-
-        return count
+        return count;
     }
 
     function findCurrentWallpaperIndex() {
-        if (!root.currentWallpaperPath || wallpaperModel.count <= 0)
-            return -1
-
-        const cur = root.currentWallpaperPath
-        const curName = root.fileName(cur)
-
+        if (!root.currentWallpaperPath || wallpaperModel.count <= 0) return -1;
+        const cur = root.currentWallpaperPath;
+        const curName = root.fileName(cur);
         for (let i = 0; i < wallpaperModel.count; ++i) {
-            const item = wallpaperModel.get(i)
-            if (!item)
-                continue
-
-            const p = item.wallPath
-            const name = item.wallName
-
+            const item = wallpaperModel.get(i);
+            if (!item) continue;
+            const p = item.wallPath;
+            const name = item.wallName;
             if (p === cur || (p && cur.endsWith("/" + name)) || (name && name === curName)) {
                 if (matchesFilter(item.wallType, item.wallName)) {
-                    return i
+                    return i;
                 }
             }
         }
-
-        return -1
+        return -1;
     }
 
     function updateVisibleSelection() {
         let target = findCurrentWallpaperIndex()
-        if (target < 0) {
-            target = firstValidIndex()
-        }
+        if (target < 0) target = firstValidIndex()
 
         if (target >= 0) {
             view.highlightMoveDuration = 0
             view.currentIndex = target
-
             Qt.callLater(() => {
                 view.currentIndex = target
                 view.highlightMoveDuration = 340
@@ -403,15 +375,8 @@ PanelWindow {
     }
 
     function move(direction) {
-        if (wallpaperModel.count <= 0)
-            return
-
-        const next =
-            findNextValid(
-                view.currentIndex,
-                direction
-            )
-
+        if (wallpaperModel.count <= 0) return
+        const next = findNextValid(view.currentIndex, direction)
         if (next >= 0) {
             triggerJiggle(direction)
             view.currentIndex = next
@@ -442,83 +407,25 @@ PanelWindow {
 
 
       // =========================================================
-      // BACKGROUND
+      // UNIFIED NATIVE APPLY (Background, Lock Screen, Both)
       // =========================================================
-
-      if (applyTarget === "Background") {
-          applying = true
-          root.currentWallpaperPath = entry.wallPath
-
-          statusText =
-              "Applying "
-              + entry.wallName
-              + " to background..."
-
-          Quickshell.execDetached([
-              nexad,
-              "wallpaper",
-              "apply",
-              entry.wallPath
-          ])
-
-          closeTimer.restart()
-          return
+      applying = true;
+      if (applyTarget === "Background" || applyTarget === "Both") {
+          root.currentWallpaperPath = entry.wallPath;
       }
 
+      statusText = "Applying " + entry.wallName + "...";
 
-      // =========================================================
-      // LOCK SCREEN
-      // =========================================================
+      Quickshell.execDetached([
+          nexad,
+          "wallpaper",
+          "apply",
+          entry.wallPath,
+          "--target",
+          applyTarget
+      ]);
 
-      if (applyTarget === "Lock Screen") {
-          applying = true
-
-          statusText =
-              "Applying "
-              + entry.wallName
-              + " to lock screen..."
-
-          Quickshell.execDetached([
-              nexad,
-              "wallpaper",
-              "lock-set",
-              entry.wallPath
-          ])
-
-          closeTimer.restart()
-          return
-      }
-
-
-      // =========================================================
-      // BOTH
-      // =========================================================
-
-      if (applyTarget === "Both") {
-          applying = true
-          root.currentWallpaperPath = entry.wallPath
-
-          statusText =
-              "Applying "
-              + entry.wallName
-              + " to both..."
-
-          Quickshell.execDetached([
-              nexad,
-              "wallpaper",
-              "apply",
-              entry.wallPath
-          ])
-
-          Quickshell.execDetached([
-              nexad,
-              "wallpaper",
-              "lock-set",
-              entry.wallPath
-          ])
-
-          closeTimer.restart()
-      }
+      closeTimer.restart();
   }
 
 
@@ -573,23 +480,14 @@ PanelWindow {
         const wName = fileName(filePath)
         statusText = "Applying " + wName + " (" + slideshowTarget + ")..."
 
-        if (slideshowTarget === "Background" || slideshowTarget === "Both") {
-            Quickshell.execDetached([
-                nexad,
-                "wallpaper",
-                "apply",
-                filePath
-            ])
-        }
-
-        if (slideshowTarget === "Lock Screen" || slideshowTarget === "Both") {
-            Quickshell.execDetached([
-                nexad,
-                "wallpaper",
-                "lock-set",
-                filePath
-            ])
-        }
+        Quickshell.execDetached([
+            nexad,
+            "wallpaper",
+            "apply",
+            filePath,
+            "--target",
+            slideshowTarget
+        ])
 
         slideshowLastWallpaper = filePath
 
@@ -1978,9 +1876,13 @@ PanelWindow {
 
     Timer {
         id: selectedInfoDebounce
-        interval: 40
+        interval: 350
         repeat: false
         onTriggered: {
+            if (view.moving) {
+                selectedInfoDebounce.restart()
+                return
+            }
             if (root.currentSelectedWallpaperPath.length > 0 && !root.slideshowEnabled) {
                 if (selectedWallpaperInfoProcess.running) {
                     selectedWallpaperInfoProcess.running = false
@@ -1995,23 +1897,145 @@ PanelWindow {
     }
 
     // ---------------------------------------------------------
+    // Reusable Drop-up Selector Component
+    // ---------------------------------------------------------
+
+    component DropUpSelector: Item {
+        id: selector
+        property string label: ""
+        property string currentValue: ""
+        property var options: []
+        property bool menuOpen: false
+        property int menuWidth: 140
+        property int itemHeight: 34
+        property bool alignLeft: false
+        signal selected(string value)
+        signal toggled()
+
+        width: selectorContentRow.implicitWidth + 24
+        height: 40
+
+        // Popup Drop-up Menu
+        Rectangle {
+            id: popupMenu
+            anchors {
+                horizontalCenter: parent.horizontalCenter
+                bottom: parent.top
+                bottomMargin: 8
+            }
+            z: 600
+            width: selector.menuWidth
+            height: selector.options.length * selector.itemHeight + 12
+            visible: selector.menuOpen
+            radius: Nexa.Theme.radiusMd
+            color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
+            border.width: 1
+            border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
+
+            Column {
+                anchors { fill: parent; margins: 6 }
+                spacing: 2
+
+                Repeater {
+                    model: selector.options
+                    delegate: Rectangle {
+                        required property string modelData
+                        readonly property bool active: selector.currentValue === modelData
+
+                        width: parent.width
+                        height: selector.itemHeight
+                        radius: Nexa.Theme.radiusSm
+                        color: itemMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
+
+                        Behavior on color {
+                            ColorAnimation { duration: Nexa.Theme.animationFast }
+                        }
+
+                        Text {
+                            anchors {
+                                left: selector.alignLeft ? parent.left : undefined
+                                leftMargin: selector.alignLeft ? 12 : 0
+                                centerIn: selector.alignLeft ? undefined : parent
+                                verticalCenter: selector.alignLeft ? parent.verticalCenter : undefined
+                            }
+                            text: modelData
+                            color: parent.active ? Nexa.Theme.primary : Nexa.Theme.text
+                            font.family: Nexa.Theme.uiFont
+                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            font.weight: parent.active ? Font.DemiBold : Font.Normal
+                        }
+
+                        MouseArea {
+                            id: itemMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: selector.selected(modelData)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Trigger Button
+        Rectangle {
+            anchors.fill: parent
+            radius: Nexa.Theme.radiusSm
+            color: btnMouse.containsMouse || selector.menuOpen ? Nexa.Theme.hover : "transparent"
+
+            Behavior on color {
+                ColorAnimation { duration: Nexa.Theme.animationFast }
+            }
+
+            Row {
+                id: selectorContentRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    text: selector.label
+                    color: Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.uiFont
+                    font.pixelSize: Nexa.Theme.fontSizeSm
+                }
+
+                Text {
+                    text: selector.currentValue
+                    color: selector.menuOpen ? Nexa.Theme.primary : Nexa.Theme.text
+                    font.family: Nexa.Theme.uiFont
+                    font.pixelSize: Nexa.Theme.fontSizeSm
+                    font.weight: Font.DemiBold
+                }
+
+                Text {
+                    text: selector.menuOpen ? "▾" : "▴"
+                    color: selector.menuOpen ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                    font.family: Nexa.Theme.uiFont
+                    font.pixelSize: Nexa.Theme.fontSizeXs
+                }
+            }
+
+            MouseArea {
+                id: btnMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: selector.toggled()
+            }
+        }
+    }
+
+    // ---------------------------------------------------------
     // Bottom floating controls row
     // ---------------------------------------------------------
 
     Row {
         id: bottomControlsRow
-
         anchors {
-            horizontalCenter:
-                parent.horizontalCenter
-
-            bottom:
-                parent.bottom
-
-            bottomMargin:
-                18
+            horizontalCenter: parent.horizontalCenter
+            bottom: parent.bottom
+            bottomMargin: 18
         }
-
         spacing: 14
         z: 500
 
@@ -2022,483 +2046,105 @@ PanelWindow {
         Rectangle {
             id: filterBar
             visible: !root.slideshowEnabled
-
             height: 56
+            width: filterRow.implicitWidth + 24
+            radius: Nexa.Theme.radiusLg
+            color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.92)
+            border.width: 1
+            border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
 
-            width:
-                filterRow.implicitWidth + 24
+            Row {
+                id: filterRow
+                anchors.centerIn: parent
+                spacing: 8
 
-        radius:
-            Nexa.Theme.radiusLg
+                Repeater {
+                    model: ["All", "Image", "GIF", "Video"]
+                    delegate: Rectangle {
+                        required property string modelData
+                        readonly property bool active: root.currentFilter === modelData
 
-        color:
-            Qt.rgba(
-                Nexa.Theme.surface.r,
-                Nexa.Theme.surface.g,
-                Nexa.Theme.surface.b,
-                0.92
-            )
+                        height: 40
+                        width: filterText.implicitWidth + 24
+                        radius: Nexa.Theme.radiusSm
+                        color: active ? Nexa.Theme.selectedOverlay : (tabMouse.containsMouse ? Nexa.Theme.hover : "transparent")
+                        border.width: active ? 1 : 0
+                        border.color: Nexa.Theme.primary
+                        scale: tabMouse.pressed ? 0.95 : (tabMouse.containsMouse ? 1.03 : 1.0)
 
-        border.width: 1
-
-        border.color:
-            Qt.rgba(
-                Nexa.Theme.outline.r,
-                Nexa.Theme.outline.g,
-                Nexa.Theme.outline.b,
-                0.55
-            )
-
-
-        Row {
-            id: filterRow
-
-            anchors.centerIn: parent
-
-            spacing: 8
-
-
-            // =====================================================
-            // WALLPAPER TYPE FILTERS
-            // =====================================================
-
-            Repeater {
-                model: [
-                    "All",
-                    "Image",
-                    "GIF",
-                    "Video"
-                ]
-
-
-                delegate: Rectangle {
-                    required property string modelData
-
-                    readonly property bool active:
-                        root.currentFilter
-                        === modelData
-
-
-                    height: 40
-
-                    width:
-                        filterText.implicitWidth
-                        + 24
-
-                    radius:
-                        Nexa.Theme.radiusSm
-
-
-                    color:
-                        active
-                        ? Nexa.Theme.selectedOverlay
-                        : (tabMouse.containsMouse ? Nexa.Theme.hover : "transparent")
-
-
-                    border.width:
-                        active ? 1 : 0
-
-                    border.color:
-                        Nexa.Theme.primary
-
-                    scale:
-                        tabMouse.pressed
-                        ? 0.95
-                        : (tabMouse.containsMouse ? 1.03 : 1.0)
-
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration:
-                                Nexa.Theme.animationFast
+                        Behavior on color {
+                            ColorAnimation { duration: Nexa.Theme.animationFast }
                         }
-                    }
-
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: Nexa.Theme.animationFast
-                            easing.type: Nexa.Theme.easingEmphasized
-                        }
-                    }
-
-
-                    Text {
-                        id: filterText
-
-                        anchors.centerIn:
-                            parent
-
-                        text:
-                            modelData
-
-                        color:
-                            parent.active
-                            ? Nexa.Theme.primary
-                            : Nexa.Theme.mutedText
-
-                        font.family:
-                            Nexa.Theme.uiFont
-
-                        font.pixelSize:
-                            Nexa.Theme.fontSizeSm
-
-                        font.weight:
-                            parent.active
-                            ? Font.DemiBold
-                            : Font.Normal
-                    }
-
-
-                    MouseArea {
-                        id: tabMouse
-                        anchors.fill:
-                            parent
-
-                        hoverEnabled:
-                            true
-
-                        cursorShape:
-                            Qt.PointingHandCursor
-
-                        onClicked: {
-                            root.applyMenuOpen = false
-
-                            root.activateFilter(
-                                modelData
-                            )
-                        }
-                    }
-                }
-            }
-
-
-            // =====================================================
-            // DIVIDER
-            // =====================================================
-
-            Rectangle {
-                anchors.verticalCenter:
-                    parent.verticalCenter
-
-                width: 1
-                height: 24
-
-                color:
-                    Qt.rgba(
-                        Nexa.Theme.outline.r,
-                        Nexa.Theme.outline.g,
-                        Nexa.Theme.outline.b,
-                        0.35
-                    )
-            }
-
-
-            // =====================================================
-            // APPLY TARGET
-            // =====================================================
-
-            Item {
-                id: applyTargetControl
-
-                width: 168
-                height: 40
-
-
-                // -------------------------------------------------
-                // DROP-UP MENU
-                // -------------------------------------------------
-
-                Rectangle {
-                    id: applyMenu
-
-                    anchors {
-                        horizontalCenter:
-                            applyButton.horizontalCenter
-
-                        bottom:
-                            applyButton.top
-
-                        bottomMargin:
-                            8
-                    }
-
-                    z: 500
-
-                    width: 168
-                    height: 132
-
-                    visible:
-                        root.applyMenuOpen
-
-                    radius:
-                        Nexa.Theme.radiusMd
-
-                    color:
-                        Qt.rgba(
-                            Nexa.Theme.surface.r,
-                            Nexa.Theme.surface.g,
-                            Nexa.Theme.surface.b,
-                            0.96
-                        )
-
-                    border.width: 1
-
-                    border.color:
-                        Qt.rgba(
-                            Nexa.Theme.outline.r,
-                            Nexa.Theme.outline.g,
-                            Nexa.Theme.outline.b,
-                            0.55
-                        )
-
-
-                    Column {
-                        anchors {
-                            fill: parent
-                            margins: 6
+                        Behavior on scale {
+                            NumberAnimation { duration: Nexa.Theme.animationFast; easing.type: Nexa.Theme.easingEmphasized }
                         }
 
-                        spacing: 2
+                        Text {
+                            id: filterText
+                            anchors.centerIn: parent
+                            text: modelData
+                            color: parent.active ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                            font.family: Nexa.Theme.uiFont
+                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            font.weight: parent.active ? Font.DemiBold : Font.Normal
+                        }
 
-
-                        Repeater {
-                            model: [
-                                "Background",
-                                "Lock Screen",
-                                "Both"
-                            ]
-
-
-                            delegate: Rectangle {
-                                required property string modelData
-
-                                readonly property bool active:
-                                    root.applyTarget
-                                    === modelData
-
-
-                                width:
-                                    parent.width
-
-                                height: 38
-
-                                radius:
-                                    Nexa.Theme.radiusSm
-
-
-                                color:
-                                    targetMouse.containsMouse
-                                    ? Nexa.Theme.hover
-                                    : active
-                                        ? Nexa.Theme.selectedOverlay
-                                        : "transparent"
-
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration:
-                                            Nexa.Theme.animationFast
-                                    }
-                                }
-
-
-                                Text {
-                                    anchors {
-                                        left:
-                                            parent.left
-
-                                        verticalCenter:
-                                            parent.verticalCenter
-
-                                        leftMargin:
-                                            12
-                                    }
-
-                                    text:
-                                        modelData
-
-                                    color:
-                                        parent.active
-                                        ? Nexa.Theme.primary
-                                        : Nexa.Theme.text
-
-                                    font.family:
-                                        Nexa.Theme.uiFont
-
-                                    font.pixelSize:
-                                        Nexa.Theme.fontSizeSm
-
-                                    font.weight:
-                                        parent.active
-                                        ? Font.DemiBold
-                                        : Font.Normal
-                                }
-
-
-                                MouseArea {
-                                    id: targetMouse
-
-                                    anchors.fill:
-                                        parent
-
-                                    hoverEnabled:
-                                        true
-
-                                    cursorShape:
-                                        Qt.PointingHandCursor
-
-
-                                    onClicked:
-                                        root.activateApplyTarget(
-                                            modelData
-                                        )
-                                }
+                        MouseArea {
+                            id: tabMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.applyMenuOpen = false
+                                root.activateFilter(modelData)
                             }
                         }
                     }
                 }
 
-
-                // -------------------------------------------------
-                // APPLY-TO BUTTON
-                // -------------------------------------------------
-
+                // DIVIDER
                 Rectangle {
-                    id: applyButton
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 1
+                    height: 24
+                    color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.35)
+                }
 
-                    anchors.fill:
-                        parent
-
-                    radius:
-                        Nexa.Theme.radiusSm
-
-
-                    color:
-                        applyMouse.containsMouse
-                        || root.applyMenuOpen
-                        ? Nexa.Theme.hover
-                        : "transparent"
-
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration:
-                                Nexa.Theme.animationFast
-                        }
-                    }
-
-
-                    Row {
-                        anchors.centerIn:
-                            parent
-
-                        spacing: 7
-
-
-                        Text {
-                            text:
-                                "Apply to:"
-
-                            color:
-                                Nexa.Theme.mutedText
-
-                            font.family:
-                                Nexa.Theme.uiFont
-
-                            font.pixelSize:
-                                Nexa.Theme.fontSizeSm
-                        }
-
-
-                        Text {
-                            text:
-                                root.applyTarget
-
-                            color:
-                                root.applyMenuOpen
-                                ? Nexa.Theme.primary
-                                : Nexa.Theme.text
-
-                            font.family:
-                                Nexa.Theme.uiFont
-
-                            font.pixelSize:
-                                Nexa.Theme.fontSizeSm
-
-                            font.weight:
-                                Font.DemiBold
-                        }
-
-
-                        Text {
-                            text:
-                                root.applyMenuOpen
-                                ? "▾"
-                                : "▴"
-
-                            color:
-                                root.applyMenuOpen
-                                ? Nexa.Theme.primary
-                                : Nexa.Theme.mutedText
-
-                            font.family:
-                                Nexa.Theme.uiFont
-
-                            font.pixelSize:
-                                Nexa.Theme.fontSizeXs
-                        }
-                    }
-
-
-                    MouseArea {
-                        id: applyMouse
-
-                        anchors.fill:
-                            parent
-
-                        hoverEnabled:
-                            true
-
-                        cursorShape:
-                            Qt.PointingHandCursor
-
-
-                        onClicked: {
-                            root.closeAllSlideshowMenus()
-                            root.applyMenuOpen =
-                                !root.applyMenuOpen
-                        }
+                // APPLY TARGET
+                DropUpSelector {
+                    id: applyTargetControl
+                    label: "Apply to:"
+                    currentValue: root.applyTarget
+                    options: ["Background", "Lock Screen", "Both"]
+                    menuOpen: root.applyMenuOpen
+                    menuWidth: 168
+                    itemHeight: 38
+                    alignLeft: true
+                    onSelected: (val) => root.activateApplyTarget(val)
+                    onToggled: {
+                        root.closeAllSlideshowMenus()
+                        root.applyMenuOpen = !root.applyMenuOpen
                     }
                 }
             }
         }
-    }
 
-    // ---------------------------------------------------------
-    // Bottom floating slideshow bar
-    // ---------------------------------------------------------
+        // ---------------------------------------------------------
+        // Bottom floating slideshow bar
+        // ---------------------------------------------------------
 
         Rectangle {
             id: slideshowBar
-
             height: 56
             width: slideshowRow.implicitWidth + 24
             radius: Nexa.Theme.radiusLg
-
-            color: Qt.rgba(
-                Nexa.Theme.surface.r,
-                Nexa.Theme.surface.g,
-                Nexa.Theme.surface.b,
-                0.92
-            )
-
+            color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.92)
             border.width: 1
-            border.color: Qt.rgba(
-                Nexa.Theme.outline.r,
-                Nexa.Theme.outline.g,
-                Nexa.Theme.outline.b,
-                0.55
-            )
+            border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
+
+            Behavior on width {
+                NumberAnimation { duration: Nexa.Theme.animationFast; easing.type: Nexa.Theme.easingEmphasized }
+            }
 
             Row {
                 id: slideshowRow
@@ -2511,14 +2157,9 @@ PanelWindow {
                     height: 40
                     width: toggleContentRow.implicitWidth + 22
                     radius: Nexa.Theme.radiusSm
-
-                    color: root.slideshowEnabled
-                        ? Nexa.Theme.selectedOverlay
-                        : (toggleMouse.containsMouse ? Nexa.Theme.hover : "transparent")
-
+                    color: root.slideshowEnabled ? Nexa.Theme.selectedOverlay : (toggleMouse.containsMouse ? Nexa.Theme.hover : "transparent")
                     border.width: root.slideshowEnabled ? 1 : 0
                     border.color: Nexa.Theme.primary
-
                     scale: toggleMouse.pressed ? 0.95 : (toggleMouse.containsMouse ? 1.03 : 1.0)
 
                     Behavior on color {
@@ -2563,6 +2204,7 @@ PanelWindow {
 
                 // DIVIDER
                 Rectangle {
+                    visible: root.slideshowEnabled
                     anchors.verticalCenter: parent.verticalCenter
                     width: 1
                     height: 24
@@ -2570,119 +2212,31 @@ PanelWindow {
                 }
 
                 // 2. TIMER DROPDOWN
-                Item {
+                DropUpSelector {
                     id: slideshowTimerControl
-                    width: timerBtnRow.implicitWidth + 20
-                    height: 40
-
-                    // DROP-UP MENU
-                    Rectangle {
-                        id: timerMenu
-                        anchors {
-                            horizontalCenter: parent.horizontalCenter
-                            bottom: parent.top
-                            bottomMargin: 8
-                        }
-                        z: 600
-                        width: 108
-                        height: 5 * 34 + 12
-                        visible: root.slideshowTimerMenuOpen
-                        radius: Nexa.Theme.radiusMd
-                        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
-                        border.width: 1
-                        border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
-
-                        Column {
-                            anchors { fill: parent; margins: 6 }
-                            spacing: 2
-
-                            Repeater {
-                                model: ["5m", "10m", "15m", "30m", "1h"]
-                                delegate: Rectangle {
-                                    required property string modelData
-                                    readonly property bool active: root.slideshowInterval === modelData
-
-                                    width: parent.width
-                                    height: 32
-                                    radius: Nexa.Theme.radiusSm
-                                    color: itemMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: modelData
-                                        color: parent.active ? Nexa.Theme.primary : Nexa.Theme.text
-                                        font.family: Nexa.Theme.uiFont
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
-                                        font.weight: parent.active ? Font.DemiBold : Font.Normal
-                                    }
-
-                                    MouseArea {
-                                        id: itemMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, modelData, root.slideshowType, root.slideshowTarget)
-                                            root.slideshowTimerMenuOpen = false
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    visible: root.slideshowEnabled
+                    label: "Timer:"
+                    currentValue: root.slideshowInterval
+                    options: ["5m", "10m", "15m", "30m", "1h"]
+                    menuOpen: root.slideshowTimerMenuOpen
+                    menuWidth: 108
+                    itemHeight: 32
+                    alignLeft: false
+                    onSelected: (val) => {
+                        root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, val, root.slideshowType, root.slideshowTarget)
+                        root.slideshowTimerMenuOpen = false
                     }
-
-                    // TIMER BUTTON
-                    Rectangle {
-                        id: timerBtn
-                        anchors.fill: parent
-                        radius: Nexa.Theme.radiusSm
-                        color: timerBtnMouse.containsMouse || root.slideshowTimerMenuOpen ? Nexa.Theme.hover : "transparent"
-
-                        Row {
-                            id: timerBtnRow
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                text: "Timer:"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.uiFont
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                            }
-
-                            Text {
-                                text: root.slideshowInterval
-                                color: root.slideshowTimerMenuOpen ? Nexa.Theme.primary : Nexa.Theme.text
-                                font.family: Nexa.Theme.uiFont
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                                font.weight: Font.DemiBold
-                            }
-
-                            Text {
-                                text: root.slideshowTimerMenuOpen ? "▾" : "▴"
-                                color: root.slideshowTimerMenuOpen ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.uiFont
-                                font.pixelSize: Nexa.Theme.fontSizeXs
-                            }
-                        }
-
-                        MouseArea {
-                            id: timerBtnMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.applyMenuOpen = false
-                                root.slideshowTypeMenuOpen = false
-                                root.slideshowTargetMenuOpen = false
-                                root.slideshowTimerMenuOpen = !root.slideshowTimerMenuOpen
-                            }
-                        }
+                    onToggled: {
+                        root.applyMenuOpen = false
+                        root.slideshowTypeMenuOpen = false
+                        root.slideshowTargetMenuOpen = false
+                        root.slideshowTimerMenuOpen = !root.slideshowTimerMenuOpen
                     }
                 }
 
                 // DIVIDER
                 Rectangle {
+                    visible: root.slideshowEnabled
                     anchors.verticalCenter: parent.verticalCenter
                     width: 1
                     height: 24
@@ -2691,6 +2245,7 @@ PanelWindow {
 
                 // 3. START/PAUSE & NEXT PLAYBACK CONTROLS
                 Row {
+                    visible: root.slideshowEnabled
                     spacing: 4
                     opacity: root.slideshowEnabled ? 1.0 : 0.45
 
@@ -2788,6 +2343,7 @@ PanelWindow {
 
                 // DIVIDER
                 Rectangle {
+                    visible: root.slideshowEnabled
                     anchors.verticalCenter: parent.verticalCenter
                     width: 1
                     height: 24
@@ -2795,119 +2351,31 @@ PanelWindow {
                 }
 
                 // 4. TYPE FILTER DROPDOWN
-                Item {
+                DropUpSelector {
                     id: slideshowTypeControl
-                    width: typeBtnRow.implicitWidth + 20
-                    height: 40
-
-                    // DROP-UP MENU
-                    Rectangle {
-                        id: typeMenu
-                        anchors {
-                            horizontalCenter: parent.horizontalCenter
-                            bottom: parent.top
-                            bottomMargin: 8
-                        }
-                        z: 600
-                        width: 120
-                        height: 4 * 34 + 12
-                        visible: root.slideshowTypeMenuOpen
-                        radius: Nexa.Theme.radiusMd
-                        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
-                        border.width: 1
-                        border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
-
-                        Column {
-                            anchors { fill: parent; margins: 6 }
-                            spacing: 2
-
-                            Repeater {
-                                model: ["All", "Image", "GIF", "Video"]
-                                delegate: Rectangle {
-                                    required property string modelData
-                                    readonly property bool active: root.slideshowType === modelData
-
-                                    width: parent.width
-                                    height: 32
-                                    radius: Nexa.Theme.radiusSm
-                                    color: typeItemMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: modelData
-                                        color: parent.active ? Nexa.Theme.primary : Nexa.Theme.text
-                                        font.family: Nexa.Theme.uiFont
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
-                                        font.weight: parent.active ? Font.DemiBold : Font.Normal
-                                    }
-
-                                    MouseArea {
-                                        id: typeItemMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, root.slideshowInterval, modelData, root.slideshowTarget)
-                                            root.slideshowTypeMenuOpen = false
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    visible: root.slideshowEnabled
+                    label: "Type:"
+                    currentValue: root.slideshowType
+                    options: ["All", "Image", "GIF", "Video"]
+                    menuOpen: root.slideshowTypeMenuOpen
+                    menuWidth: 120
+                    itemHeight: 32
+                    alignLeft: false
+                    onSelected: (val) => {
+                        root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, root.slideshowInterval, val, root.slideshowTarget)
+                        root.slideshowTypeMenuOpen = false
                     }
-
-                    // TYPE BUTTON
-                    Rectangle {
-                        id: typeBtn
-                        anchors.fill: parent
-                        radius: Nexa.Theme.radiusSm
-                        color: typeBtnMouse.containsMouse || root.slideshowTypeMenuOpen ? Nexa.Theme.hover : "transparent"
-
-                        Row {
-                            id: typeBtnRow
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                text: "Type:"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.uiFont
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                            }
-
-                            Text {
-                                text: root.slideshowType
-                                color: root.slideshowTypeMenuOpen ? Nexa.Theme.primary : Nexa.Theme.text
-                                font.family: Nexa.Theme.uiFont
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                                font.weight: Font.DemiBold
-                            }
-
-                            Text {
-                                text: root.slideshowTypeMenuOpen ? "▾" : "▴"
-                                color: root.slideshowTypeMenuOpen ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.uiFont
-                                font.pixelSize: Nexa.Theme.fontSizeXs
-                            }
-                        }
-
-                        MouseArea {
-                            id: typeBtnMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.applyMenuOpen = false
-                                root.slideshowTimerMenuOpen = false
-                                root.slideshowTargetMenuOpen = false
-                                root.slideshowTypeMenuOpen = !root.slideshowTypeMenuOpen
-                            }
-                        }
+                    onToggled: {
+                        root.applyMenuOpen = false
+                        root.slideshowTimerMenuOpen = false
+                        root.slideshowTargetMenuOpen = false
+                        root.slideshowTypeMenuOpen = !root.slideshowTypeMenuOpen
                     }
                 }
 
                 // DIVIDER
                 Rectangle {
+                    visible: root.slideshowEnabled
                     anchors.verticalCenter: parent.verticalCenter
                     width: 1
                     height: 24
@@ -2915,118 +2383,25 @@ PanelWindow {
                 }
 
                 // 5. APPLY TO DROPDOWN
-                Item {
+                DropUpSelector {
                     id: slideshowTargetControl
-                    width: targetBtnRow.implicitWidth + 20
-                    height: 40
-
-                    // DROP-UP MENU
-                    Rectangle {
-                        id: targetMenu
-                        anchors {
-                            horizontalCenter: parent.horizontalCenter
-                            bottom: parent.top
-                            bottomMargin: 8
-                        }
-                        z: 600
-                        width: 154
-                        height: 3 * 38 + 12
-                        visible: root.slideshowTargetMenuOpen
-                        radius: Nexa.Theme.radiusMd
-                        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.96)
-                        border.width: 1
-                        border.color: Qt.rgba(Nexa.Theme.outline.r, Nexa.Theme.outline.g, Nexa.Theme.outline.b, 0.55)
-
-                        Column {
-                            anchors { fill: parent; margins: 6 }
-                            spacing: 2
-
-                            Repeater {
-                                model: ["Background", "Lock Screen", "Both"]
-                                delegate: Rectangle {
-                                    required property string modelData
-                                    readonly property bool active: root.slideshowTarget === modelData
-
-                                    width: parent.width
-                                    height: 36
-                                    radius: Nexa.Theme.radiusSm
-                                    color: targetItemMouse.containsMouse ? Nexa.Theme.hover : (active ? Nexa.Theme.selectedOverlay : "transparent")
-
-                                    Text {
-                                        anchors {
-                                            left: parent.left
-                                            verticalCenter: parent.verticalCenter
-                                            leftMargin: 12
-                                        }
-                                        text: modelData
-                                        color: parent.active ? Nexa.Theme.primary : Nexa.Theme.text
-                                        font.family: Nexa.Theme.uiFont
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
-                                        font.weight: parent.active ? Font.DemiBold : Font.Normal
-                                    }
-
-                                    MouseArea {
-                                        id: targetItemMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, root.slideshowInterval, root.slideshowType, modelData)
-                                            root.slideshowTargetMenuOpen = false
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    visible: root.slideshowEnabled
+                    label: "Apply to:"
+                    currentValue: root.slideshowTarget
+                    options: ["Background", "Lock Screen", "Both"]
+                    menuOpen: root.slideshowTargetMenuOpen
+                    menuWidth: 154
+                    itemHeight: 36
+                    alignLeft: true
+                    onSelected: (val) => {
+                        root.saveSlideshowState(root.slideshowEnabled, root.slideshowPaused, root.slideshowInterval, root.slideshowType, val)
+                        root.slideshowTargetMenuOpen = false
                     }
-
-                    // TARGET BUTTON
-                    Rectangle {
-                        id: targetBtn
-                        anchors.fill: parent
-                        radius: Nexa.Theme.radiusSm
-                        color: targetBtnMouse.containsMouse || root.slideshowTargetMenuOpen ? Nexa.Theme.hover : "transparent"
-
-                        Row {
-                            id: targetBtnRow
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                text: "Apply to:"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.uiFont
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                            }
-
-                            Text {
-                                text: root.slideshowTarget
-                                color: root.slideshowTargetMenuOpen ? Nexa.Theme.primary : Nexa.Theme.text
-                                font.family: Nexa.Theme.uiFont
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                                font.weight: Font.DemiBold
-                            }
-
-                            Text {
-                                text: root.slideshowTargetMenuOpen ? "▾" : "▴"
-                                color: root.slideshowTargetMenuOpen ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.uiFont
-                                font.pixelSize: Nexa.Theme.fontSizeXs
-                            }
-                        }
-
-                        MouseArea {
-                            id: targetBtnMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.applyMenuOpen = false
-                                root.slideshowTimerMenuOpen = false
-                                root.slideshowTypeMenuOpen = false
-                                root.slideshowTargetMenuOpen = !root.slideshowTargetMenuOpen
-                            }
-                        }
+                    onToggled: {
+                        root.applyMenuOpen = false
+                        root.slideshowTimerMenuOpen = false
+                        root.slideshowTypeMenuOpen = false
+                        root.slideshowTargetMenuOpen = !root.slideshowTargetMenuOpen
                     }
                 }
             }
@@ -3039,57 +2414,23 @@ PanelWindow {
 
     Rectangle {
         anchors {
-            horizontalCenter:
-                parent.horizontalCenter
-
-            bottom:
-                bottomControlsRow.top
-
-            bottomMargin:
-                10
+            horizontalCenter: parent.horizontalCenter
+            bottom: bottomControlsRow.top
+            bottomMargin: 10
         }
-
-        visible:
-            root.statusText !== ""
-
+        visible: root.statusText !== ""
         height: 30
-
-        width:
-            statusLabel.implicitWidth + 22
-
-        radius:
-            Nexa.Theme.radiusFull
-
-        color:
-            Qt.rgba(
-                Nexa.Theme.surface.r,
-                Nexa.Theme.surface.g,
-                Nexa.Theme.surface.b,
-                0.82
-            )
+        width: statusLabel.implicitWidth + 22
+        radius: Nexa.Theme.radiusFull
+        color: Qt.rgba(Nexa.Theme.surface.r, Nexa.Theme.surface.g, Nexa.Theme.surface.b, 0.82)
 
         Text {
             id: statusLabel
-
-            anchors.centerIn:
-                parent
-
-            text: {
-                if (root.statusText !== "")
-                    return root.statusText
-
-                return root.visibleCount()
-                    + " wallpapers"
-            }
-
-            color:
-                Nexa.Theme.mutedText
-
-            font.family:
-                Nexa.Theme.monoFont
-
-            font.pixelSize:
-                Nexa.Theme.fontSizeXs
+            anchors.centerIn: parent
+            text: root.statusText !== "" ? root.statusText : (root.visibleCount() + " wallpapers")
+            color: Nexa.Theme.mutedText
+            font.family: Nexa.Theme.monoFont
+            font.pixelSize: Nexa.Theme.fontSizeXs
         }
     }
 

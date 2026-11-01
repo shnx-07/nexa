@@ -23,6 +23,7 @@ pub fn is_running_pattern(pattern: &str) -> bool {
 
 /// Spawns a background detached daemon.
 pub fn spawn_detached(binary: &str, args: &[&str], envs: &[(&str, &str)]) -> Result<(), String> {
+    use std::os::unix::process::CommandExt;
     let mut cmd = Command::new(binary);
     cmd.args(args);
     for (k, v) in envs {
@@ -31,6 +32,7 @@ pub fn spawn_detached(binary: &str, args: &[&str], envs: &[(&str, &str)]) -> Res
     cmd.stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
+    cmd.process_group(0);
 
     cmd.spawn()
         .map_err(|e| format!("Failed to spawn {binary}: {e}"))?;
@@ -55,7 +57,7 @@ pub fn run_autostart() -> Result<(), String> {
     println!("[NEXA Autostart] Stage 2: Spawning QuickShell desktop & restoring wallpaper...");
 
     let shell_path = format!("{home}/.config/nexa/quickshell/shell.qml");
-    if !is_running_pattern("quickshell.*shell.qml") {
+    if !is_running_exact("quickshell") {
         let envs = [
             ("QS_NO_RELOAD_POPUP", "1"),
             ("QT_IMAGEIO_MAXALLOC", "1024"),
@@ -125,7 +127,7 @@ pub fn run_autostart() -> Result<(), String> {
 pub fn print_status() {
     println!("\nNEXA Desktop Autostart & Daemons Status:\n");
 
-    let qs_running = is_running_pattern("quickshell.*shell.qml");
+    let qs_running = is_running_exact("quickshell");
     let polkit_active = Command::new("systemctl")
         .args(["--user", "is-active", "plasma-polkit-agent.service"])
         .output()

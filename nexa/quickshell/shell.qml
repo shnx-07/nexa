@@ -9,6 +9,7 @@ import "modules/lockscreen" as LockScreenModule
 import "modules/nightlight" as NightLightModule
 import "wallpaper" as WallpaperModule
 import "services" as Services
+import "theme" as NexaTheme
 
 ShellRoot {
     Component.onCompleted: {
@@ -290,6 +291,17 @@ ShellRoot {
         }
     }
 
+    Connections {
+        target: settingsLoader.item
+        ignoreUnknownSignals: true
+        function onWindowAliveChanged() {
+            if (settingsLoader.item && !settingsLoader.item.windowAlive) {
+                settingsLoader.active = false
+                if (typeof gc === "function") gc()
+            }
+        }
+    }
+
     IpcHandler {
         target: "settings"
 
@@ -307,6 +319,11 @@ ShellRoot {
 
         function openTab(tabName: string) {
             open(tabName)
+        }
+
+        function openSubTab(subTab: string) {
+            Nexa.Theme.currentThemeSubTab = subTab
+            open("system")
         }
 
         function close() {
@@ -347,6 +364,11 @@ ShellRoot {
             open(tabName)
         }
 
+        function openSubTab(subTab: string) {
+            Nexa.Theme.currentThemeSubTab = subTab
+            open("system")
+        }
+
         function close() {
             if (settingsLoader.item) {
                 settingsLoader.item.closeWindow()
@@ -363,6 +385,22 @@ ShellRoot {
                 }
                 settingsLoader.active = true
             }
+        }
+    }
+
+    IpcHandler {
+        target: "shader"
+
+        function set(shaderId: string) {
+            NexaTheme.Theme.setShader(shaderId || "off")
+        }
+
+        function toggle() {
+            NexaTheme.Theme.toggleShader()
+        }
+
+        function get(): string {
+            return NexaTheme.Theme.activeShader
         }
     }
 

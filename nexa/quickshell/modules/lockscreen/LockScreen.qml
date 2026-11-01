@@ -110,7 +110,7 @@ Item {
             "if [ -f " + root.pendingFlag + " ]; then "
             + "rm -f " + root.pendingFlag + "; "
             + "sleep 0.2; "
-            + "$HOME/.config/nexa/scripts/nexa-restart.sh && $HOME/.config/nexa/rust/target/release/nexad wallpaper restore; "
+            + "$HOME/.config/nexa/scripts/nexa.sh restart && $HOME/.config/nexa/rust/target/release/nexad wallpaper restore; "
             + "fi"
         ])
     }
@@ -216,7 +216,7 @@ Item {
                     "if [ -f " + root.pendingFlag + " ]; then "
                     + "rm -f " + root.pendingFlag + "; "
                     + "sleep 0.2; "
-                    + "$HOME/.config/nexa/scripts/nexa-restart.sh && $HOME/.config/nexa/rust/target/release/nexad wallpaper restore; "
+                    + "$HOME/.config/nexa/scripts/nexa.sh restart && $HOME/.config/nexa/rust/target/release/nexad wallpaper restore; "
                     + "fi"
                 ])
             }

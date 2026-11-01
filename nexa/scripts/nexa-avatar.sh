@@ -52,8 +52,8 @@ case "$1" in
         fi
 
         # Quick restart of NEXA to load the new avatar
-        if [ -f "$CONFIG_DIR/scripts/nexa-restart.sh" ]; then
-            bash "$CONFIG_DIR/scripts/nexa-restart.sh" >/dev/null 2>&1
+        if [ -f "$CONFIG_DIR/scripts/nexa.sh" ]; then
+            bash "$CONFIG_DIR/scripts/nexa.sh" restart >/dev/null 2>&1
         fi
         ;;
     *)

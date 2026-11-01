@@ -282,7 +282,13 @@ pub fn is_scratchpad_active() -> bool {
 }
 
 /// Handles standard terminal launch (SUPER + Return). Instant execution with zero lag.
+/// If either scratchpad (SUPER + SHIFT + RETURN or SUPER + E) is visible on screen, do nothing.
 pub fn handle_normal_terminal() -> Result<(), String> {
+    if is_scratchpad_active() {
+        debug("Ignoring normal terminal launch because scratchpad (terminal/files) is open on screen");
+        return Ok(());
+    }
+
     let term = env::var("TERMINAL").unwrap_or_else(|_| "kitty".to_string());
     dispatch(&format!(r#"hl.dsp.exec_cmd("{term}")"#))
 }

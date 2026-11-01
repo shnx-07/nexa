@@ -13,12 +13,14 @@ RowLayout {
 
     property int windowRounding: Nexa.Theme.windowRounding
     property int nexaRounding: Nexa.Theme.nexaRounding
+    property int islandRounding: Nexa.Theme.islandRounding
     property int windowBorderSize: Nexa.Theme.windowBorderSize
     property bool windowGlow: true
     property real windowDim: 0.0
 
     signal setRoundingRequested(int r)
     signal setNexaRoundingRequested(int nr)
+    signal setIslandRoundingRequested(int ir)
     signal setBorderSizeRequested(int b)
     signal setWindowGlowRequested(bool on)
     signal setWindowDimRequested(real dim)
@@ -413,7 +415,7 @@ RowLayout {
                                     color: Nexa.Theme.text
                                 }
                                 Text {
-                                    text: "Curvature for Nexa top bar, dynamic island, clipboard, and system panels"
+                                    text: "Curvature for Nexa top bar, clipboard, and system panels"
                                     font.family: Nexa.Theme.fontFamily
                                     font.pixelSize: 10
                                     color: Nexa.Theme.mutedText
@@ -501,6 +503,129 @@ RowLayout {
                         }
                     }
                 }
+
+                // ════════════════════════════════════════════════════════════
+                // SECTION 3: DYNAMIC ISLAND GEOMETRY
+                // ════════════════════════════════════════════════════════════
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: islandSecCol.implicitHeight + 24
+                    radius: Nexa.Theme.radiusSm
+                    color: Nexa.Theme.surfaceContainer
+                    border.width: Nexa.Theme.borderThin
+                    border.color: Nexa.Theme.border
+
+                    ColumnLayout {
+                        id: islandSecCol
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 12
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+                            Text {
+                                text: "🏝️"
+                                font.pixelSize: 14
+                            }
+                            ColumnLayout {
+                                spacing: 1
+                                Text {
+                                    text: "Dynamic Island Geometry"
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 13
+                                    font.weight: Nexa.Theme.fontWeightBold
+                                    color: Nexa.Theme.text
+                                }
+                                Text {
+                                    text: "Curvature & capsule shape independent of external windows and shell"
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 10
+                                    color: Nexa.Theme.mutedText
+                                }
+                            }
+                        }
+
+                        // 3.1 Island Corner Curvature
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Text {
+                                    text: "Island Corner Curvature"
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 12
+                                    font.weight: Nexa.Theme.fontWeightDemiBold
+                                    color: Nexa.Theme.text
+                                }
+                                Item { Layout.fillWidth: true }
+                                Text {
+                                    text: root.islandRounding >= 999 ? "Capsule Pill" : (root.islandRounding + " px")
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 12
+                                    font.weight: Nexa.Theme.fontWeightBold
+                                    color: Nexa.Theme.primary
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+
+                                Repeater {
+                                    model: [
+                                        { label: "0px Square", val: 0 },
+                                        { label: "8px Subtle", val: 8 },
+                                        { label: "14px Standard", val: 14 },
+                                        { label: "20px Curved", val: 20 },
+                                        { label: "Capsule Pill", val: 999 }
+                                    ]
+
+                                    Rectangle {
+                                        id: iPill
+                                        required property var modelData
+                                        Layout.fillWidth: true
+                                        height: 32
+                                        radius: Nexa.Theme.radiusSm
+                                        readonly property bool isCurrent: (iPill.modelData.val === 999 && root.islandRounding >= 999) || (root.islandRounding === iPill.modelData.val)
+                                        color: isCurrent ? Nexa.Theme.primaryContainer : (iMouse.containsMouse ? Nexa.Theme.hover : Nexa.Theme.surfaceContainerHigh)
+                                        border.width: isCurrent ? 1 : 0
+                                        border.color: isCurrent ? Nexa.Theme.primary : "transparent"
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: iPill.modelData.label
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: 11
+                                            font.weight: iPill.isCurrent ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightRegular
+                                            color: iPill.isCurrent ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                        }
+
+                                        MouseArea {
+                                            id: iMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.setIslandRoundingRequested(iPill.modelData.val)
+                                        }
+                                    }
+                                }
+                            }
+
+                            Slider {
+                                id: islandSlider
+                                Layout.fillWidth: true
+                                from: 0
+                                to: 28
+                                stepSize: 1
+                                value: root.islandRounding >= 999 ? 28 : root.islandRounding
+                                onMoved: root.setIslandRoundingRequested(value >= 28 ? 999 : Math.round(value))
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -580,13 +705,13 @@ RowLayout {
                         Rectangle {
                             width: 60
                             height: 16
-                            radius: Math.min(8, root.nexaRounding)
+                            radius: (root.islandRounding >= 999) ? 8 : Math.min(8, root.islandRounding)
                             color: Nexa.Theme.surfaceContainerHighest
-                            border.width: 1
+                            border.width: root.windowBorderSize
                             border.color: Nexa.Theme.border
                             Text {
                                 anchors.centerIn: parent
-                                text: "Nexa Shell"
+                                text: "Island"
                                 font.pixelSize: 8
                                 color: Nexa.Theme.text
                             }
@@ -651,8 +776,8 @@ RowLayout {
                     height: 150
                     radius: root.windowRounding
                     color: "#1e1e2e"
-                    border.width: root.windowBorderSize > 0 ? root.windowBorderSize : (root.windowRounding === 0 ? 1 : 0)
-                    border.color: (root.windowBorderSize > 0 || root.windowRounding === 0) ? Nexa.Theme.primary : Qt.rgba(1, 1, 1, 0.15)
+                    border.width: root.windowBorderSize
+                    border.color: root.windowBorderSize > 0 ? Nexa.Theme.primary : Qt.rgba(1, 1, 1, 0.15)
 
                     // Ambient glow / shadow simulator
                     Rectangle {
@@ -713,6 +838,14 @@ RowLayout {
                                     font.pixelSize: 11
                                     font.weight: Font.Bold
                                     color: Nexa.Theme.primary
+                                }
+
+                                Text {
+                                    text: "Island: " + (root.islandRounding >= 999 ? "Capsule" : (root.islandRounding + "px"))
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 11
+                                    font.weight: Font.Bold
+                                    color: Nexa.Theme.secondary ? Nexa.Theme.secondary : Nexa.Theme.primary
                                 }
 
                                 Text {

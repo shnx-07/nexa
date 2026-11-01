@@ -1193,17 +1193,24 @@ PanelWindow {
 
         // --------------------------------------------------------
         // SHAPE
+        //
+        // The Dynamic Island dimensions and curvature are handled
+        // independently from Nexa Shell curvature:
+        // - Collapsed pill: signature capsule pill (targetHeight / 2)
+        // - OSD notifications: capsule pill (targetHeight / 2)
+        // - Expanded views: modern smooth curve (24px)
         // --------------------------------------------------------
 
-        radius:
-          Nexa.Theme.nexaRounding === 0
-          ? 0
-          : (root.full
-             || root.specialModeActive
-             || root.hovered
-             || root.notificationActive
-             ? Nexa.Theme.radiusLg
-             : (root.osdActive ? Math.round(targetHeight / 2) : Nexa.Theme.radiusPill))
+        radius: {
+            if (Nexa.Theme.islandRounding === 0) return 0;
+            if (root.full || root.specialModeActive || root.hovered || root.notificationActive) {
+                return (Nexa.Theme.islandRounding >= 999) ? 24 : Math.min(24, Nexa.Theme.islandRounding);
+            }
+            if (root.osdActive) {
+                return Math.round(targetHeight / 2);
+            }
+            return (Nexa.Theme.islandRounding >= 999) ? Math.round(targetHeight / 2) : Nexa.Theme.islandRounding;
+        }
 
 
         // --------------------------------------------------------
@@ -1220,10 +1227,10 @@ PanelWindow {
           : Nexa.Theme.islandBackground
 
 
-        border.width: (root.full || root.hovered || Nexa.Theme.nexaRounding === 0 || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
+        border.width: (root.full || root.hovered || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
 
         border.color:
-          (Nexa.Theme.nexaRounding === 0 || Nexa.Theme.windowBorderSize > 0)
+          (Nexa.Theme.windowBorderSize > 0)
             ? Nexa.Theme.borderStrong
             : (root.full
                 || root.hovered
@@ -1269,6 +1276,12 @@ PanelWindow {
                 duration: Nexa.Theme.animationFast
                 easing.type: Easing.OutCubic
             }
+        }
+
+        NexaUI.NexaShaderSubstrate {
+            anchors.fill: parent
+            radius: island.radius
+            showSpecularLine: false
         }
 
 

@@ -10,6 +10,7 @@ import "../modules/workspace" as WorkspaceModule
 import "../modules/battery" as BatteryModule
 import "../modules/network" as NetworkModule
 import "../modules/power" as PowerModule
+import "../decorations/ConstellationRail" as ConstellationRailModule
 
 PanelWindow {
     id: root
@@ -141,6 +142,14 @@ PanelWindow {
                 }
             }
 
+            // CENTER DECORATION: Constellation Rail
+            ConstellationRailModule.ConstellationRail {
+                id: constellationRail
+                anchors.fill: parent
+                leftMargin: Math.max(150, leftSection.width + Nexa.Theme.spacingLg)
+                rightMargin: Math.max(150, rightSection.width + Nexa.Theme.spacingLg)
+            }
+
             // RIGHT SECTION: Music, Battery, Network, Power
             RowLayout {
                 id: rightSection
@@ -150,11 +159,6 @@ PanelWindow {
                     verticalCenter: parent.verticalCenter
                 }
                 spacing: Nexa.Theme.spacingXs
-
-                WaveformPill {
-                    id: musicWaveformPill
-                    visible: Services.BarConfig.showMusic
-                }
 
                 component BarPill: Rectangle {
                     default property alias content: pillRow.data
@@ -167,6 +171,12 @@ PanelWindow {
                     color: Nexa.Theme.surfaceContainer
                     border.width: Nexa.Theme.borderThin
                     border.color: Nexa.Theme.border
+
+                    NexaUI.NexaShaderSubstrate {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        showSpecularLine: false
+                    }
 
                     Behavior on color {
                         ColorAnimation { duration: Nexa.Theme.animationFast }
@@ -269,56 +279,47 @@ PanelWindow {
                 }
                 spacing: Nexa.Theme.spacingXs
 
-                Rectangle {
-                    visible: Services.BarConfig.showBattery
+                component VerticalBarPill: Rectangle {
                     width: Nexa.Theme.controlHeightSm
                     height: Nexa.Theme.controlHeightSm
                     radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
                     color: Nexa.Theme.surfaceContainer
                     border.width: Nexa.Theme.borderThin
                     border.color: Nexa.Theme.border
+
+                    NexaUI.NexaShaderSubstrate {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        showSpecularLine: false
+                    }
+                }
+
+                VerticalBarPill {
+                    visible: Services.BarConfig.showBattery
 
                     BatteryModule.Battery {
                         anchors.centerIn: parent
                     }
                 }
 
-                Rectangle {
+                VerticalBarPill {
                     visible: Services.BarConfig.showNetwork
-                    width: Nexa.Theme.controlHeightSm
-                    height: Nexa.Theme.controlHeightSm
-                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
-                    color: Nexa.Theme.surfaceContainer
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
 
                     NetworkModule.Wifi {
                         anchors.centerIn: parent
                     }
                 }
 
-                Rectangle {
+                VerticalBarPill {
                     visible: Services.BarConfig.showNetwork
-                    width: Nexa.Theme.controlHeightSm
-                    height: Nexa.Theme.controlHeightSm
-                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
-                    color: Nexa.Theme.surfaceContainer
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
 
                     NetworkModule.Bluetooth {
                         anchors.centerIn: parent
                     }
                 }
 
-                Rectangle {
+                VerticalBarPill {
                     visible: Services.BarConfig.showSettings
-                    width: Nexa.Theme.controlHeightSm
-                    height: Nexa.Theme.controlHeightSm
-                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
-                    color: Nexa.Theme.surfaceContainer
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
 
                     NexaUI.NexaIconButton {
                         anchors.fill: parent
@@ -339,14 +340,8 @@ PanelWindow {
                     }
                 }
 
-                Rectangle {
+                VerticalBarPill {
                     visible: Services.BarConfig.showPower
-                    width: Nexa.Theme.controlHeightSm
-                    height: Nexa.Theme.controlHeightSm
-                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
-                    color: Nexa.Theme.surfaceContainer
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
 
                     PowerModule.Power {
                         anchors.centerIn: parent

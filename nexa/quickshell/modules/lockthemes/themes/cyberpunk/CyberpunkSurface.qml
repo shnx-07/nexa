@@ -258,7 +258,7 @@ Item {
         property color neonA: Neon.a
         property color neonB: Neon.b
 
-        fragmentShader: Qt.resolvedUrl("../../../../shaders/lock_neon_city.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/lock_neon_city.frag.qsb")
     }
 
     LockInput {
@@ -1024,7 +1024,7 @@ Item {
         property color neonA: Neon.a
         property color neonB: Neon.b
 
-        fragmentShader: Qt.resolvedUrl("../../../../shaders/lock_glitch.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/lock_glitch.frag.qsb")
     }
 
     Rectangle {

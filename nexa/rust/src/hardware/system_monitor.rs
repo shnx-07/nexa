@@ -82,7 +82,7 @@ impl SystemSampler {
         self.prev_cpu_idle = idle;
         self.prev_cpu_total = total;
 
-        let cpu_pct = if d_total > 0 {
+        let cpu_pct = if d_total > 5 {
             let used = d_total.saturating_sub(d_idle);
             ((used as f32 / d_total as f32) * 100.0).clamp(0.0, 100.0)
         } else {
@@ -360,19 +360,27 @@ fn read_top_processes() -> Vec<ProcessInfo> {
     let mut result = Vec::with_capacity(5);
     if let Ok(out) = output {
         let text = String::from_utf8_lossy(&out.stdout);
-        for line in text.lines().skip(1).take(5) {
+        for line in text.lines().skip(1) {
             let parts: Vec<&str> = line.split_whitespace().collect();
             if parts.len() >= 4 {
                 let pid = parts[0].parse::<u32>().unwrap_or(0);
                 let cpu_pct = parts[1].parse::<f32>().unwrap_or(0.0);
                 let mem_pct = parts[2].parse::<f32>().unwrap_or(0.0);
                 let name = parts[3..].join(" ");
+                let base_name = name.rsplit('/').next().unwrap_or(&name);
+                // Exclude ps itself to eliminate spurious 100% burst readings
+                if base_name == "ps" {
+                    continue;
+                }
                 result.push(ProcessInfo {
                     pid,
                     name,
                     cpu_pct,
                     mem_pct,
                 });
+                if result.len() >= 5 {
+                    break;
+                }
             }
         }
     }
@@ -386,6 +394,23 @@ fn read_top_processes() -> Vec<ProcessInfo> {
 fn history_file_path() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/home/shnx".to_string());
     PathBuf::from(home).join(".cache/nexa/system-history.json")
+}
+
+fn active_flag_path() -> PathBuf {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/home/shnx".to_string());
+    PathBuf::from(home).join(".cache/nexa/perf_active")
+}
+
+pub fn is_being_watched() -> bool {
+    let flag = active_flag_path();
+    if let Ok(meta) = fs::metadata(&flag) {
+        if let Ok(modified) = meta.modified() {
+            if let Ok(elapsed) = modified.elapsed() {
+                return elapsed.as_secs() < 4;
+            }
+        }
+    }
+    false
 }
 
 pub fn save_history_atomically(history: &SystemHistory) -> Result<(), String> {
@@ -420,15 +445,26 @@ pub fn get_cached_history() -> Result<SystemHistory, String> {
 }
 
 pub fn run_watch() -> Result<(), String> {
-    println!("[NEXA System Monitor] Starting background hardware sampler...");
+    println!("[NEXA System Monitor] Starting adaptive hardware sampler...");
     let mut sampler = SystemSampler::new();
 
     loop {
-        thread::sleep(Duration::from_millis(1000));
         let snap = sampler.sample();
         let history = sampler.get_history(snap);
         if let Err(e) = save_history_atomically(&history) {
             eprintln!("[NEXA System Monitor] Save error: {e}");
+        }
+
+        // When actively being watched (Performance tab open): poll every 1 second.
+        // When in the background: poll every 30 seconds.
+        let target_secs = if is_being_watched() { 1 } else { 30 };
+
+        for _ in 0..target_secs {
+            thread::sleep(Duration::from_millis(1000));
+            // Responsive wakeup: if user opens the tab, wake up immediately
+            if is_being_watched() && target_secs > 1 {
+                break;
+            }
         }
     }
 }

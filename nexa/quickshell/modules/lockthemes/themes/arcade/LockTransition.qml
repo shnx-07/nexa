@@ -48,6 +48,6 @@ Item {
         property point origin: Qt.point(0.5, 0.46)
         property color edgeColor: transition.edgeColor
 
-        fragmentShader: Qt.resolvedUrl("../../../../shaders/lock_transition.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/lock_transition.frag.qsb")
     }
 }

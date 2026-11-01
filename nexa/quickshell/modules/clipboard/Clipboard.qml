@@ -656,6 +656,11 @@ PanelWindow {
 
             clip: true
 
+            NexaUI.NexaShaderSubstrate {
+                anchors.fill: parent
+                radius: parent.radius
+            }
+
             // Stop click propagating to backdrop
             MouseArea {
                 anchors.fill: parent

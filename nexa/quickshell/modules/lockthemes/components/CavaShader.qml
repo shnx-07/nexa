@@ -23,7 +23,7 @@ import "."
 Item {
     id: root
 
-    property var bars: Services.Cava.values
+    property var bars: Services.AudioVisualizer ? Services.AudioVisualizer.bars : []
     property color accentColor: Colors.primary
     property int orientation: 0   // 0 bottom, 1 top, 2 left, 3 right
     property int style: 0         // 0 bars, 1 area
@@ -112,7 +112,7 @@ Item {
         property real bezY3: root.bezierY3
         property color accentColor: root.accentColor
 
-        fragmentShader: Qt.resolvedUrl("../shaders/cava.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../shaders/lockScreenShaders/cava.frag.qsb")
     }
 
     // Surfaces a compile/load failure instead of silently drawing nothing.

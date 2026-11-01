@@ -69,6 +69,33 @@ QtObject {
         }
     }
 
+    property int islandRounding: 999
+
+    property FileView _islandWatcher: FileView {
+        path: Quickshell.env("HOME") + "/.config/nexa/config/island.json"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const data = JSON.parse(text())
+                if (data && data.rounding !== undefined) {
+                    root.islandRounding = data.rounding
+                }
+            } catch (e) {}
+        }
+    }
+
+    function setIslandRounding(val) {
+        root.islandRounding = val
+        const cfg = { "rounding": val }
+        const json = JSON.stringify(cfg, null, 2)
+        Quickshell.execDetached([
+            "sh", "-c",
+            'mkdir -p "$HOME/.config/nexa/config" && printf "%s" "$1" > "$HOME/.config/nexa/config/island.json"',
+            "_", json
+        ])
+    }
+
     // ============================================================
     // MOTION & SPRING PHYSICS
     // ============================================================
@@ -156,10 +183,135 @@ QtObject {
         ])
     }
 
+    // ============================================================
+    // UNIVERSAL SHADER ENGINE
+    // ============================================================
+    property string currentThemeSubTab: "shaders"
+    property string activeShader: "liquid_glass"
+    property real shaderOpacity: 0.85
+    property real shaderSpeed: 1.0
+    property real shaderIntensity: 0.65
+    property real shaderContrastVeil: 0.30
+    property bool shaderPauseWhenHidden: true
+    property var shaderPresets: ({})
+    property real globalShaderTime: 0.0
+
+    // Single shared GPU clock for all window shaders in NEXA
+    NumberAnimation on globalShaderTime {
+        from: 0.0
+        to: 10000.0
+        duration: 10000000
+        loops: Animation.Infinite
+        running: root.activeShader !== "off"
+    }
+
+    readonly property string activeShaderFile: {
+        if (!root.activeShader || root.activeShader === "off") return "";
+        if (root.shaderPresets && root.shaderPresets[root.activeShader] && root.shaderPresets[root.activeShader].file) {
+            return root.shaderPresets[root.activeShader].file;
+        }
+        return "theme/glass_liquid.frag.qsb";
+    }
+
+    readonly property url activeShaderUrl: {
+        if (!activeShaderFile) return "";
+        return Qt.resolvedUrl("../shaders/" + activeShaderFile);
+    }
+
+    readonly property var shaderList: {
+        const list = [];
+        if (!root.shaderPresets) return list;
+        const keys = Object.keys(root.shaderPresets);
+        for (let i = 0; i < keys.length; ++i) {
+            const k = keys[i];
+            if (k === "off") continue;
+            const item = root.shaderPresets[k];
+            list.push({
+                id: k,
+                name: item.name || k,
+                subtitle: item.subtitle || "Shader Effect",
+                icon: item.icon || "󰄛",
+                file: item.file || ""
+            });
+        }
+        const offItem = root.shaderPresets["off"] || {};
+        list.push({
+            id: "off",
+            name: offItem.name || "Default (Off)",
+            subtitle: offItem.subtitle || "Clean Dark Glass",
+            icon: offItem.icon || "󰛐",
+            file: ""
+        });
+        return list;
+    }
+
+    function shaderName(id) {
+        if (!id || id === "off") return "Clean Solid Glass";
+        if (root.shaderPresets && root.shaderPresets[id] && root.shaderPresets[id].name) {
+            return root.shaderPresets[id].name;
+        }
+        return id;
+    }
+
+    property FileView _shadersWatcher: FileView {
+        path: Quickshell.env("HOME") + "/.config/nexa/config/shaders.json"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const data = JSON.parse(text())
+                if (data) {
+                    if (data.active !== undefined) root.activeShader = data.active
+                    if (data.opacity !== undefined) root.shaderOpacity = data.opacity
+                    if (data.speed !== undefined) root.shaderSpeed = data.speed
+                    if (data.intensity !== undefined) root.shaderIntensity = data.intensity
+                    if (data.contrast_veil !== undefined) root.shaderContrastVeil = data.contrast_veil
+                    if (data.pause_when_hidden !== undefined) root.shaderPauseWhenHidden = data.pause_when_hidden
+                    if (data.presets !== undefined) root.shaderPresets = data.presets
+                }
+            } catch (e) {}
+        }
+    }
+
+    function setShader(id) {
+        root.activeShader = id;
+        saveShaderConfig();
+    }
+
+    function toggleShader() {
+        if (root.activeShader !== "off") {
+            root._previousShader = root.activeShader;
+            setShader("off");
+        } else {
+            setShader(root._previousShader || "liquid_glass");
+        }
+    }
+
+    property string _previousShader: "liquid_glass"
+
+    function saveShaderConfig() {
+        const cfg = {
+            "active": root.activeShader,
+            "opacity": root.shaderOpacity,
+            "speed": root.shaderSpeed,
+            "intensity": root.shaderIntensity,
+            "contrast_veil": root.shaderContrastVeil,
+            "pause_when_hidden": root.shaderPauseWhenHidden,
+            "presets": root.shaderPresets
+        }
+        const json = JSON.stringify(cfg, null, 2)
+        Quickshell.execDetached([
+            "sh", "-c",
+            'mkdir -p "$HOME/.config/nexa/config" && printf "%s" "$1" > "$HOME/.config/nexa/config/shaders.json"',
+            "_", json
+        ])
+    }
+
     Component.onCompleted: {
         _shapesWatcher.reload();
         _glassWatcher.reload();
         _motionWatcher.reload();
+        _shadersWatcher.reload();
     }
 
 
@@ -751,7 +903,7 @@ QtObject {
     // BORDER WIDTHS
     // ============================================================
 
-    readonly property real borderThin: root.windowBorderSize > 0 ? root.windowBorderSize : 1
+    readonly property real borderThin: root.windowBorderSize
     readonly property real borderNormal: 1.5
     readonly property real borderStrongWidth: 2
 
@@ -1061,4 +1213,36 @@ QtObject {
     function cleanAppName(id) {
         return AppLauncher.AppRegistry.cleanAppName(id)
     }
+
+    // ============================================================
+    // SEMANTIC HARDCODED TOKENS (Protected from Wallpaper Palette)
+    // ============================================================
+    // Brand & Application Squircles
+    readonly property color brandCode: "#38bdf8"
+    readonly property color brandTerminal: "#10b981"
+    readonly property color brandBrowser: "#3b82f6"
+    readonly property color brandMedia: "#c084fc"
+    readonly property color brandCompositor: "#2dd4bf"
+    readonly property color brandAmber: "#f59e0b"
+
+    // Telemetry Vitality Anchors
+    readonly property color telemetryHealthy: "#10b981"
+    readonly property color telemetryWarning: "#f59e0b"
+    readonly property color telemetryCritical: "#ef4444"
+    readonly property color telemetryInfo: "#007aff"
+    readonly property color telemetryWave: "#00f0ff"
+
+    // macOS Window Chrome Tokens
+    readonly property color trafficClose: "#ff5f57"
+    readonly property color trafficCloseBorder: "#e0443e"
+    readonly property color trafficMin: "#febc2e"
+    readonly property color trafficMinBorder: "#d89e24"
+    readonly property color trafficMax: "#28c840"
+    readonly property color trafficMaxBorder: "#1aab29"
+
+    // Shader Substrate Surface Tokens
+    readonly property color glassSurfaceDark: "#141720"
+    readonly property color glassPanelDark: "#0f131c"
+    readonly property color glassPanelDarkBorder: Qt.rgba(255, 255, 255, 0.08)
+    readonly property real glassSubstrateOpacity: 0.85
 }

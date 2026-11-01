@@ -10,6 +10,7 @@ import Quickshell
 
 import "../../theme" as Nexa
 import "../../theme/components" as NexaUI
+import "../../services" as Services
 
 
 Item {
@@ -602,57 +603,18 @@ Item {
 
     signal audioTick()
 
-    Process {
-        id: cavaProcess
-        running: root.presentation === "full" && root.playing && root.visible
-        command: [
-            "cava",
-            "-p",
-            Quickshell.env("HOME") + "/.config/nexa/config/cava.conf"
-        ]
-
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: data => {
-                const line = data.trim()
-                if (line === "") return
-                let start = 0
-                let idx = 0
-                let sum = 0
-                let bassSum = 0
-                const len = line.length
-
-                for (let i = 0; i < len; ++i) {
-                    if (line.charCodeAt(i) === 59 /* ';' */) {
-                        if (i > start && idx < 40) {
-                            const raw = Number(line.substring(start, i))
-                            if (!isNaN(raw)) {
-                                const val = raw >= 1000 ? 1.0 : (raw * 0.00135)
-                                root.spectrumBins[idx] = val > 1.0 ? 1.0 : val
-                                sum += val
-                                if (idx < 12) bassSum += val
-                                idx++
-                            }
-                        }
-                        start = i + 1
-                    }
+    Connections {
+        target: Services.AudioVisualizer
+        function onFrameTick() {
+            if (root.presentation === "full" && root.playing && root.visible) {
+                const b = Services.AudioVisualizer.bars;
+                for (let i = 0; i < Math.min(b.length, 40); ++i) {
+                    root.spectrumBins[i] = b[i];
                 }
-
-                if (idx > 0) {
-                    root.audioEnergy = Math.max(0.08, sum / idx)
-                    root.audioBass = Math.max(0.08, bassSum / Math.min(12, idx))
-                    root.audioPhase += 0.07 + root.audioEnergy * 0.14
-                    root.audioTick()
-                }
-            }
-        }
-
-        onRunningChanged: {
-            if (!running) {
-                for (let i = 0; i < 40; ++i) root.spectrumBins[i] = 0
-                root.audioEnergy = 0.12
-                root.audioBass = 0.12
-                root.audioTick()
+                root.audioEnergy = Math.max(0.08, Services.AudioVisualizer.energy);
+                root.audioBass = Math.max(0.08, Services.AudioVisualizer.bass);
+                root.audioPhase += 0.07 + root.audioEnergy * 0.14;
+                root.audioTick();
             }
         }
     }

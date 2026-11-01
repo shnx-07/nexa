@@ -17,13 +17,7 @@ HudPanel {
     implicitHeight: 104 * sc
     cut: 12 * sc
 
-    // Only ever forces cava on, so it can't fight other consumers.
-    Binding {
-        target: Services.Cava
-        property: "running"
-        value: true
-        when: media.visible && media.playing
-    }
+
 
     component Control: Glyph {
         id: control

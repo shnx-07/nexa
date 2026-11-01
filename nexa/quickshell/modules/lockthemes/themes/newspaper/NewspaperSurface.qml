@@ -530,7 +530,7 @@ Item {
                     property real fold: 0
                     property color paperColor: Press.paper
 
-                    fragmentShader: Qt.resolvedUrl("../../../../shaders/desktop_press.frag.qsb")
+                    fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/desktop_press.frag.qsb")
                 }
             }
 
@@ -969,7 +969,7 @@ Item {
             property real fold: 0
             property color paperColor: Press.paper
 
-            fragmentShader: Qt.resolvedUrl("../../../../shaders/desktop_press.frag.qsb")
+            fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/desktop_press.frag.qsb")
         }
 
         Rectangle {

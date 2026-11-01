@@ -156,7 +156,7 @@ Item {
         property color tintA: astral.accent
         property color tintB: LockTheme.gold
 
-        fragmentShader: Qt.resolvedUrl("../../../../shaders/lock_space.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/lock_space.frag.qsb")
     }
 
     LockInput {
@@ -783,7 +783,7 @@ Item {
         property point center: Qt.point(0.5, astral.clockY / Math.max(1, astral.height))
         property color glowColor: Qt.lighter(astral.accent, 1.3)
 
-        fragmentShader: Qt.resolvedUrl("../../../../shaders/lock_warp.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("../../../../shaders/lockScreenShaders/lock_warp.frag.qsb")
     }
 
     // The collapse / white-hole flash.
