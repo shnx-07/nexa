@@ -42,9 +42,11 @@ if [ "$EUID" -eq 0 ]; then
     exit 1
 fi
 
-# Request sudo upfront and keep alive
+# Request sudo upfront and keep session alive in background
 sudo -v
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+SUDO_KEEP_ALIVE_PID=$!
+trap 'kill "$SUDO_KEEP_ALIVE_PID" 2>/dev/null || true' EXIT
 
 # ------------------------------------------------------------------------------
 # 2. Bootstrap yay (AUR Helper) if missing
@@ -88,6 +90,15 @@ PACMAN_PACKAGES=(
     xdg-desktop-portal-gtk
     polkit-kde-agent
 
+    # Display Manager (SDDM & Qt6 Wayland Dependencies)
+    sddm
+    qt6-5compat
+    qt6-declarative
+    qt6-svg
+    qt6-multimedia
+    qt6-quicktimeline
+    qt6-shadertools
+
     # Build & Development & Programming Toolchains
     base-devel
     git
@@ -106,9 +117,9 @@ PACMAN_PACKAGES=(
     python-pip
     python-gobject
     jdk21-openjdk
-    jdk25-openjdk
+    code
 
-    # Audio & Media
+    # Audio, Media & Playback Tools
     pipewire
     wireplumber
     pipewire-pulse
@@ -126,6 +137,7 @@ PACMAN_PACKAGES=(
     power-profiles-daemon
     upower
     util-linux
+    pam
 
     # Screen Capture & Clipboard
     grim
@@ -165,6 +177,8 @@ PACMAN_PACKAGES=(
     jq
     glib2
     socat
+    libnotify
+    file
 
     # Fonts
     ttf-jetbrains-mono-nerd
@@ -189,13 +203,12 @@ AUR_PACKAGES=(
     auto-cpufreq
     quickshell-git
     matugen-bin
-    skwd-paper-bin
+    skwd-paper-bin      # Nexa default Vulkan wallpaper transition engine
+    mpvpaper            # Video wallpaper engine fallback
     hyprsunset
     otf-apple-sf-pro
     otf-apple-fonts
     nwg-look
-    wlogout
-    swaync
 )
 
 log_info "Installing AUR packages: ${AUR_PACKAGES[*]}"
@@ -212,7 +225,7 @@ $AUR_HELPER -S --needed --noconfirm "${AUR_PACKAGES[@]}" || {
         rm -rf "$QS_BUILD_DIR"
     fi
 }
-log_success "AUR packages installed successfully." 
+log_success "AUR packages installed successfully."
 
 # ------------------------------------------------------------------------------
 # 5. Backup Existing Configurations
@@ -302,7 +315,6 @@ if [ -d "$DOTFILES_DIR/nvim" ]; then
     if is_lazyvim_installed; then
         log_info "LazyVim detected. Deploying NEXA IDE configurations to ~/.config/nvim (overriding defaults)..."
         mkdir -p "$HOME/.config/nvim"
-        # Overlay dotfiles to override default LazyVim configs with NEXA customizations
         cp -a "$DOTFILES_DIR/nvim/." "$HOME/.config/nvim/"
         log_success "NEXA LazyVim IDE configuration deployed and overridden successfully."
     else
@@ -313,9 +325,18 @@ if [ -d "$DOTFILES_DIR/nvim" ]; then
     fi
 fi
 
+# Deploy .zshrc
 if [ -f "$DOTFILES_DIR/.zshrc" ]; then
     log_info "Deploying .zshrc -> ~/.zshrc"
     cp -a "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
+fi
+
+# Setup VS Code / Code - OSS dynamic Material You theming
+log_info "Configuring VS Code dynamic Material You theming..."
+mkdir -p "$HOME/.config/Code/User"
+mkdir -p "$HOME/.config/Code - OSS/User"
+if [ -d "$HOME/.config/Code - OSS" ]; then
+    ln -sf "$HOME/.config/Code/User/settings.json" "$HOME/.config/Code - OSS/User/settings.json" 2>/dev/null || true
 fi
 
 # Ensure all scripts are executable
@@ -348,7 +369,7 @@ mkdir -p "$HOME/Pictures/Wallpapers"
 mkdir -p "$HOME/.local/share/color-schemes"
 
 if [ -d "$DOTFILES_DIR/wallpapers" ]; then
-    log_info "Deploying bundled wallpaper to ~/Pictures/Wallpapers..."
+    log_info "Deploying bundled wallpapers to ~/Pictures/Wallpapers..."
     cp -n "$DOTFILES_DIR/wallpapers"/* "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
 fi
 
@@ -358,6 +379,7 @@ for conf_file in \
     "$HOME/.config/nexa/config/wallpaper.conf" \
     "$HOME/.config/nexa/config/lockscreen.conf" \
     "$HOME/.config/nexa/config/slideshow.json" \
+    "$HOME/.config/nexa/config/theme.conf" \
     "$HOME/.config/qt5ct/qt5ct.conf" \
     "$HOME/.config/qt6ct/qt6ct.conf"; do
     if [ -f "$conf_file" ]; then
@@ -365,15 +387,167 @@ for conf_file in \
     fi
 done
 
+log_success "Dotfiles deployed successfully."
+
+# ------------------------------------------------------------------------------
+# 7. Configure SDDM Display Manager & Themes
+# ------------------------------------------------------------------------------
+log_step "Configuring SDDM Display Manager & Themes"
+
+if command -v sddm >/dev/null 2>&1; then
+    log_info "Setting up SDDM configuration directories..."
+    sudo mkdir -p /etc/sddm.conf.d
+    sudo mkdir -p /usr/share/sddm/themes
+
+    # Configure SDDM to run natively on Wayland with layer-shell integration
+    log_info "Configuring SDDM for Wayland..."
+    sudo tee /etc/sddm.conf.d/10-wayland.conf >/dev/null <<'SDDM_WAYLAND'
+[General]
+DisplayServer=wayland
+GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
+SDDM_WAYLAND
+
+    # Deploy bundled SDDM themes from Nexa
+    SDDM_SRC_DIR="$HOME/.config/nexa/sddm"
+    if [ -d "$SDDM_SRC_DIR/themes" ]; then
+        log_info "Installing Nexa SDDM themes to /usr/share/sddm/themes/..."
+        for theme_dir in "$SDDM_SRC_DIR/themes"/*; do
+            if [ -d "$theme_dir" ]; then
+                theme_name="$(basename "$theme_dir")"
+                sudo rm -rf "/usr/share/sddm/themes/$theme_name"
+                sudo cp -r "$theme_dir" "/usr/share/sddm/themes/$theme_name"
+
+                # Copy compatibility QML imports into each theme
+                if [ -d "$SDDM_SRC_DIR/imports" ]; then
+                    sudo cp -r "$SDDM_SRC_DIR/imports/"* "/usr/share/sddm/themes/$theme_name/" 2>/dev/null || true
+                fi
+
+                # Ensure QtVersion=6 in metadata.desktop
+                META_FILE="/usr/share/sddm/themes/$theme_name/metadata.desktop"
+                if [ -f "$META_FILE" ]; then
+                    if grep -q "^QtVersion=" "$META_FILE"; then
+                        sudo sed -i "s|^QtVersion=.*|QtVersion=6|" "$META_FILE"
+                    else
+                        printf "\nQtVersion=6\n" | sudo tee -a "$META_FILE" >/dev/null
+                    fi
+                fi
+            fi
+        done
+        log_success "Nexa SDDM themes installed."
+    fi
+
+    # Set default SDDM theme (clockwork or material-you)
+    DEFAULT_SDDM_THEME="clockwork"
+    if [ -f "$HOME/.config/nexa/config/sddm_theme" ]; then
+        SAVED_THEME="$(tr -d ' \n\r' < "$HOME/.config/nexa/config/sddm_theme")"
+        if [ -n "$SAVED_THEME" ] && [ -d "/usr/share/sddm/themes/$SAVED_THEME" ]; then
+            DEFAULT_SDDM_THEME="$SAVED_THEME"
+        fi
+    fi
+
+    log_info "Setting active SDDM theme to '$DEFAULT_SDDM_THEME'..."
+    sudo tee /etc/sddm.conf.d/theme.conf >/dev/null <<SDDM_THEME
+[Theme]
+Current=$DEFAULT_SDDM_THEME
+SDDM_THEME
+
+    # Enable SDDM system service
+    log_info "Enabling SDDM service (systemctl enable sddm.service)..."
+    sudo systemctl enable sddm.service 2>/dev/null || true
+    log_success "SDDM display manager configured and enabled."
+else
+    log_warn "SDDM package not found. Skipping SDDM configuration."
+fi
+
+# ------------------------------------------------------------------------------
+# 8. Build Rust Backend (`nexad`) & Initialize Themes
+# ------------------------------------------------------------------------------
+log_step "Building NEXA Rust Daemon (nexad)"
+
+if [ -d "$HOME/.config/nexa/rust" ]; then
+    log_info "Compiling nexad with optimizations (cargo build --release)..."
+    (
+        cd "$HOME/.config/nexa/rust"
+        cargo build --release
+    )
+    if [ -f "$HOME/.config/nexa/rust/target/release/nexad" ]; then
+        log_success "nexad binary compiled successfully at ~/.config/nexa/rust/target/release/nexad"
+        
+        # Generate initial NEXA search index
+        log_info "Generating initial NEXA application search index..."
+        "$HOME/.config/nexa/rust/target/release/nexad" search refresh >/dev/null 2>&1 || true
+
+        # Generate initial NEXA color palettes across apps via Matugen
+        log_info "Generating initial theme palettes across apps (VS Code, Kitty, Alacritty, GTK, SDDM)..."
+        "$HOME/.config/nexa/rust/target/release/nexad" theme apply-style preset dark >/dev/null 2>&1 || true
+        log_success "Initial themes applied."
+    else
+        log_error "nexad build completed but binary was not found."
+        exit 1
+    fi
+else
+    log_warn "Rust backend directory ~/.config/nexa/rust not found. Skipping build."
+fi
+
+# ------------------------------------------------------------------------------
+# 9. Setup Hyprland Plugins (hyprpm)
+# ------------------------------------------------------------------------------
+log_step "Configuring Hyprland Plugins via hyprpm"
+
+if command -v hyprpm >/dev/null 2>&1; then
+    log_info "Updating hyprpm repository cache..."
+    hyprpm update -n 2>/dev/null || hyprpm update || log_warn "hyprpm update returned non-zero, continuing..."
+
+    # Install HyprGlass
+    log_info "Setting up HyprGlass plugin..."
+    hyprpm add https://github.com/hyprnux/hyprglass 2>/dev/null || true
+    hyprpm enable hyprglass 2>/dev/null || true
+
+    # Install dynamic-cursors
+    log_info "Setting up dynamic-cursors plugin..."
+    hyprpm add https://github.com/VirtCode/dynamic-cursors 2>/dev/null || true
+    hyprpm enable dynamic-cursors 2>/dev/null || true
+
+    # Reload hyprpm
+    hyprpm reload 2>/dev/null || true
+
+    log_success "Hyprland plugins configured."
+else
+    log_warn "hyprpm not found. Skipping Hyprland plugin configuration."
+fi
+
+# ------------------------------------------------------------------------------
+# 10. Hardware Services, Memory & Desktop Configuration
+# ------------------------------------------------------------------------------
+log_step "Configuring System Services & Optimizations"
+
 # Enable essential hardware system services
-log_info "Enabling essential hardware services (Bluetooth, Power Profiles, Auto-CPUFreq)..."
+log_info "Enabling essential hardware services (Bluetooth, Power Profiles, Auto-CPUFreq, NetworkManager)..."
 sudo systemctl enable --now bluetooth.service 2>/dev/null || true
 sudo systemctl enable --now power-profiles-daemon.service 2>/dev/null || true
 sudo systemctl enable --now auto-cpufreq.service 2>/dev/null || true
+sudo systemctl enable --now NetworkManager.service 2>/dev/null || true
 
 # Ensure BlueZ respects user Bluetooth power state across reboots
 if [ -f /etc/bluetooth/main.conf ]; then
     sudo sed -i "s/^#*AutoEnable=true/AutoEnable=false/" /etc/bluetooth/main.conf 2>/dev/null || true
+fi
+
+# Configure zram memory compression (vital for smooth performance on 8GB-16GB machines)
+if ! swapon --show 2>/dev/null | grep -q "zram"; then
+    log_info "Configuring zram real-time RAM compression..."
+    if ! pacman -Qi zram-generator >/dev/null 2>&1; then
+        sudo pacman -S --needed --noconfirm zram-generator 2>/dev/null || true
+    fi
+    if [ ! -f /etc/systemd/zram-generator.conf ]; then
+        sudo tee /etc/systemd/zram-generator.conf >/dev/null <<'ZRAM_CONF'
+[zram0]
+zram-size = ram
+compression-algorithm = zstd
+ZRAM_CONF
+        sudo systemctl daemon-reload 2>/dev/null || true
+        sudo systemctl start /dev/zram0 2>/dev/null || sudo systemctl restart systemd-zram-setup@zram0 2>/dev/null || true
+    fi
 fi
 
 # Refresh font cache so SF Pro Display and other fonts are immediately active
@@ -392,95 +566,25 @@ fi
 
 # Set Gwenview as primary default image viewer across all image MIME types
 if command -v xdg-mime >/dev/null 2>&1; then
-    log_info "Setting Gwenview as the default image viewer..."
+    log_info "Setting Gwenview as default image viewer..."
     for mime in image/png image/jpeg image/gif image/webp image/bmp image/svg+xml image/tiff image/avif image/heic; do
         xdg-mime default org.kde.gwenview.desktop "$mime" 2>/dev/null || true
     done
 fi
 
-# Verify or enable ZRAM memory compression (vital for smooth performance on 8GB-16GB machines)
-if ! swapon --show 2>/dev/null | grep -q "zram"; then
-    log_info "Configuring zram real-time RAM compression..."
-    if ! pacman -Qi zram-generator >/dev/null 2>&1; then
-        sudo pacman -S --needed --noconfirm zram-generator 2>/dev/null || true
-    fi
-    if [ ! -f /etc/systemd/zram-generator.conf ]; then
-        sudo tee /etc/systemd/zram-generator.conf >/dev/null <<'ZRAM_CONF'
-[zram0]
-zram-size = ram
-compression-algorithm = zstd
-ZRAM_CONF
-        sudo systemctl daemon-reload 2>/dev/null || true
-        sudo systemctl start /dev/zram0 2>/dev/null || sudo systemctl restart systemd-zram-setup@zram0 2>/dev/null || true
-    fi
-fi
-
-log_success "Dotfiles deployed successfully."
+log_success "System services and optimizations configured."
 
 # ------------------------------------------------------------------------------
-# 7. Build Rust Backend (`nexad`)
-# ------------------------------------------------------------------------------
-log_step "Building NEXA Rust Daemon (nexad)"
-
-if [ -d "$HOME/.config/nexa/rust" ]; then
-    log_info "Compiling nexad with optimizations (cargo build --release)..."
-    (
-        cd "$HOME/.config/nexa/rust"
-        cargo build --release
-    )
-    if [ -f "$HOME/.config/nexa/rust/target/release/nexad" ]; then
-        log_success "nexad binary compiled successfully at ~/.config/nexa/rust/target/release/nexad"
-        log_info "Generating initial NEXA search index..."
-        "$HOME/.config/nexa/rust/target/release/nexad" search refresh >/dev/null 2>&1 || true
-
-        # Generate initial NEXA color palettes across apps via Matugen
-        if [ -f "$HOME/.config/nexa/scripts/theme.sh" ]; then
-            log_info "Generating initial NEXA color palettes across apps via Matugen..."
-            "$HOME/.config/nexa/scripts/theme.sh" apply >/dev/null 2>&1 || true
-        fi
-    else
-        log_error "nexad build completed but binary was not found."
-        exit 1
-    fi
-else
-    log_warn "Rust backend directory ~/.config/nexa/rust not found. Skipping build."
-fi
-
-# ------------------------------------------------------------------------------
-# 8. Setup Hyprland Plugins (hyprpm)
-# ------------------------------------------------------------------------------
-log_step "Configuring Hyprland Plugins via hyprpm"
-
-if command -v hyprpm >/dev/null 2>&1; then
-    log_info "Updating hyprpm repository cache..."
-    hyprpm update || log_warn "hyprpm update returned non-zero, continuing..."
-
-    # Install HyprGlass
-    log_info "Setting up HyprGlass plugin..."
-    hyprpm add https://github.com/hyprnux/hyprglass || true
-    hyprpm enable hyprglass || true
-
-    # Install dynamic-cursors
-    log_info "Setting up dynamic-cursors plugin..."
-    hyprpm add https://github.com/VirtCode/dynamic-cursors || true
-    hyprpm enable dynamic-cursors || true
-
-    log_success "Hyprland plugins configured."
-else
-    log_warn "hyprpm not found. Skipping Hyprland plugin configuration."
-fi
-
-# ------------------------------------------------------------------------------
-# 9. Installation Complete
+# 11. Installation Complete
 # ------------------------------------------------------------------------------
 echo -e "\n${BOLD}${GREEN}==============================================================================${RESET}"
 echo -e "${BOLD}${GREEN}  ✔ NEXA Installation Completed Successfully!${RESET}"
 echo -e "${BOLD}${GREEN}==============================================================================${RESET}"
 echo -e "
 ${BOLD}What's next:${RESET}
-  1. ${CYAN}Log into Hyprland${RESET} from your display manager (SDDM/GDM) or tty.
-  2. To restart or inspect NEXA at any time:
-     ${YELLOW}~/.config/nexa/scripts/nexa-restart.sh${RESET}
+  1. ${CYAN}Reboot or log into Hyprland${RESET} via SDDM.
+  2. To restart or control NEXA at any time:
+     ${YELLOW}~/.config/nexa/scripts/nexa.sh restart${RESET}
   3. Keybindings reference:
      - ${BOLD}Super + Space${RESET}       : Dynamic Island Search
      - ${BOLD}Super + Shift + Space${RESET} : Dynamic Island Commands
@@ -489,6 +593,11 @@ ${BOLD}What's next:${RESET}
      - ${BOLD}Super + N${RESET}           : Control Center Island
      - ${BOLD}Super + V${RESET}           : Clipboard History
      - ${BOLD}Super + Q${RESET}           : Close Active Window
+  4. VS Code Theming:
+     - ${GREEN}Enabled by default${RESET} (auto-syncs with active desktop palette).
+     - To use custom themes (Dracula, One Dark, etc.):
+       ${YELLOW}~/.config/nexa/scripts/nexa-vscode.sh disable${RESET} (restores your custom theme)
+       ${YELLOW}~/.config/nexa/scripts/nexa-vscode.sh enable${RESET}  (re-enables live desktop sync)
 
 ${BLUE}Backup Info:${RESET} Your previous configs are safely stored in:
   ${CYAN}$BACKUP_DIR${RESET}

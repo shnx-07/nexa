@@ -12,8 +12,10 @@ Rectangle {
     property string activePresetId: ""
     property string activeStyle: ""
     property string currentMode: "dark"
+    property bool isFavorited: false
 
     signal cardSelected(string presetId, string mode)
+    signal toggleFavoriteRequested(string presetId)
 
     readonly property bool isStaged: root.stagedPresetId === root.presetData.id
     readonly property bool isSystemActive: root.activeStyle === "preset" && root.activePresetId === root.presetData.id
@@ -94,10 +96,11 @@ Rectangle {
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 12
-        anchors.rightMargin: 12
+        anchors.rightMargin: 10
         anchors.topMargin: 8
         anchors.bottomMargin: 8
-        spacing: 10
+        spacing: 8
+        z: 1
 
         // Left: Preset Title & Status Pills
         ColumnLayout {
@@ -156,7 +159,11 @@ Rectangle {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.cardSelected(root.presetData.id, "dark")
+                            propagateComposedEvents: false
+                            onClicked: (mouse) => {
+                                mouse.accepted = true;
+                                root.cardSelected(root.presetData.id, "dark");
+                            }
                         }
                     }
 
@@ -194,7 +201,11 @@ Rectangle {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.cardSelected(root.presetData.id, "light")
+                            propagateComposedEvents: false
+                            onClicked: (mouse) => {
+                                mouse.accepted = true;
+                                root.cardSelected(root.presetData.id, "light");
+                            }
                         }
                     }
                 }
@@ -269,7 +280,7 @@ Rectangle {
 
         // Right: Connected 3-Tone Capsule Swatch Ribbon
         Rectangle {
-            Layout.preferredWidth: 66
+            Layout.preferredWidth: 60
             Layout.preferredHeight: 22
             radius: 11
             clip: true
@@ -280,21 +291,57 @@ Rectangle {
                 anchors.fill: parent
 
                 Rectangle {
-                    width: 22
+                    width: 20
                     height: parent.height
                     color: root.col0
                 }
 
                 Rectangle {
-                    width: 22
+                    width: 20
                     height: parent.height
                     color: root.col1
                 }
 
                 Rectangle {
-                    width: 22
+                    width: 20
                     height: parent.height
                     color: root.col2
+                }
+            }
+        }
+
+        // Star / Favorite Toggle Button
+        Rectangle {
+            id: starBtn
+            Layout.preferredWidth: 28
+            Layout.preferredHeight: 28
+            radius: 14
+            z: 2
+            color: root.isFavorited
+                ? Qt.rgba(0.96, 0.62, 0.04, 0.18)
+                : (starMouse.containsMouse ? Nexa.Theme.hover : "transparent")
+            border.width: root.isFavorited ? 1 : 0
+            border.color: root.isFavorited ? Qt.rgba(0.96, 0.62, 0.04, 0.4) : "transparent"
+
+            Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+            Text {
+                anchors.centerIn: parent
+                text: root.isFavorited ? "" : ""
+                font.family: Nexa.Theme.iconFontFamily
+                font.pixelSize: 14
+                color: root.isFavorited ? "#f59e0b" : (starMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText)
+            }
+
+            MouseArea {
+                id: starMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                propagateComposedEvents: false
+                onClicked: (mouse) => {
+                    mouse.accepted = true;
+                    root.toggleFavoriteRequested(root.presetData.id);
                 }
             }
         }

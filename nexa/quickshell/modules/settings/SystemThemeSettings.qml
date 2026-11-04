@@ -173,7 +173,7 @@ Item {
         const seen = {}
         const list = ["All"]
         const order = [
-            "extras", "LinuxHyprland", "CyberTech", "ColdArctic",
+            "CuratedVault", "extras", "LinuxHyprland", "CyberTech", "ColdArctic",
             "Nature", "WarmCozy", "Cosmic", "SkyTime",
             "MinimalMonochrome", "SoftCalm", "Mystic"
         ]

@@ -23,11 +23,11 @@ if [[ ! "$THEME_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     exit 1
 fi
 
-REAL_USER="${SUDO_USER:-${DOAS_USER:-${PKEXEC_UID:-}}}"
+REAL_USER="${SUDO_USER:-${DOAS_USER:-${PKEXEC_UID:-$(whoami)}}}"
 if [ -n "$REAL_USER" ] && [ "$REAL_USER" != "root" ]; then
     USER_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 else
-    USER_HOME="/home/shnx"
+    USER_HOME="${HOME:-/root}"
 fi
 
 NEXA_SDDM_DIR="$USER_HOME/.config/nexa/sddm"

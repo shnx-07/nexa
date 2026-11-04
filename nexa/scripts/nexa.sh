@@ -57,7 +57,6 @@ do_start() {
     export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
     export QS_ICON_THEME="breeze-dark"
     export QS_NO_RELOAD_POPUP=1
-    export QML2_IMPORT_PATH="$CONFIG_DIR/sddm/imports:${QML2_IMPORT_PATH:-}"
     setsid quickshell -p "$SHELL_PATH" >/tmp/nexa-quickshell.log 2>&1 &
     disown
 

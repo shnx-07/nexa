@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import "../../theme" as Nexa
 
 RowLayout {
@@ -34,10 +35,55 @@ RowLayout {
     signal stageModeRequested(string mode)
     signal applyRequested()
 
+    // Favorites Management
+    property var favoritePresets: []
+    readonly property string favoritesConfigPath: Quickshell.env("HOME") + "/.config/nexa/config/favorite_presets.json"
+
+    FileView {
+        id: favoritesFile
+        path: root.favoritesConfigPath
+        watchChanges: true
+        printErrors: false
+
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const list = JSON.parse(text());
+                if (Array.isArray(list)) {
+                    root.favoritePresets = list;
+                }
+            } catch (_) {}
+        }
+    }
+
+    function isFavorite(presetId) {
+        if (!root.favoritePresets || !presetId) return false;
+        return root.favoritePresets.indexOf(presetId) >= 0;
+    }
+
+    function toggleFavorite(presetId) {
+        if (!presetId) return;
+        let arr = Array.isArray(root.favoritePresets) ? root.favoritePresets.slice() : [];
+        const idx = arr.indexOf(presetId);
+        if (idx >= 0) {
+            arr.splice(idx, 1);
+        } else {
+            arr.push(presetId);
+        }
+        root.favoritePresets = arr;
+        try {
+            favoritesFile.setText(JSON.stringify(arr, null, 2));
+        } catch (e) {
+            console.warn("PresetsTab: failed to save favorites:", e);
+        }
+    }
+
     // Friendly Category Titles
     function formatCategoryTitle(cat) {
         if (!cat) return "";
         switch (cat) {
+            case "Favorites": return "Starred Favorites";
+            case "CuratedVault": return "Curated Vault";
             case "extras": return "Community Classics";
             case "LinuxHyprland": return "Hyprland & Linux";
             case "ColdArctic": return "Cold & Arctic";
@@ -55,6 +101,8 @@ RowLayout {
 
     function categoryIcon(cat) {
         switch (cat) {
+            case "Favorites": return "";
+            case "CuratedVault": return "󰆼";
             case "extras": return "󰓹";
             case "LinuxHyprland": return "󰌽";
             case "ColdArctic": return "󰜗";
@@ -73,6 +121,7 @@ RowLayout {
     function categoryCount(cat) {
         if (!root.presets) return 0;
         if (cat === "All") return root.presets.length;
+        if (cat === "Favorites") return root.favoritePresets ? root.favoritePresets.length : 0;
         let count = 0;
         for (let i = 0; i < root.presets.length; ++i) {
             if (root.presets[i].category === cat) count++;
@@ -86,8 +135,30 @@ RowLayout {
         const q = root.searchQuery.trim().toLowerCase();
         const catFilter = root.selectedCategory;
 
+        if (catFilter === "Favorites") {
+            const favItems = [];
+            for (let i = 0; i < root.presets.length; ++i) {
+                const p = root.presets[i];
+                if (!root.isFavorite(p.id)) continue;
+                if (q.length > 0) {
+                    const matchName = p.name && p.name.toLowerCase().indexOf(q) >= 0;
+                    const matchCat = p.category && p.category.toLowerCase().indexOf(q) >= 0;
+                    const matchId = p.id && p.id.toLowerCase().indexOf(q) >= 0;
+                    if (!matchName && !matchCat && !matchId) continue;
+                }
+                favItems.push(p);
+            }
+            if (favItems.length === 0) return [];
+            return [{
+                category: "Favorites",
+                title: "Starred Favorites",
+                icon: "",
+                items: favItems
+            }];
+        }
+
         const order = [
-            "extras", "LinuxHyprland", "CyberTech", "ColdArctic",
+            "CuratedVault", "extras", "LinuxHyprland", "CyberTech", "ColdArctic",
             "Nature", "WarmCozy", "Cosmic", "SkyTime",
             "MinimalMonochrome", "SoftCalm", "Mystic"
         ];
@@ -308,6 +379,77 @@ RowLayout {
                                 }
                             }
 
+                            // Favorites Filter Item
+                            Rectangle {
+                                id: favCategoryItem
+                                width: catColumn.width
+                                height: 36
+                                radius: Nexa.Theme.radiusXs
+
+                                readonly property bool isSelected: root.selectedCategory === "Favorites"
+                                readonly property int count: root.favoritePresets ? root.favoritePresets.length : 0
+
+                                color: isSelected
+                                    ? Nexa.Theme.primaryContainer
+                                    : (favMouse.containsMouse ? Nexa.Theme.hover : "transparent")
+                                border.width: isSelected ? 1 : 0
+                                border.color: isSelected ? Nexa.Theme.primary : "transparent"
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 8
+                                    anchors.rightMargin: 6
+                                    spacing: 6
+
+                                    Text {
+                                        text: ""
+                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.pixelSize: 13
+                                        color: favCategoryItem.isSelected ? Nexa.Theme.onPrimaryContainer : "#f59e0b"
+                                    }
+
+                                    Text {
+                                        text: "Favorites"
+                                        font.family: Nexa.Theme.fontFamily
+                                        font.pixelSize: 11
+                                        font.weight: favCategoryItem.isSelected ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightRegular
+                                        color: favCategoryItem.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
+
+                                    // Count Badge
+                                    Rectangle {
+                                        height: 18
+                                        width: favCountText.implicitWidth + 8
+                                        radius: 9
+                                        color: favCategoryItem.isSelected
+                                            ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.25)
+                                            : (favCategoryItem.count > 0 ? Qt.rgba(0.96, 0.62, 0.04, 0.18) : Nexa.Theme.surfaceContainerHighest)
+
+                                        Text {
+                                            id: favCountText
+                                            anchors.centerIn: parent
+                                            text: favCategoryItem.count
+                                            font.family: Nexa.Theme.fontFamily
+                                            font.pixelSize: 9
+                                            font.weight: Nexa.Theme.fontWeightDemiBold
+                                            color: favCategoryItem.isSelected
+                                                ? Nexa.Theme.onPrimaryContainer
+                                                : (favCategoryItem.count > 0 ? "#f59e0b" : Nexa.Theme.mutedText)
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: favMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.selectedCategory = "Favorites"
+                                }
+                            }
+
                             // Subtle Divider
                             Rectangle {
                                 width: catColumn.width - 12
@@ -492,11 +634,50 @@ RowLayout {
                                             activePresetId: root.selectedPreset
                                             activeStyle: root.selectedStyle
                                             currentMode: root.stagedMode
+                                            isFavorited: root.isFavorite(modelData.id)
                                             onCardSelected: (id, mode) => root.stagePresetRequested(id, mode)
+                                            onToggleFavoriteRequested: (id) => root.toggleFavorite(id)
                                         }
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    // Empty State for Favorites or Search
+                    ColumnLayout {
+                        anchors.centerIn: parent
+                        visible: root.groupedDecks.length === 0
+                        spacing: 10
+
+                        Text {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: root.selectedCategory === "Favorites" ? "" : "󰍉"
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: 36
+                            color: root.selectedCategory === "Favorites" ? "#f59e0b" : Nexa.Theme.mutedText
+                            opacity: 0.7
+                        }
+
+                        Text {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: root.selectedCategory === "Favorites"
+                                ? "No Favorite Presets Yet"
+                                : "No Presets Found"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 14
+                            font.weight: Nexa.Theme.fontWeightDemiBold
+                            color: Nexa.Theme.text
+                        }
+
+                        Text {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: root.selectedCategory === "Favorites"
+                                ? "Click the star icon on any preset card to pin your favorites here"
+                                : "Try searching with a different keyword"
+                            font.family: Nexa.Theme.fontFamily
+                            font.pixelSize: 11
+                            color: Nexa.Theme.mutedText
                         }
                     }
                 }

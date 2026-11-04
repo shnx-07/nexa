@@ -70,3 +70,7 @@ output_path = "~/.vim/colors/nexa.vim"
 [templates.wezterm]
 input_path = "~/.config/matugen/templates/wezterm-preset.lua"
 output_path = "~/.config/wezterm/colors/custom.lua"
+
+[templates.vscode]
+input_path = "~/.config/matugen/templates/vscode-settings.json"
+output_path = "~/.config/Code/User/settings.json"
