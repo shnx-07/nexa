@@ -111,6 +111,16 @@ pub fn set(volume: u32) -> Result<AudioInfo, String> {
     Ok(res)
 }
 
+pub fn up(step: u32) -> Result<AudioInfo, String> {
+    let current = info()?.volume;
+    set(current.saturating_add(step).min(100))
+}
+
+pub fn down(step: u32) -> Result<AudioInfo, String> {
+    let current = info()?.volume;
+    set(current.saturating_sub(step))
+}
+
 pub fn mute() -> Result<AudioInfo, String> {
     let res = device_set_mute("@DEFAULT_AUDIO_SINK@", "1")?;
     let _ = crate::state::update_state(|s| {
@@ -385,6 +395,28 @@ apps|app-set|app-mute|app-unmute|app-toggle-mute>"
             )
         }
 
+        "up" => {
+            let step = args
+                .get(1)
+                .map(String::as_str)
+                .unwrap_or("5")
+                .parse::<u32>()
+                .map_err(|_| "invalid volume step".to_string())?;
+
+            print_audio(up(step))
+        }
+
+        "down" => {
+            let step = args
+                .get(1)
+                .map(String::as_str)
+                .unwrap_or("5")
+                .parse::<u32>()
+                .map_err(|_| "invalid volume step".to_string())?;
+
+            print_audio(down(step))
+        }
+
 
         "mute" => {
             print_audio(
@@ -526,7 +558,7 @@ apps|app-set|app-mute|app-unmute|app-toggle-mute>"
 
         _ => {
             Err(
-                "usage: nexad audio <info|set|mute|unmute|toggle-mute|input-info|input-set|input-mute|input-unmute|input-toggle-mute|apps|app-set|app-mute|app-unmute|app-toggle-mute>".to_string()
+                "usage: nexad audio <info|set|up|down|mute|unmute|toggle-mute|input-info|input-set|input-mute|input-unmute|input-toggle-mute|apps|app-set|app-mute|app-unmute|app-toggle-mute>".to_string()
             )
         }
     }

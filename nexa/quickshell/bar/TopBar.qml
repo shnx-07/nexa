@@ -48,8 +48,8 @@ PanelWindow {
         right: barPosition !== "left"
     }
 
-    implicitHeight: isVertical ? 0 : effectiveSize
-    implicitWidth: isVertical ? effectiveSize : 0
+    implicitHeight: isVertical ? 1 : Math.max(1, effectiveSize)
+    implicitWidth: isVertical ? Math.max(1, effectiveSize) : 1
 
     color: "transparent"
 
@@ -172,12 +172,6 @@ PanelWindow {
                     border.width: Nexa.Theme.borderThin
                     border.color: Nexa.Theme.border
 
-                    NexaUI.NexaShaderSubstrate {
-                        anchors.fill: parent
-                        radius: parent.radius
-                        showSpecularLine: false
-                    }
-
                     Behavior on color {
                         ColorAnimation { duration: Nexa.Theme.animationFast }
                     }
@@ -286,12 +280,6 @@ PanelWindow {
                     color: Nexa.Theme.surfaceContainer
                     border.width: Nexa.Theme.borderThin
                     border.color: Nexa.Theme.border
-
-                    NexaUI.NexaShaderSubstrate {
-                        anchors.fill: parent
-                        radius: parent.radius
-                        showSpecularLine: false
-                    }
                 }
 
                 VerticalBarPill {

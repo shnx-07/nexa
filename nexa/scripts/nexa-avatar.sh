@@ -56,9 +56,18 @@ case "$1" in
             bash "$CONFIG_DIR/scripts/nexa.sh" restart >/dev/null 2>&1
         fi
         ;;
+    get)
+        for f in "$HOME/.face" "$HOME/.face.icon" "$CONFIG_DIR/avatar.png" "$CONFIG_DIR/avatar.jpg" "$CONFIG_DIR/avatar.svg" "$CONFIG_DIR/avatar.webp" "$CONFIG_DIR/avatar.jpeg" "$AVATARS_DIR/cyber_neon.svg"; do
+            if [ -f "$f" ]; then
+                echo "$f"
+                exit 0
+            fi
+        done
+        ;;
     *)
         echo "NEXA Avatar Tool"
         echo "  nexa-avatar list           List available avatar presets"
+        echo "  nexa-avatar get            Print current avatar file path"
         echo "  nexa-avatar set <name>     Set avatar (e.g. cyber_neon, astro_space, mecha_cat)"
         echo "  nexa-avatar set <path>     Set custom image from disk"
         ;;

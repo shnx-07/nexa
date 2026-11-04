@@ -7,3 +7,6 @@ BarsSettings 1.0 BarsSettings.qml
 MotionSettings 1.0 MotionSettings.qml
 PerformanceSettings 1.0 PerformanceSettings.qml
 DecorationsSettings 1.0 DecorationsSettings.qml
+SddmThemesTab 1.0 SddmThemesTab.qml
+
+

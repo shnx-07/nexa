@@ -1,12 +1,13 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../../services" as Services
 
 
 Item {
     id: root
 
-    property bool enabled: false
+    property bool enabled: Services.SystemState.airplaneEnabled
 
     property bool wifiEnabled: false
     property bool bluetoothEnabled: false
@@ -131,16 +132,6 @@ Item {
 
         interval: 400
         repeat: false
-
-        onTriggered:
-            root.refresh()
-    }
-
-
-    Timer {
-        interval: 3500
-        repeat: true
-        running: root.visible
 
         onTriggered:
             root.refresh()

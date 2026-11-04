@@ -56,6 +56,18 @@ pub struct SettingsState {
     pub on_battery: bool,
 
     #[serde(default)]
+    pub battery_power_watts: f64,
+
+    #[serde(default = "default_health")]
+    pub battery_health_percentage: u32,
+
+    #[serde(default)]
+    pub battery_time_to_full: u64,
+
+    #[serde(default)]
+    pub battery_time_to_empty: u64,
+
+    #[serde(default)]
     pub wifi_connected: bool,
 
     #[serde(default)]
@@ -114,6 +126,9 @@ fn default_filter() -> String {
 fn default_minus_one() -> i32 {
     -1
 }
+fn default_health() -> u32 {
+    100
+}
 
 impl Default for SettingsState {
     fn default() -> Self {
@@ -134,6 +149,10 @@ impl Default for SettingsState {
             battery_percentage: 100,
             battery_charging: false,
             on_battery: false,
+            battery_power_watts: 0.0,
+            battery_health_percentage: 100,
+            battery_time_to_full: 0,
+            battery_time_to_empty: 0,
             wifi_connected: false,
             wifi_ssid: String::new(),
             wifi_signal: 0,

@@ -5,9 +5,13 @@ use std::process::Command;
 // RAW HYPRLAND TYPES
 // ============================================================
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default, Clone)]
 struct HyprWorkspaceRef {
+    #[serde(default)]
     id: i32,
+    #[serde(default)]
+    #[allow(dead_code)]
+    name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -81,6 +85,7 @@ struct HyprSpecialWorkspaceRef {
     #[serde(default)]
     id: i32,
     #[serde(default)]
+    #[allow(dead_code)]
     name: String,
 }
 

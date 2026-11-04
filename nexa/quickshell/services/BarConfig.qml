@@ -9,7 +9,7 @@ Singleton {
     property string position: "top" // "top", "bottom", "left", "right"
     property bool autohide: false
     property bool floating: true
-    property int height: 38
+    property int height: 44
     property bool showWorkspaces: true
     property bool showTitle: true
     property bool showIsland: true
@@ -121,7 +121,7 @@ Singleton {
         root.position = "top";
         root.autohide = false;
         root.floating = true;
-        root.height = 38;
+        root.height = 44;
         root.showWorkspaces = true;
         root.showTitle = true;
         root.showIsland = true;

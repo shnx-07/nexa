@@ -209,9 +209,10 @@ layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;
 
 // =============================================================================
-// NEXA Substrate Shader Uniform Buffer
+// NEXA Universal Substrate & Live Motion Shader
+// =============================================================================
 // std140 layout: mat4 (64 B) + 8 floats (32 B) lands on 16 B boundary for vec4s.
-// The order MUST match the QML ShaderEffect property definitions!
+// Order MUST match NexaShaderSubstrate.qml and NexaLiveShader.qml!
 // =============================================================================
 layout(std140, binding = 0) uniform buf {
     mat4 qt_Matrix;      // 0..63
@@ -219,9 +220,9 @@ layout(std140, binding = 0) uniform buf {
     float itemWidth;     // 68..71  (Surface pixel width)
     float itemHeight;    // 72..75  (Surface pixel height)
     float iTime;         // 76..79  (Global shared millisecond clock)
-    float speed;         // 80..83  (Configured speed factor)
-    float intensity;     // 84..87  (Configured intensity factor)
-    float veilAlpha;     // 88..91  (Contrast veil factor)
+    float speed;         // 80..83  (Configured speed factor 0.1 - 3.0)
+    float intensity;     // 84..87  (Configured intensity factor 0.1 - 1.5)
+    float veilAlpha;     // 88..91  (Contrast veil factor 0.0 - 1.0)
     float radius;        // 92..95  (Active corner radius in pixels)
     vec4 veilColor;      // 96..111 (Nexa background tint color)
     vec4 accentA;        // 112..127(Matugen primary theme color)
@@ -238,33 +239,48 @@ float cornerMask(vec2 uv, vec2 size, float radius) {
     return clamp(1.0 - smoothstep(-0.5, 0.5, dist), 0.0, 1.0);
 }
 
+// Pseudo-random noise helper
+float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
 void main() {
     vec2 uv = qt_TexCoord0;
     float aspect = ubuf.itemWidth / max(1.0, ubuf.itemHeight);
     vec2 p = uv;
     p.x *= aspect; // Aspect-corrected coordinates
 
+    // ── LIVE GPU MOTION CLOCK ────────────────────────────────────────────────
+    // t is elapsed seconds, scaled by user speed preference
     float t = ubuf.iTime * 0.001 * max(0.1, ubuf.speed);
 
-    // -------------------------------------------------------------------------
-    // 1. YOUR GRAPHICS LOGIC HERE
-    // Example: Soft color wave using Matugen accents
-    // -------------------------------------------------------------------------
-    float wave = sin(p.x * 3.0 + t) * 0.5 + 0.5;
-    vec3 col = mix(ubuf.accentA.rgb, ubuf.accentB.rgb, wave);
+    // ── 1. YOUR GRAPHICS LOGIC HERE ──────────────────────────────────────────
+    // Example: Multi-layered harmonic wave with smooth organic drift
+    float wave1 = sin(p.x * 2.5 + t * 0.8) * 0.18 + cos(p.x * 1.8 - t * 0.5) * 0.12;
+    float wave2 = sin(p.x * 3.2 - t * 0.7 + 1.5) * 0.14 + cos(p.x * 4.0 + t * 0.9) * 0.08;
+    float ribbon = exp(-abs(p.y - 0.50 - wave1) * 8.0);
+    float glow = exp(-abs(p.y - 0.45 - wave2) * 6.0) * 0.5;
+
+    // Blend Matugen accents dynamically
+    vec3 col = mix(ubuf.accentA.rgb, ubuf.accentB.rgb, (wave1 + wave2) * 0.5 + 0.5);
+    col = col * (ribbon + glow) * ubuf.intensity;
 
     // Blend gently with background veil color
-    col = mix(ubuf.veilColor.rgb, col, 0.35 * ubuf.intensity);
+    col = mix(ubuf.veilColor.rgb, col, 0.45 * ubuf.intensity);
 
-    // -------------------------------------------------------------------------
-    // 2. TRANSLUCENCY FOR HYPRGLASS
+    // ── 2. TRANSLUCENCY FOR HYPRGLASS ────────────────────────────────────────
     // Keep alpha in translucent range (0.12 - 0.45) so HyprGlass blur shows through
-    // -------------------------------------------------------------------------
-    float alpha = clamp(0.18 + ubuf.veilAlpha * 0.12, 0.10, 0.45) * ubuf.qt_Opacity;
+    float alpha = clamp(0.18 + ubuf.veilAlpha * 0.12 + ribbon * 0.25, 0.10, 0.65) * ubuf.qt_Opacity;
 
-    // -------------------------------------------------------------------------
-    // 3. CORNER CLIPPING & PREMULTIPLIED ALPHA
-    // -------------------------------------------------------------------------
+    // ── 3. CORNER CLIPPING & PREMULTIPLIED ALPHA ─────────────────────────────
     float mask = cornerMask(uv, vec2(ubuf.itemWidth, ubuf.itemHeight), ubuf.radius);
     alpha *= mask;
 

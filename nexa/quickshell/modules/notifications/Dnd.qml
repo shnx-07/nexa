@@ -2,12 +2,13 @@ import QtQuick
 
 import Quickshell
 import Quickshell.Io
+import "../../services" as Services
 
 
 Item {
     id: root
 
-    property bool enabled: false
+    property bool enabled: Services.SystemState.dnd
     property bool loading: false
     property bool changing: false
 
@@ -127,16 +128,6 @@ Item {
 
         interval: 200
         repeat: false
-
-        onTriggered:
-            root.refresh()
-    }
-
-
-    Timer {
-        interval: 3500
-        repeat: true
-        running: root.visible
 
         onTriggered:
             root.refresh()

@@ -9,10 +9,14 @@ Item {
     z: 0
     clip: true
 
-    // When the shader is "off", this substrate is 100% invisible:
-    // It renders 0 pixels, incurs 0 GPU overhead, and leaves the native
-    // window background and HyprGlass refraction completely untouched.
-    visible: Nexa.Theme.activeShader !== "off" && Nexa.Theme.activeShaderFile !== ""
+    // ── SMART CPU & VISIBILITY CHECK ─────────────────────────────
+    // Shaders only render when active, AND when their parent window/popup
+    // is actually visible on screen. This stops hidden popups from
+    // dirtying the scene graph and eliminates CPU spikes.
+    readonly property bool parentVisible: (root.parent !== null && root.parent.visible !== undefined) ? root.parent.visible : true
+    readonly property bool parentOpaque: (root.parent !== null && root.parent.opacity !== undefined) ? root.parent.opacity > 0.01 : true
+
+    visible: Nexa.Theme.activeShader !== "off" && Nexa.Theme.activeShaderFile !== "" && root.parentVisible && root.parentOpaque
 
     property int radius: parent.radius !== undefined ? parent.radius : 0
     property bool showSpecularLine: root.radius === 0

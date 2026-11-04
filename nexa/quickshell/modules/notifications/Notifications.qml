@@ -181,9 +181,9 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         Quickshell.execDetached([
-                            "sh",
-                            "-c",
-                            "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications clear"
+                            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+                            "notifications",
+                            "clear"
                         ])
                     }
                 }
@@ -433,10 +433,10 @@ Item {
                                         cursorShape: Qt.PointingHandCursor
                                         onClicked: {
                                             Quickshell.execDetached([
-                                                "sh",
-                                                "-c",
-                                                "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications dismiss "
-                                                    + cardRoot.modelData.id
+                                                Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+                                                "notifications",
+                                                "dismiss",
+                                                String(cardRoot.modelData.id)
                                             ])
                                         }
                                     }
@@ -446,6 +446,7 @@ Item {
                             // Summary / Title
                             Text {
                                 Layout.fillWidth: true
+                                textFormat: Text.PlainText
                                 visible: text.length > 0
                                 text: cardRoot.modelData.summary || ""
                                 color: Nexa.Theme.text
@@ -460,6 +461,7 @@ Item {
                             // Body Text
                             Text {
                                 Layout.fillWidth: true
+                                textFormat: Text.PlainText
                                 visible: text.length > 0
                                 text: cardRoot.modelData.body || ""
                                 color: Nexa.Theme.mutedText
@@ -511,11 +513,11 @@ Item {
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
                                                 Quickshell.execDetached([
-                                                    "sh",
-                                                    "-c",
-                                                    "\"$HOME/.config/nexa/rust/target/release/nexad\" notifications action "
-                                                        + cardRoot.modelData.id
-                                                        + " \"" + actionPill.modelData.key + "\""
+                                                    Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+                                                    "notifications",
+                                                    "action",
+                                                    String(cardRoot.modelData.id),
+                                                    String(actionPill.modelData.key || "")
                                                 ])
                                             }
                                         }

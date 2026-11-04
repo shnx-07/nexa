@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../../services" as Services
 
 
 Item {
@@ -11,11 +12,11 @@ Item {
     // PUBLIC STATE
     // ============================================================
 
-    property bool enabled: false
+    property bool enabled: Services.SystemState.nightlightEnabled
 
-    property string mode: "manual"
+    property string mode: Services.SystemState.nightlightMode
 
-    property int temperature: 6500
+    property int temperature: Services.SystemState.nightlightTemperature
 
     property int manualTemperature: 4500
     property int wallpaperTemperature: 5000
@@ -555,14 +556,7 @@ Item {
     // EXTERNAL STATE SYNC
     // ============================================================
 
-    Timer {
-        interval: 3000
-        repeat: true
-        running: root.visible
-
-        onTriggered:
-            root.refresh()
-    }
+    // Reactive bindings to Services.SystemState replace repeating process forks
 
     // ============================================================
     // SCHEDULE FUNCTIONS & AUTOMATION
@@ -667,7 +661,9 @@ Item {
             onStreamFinished: {
                 try {
                     root.applyData(JSON.parse(text))
-                } catch (e) {}
+                } catch (e) {
+                    console.warn("nightlight: failed to parse schedule payload:", e)
+                }
                 delayedRefresh.restart()
             }
         }
@@ -680,7 +676,9 @@ Item {
             onStreamFinished: {
                 try {
                     root.applyData(JSON.parse(text))
-                } catch (e) {}
+                } catch (e) {
+                    console.warn("nightlight: failed to parse eval payload:", e)
+                }
             }
         }
     }

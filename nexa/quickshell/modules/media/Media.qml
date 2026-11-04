@@ -385,22 +385,22 @@ Item {
     // ============================================================
 
     readonly property string title:
-        available && player.trackTitle !== ""
+        (available && player && player.trackTitle)
         ? player.trackTitle
         : "Nothing playing"
 
     readonly property string artist:
-        available && player.trackArtist !== ""
+        (available && player && player.trackArtist)
         ? player.trackArtist
         : "Unknown artist"
 
     readonly property string album:
-        available && player.trackAlbum !== ""
+        (available && player && player.trackAlbum)
         ? player.trackAlbum
         : ""
 
     readonly property string artwork:
-        available
+        (available && player && player.trackArtUrl)
         ? player.trackArtUrl
         : ""
 
@@ -545,35 +545,37 @@ Item {
     // ============================================================
 
     property bool shuffleActive: false
+    readonly property bool shuffle: {
+        if (root.player && root.player.canShuffle) return root.player.shuffle
+        return shuffleActive
+    }
     property string loopStatus: "None" // "None", "Track", "Playlist"
 
     function toggleShuffle() {
-        const pName = root.cleanIdentity ? root.cleanIdentity.toLowerCase() : ""
-        if (pName !== "") {
-            Quickshell.execDetached(["playerctl", "-p", pName, "shuffle", "Toggle"])
-        } else {
-            Quickshell.execDetached(["playerctl", "shuffle", "Toggle"])
-        }
         shuffleActive = !shuffleActive
+        if (root.player && root.player.canShuffle) {
+            root.player.shuffle = !root.player.shuffle
+        }
+        Quickshell.execDetached(["playerctl", "shuffle", "Toggle"])
     }
 
     function cycleLoop() {
-        const pName = root.cleanIdentity ? root.cleanIdentity.toLowerCase() : ""
         const nextLoop = (loopStatus === "None" ? "Track" : (loopStatus === "Track" ? "Playlist" : "None"))
         loopStatus = nextLoop
-        if (pName !== "") {
-            Quickshell.execDetached(["playerctl", "-p", pName, "loop", nextLoop])
-        } else {
-            Quickshell.execDetached(["playerctl", "loop", nextLoop])
+        if (root.player && root.player.canLoop) {
+            if (nextLoop === "None") root.player.loopState = MprisLoopState.None
+            else if (nextLoop === "Track") root.player.loopState = MprisLoopState.Track
+            else if (nextLoop === "Playlist") root.player.loopState = MprisLoopState.Playlist
         }
+        Quickshell.execDetached(["playerctl", "loop", nextLoop])
     }
 
     Process {
         id: mprisStatusProcess
         command: [
-            "sh", "-c",
-            "p=\"$1\"; if [ -n \"$p\" ]; then printf '%s|%s' \"$(playerctl -p \"$p\" shuffle 2>/dev/null || echo Off)\" \"$(playerctl -p \"$p\" loop 2>/dev/null || echo None)\"; else printf '%s|%s' \"$(playerctl shuffle 2>/dev/null || echo Off)\" \"$(playerctl loop 2>/dev/null || echo None)\"; fi",
-            "_",
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "media",
+            "status",
             root.cleanIdentity ? root.cleanIdentity.toLowerCase() : ""
         ]
         running: false
@@ -602,6 +604,8 @@ Item {
     property real audioPhase: 0.0
 
     signal audioTick()
+    signal requestBack()
+    signal requestOpenClock()
 
     Connections {
         target: Services.AudioVisualizer
@@ -693,8 +697,8 @@ Item {
     Timer {
         interval: 500
         repeat: true
-        running: root.available && root.playing && root.player.positionSupported && !root.seeking
-        onTriggered: root.player.positionChanged()
+        running: root.available && root.playing && (root.player && root.player.positionSupported) && !root.seeking
+        onTriggered: if (root.player) root.player.positionChanged()
     }
 
     // Helpers
@@ -874,26 +878,6 @@ Item {
                     if (needsScroll) compactTickerAnim.restart()
                     else compactTickerAnim.stop()
                 }
-            }
-
-            // Subtle Vertical Divider
-            Rectangle {
-                Layout.preferredWidth: 1
-                Layout.preferredHeight: 14
-                Layout.alignment: Qt.AlignVCenter
-                color: Nexa.Theme.divider
-                opacity: 0.6
-            }
-
-            // Compact Clock
-            Text {
-                id: compactClockText
-                Layout.alignment: Qt.AlignVCenter
-                text: Qt.formatDateTime(root.currentTime, "hh:mm AP")
-                color: Nexa.Theme.text
-                font.family: Nexa.Theme.fontFamily
-                font.pixelSize: Nexa.Theme.fontSizeSm
-                font.weight: Nexa.Theme.fontWeightMedium
             }
         }
     }
@@ -1156,8 +1140,8 @@ Item {
                 anchors.fill: parent
                 radius: Nexa.Theme.radius2Xl
                 color: "transparent"
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.12)
+                border.width: Nexa.Theme.borderThin
+                border.color: Nexa.Theme.borderStrong
             }
         }
 
@@ -1255,763 +1239,611 @@ Item {
         }
 
         // --------------------------------------------------------
-        // Active State: Modern Cyber / Android Media Deck
+        // --------------------------------------------------------
+        // Active State: Next-Gen Split Studio Media Deck
         // --------------------------------------------------------
         Item {
             anchors.fill: parent
             visible: root.hasTrack && (root.playing || root.paused)
 
+            // Soft Ambient Color Glow on Top-Right Corner (Tied to Matugen primary)
+            Rectangle {
+                width: 440
+                height: 320
+                anchors.top: parent.top
+                anchors.right: parent.right
+                anchors.margins: -40
+                radius: 220
+                color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.12)
+                opacity: root.playing ? 0.95 : 0.35
+                Behavior on opacity { NumberAnimation { duration: 400 } }
+            }
+
+            // ========================================================
+            // TWO-COLUMN SPLIT STUDIO LAYOUT
+            // ========================================================
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 20
-                spacing: 24
+                spacing: 0
 
-                // ====================================================
-                // LEFT: CIRCULAR ALBUM ART DISC + AUDIO-SYNCED VISUALIZER
-                // ====================================================
+                // ----------------------------------------------------
+                // LEFT COLUMN: FULL-BLEED HERO ARTWORK (~40% Width)
+                // ----------------------------------------------------
                 Item {
-                    Layout.preferredWidth: 220
-                    Layout.preferredHeight: 220
-                    Layout.alignment: Qt.AlignVCenter
+                    id: leftCoverCol
+                    Layout.preferredWidth: 260
+                    Layout.fillHeight: true
+                    clip: true
 
-                    // 1. Soft Ambient Glow behind the circular artwork
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 140
-                        height: 140
-                        radius: 70
-                        color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.28)
-                        opacity: root.playing ? 0.85 : 0.25
-                        scale: root.playing ? (1.02 + root.audioBass * 0.12) : 0.96
-                        Behavior on opacity { NumberAnimation { duration: 300 } }
-                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
-                    }
-
-                    // 2. Reactive Circular Spectrum Visualizer Ring (Synced to Music)
-                    Canvas {
-                        id: radialCanvas
+                    // Album Artwork Image (High-Res from pipeline)
+                    Image {
+                        id: coverImage
                         anchors.fill: parent
-                        renderTarget: Canvas.FramebufferObject
-                        renderStrategy: Canvas.Threaded
+                        source: root.highResArtwork !== "" ? root.highResArtwork : (root.artwork !== "" ? root.artwork : "")
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        cache: true
+                        mipmap: true
+                        smooth: true
+                    }
 
-                        Connections {
-                            target: root
-                            function onAudioTick() { radialCanvas.requestPaint() }
-                            function onPlayingChanged() { radialCanvas.requestPaint() }
-                            function onPresentationChanged() { if (root.presentation === "full") radialCanvas.requestPaint() }
+                    // Fallback Gradient if image is loading or empty
+                    Rectangle {
+                        anchors.fill: parent
+                        visible: coverImage.status !== Image.Ready || (root.highResArtwork === "" && root.artwork === "")
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: "#23212b" }
+                            GradientStop { position: 1.0; color: "#14131a" }
                         }
-
-                        // Precomputed static trig table for 80 bars (zero Math.cos/sin overhead during animation)
-                        readonly property var trigTable: {
-                            const count = 80
-                            const table = []
-                            for (let i = 0; i < count; i++) {
-                                const a = (i / count) * Math.PI * 2
-                                table.push({ cos: Math.cos(a), sin: Math.sin(a), angle: a })
-                            }
-                            return table
-                        }
-
-                        onPaint: {
-                            const ctx = getContext("2d")
-                            ctx.reset()
-                            const cx = width / 2
-                            const cy = height / 2
-                            const barCount = 80
-                            const baseR = 76
-                            const isPlaying = root.playing && root.presentation === "full" && root.visible
-                            const hasBins = root.spectrumBins && root.spectrumBins.length > 0
-                            const table = trigTable
-
-                            ctx.lineWidth = 2.0
-                            ctx.lineCap = "round"
-                            ctx.strokeStyle = Nexa.Theme.primary
-
-                            ctx.beginPath()
-                            for (let i = 0; i < barCount; i++) {
-                                const entry = table[i]
-                                const cosA = entry.cos
-                                const sinA = entry.sin
-
-                                // Map 80 bars to 20 spectrum bins with smooth interpolation
-                                const half = 40
-                                const norm = (i < half ? i : (79 - i)) / (half - 1)
-                                const floatIdx = norm * 19.0
-                                const i0 = Math.floor(floatIdx)
-                                const i1 = Math.min(19, i0 + 1)
-                                const frac = floatIdx - i0
-                                const b0 = hasBins ? (root.spectrumBins[i0] || 0) : 0
-                                const b1 = hasBins ? (root.spectrumBins[i1] || 0) : 0
-                                const binVal = b0 + (b1 - b0) * frac
-
-                                let h = 3.5
-                                if (isPlaying) {
-                                    if (hasBins && binVal > 0.01) {
-                                        h = 3.5 + binVal * 22.0
-                                    } else {
-                                        const wave = Math.sin(entry.angle * 4 + root.audioPhase) * 6.0
-                                        h = Math.max(3.5, 7.5 + wave)
-                                    }
-                                }
-
-                                const x1 = cx + cosA * baseR
-                                const y1 = cy + sinA * baseR
-                                const x2 = cx + cosA * (baseR + h)
-                                const y2 = cy + sinA * (baseR + h)
-
-                                ctx.moveTo(x1, y1)
-                                ctx.lineTo(x2, y2)
-                            }
-                            ctx.stroke()
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.playerIcon(root.cleanIdentity)
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: 68
+                            color: Qt.rgba(255, 255, 255, 0.15)
                         }
                     }
 
-                    // 3. High-Res Circular Album Art Disc + Cyber Vinyl Deck
-                    Item {
-                        id: frontArtworkCard
-                        width: 140
-                        height: 140
-                        anchors.centerIn: parent
+                    // Top-Left Glass Pill Badge: // NOW PLAYING / PAUSED
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.margins: 18
+                        height: 28
+                        radius: 14
+                        color: Qt.rgba(12 / 255, 12 / 255, 16 / 255, 0.75)
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.14)
 
-                        // Click to toggle between Album Art and Cyber Vinyl Deck
-                        MouseArea {
+                        RowLayout {
                             anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.showVinylMode = !root.showVinylMode
-                        }
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 12
+                            spacing: 6
 
-                        // --- VIEW 1: High-Res Album Art ---
-                        Item {
-                            anchors.fill: parent
-                            visible: !root.showVinylMode && (root.highResArtwork !== "" || root.artwork !== "")
-
+                            // Pulsing Matugen Status Beacon
                             Rectangle {
-                                id: artCircleMask
-                                anchors.fill: parent
-                                radius: width / 2
-                                visible: false
-                            }
+                                width: 7
+                                height: 7
+                                radius: 3.5
+                                color: root.playing ? Nexa.Theme.primary : "#94a3b8"
 
-                            Image {
-                                id: mainArtworkImage
-                                anchors.fill: parent
-                                source: root.highResArtwork !== "" ? root.highResArtwork : root.artwork
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                cache: true
-                                mipmap: true
-                                sourceSize: Qt.size(280, 280)
-                                smooth: true
-                                visible: false
-                            }
-
-                            OpacityMask {
-                                anchors.fill: parent
-                                source: mainArtworkImage
-                                maskSource: artCircleMask
-                            }
-
-                            // Specular rim
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: width / 2
-                                color: "transparent"
-                                border.width: 1.2
-                                border.color: Qt.rgba(255, 255, 255, 0.16)
-                            }
-                        }
-
-                        // --- VIEW 2: Cyber Vinyl Deck ("Something Else") ---
-                        Item {
-                            id: vinylDeck
-                            anchors.fill: parent
-                            visible: root.showVinylMode || (root.highResArtwork === "" && root.artwork === "")
-
-                            // Rotating vinyl record container
-                            Item {
-                                anchors.fill: parent
-                                rotation: 0
-
-                                RotationAnimation on rotation {
-                                    from: 0
-                                    to: 360
-                                    duration: 8000
+                                SequentialAnimation on opacity {
+                                    running: root.playing
                                     loops: Animation.Infinite
-                                    running: root.playing && root.presentation === "full" && root.visible && vinylDeck.visible
+                                    NumberAnimation { from: 1.0; to: 0.35; duration: 900; easing.type: Easing.InOutQuad }
+                                    NumberAnimation { from: 0.35; to: 1.0; duration: 900; easing.type: Easing.InOutQuad }
                                 }
+                            }
 
-                                // Dark vinyl disc body
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: width / 2
-                                    color: "#121316"
-                                    border.width: 1
-                                    border.color: Qt.rgba(255, 255, 255, 0.14)
+                            Text {
+                                text: root.playing ? "// NOW PLAYING" : "// PAUSED"
+                                color: "#f1f5f9"
+                                font.family: Nexa.Theme.monoFontFamily
+                                font.pixelSize: 10
+                                font.weight: Font.DemiBold
+                                font.letterSpacing: 0.8
+                            }
+                        }
+                    }
+
+                    // Bottom Gradient Scrim & Mini Track Preview
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        height: 94
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: "transparent" }
+                            GradientStop { position: 0.35; color: Qt.rgba(10 / 255, 10 / 255, 14 / 255, 0.65) }
+                            GradientStop { position: 1.0; color: Qt.rgba(8 / 255, 8 / 255, 12 / 255, 0.95) }
+                        }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 16
+                            anchors.bottomMargin: 18
+                            spacing: 3
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.title
+                                color: "#ffffff"
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 13
+                                font.weight: Font.DemiBold
+                                elide: Text.ElideRight
+                            }
+
+                            RowLayout {
+                                spacing: 5
+                                Text {
+                                    text: "◉"
+                                    color: Nexa.Theme.primary
+                                    font.pixelSize: 9
                                 }
-
-                                // Concentric microgrooves
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: 116; height: 116; radius: 58
-                                    color: "transparent"
-                                    border.width: 1
-                                    border.color: Qt.rgba(255, 255, 255, 0.06)
-                                }
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: 96; height: 96; radius: 48
-                                    color: "transparent"
-                                    border.width: 1
-                                    border.color: Qt.rgba(255, 255, 255, 0.07)
-                                }
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: 76; height: 76; radius: 38
-                                    color: "transparent"
-                                    border.width: 1
-                                    border.color: Qt.rgba(255, 255, 255, 0.08)
-                                }
-
-                                // Center Label with Brand Color
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: 52; height: 52; radius: 26
-                                    color: root.playerBrandColor(root.identity)
-
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        anchors.margins: 3
-                                        radius: width / 2
-                                        color: "transparent"
-                                        border.width: 1
-                                        border.color: Qt.rgba(0, 0, 0, 0.25)
-                                    }
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: root.playerIcon(root.identity)
-                                        color: "#ffffff"
-                                        font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: 22
-                                    }
-
-                                    // Spindle hole
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 10; height: 10; radius: 5
-                                        color: "#0a0b0d"
-                                        border.width: 1
-                                        border.color: Qt.rgba(255, 255, 255, 0.4)
-                                    }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: root.artist
+                                    color: "#94a3b8"
+                                    font.family: Nexa.Theme.fontFamily
+                                    font.pixelSize: 11
+                                    elide: Text.ElideRight
                                 }
                             }
                         }
+                    }
+
+                    // Separator hairline between left and right column
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        anchors.right: parent.right
+                        width: 1
+                        color: Qt.rgba(255, 255, 255, 0.08)
                     }
                 }
 
-                // ====================================================
-                // RIGHT: METADATA, SQUIGGLY SCRUBBER & CAPSULE CONTROLS
-                // ====================================================
+                // ----------------------------------------------------
+                // RIGHT COLUMN: STUDIO CONTROL DECK (~60% Width)
+                // ----------------------------------------------------
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: 10
+                    Layout.margins: 18
+                    Layout.leftMargin: 20
+                    Layout.rightMargin: 20
+                    spacing: 8
 
-                    // 1. Top Bar: Status Indicator + Active Player Switcher Pill
+                    // ================================================
+                    // 1. HEADER: SOURCE INDICATOR
+                    // ================================================
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 8
 
-                        // Clean Status Badge
-                        Row {
-                            spacing: 6
-                            Layout.alignment: Qt.AlignVCenter
-
-                            Rectangle {
-                                width: 6; height: 6; radius: 3
-                                anchors.verticalCenter: parent.verticalCenter
-                                color: root.playing ? Nexa.Theme.success : Nexa.Theme.warning
-
-                                SequentialAnimation on opacity {
-                                    loops: Animation.Infinite
-                                    running: root.playing && root.presentation === "full" && root.visible
-                                    NumberAnimation { from: 0.4; to: 1.0; duration: 800 }
-                                    NumberAnimation { from: 1.0; to: 0.4; duration: 800 }
-                                }
-                            }
-
+                        RowLayout {
+                            spacing: 7
                             Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: root.playing ? "PLAYING" : "PAUSED"
-                                color: root.playing ? Nexa.Theme.success : Nexa.Theme.warning
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 10
-                                font.weight: Nexa.Theme.fontWeightBold
-                                font.letterSpacing: 0.8
+                                text: "— " + root.playerIcon(root.cleanIdentity)
+                                color: Nexa.Theme.primary
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 14
+                                font.weight: Font.Bold
+                            }
+                            Text {
+                                text: root.cleanIdentity.toUpperCase()
+                                color: "#94a3b8"
+                                font.family: Nexa.Theme.monoFontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.DemiBold
+                                font.letterSpacing: 1.2
                             }
                         }
 
                         Item { Layout.fillWidth: true }
-
-                        // Active Player Switcher Pill: [ 󰓇 Spotify 󰅂 ]
-                        Rectangle {
-                            id: playerPillRect
-                            Layout.preferredWidth: playerPillContent.width + 24
-                            Layout.preferredHeight: 26
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            radius: 13
-                            color: playerPillMouse.containsMouse
-                                ? Nexa.Theme.hoverStrong
-                                : Nexa.Theme.surfaceContainerHigh
-                            border.width: 1
-                            border.color: Nexa.Theme.border
-                            scale: playerPillMouse.pressed ? 0.94 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 100 } }
-
-                            Row {
-                                id: playerPillContent
-                                anchors.centerIn: parent
-                                spacing: 6
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: root.playerIcon(root.identity)
-                                    color: root.playerBrandColor(root.identity)
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: 13
-                                }
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: root.identity
-                                    color: Nexa.Theme.text
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: 11
-                                    font.weight: Nexa.Theme.fontWeightBold
-                                }
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "󰅂"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: 10
-                                }
-                            }
-
-                            MouseArea {
-                                id: playerPillMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.cyclePlayer()
-                            }
-                        }
                     }
 
-                    // 2. Track Title Box (Bold, Smooth Marquee on Overflow)
-                    Item {
-                        id: fullTitleBox
-                        Layout.fillWidth: true
-                        implicitHeight: fullTitleText.implicitHeight
-                        clip: true
+                    Item { height: 2 }
 
-                        readonly property real overflowDist: Math.max(0, fullTitleText.implicitWidth - width)
-                        readonly property bool needsScroll: overflowDist > 6
+                    // ================================================
+                    // 2. HERO TRACK TYPOGRAPHY
+                    // ================================================
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
 
                         Text {
-                            id: fullTitleText
-                            x: 0
+                            Layout.fillWidth: true
                             text: root.title
-                            color: Nexa.Theme.text
+                            color: "#ffffff"
                             font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 24
-                            font.weight: Nexa.Theme.fontWeightBold
+                            font.pixelSize: 18
+                            font.weight: Font.Bold
+                            font.letterSpacing: -0.3
+                            elide: Text.ElideRight
                         }
 
-                        SequentialAnimation {
-                            id: fullTitleAnim
-                            running: fullTitleBox.needsScroll && root.presentation === "full" && root.visible
-                            loops: Animation.Infinite
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 7
 
-                            PauseAnimation { duration: 2200 }
-                            NumberAnimation {
-                                target: fullTitleText
-                                property: "x"
-                                from: 0
-                                to: -fullTitleBox.overflowDist - 20
-                                duration: Math.max(1600, (fullTitleBox.overflowDist + 20) * 32)
-                                easing.type: Easing.InOutQuad
+                            Text {
+                                text: "◉"
+                                color: Nexa.Theme.primary
+                                font.pixelSize: 10
                             }
-                            PauseAnimation { duration: 1800 }
-                            NumberAnimation {
-                                target: fullTitleText
-                                property: "x"
-                                to: 0
-                                duration: Math.max(1200, (fullTitleBox.overflowDist + 20) * 22)
-                                easing.type: Easing.InOutQuad
-                            }
-                        }
 
-                        onWidthChanged: {
-                            fullTitleText.x = 0
-                            if (needsScroll) fullTitleAnim.restart()
-                            else fullTitleAnim.stop()
-                        }
-
-                        Connections {
-                            target: root
-                            function onTitleChanged() {
-                                fullTitleText.x = 0
-                                if (fullTitleBox.needsScroll) fullTitleAnim.restart()
-                                else fullTitleAnim.stop()
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.artist + (root.album !== "" ? ("  •  " + root.album) : "")
+                                color: "#cbd5e1"
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                                elide: Text.ElideRight
                             }
                         }
                     }
 
-                    // 3. Artist & Album Subtitle
-                    RowLayout {
+                    // Flexible Spacer: Pushes Progress Bar & Controls to Bottom
+                    Item { Layout.fillHeight: true }
+
+                    // ================================================
+                    // 3. PROGRESS BAR (Lowered right above controls)
+                    // ================================================
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: 8
 
-                        Text {
+                        RowLayout {
                             Layout.fillWidth: true
-                            text: root.artist
-                            color: Nexa.Theme.primary
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 15
-                            font.weight: Nexa.Theme.fontWeightDemiBold
-                            elide: Text.ElideRight
-                        }
+                            spacing: 12
 
-                        Text {
-                            visible: root.album !== ""
-                            text: "•"
-                            color: Qt.rgba(255/255, 255/255, 255/255, 0.25)
-                            font.pixelSize: 14
-                        }
+                            // Elapsed Monospace Timestamp
+                            Text {
+                                text: root.formatTime(root.displayedPosition)
+                                color: "#94a3b8"
+                                font.family: Nexa.Theme.monoFontFamily
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                            }
 
-                        Text {
-                            visible: root.album !== ""
-                            Layout.fillWidth: true
-                            text: root.album
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 13
-                            elide: Text.ElideRight
-                        }
-                    }
+                            // Interactive Straight Rail Progress Bar
+                            Item {
+                                id: scrubberTrack
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 20
 
-                    // 4. Android 13/14 "Squiggly" Waveform Progress Scrubber
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 12
+                                // Background Rail (Matugen primary tinted with 0.18 opacity)
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: parent.width
+                                    height: 4
+                                    radius: 2
+                                    color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.18)
 
-                        // Elapsed Time
-                        Text {
-                            text: root.formatTime(root.displayedPosition)
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.monoFontFamily
-                            font.pixelSize: 12
-                            font.weight: Nexa.Theme.fontWeightMedium
-                        }
-
-                        // Squiggly Canvas Waveform Scrubber
-                        Item {
-                            id: squigglyContainer
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 28
-
-                            Canvas {
-                                id: squigglyCanvas
-                                anchors.fill: parent
-                                renderTarget: Canvas.FramebufferObject
-                                renderStrategy: Canvas.Threaded
-
-                                property real wavePhase: 0.0
-
-                                NumberAnimation on wavePhase {
-                                    from: 0
-                                    to: Math.PI * 2
-                                    duration: 1800
-                                    loops: Animation.Infinite
-                                    running: root.playing && root.presentation === "full" && root.visible
-                                }
-
-                                onWavePhaseChanged: squigglyCanvas.requestPaint()
-
-                                Connections {
-                                    target: root
-                                    function onDisplayedProgressChanged() { squigglyCanvas.requestPaint() }
-                                    function onDurationChanged() { squigglyCanvas.requestPaint() }
-                                    function onPlayingChanged() { squigglyCanvas.requestPaint() }
-                                }
-
-                                onPaint: {
-                                    const ctx = getContext("2d")
-                                    ctx.reset()
-
-                                    const w = width
-                                    const h = height
-                                    const centerY = h / 2
-                                    const progress = Math.max(0, Math.min(1, root.displayedProgress))
-                                    const progressX = w * progress
-                                    const isPlaying = root.playing && root.presentation === "full" && root.visible
-
-                                    // 1. Remaining unplayed track (flat rail with subtle opacity & terminal dot)
-                                    if (progressX < w - 4) {
-                                        ctx.strokeStyle = Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.25)
-                                        ctx.lineWidth = 3.5
-                                        ctx.lineCap = "round"
-                                        ctx.beginPath()
-                                        ctx.moveTo(progressX + 3, centerY)
-                                        ctx.lineTo(w - 4, centerY)
-                                        ctx.stroke()
-
-                                        // Subtle terminal dot at end of rail
-                                        ctx.fillStyle = Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.45)
-                                        ctx.beginPath()
-                                        ctx.arc(w - 2, centerY, 2.5, 0, Math.PI * 2)
-                                        ctx.fill()
+                                    // Active Elapsed Progress Fill (Matugen primary)
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.top: parent.top
+                                        anchors.bottom: parent.bottom
+                                        width: parent.width * root.displayedProgress
+                                        radius: 2
+                                        color: Nexa.Theme.primary
                                     }
 
-                                    // 2. Elapsed played track (original smooth elegant sine wave from preview)
-                                    if (progressX > 2) {
-                                        ctx.strokeStyle = Nexa.Theme.primary
-                                        ctx.lineWidth = 3.5
-                                        ctx.lineCap = "round"
-                                        ctx.beginPath()
-                                        ctx.moveTo(0, centerY)
+                                    // Precision Scrubber Thumb Handle (Matugen primary with crisp white border)
+                                    Rectangle {
+                                        width: 12
+                                        height: 12
+                                        radius: 6
+                                        x: (parent.width * root.displayedProgress) - (width / 2)
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: Nexa.Theme.primary
+                                        border.width: 2
+                                        border.color: "#ffffff"
+                                        scale: scrubMouse.containsMouse || scrubMouse.pressed ? 1.3 : 1.0
+                                        Behavior on scale { NumberAnimation { duration: 150 } }
+                                    }
+                                }
 
-                                        const step = 2.0
-                                        const maxAmp = 4.0
-                                        for (let x = 0; x <= progressX; x += step) {
-                                            const wave = isPlaying
-                                                ? Math.sin(x * 0.16 + wavePhase) * maxAmp
-                                                : Math.sin(x * 0.16) * maxAmp
-                                            ctx.lineTo(x, centerY + wave)
+                                MouseArea {
+                                    id: scrubMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onPressed: mouse => {
+                                        root.scrubbing = true
+                                        const frac = Math.max(0, Math.min(1, mouse.x / width))
+                                        root.scrubPosition = frac * root.duration
+                                    }
+                                    onPositionChanged: mouse => {
+                                        if (pressed) {
+                                            const frac = Math.max(0, Math.min(1, mouse.x / width))
+                                            root.scrubPosition = frac * root.duration
                                         }
-                                        ctx.stroke()
                                     }
-
-                                    // 3. Vertical Scrubber Handle Pill (High-Contrast, Crisp)
-                                    if (root.duration > 0) {
-                                        ctx.fillStyle = Nexa.Theme.primary
-                                        const thumbW = 4.5
-                                        const thumbH = 18
-                                        const thumbX = Math.max(0, Math.min(w - thumbW, progressX - thumbW / 2))
-                                        const r = 2.25
-                                        const ty = centerY - thumbH / 2
-
-                                        ctx.beginPath()
-                                        ctx.moveTo(thumbX + r, ty)
-                                        ctx.lineTo(thumbX + thumbW - r, ty)
-                                        ctx.arcTo(thumbX + thumbW, ty, thumbX + thumbW, ty + r, r)
-                                        ctx.lineTo(thumbX + thumbW, ty + thumbH - r)
-                                        ctx.arcTo(thumbX + thumbW, ty + thumbH, thumbX + thumbW - r, ty + thumbH, r)
-                                        ctx.lineTo(thumbX + r, ty + thumbH)
-                                        ctx.arcTo(thumbX, ty + thumbH, thumbX, ty + thumbH - r, r)
-                                        ctx.lineTo(thumbX, ty + r)
-                                        ctx.arcTo(thumbX, ty, thumbX + r, ty, r)
-                                        ctx.closePath()
-                                        ctx.fill()
+                                    onReleased: mouse => {
+                                        const frac = Math.max(0, Math.min(1, mouse.x / width))
+                                        root.seek(frac * root.duration)
+                                        root.scrubbing = false
                                     }
                                 }
                             }
 
-                            MouseArea {
-                                id: seekMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                enabled: root.available && root.player.canSeek && root.player.positionSupported && root.duration > 0
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-
-                                onPressed: mouse => {
-                                    root.seeking = true
-                                    root.updateSeekFromX(mouse.x, width)
-                                }
-                                onPositionChanged: mouse => {
-                                    if (pressed) root.updateSeekFromX(mouse.x, width)
-                                }
-                                onReleased: mouse => {
-                                    root.updateSeekFromX(mouse.x, width)
-                                    root.commitSeek()
-                                }
+                            // Total Duration Monospace Timestamp
+                            Text {
+                                text: root.formatTime(root.duration)
+                                color: "#64748b"
+                                font.family: Nexa.Theme.monoFontFamily
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
                             }
                         }
 
-                        // Total Duration
-                        Text {
-                            text: root.formatTime(root.duration)
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.monoFontFamily
-                            font.pixelSize: 12
+                        // Context Row: Album / Next Track Hint
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+                            opacity: 0.55
+
+                            Text {
+                                text: "󰒝"
+                                color: "#94a3b8"
+                                font.family: Nexa.Theme.iconFontFamily
+                                font.pixelSize: 11
+                            }
+                            Text {
+                                text: root.album !== "" ? ("ALBUM: " + root.album) : "LOSSLESS HIGH-FIDELITY"
+                                color: "#94a3b8"
+                                font.family: Nexa.Theme.fontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                font.letterSpacing: 0.5
+                                elide: Text.ElideRight
+                            }
                         }
                     }
 
-                    // 5. Working Media Controls Row with Capsule Containers (Shuffle, Prev, Hero Pill, Next, Loop)
+                    Item { height: 2 }
+
+                    // ================================================
+                    // 4. TACTILE CONTROLS DECK & INLINE VOLUME
+                    // ================================================
                     RowLayout {
                         Layout.fillWidth: true
-                        Layout.topMargin: 4
-                        spacing: 20
+                        spacing: 16
 
-                        Item { Layout.fillWidth: true }
+                        // Left: Playback Control Cluster
+                        RowLayout {
+                            spacing: 12
 
-                        // 1. Shuffle Capsule Button
-                        Rectangle {
-                            implicitWidth: 40
-                            implicitHeight: 40
-                            radius: 20
-                            color: root.shuffleActive
-                                ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.22)
-                                : (shuffleMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh)
-                            border.width: 1
-                            border.color: root.shuffleActive ? Nexa.Theme.primary : Nexa.Theme.border
-                            scale: shuffleMouse.pressed ? 0.90 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 100 } }
+                            // Shuffle Button
+                            Rectangle {
+                                width: 36
+                                height: 36
+                                radius: 18
+                                color: root.shuffle 
+                                    ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.22) 
+                                    : (shuffHover.hovered ? Nexa.Theme.hover : "transparent")
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰒝"
-                                color: root.shuffleActive ? Nexa.Theme.primary : Nexa.Theme.text
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰒝"
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 16
+                                    color: root.shuffle ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                }
+
+                                MouseArea {
+                                    id: shuffHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.toggleShuffle()
+                                }
                             }
 
-                            MouseArea {
-                                id: shuffleMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleShuffle()
-                            }
-                        }
+                            // Previous Track
+                            Rectangle {
+                                width: 38
+                                height: 38
+                                radius: 19
+                                color: prevHover.hovered ? Nexa.Theme.hover : "transparent"
 
-                        // 2. Previous Track Capsule Button
-                        Rectangle {
-                            implicitWidth: 44
-                            implicitHeight: 44
-                            radius: 22
-                            color: prevMouse.containsMouse
-                                ? Nexa.Theme.hoverStrong
-                                : Nexa.Theme.surfaceContainerHigh
-                            border.width: 1
-                            border.color: Nexa.Theme.border
-                            scale: prevMouse.pressed ? 0.90 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 100 } }
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰒮"
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 20
+                                    color: "#f1f5f9"
+                                }
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰒮"
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 22
+                                MouseArea {
+                                    id: prevHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.previous()
+                                }
                             }
 
-                            MouseArea {
-                                id: prevMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.previous()
-                            }
-                        }
+                            // HERO PLAY / PAUSE PILL BUTTON (Matugen primary accent)
+                            Rectangle {
+                                id: heroPlayPill
+                                width: 62
+                                height: 40
+                                radius: 20
+                                color: Nexa.Theme.primary
+                                scale: playMouse.pressed ? 0.94 : (playMouse.hovered ? 1.04 : 1.0)
+                                Behavior on scale { NumberAnimation { duration: 120 } }
 
-                        // 3. HERO Play / Pause Pill Button (Wide Accent Pill with Dark High-Contrast Icon)
-                        Rectangle {
-                            id: heroPlayBtn
-                            implicitWidth: 80
-                            implicitHeight: 46
-                            radius: 23
-                            color: playMouse.pressed
-                                ? Qt.darker(Nexa.Theme.primary, 1.25)
-                                : Nexa.Theme.primary
-                            scale: playMouse.pressed ? 0.92 : playMouse.containsMouse ? 1.04 : 1.0
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.playing ? "󰏤" : "󰐊"
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 20
+                                    color: Nexa.Theme.onPrimary
+                                }
 
-                            Behavior on scale {
-                                NumberAnimation { duration: 150; easing.type: Easing.OutBack }
-                            }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: root.playing ? "󰏤" : "󰐊"
-                                color: "#141414"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 24
+                                MouseArea {
+                                    id: playMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.togglePlaying()
+                                }
                             }
 
-                            MouseArea {
-                                id: playMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.togglePlaying()
-                            }
-                        }
+                            // Next Track
+                            Rectangle {
+                                width: 38
+                                height: 38
+                                radius: 19
+                                color: nextHover.hovered ? Nexa.Theme.hover : "transparent"
 
-                        // 4. Next Track Capsule Button
-                        Rectangle {
-                            implicitWidth: 44
-                            implicitHeight: 44
-                            radius: 22
-                            color: nextMouse.containsMouse
-                                ? Nexa.Theme.hoverStrong
-                                : Nexa.Theme.surfaceContainerHigh
-                            border.width: 1
-                            border.color: Nexa.Theme.border
-                            scale: nextMouse.pressed ? 0.90 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 100 } }
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "󰒭"
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 20
+                                    color: "#f1f5f9"
+                                }
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰒭"
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 22
+                                MouseArea {
+                                    id: nextHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.next()
+                                }
                             }
 
-                            MouseArea {
-                                id: nextMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.next()
-                            }
-                        }
+                            // Repeat / Loop Button
+                            Rectangle {
+                                width: 36
+                                height: 36
+                                radius: 18
+                                color: root.loopStatus !== "None" 
+                                    ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.22) 
+                                    : (repHover.hovered ? Nexa.Theme.hover : "transparent")
 
-                        // 5. Repeat / Loop Capsule Button
-                        Rectangle {
-                            implicitWidth: 40
-                            implicitHeight: 40
-                            radius: 20
-                            color: root.loopStatus !== "None"
-                                ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.22)
-                                : (loopMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh)
-                            border.width: 1
-                            border.color: root.loopStatus !== "None" ? Nexa.Theme.primary : Nexa.Theme.border
-                            scale: loopMouse.pressed ? 0.90 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 100 } }
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.loopStatus === "Track" ? "󰑘" : "󰑖"
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.pixelSize: 16
+                                    color: root.loopStatus !== "None" ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                }
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: root.loopStatus === "Track" ? "󰑘" : "󰑖"
-                                color: root.loopStatus !== "None" ? Nexa.Theme.primary : Nexa.Theme.text
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                            }
-
-                            MouseArea {
-                                id: loopMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.cycleLoop()
+                                MouseArea {
+                                    id: repHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.cycleLoop()
+                                    }
+                                }
                             }
                         }
 
                         Item { Layout.fillWidth: true }
+
+                        // Right: Inline Volume Scrubber (Connected to Matugen & nexad audio)
+                        RowLayout {
+                            id: volDeck
+                            spacing: 8
+
+                            readonly property real masterVol: {
+                                if (typeof Services !== "undefined" && Services.SystemState && Services.SystemState.volume >= 0) {
+                                    return Services.SystemState.volume / 100.0
+                                }
+                                if (root.available && root.player && root.player.volumeSupported) return root.player.volume
+                                return 0.8
+                            }
+
+                            function applyVol(posX, trackW) {
+                                const frac = Math.max(0.0, Math.min(1.0, posX / trackW))
+                                const pct = Math.round(frac * 100)
+                                if (typeof Services !== "undefined" && Services.SystemState) {
+                                    Services.SystemState.volume = pct
+                                }
+                                Quickshell.execDetached([Nexa.Theme.nexadBin, "audio", "set", pct.toString()])
+                                if (root.available && root.player && root.player.volumeSupported) {
+                                    root.player.volume = frac
+                                }
+                            }
+
+                            Item {
+                                width: 20
+                                height: 20
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: volDeck.masterVol <= 0.01 ? "󰝟" : (volDeck.masterVol < 0.5 ? "󰕿" : "󰕾")
+                                    font.family: Nexa.Theme.iconFontFamily
+                                    color: volIconMouse.containsMouse ? Nexa.Theme.primary : "#94a3b8"
+                                    font.pixelSize: 16
+                                }
+
+                                MouseArea {
+                                    id: volIconMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        Quickshell.execDetached([Nexa.Theme.nexadBin, "audio", "toggle-mute"])
+                                    }
+                                }
+                            }
+
+                            Item {
+                                id: volTrack
+                                width: 78
+                                height: 20
+
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: parent.width
+                                    height: 4
+                                    radius: 2
+                                    color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.18)
+
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.top: parent.top
+                                        anchors.bottom: parent.bottom
+                                        width: parent.width * volDeck.masterVol
+                                        radius: 2
+                                        color: Nexa.Theme.primary
+                                    }
+
+                                    Rectangle {
+                                        width: 10
+                                        height: 10
+                                        radius: 5
+                                        x: (parent.width * volDeck.masterVol) - (width / 2)
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: "#ffffff"
+                                        scale: volMouse.containsMouse || volMouse.pressed ? 1.25 : 1.0
+                                        Behavior on scale { NumberAnimation { duration: 150 } }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: volMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: mouse => volDeck.applyVol(mouse.x, width)
+                                    onPositionChanged: mouse => {
+                                        if (pressed) volDeck.applyVol(mouse.x, width)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

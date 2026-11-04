@@ -21,14 +21,17 @@ pub struct ConstellationState {
     pub nodes: Vec<NodeState>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 struct HyprWorkspace {
+    #[serde(default)]
     id: i32,
+    #[serde(default)]
     windows: i32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 struct HyprActiveWorkspace {
+    #[serde(default)]
     id: i32,
 }
 

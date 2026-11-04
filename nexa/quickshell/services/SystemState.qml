@@ -24,6 +24,10 @@ Item {
     property int batteryPercentage: 100
     property bool batteryCharging: false
     property bool onBattery: false
+    property real batteryWatts: 0.0
+    property real batteryHealth: 100
+    property int batteryTimeToFull: 0
+    property int batteryTimeToEmpty: 0
     property bool wifiConnected: false
     property string wifiSsid: ""
     property int wifiSignal: 0
@@ -81,6 +85,10 @@ Item {
                 root.batteryPercentage = data.battery_percentage ?? root.batteryPercentage
                 root.batteryCharging = data.battery_charging ?? root.batteryCharging
                 root.onBattery = data.on_battery ?? root.onBattery
+                root.batteryWatts = data.battery_power_watts ?? root.batteryWatts
+                root.batteryHealth = data.battery_health_percentage ?? root.batteryHealth
+                root.batteryTimeToFull = data.battery_time_to_full ?? root.batteryTimeToFull
+                root.batteryTimeToEmpty = data.battery_time_to_empty ?? root.batteryTimeToEmpty
                 root.wifiConnected = data.wifi_connected ?? root.wifiConnected
                 root.wifiSsid = data.wifi_ssid ?? root.wifiSsid
                 root.wifiSignal = data.wifi_signal ?? root.wifiSignal

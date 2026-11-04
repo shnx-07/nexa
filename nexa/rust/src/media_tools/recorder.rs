@@ -91,20 +91,7 @@ fn now_seconds() -> u64 {
 
 fn timestamp() -> String {
     let now = now_seconds();
-
-    let output = Command::new("date")
-        .arg("-d")
-        .arg(format!("@{now}"))
-        .arg("+%Y-%m-%d_%H-%M-%S")
-        .output();
-
-    match output {
-        Ok(output) if output.status.success() => {
-            String::from_utf8_lossy(&output.stdout).trim().to_string()
-        }
-
-        _ => now.to_string(),
-    }
+    crate::core::system::format_timestamp(now as i64)
 }
 
 // ============================================================

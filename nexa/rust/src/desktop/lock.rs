@@ -3,18 +3,25 @@ use serde_json::json;
 use std::env;
 use std::fs;
 use std::io;
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::process::Command;
 
 pub fn runtime_dir() -> PathBuf {
     let base = match env::var("XDG_RUNTIME_DIR") {
-        Ok(dir) if !dir.trim().is_empty() => PathBuf::from(dir).join("nexa"),
+        Ok(dir) if !dir.trim().is_empty() => {
+            let path = PathBuf::from(dir).join("nexa");
+            let _ = fs::create_dir_all(&path);
+            path
+        }
         _ => {
             let user = env::var("USER").unwrap_or_else(|_| "user".to_string());
-            PathBuf::from(format!("/tmp/nexa-{}", user))
+            let path = PathBuf::from(format!("/tmp/nexa-{}", user));
+            let _ = fs::create_dir_all(&path);
+            let _ = fs::set_permissions(&path, fs::Permissions::from_mode(0o700));
+            path
         }
     };
-    let _ = fs::create_dir_all(&base);
     base
 }
 
@@ -24,7 +31,7 @@ pub fn lock_flag_path() -> PathBuf {
 
 /// Triggers the Nexa Lock Screen via Hyprland global shortcut and Quickshell IPC.
 pub fn trigger_lock() -> Result<(), String> {
-    let home = env::var("HOME").unwrap_or_else(|_| "/home/shnx".to_string());
+    let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
     let qs_path = format!("{}/.config/nexa/quickshell", home);
 
     // Dispatch native Hyprland global shortcut

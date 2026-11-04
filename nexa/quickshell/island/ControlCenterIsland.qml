@@ -222,6 +222,7 @@ Item {
 
                     NotificationModule.Notifications {
                         anchors.fill: parent
+                        visible: root.visible && root.currentPage === 1
                     }
                 }
 
@@ -232,6 +233,7 @@ Item {
 
                     WeatherModule.Weather {
                         anchors.fill: parent
+                        visible: root.visible && root.currentPage === 2
                     }
                 }
             }

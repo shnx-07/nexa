@@ -92,6 +92,17 @@ Item {
     }
 
 
+    function handlePendingRestart() {
+        Quickshell.execDetached([
+            "sh", "-c",
+            "if [ -f \"$1\" ]; then rm -f \"$1\"; sleep 0.2; \"$2\" restart && \"$3\" wallpaper restore; fi",
+            "sh",
+            root.pendingFlag,
+            Quickshell.env("HOME") + "/.config/nexa/scripts/nexa.sh",
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
+        ]);
+    }
+
     function unlock() {
         if (!sessionLock.locked)
             return
@@ -105,14 +116,7 @@ Item {
         sessionLock.locked = false
 
         // Check if monitor configuration changed while session was locked
-        Quickshell.execDetached([
-            "sh", "-c",
-            "if [ -f " + root.pendingFlag + " ]; then "
-            + "rm -f " + root.pendingFlag + "; "
-            + "sleep 0.2; "
-            + "$HOME/.config/nexa/scripts/nexa.sh restart && $HOME/.config/nexa/rust/target/release/nexad wallpaper restore; "
-            + "fi"
-        ])
+        root.handlePendingRestart()
     }
 
 
@@ -167,9 +171,26 @@ Item {
                 Loader {
                     id: surfaceLoader
                     anchors.fill: parent
-                    sourceComponent: (root.activeThemeId !== "nexa")
-                        ? themeHostComponent
-                        : nexaSurfaceComponent
+                    sourceComponent: {
+                        if (!sessionLock.locked) return null;
+                        if (Services.Sddm.activeDesktopSddmTheme && Services.Sddm.activeDesktopSddmTheme.trim() !== "") {
+                            return sddmSurfaceComponent;
+                        }
+                        return (root.activeThemeId !== "nexa")
+                            ? themeHostComponent
+                            : nexaSurfaceComponent;
+                    }
+                }
+
+                Component {
+                    id: sddmSurfaceComponent
+                    LockThemesModule.SddmSurface {
+                        anchors.fill: parent
+                        themeId: Services.Sddm.activeDesktopSddmTheme
+                        onAuthenticationSucceeded: {
+                            root.unlock()
+                        }
+                    }
                 }
 
                 Component {
@@ -211,14 +232,7 @@ Item {
                 Quickshell.execDetached(["touch", root.lockFlag])
             } else {
                 Quickshell.execDetached(["rm", "-f", root.lockFlag])
-                Quickshell.execDetached([
-                    "sh", "-c",
-                    "if [ -f " + root.pendingFlag + " ]; then "
-                    + "rm -f " + root.pendingFlag + "; "
-                    + "sleep 0.2; "
-                    + "$HOME/.config/nexa/scripts/nexa.sh restart && $HOME/.config/nexa/rust/target/release/nexad wallpaper restore; "
-                    + "fi"
-                ])
+                root.handlePendingRestart()
             }
         }
 

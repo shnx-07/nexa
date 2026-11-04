@@ -1,9 +1,9 @@
 {
-  "volume": 82,
+  "volume": 79,
   "muted": false,
-  "input_volume": 36,
-  "input_muted": true,
-  "brightness": 24,
+  "input_volume": 40,
+  "input_muted": false,
+  "brightness": 70,
   "bluetooth_enabled": false,
   "wifi_enabled": true,
   "airplane_enabled": false,
@@ -12,16 +12,16 @@
   "nightlight_temperature": 3100,
   "screen_filter": "off",
   "dnd": false,
-  "battery_percentage": 62,
+  "battery_percentage": 100,
   "battery_charging": true,
   "on_battery": false,
   "wifi_connected": true,
   "wifi_ssid": "Excitel_555 5G",
-  "wifi_signal": 59,
+  "wifi_signal": 60,
   "wifi_has_internet": true,
   "bluetooth_connected": false,
   "bluetooth_device_name": "",
   "bluetooth_device_type": "",
   "bluetooth_device_battery": -1,
-  "timestamp": 1793557845
+  "timestamp": 1793806500
 }

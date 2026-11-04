@@ -187,6 +187,7 @@ QtObject {
     // UNIVERSAL SHADER ENGINE
     // ============================================================
     property string currentThemeSubTab: "shaders"
+    property string currentLockSubTab: "native"
     property string activeShader: "liquid_glass"
     property real shaderOpacity: 0.85
     property real shaderSpeed: 1.0
@@ -196,13 +197,23 @@ QtObject {
     property var shaderPresets: ({})
     property real globalShaderTime: 0.0
 
-    // Single shared GPU clock for all window shaders in NEXA
-    NumberAnimation on globalShaderTime {
-        from: 0.0
-        to: 10000.0
-        duration: 10000000
-        loops: Animation.Infinite
+    // Master high-precision GPU clock for all window shaders in NEXA
+    property var _shaderClock: Timer {
+        interval: 16 // 60 FPS
+        repeat: true
         running: root.activeShader !== "off"
+        property double lastTime: Date.now()
+
+        onRunningChanged: {
+            if (running) lastTime = Date.now();
+        }
+
+        onTriggered: {
+            const now = Date.now();
+            const dt = now - lastTime;
+            lastTime = now;
+            root.globalShaderTime += dt;
+        }
     }
 
     readonly property string activeShaderFile: {
@@ -936,9 +947,9 @@ QtObject {
     // SHELL DIMENSIONS
     // ============================================================
 
-    readonly property int barHeight: 36
+    readonly property int barHeight: 44
 
-    readonly property int islandCompactHeight: 30
+    readonly property int islandCompactHeight: 28
     readonly property int islandCompactWidth: 170
 
     readonly property int islandExpandedWidth: 420

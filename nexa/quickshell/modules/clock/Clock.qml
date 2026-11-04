@@ -30,10 +30,11 @@ Item {
     // ============================================================
 
     property date currentTime: new Date()
+    onVisibleChanged: if (visible) currentTime = new Date()
 
     Timer {
         interval: 1000
-        running: true
+        running: root.visible
         repeat: true
         onTriggered: root.currentTime = new Date()
     }

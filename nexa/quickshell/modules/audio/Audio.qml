@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../../services" as Services
 
 Item {
     id: root
@@ -10,16 +11,16 @@ Item {
     // OUTPUT STATE
     // ============================================================
 
-    property int volume: 0
-    property bool muted: false
+    property int volume: Services.SystemState.volume
+    property bool muted: Services.SystemState.muted
 
 
     // ============================================================
     // INPUT STATE
     // ============================================================
 
-    property int inputVolume: 0
-    property bool inputMuted: false
+    property int inputVolume: Services.SystemState.inputVolume
+    property bool inputMuted: Services.SystemState.inputMuted
 
 
     // ============================================================
@@ -566,14 +567,14 @@ Item {
     // LIVE STATE
     // ============================================================
 
+    // Volume & mute states are bound reactively to Services.SystemState.
+    // Device sink enumeration runs throttled while visible.
     Timer {
-        interval: 2000
+        interval: 10000
         repeat: true
         running: root.visible
 
         onTriggered: {
-            root.refresh()
-            root.refreshInput()
             root.refreshSinks()
         }
     }
@@ -587,8 +588,6 @@ Item {
     }
 
     Component.onCompleted: {
-        root.refresh()
-        root.refreshInput()
         root.refreshSinks()
     }
 }

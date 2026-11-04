@@ -30,6 +30,32 @@ pub struct VpnInfo {
 }
 
 // ============================================================
+// TIMESTAMP FORMATTER (ZERO-FORK NATIVE LOCALTIME)
+// ============================================================
+
+pub fn format_timestamp(secs: i64) -> String {
+    let mut tm: libc::tm = unsafe { std::mem::zeroed() };
+    let time_val: libc::time_t = secs as libc::time_t;
+    if unsafe { libc::localtime_r(&time_val, &mut tm) }.is_null() {
+        return secs.to_string();
+    }
+    let mut buf = [0u8; 64];
+    let len = unsafe {
+        libc::strftime(
+            buf.as_mut_ptr() as *mut libc::c_char,
+            buf.len(),
+            b"%Y-%m-%d_%H-%M-%S\0".as_ptr() as *const libc::c_char,
+            &tm,
+        )
+    };
+    if len > 0 {
+        String::from_utf8_lossy(&buf[..len]).to_string()
+    } else {
+        secs.to_string()
+    }
+}
+
+// ============================================================
 // PERSISTENT STATE
 // ============================================================
 
@@ -127,6 +153,11 @@ pub fn handle(args: &[String]) {
         return;
     }
 
+    if args[0] == "profile" || args[0] == "info" {
+        profile_info();
+        return;
+    }
+
     if args.len() < 2 {
         print_usage();
         return;
@@ -202,6 +233,128 @@ pub fn handle(args: &[String]) {
     if let Err(error) = result {
         eprintln!("{error}");
     }
+}
+
+// ============================================================
+// PROFILE & SYSTEM OVERVIEW INFO
+// ============================================================
+
+pub fn profile_info() {
+    let user = env::var("USER").unwrap_or_else(|_| "user".into());
+    let host = fs::read_to_string("/etc/hostname")
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|_| "localhost".into());
+
+    let mut os_name = String::new();
+    if let Ok(content) = fs::read_to_string("/etc/os-release") {
+        for line in content.lines() {
+            if let Some(val) = line.strip_prefix("PRETTY_NAME=") {
+                os_name = val.trim_matches('"').trim_matches('\'').to_string();
+                break;
+            }
+        }
+    }
+    if os_name.is_empty() {
+        os_name = "Linux".into();
+    }
+
+    let mut uts: libc::utsname = unsafe { std::mem::zeroed() };
+    let kernel = if unsafe { libc::uname(&mut uts) } == 0 {
+        let rel = unsafe { std::ffi::CStr::from_ptr(uts.release.as_ptr()) }.to_string_lossy();
+        let mach = unsafe { std::ffi::CStr::from_ptr(uts.machine.as_ptr()) }.to_string_lossy();
+        format!("{rel} {mach}")
+    } else {
+        "Unknown".into()
+    };
+
+    let shell = env::var("SHELL")
+        .map(|s| {
+            std::path::Path::new(&s)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string()
+        })
+        .unwrap_or_else(|_| "bash".into());
+
+    let mut uptime_str = String::new();
+    if let Ok(content) = fs::read_to_string("/proc/uptime") {
+        if let Some(sec_str) = content.split_whitespace().next() {
+            if let Ok(secs_f) = sec_str.parse::<f64>() {
+                let total_secs = secs_f as u64;
+                let days = total_secs / 86400;
+                let hours = (total_secs % 86400) / 3600;
+                let mins = (total_secs % 3600) / 60;
+                let mut parts = Vec::new();
+                if days > 0 {
+                    parts.push(format!("{days} day{}", if days > 1 { "s" } else { "" }));
+                }
+                if hours > 0 {
+                    parts.push(format!("{hours} hour{}", if hours > 1 { "s" } else { "" }));
+                }
+                if mins > 0 || parts.is_empty() {
+                    parts.push(format!("{mins} minute{}", if mins != 1 { "s" } else { "" }));
+                }
+                uptime_str = parts.join(", ");
+            }
+        }
+    }
+
+    let mut cpu = String::new();
+    if let Ok(content) = fs::read_to_string("/proc/cpuinfo") {
+        for line in content.lines() {
+            if line.starts_with("model name") {
+                if let Some((_, val)) = line.split_once(':') {
+                    cpu = val.trim().to_string();
+                    break;
+                }
+            }
+        }
+    }
+
+    let mut mem_str = String::new();
+    if let Ok(content) = fs::read_to_string("/proc/meminfo") {
+        let mut total_kb = 0u64;
+        let mut avail_kb = 0u64;
+        for line in content.lines() {
+            if let Some(val) = line.strip_prefix("MemTotal:") {
+                total_kb = val.trim().split_whitespace().next().and_then(|s| s.parse().ok()).unwrap_or(0);
+            } else if let Some(val) = line.strip_prefix("MemAvailable:") {
+                avail_kb = val.trim().split_whitespace().next().and_then(|s| s.parse().ok()).unwrap_or(0);
+            }
+        }
+        if total_kb > 0 {
+            let used_kb = total_kb.saturating_sub(avail_kb);
+            let fmt_unit = |kb: u64| -> String {
+                if kb >= 1024 * 1024 {
+                    format!("{:.1}Gi", kb as f64 / (1024.0 * 1024.0))
+                } else {
+                    format!("{}Mi", kb / 1024)
+                }
+            };
+            mem_str = format!("{} / {}", fmt_unit(used_kb), fmt_unit(total_kb));
+        }
+    }
+
+    let (wp_kind, _, wp_path) = crate::wallpaper::apply::load_current_wallpaper_state();
+    let (lock_path, lock_kind) = if let Ok(contents) = fs::read_to_string(crate::wallpaper::apply::lock_config_path()) {
+        crate::wallpaper::apply::parse_wallpaper_config(&contents)
+    } else {
+        (String::new(), String::new())
+    };
+
+    println!("USER {user}");
+    println!("HOST {host}");
+    println!("OS {os_name}");
+    println!("KERNEL {kernel}");
+    println!("SHELL {shell}");
+    println!("UPTIME {uptime_str}");
+    println!("CPU {cpu}");
+    println!("MEMORY {mem_str}");
+    println!("WALLPAPER {wp_path}");
+    println!("WALLPAPER_TYPE {}", if wp_kind.is_empty() { "image" } else { &wp_kind });
+    println!("LOCK_WALLPAPER {lock_path}");
+    println!("LOCK_WALLPAPER_TYPE {}", if lock_kind.is_empty() { "image" } else { &lock_kind });
 }
 
 // ============================================================

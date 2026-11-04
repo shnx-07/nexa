@@ -322,8 +322,13 @@ ShellRoot {
         }
 
         function openSubTab(subTab: string) {
-            Nexa.Theme.currentThemeSubTab = subTab
+            NexaTheme.Theme.currentThemeSubTab = subTab
             open("system")
+        }
+
+        function openLockSubTab(subTab: string) {
+            NexaTheme.Theme.currentLockSubTab = subTab
+            open("lock")
         }
 
         function close() {
@@ -365,8 +370,13 @@ ShellRoot {
         }
 
         function openSubTab(subTab: string) {
-            Nexa.Theme.currentThemeSubTab = subTab
+            NexaTheme.Theme.currentThemeSubTab = subTab
             open("system")
+        }
+
+        function openLockSubTab(subTab: string) {
+            NexaTheme.Theme.currentLockSubTab = subTab
+            open("lock")
         }
 
         function close() {
@@ -401,6 +411,10 @@ ShellRoot {
 
         function get(): string {
             return NexaTheme.Theme.activeShader
+        }
+
+        function getTime(): real {
+            return NexaTheme.Theme.globalShaderTime
         }
     }
 

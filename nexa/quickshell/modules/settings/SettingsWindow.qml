@@ -26,14 +26,17 @@ PanelWindow {
     function openWindow(initialTab) {
         windowAlive = true
         if (initialTab && initialTab !== "") {
+            panel.tab = initialTab
             panel.openTab(initialTab)
         } else {
             panel.open()
         }
+        panel.visible = true
         panel.forceActiveFocus()
     }
 
     function closeWindow() {
+        windowAlive = false
         panel.close()
     }
 

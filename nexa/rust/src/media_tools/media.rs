@@ -404,6 +404,35 @@ pub fn watch_daemon() {
 // CLI INTERFACE FOR NEXAD
 // ============================================================
 
+pub fn run_status(player: Option<&str>) {
+    let mut cmd_shuffle = Command::new("playerctl");
+    if let Some(p) = player {
+        if !p.is_empty() {
+            cmd_shuffle.args(["-p", p]);
+        }
+    }
+    cmd_shuffle.arg("shuffle");
+    let shuffle = cmd_shuffle.output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .unwrap_or_else(|_| "Off".to_string());
+
+    let mut cmd_loop = Command::new("playerctl");
+    if let Some(p) = player {
+        if !p.is_empty() {
+            cmd_loop.args(["-p", p]);
+        }
+    }
+    cmd_loop.arg("loop");
+    let loop_status = cmd_loop.output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .unwrap_or_else(|_| "None".to_string());
+
+    let sh = if shuffle.is_empty() { "Off" } else { &shuffle };
+    let lp = if loop_status.is_empty() { "None" } else { &loop_status };
+
+    println!("{sh}|{lp}");
+}
+
 pub fn run_fetch(title: &str, artist: &str) {
     if let Some(url) = fetch_high_res_cover(title, artist) {
         println!("{url}");

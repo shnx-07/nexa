@@ -392,12 +392,12 @@ fn read_top_processes() -> Vec<ProcessInfo> {
 // ------------------------------------------------------------
 
 fn history_file_path() -> PathBuf {
-    let home = std::env::var("HOME").unwrap_or_else(|_| "/home/shnx".to_string());
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
     PathBuf::from(home).join(".cache/nexa/system-history.json")
 }
 
 fn active_flag_path() -> PathBuf {
-    let home = std::env::var("HOME").unwrap_or_else(|_| "/home/shnx".to_string());
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
     PathBuf::from(home).join(".cache/nexa/perf_active")
 }
 

@@ -190,6 +190,8 @@ Item {
                 Layout.fillWidth:
                     true
 
+                textFormat: Text.PlainText
+
                 text:
                     root.notification
                         ? root.notification.summary || ""
@@ -220,6 +222,8 @@ Item {
             Text {
                 Layout.fillWidth:
                     true
+
+                textFormat: Text.PlainText
 
                 visible:
                     text.length > 0

@@ -20,9 +20,11 @@ pub struct HyprClientRef {
     pub size: Vec<i32>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct WorkspaceRef {
+    #[serde(default)]
     pub id: i32,
+    #[serde(default)]
     pub name: String,
 }
 

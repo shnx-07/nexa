@@ -77,11 +77,7 @@ Item {
 
     Process {
         id: avatarFinder
-        command: [
-            "sh", "-c",
-            "for f in \"$HOME/.face\" \"$HOME/.face.icon\" \"$HOME/.config/nexa/avatar.png\" \"$HOME/.config/nexa/avatar.jpg\" \"$HOME/.config/nexa/avatar.svg\" \"$HOME/.config/nexa/avatar.webp\" \"$HOME/.config/nexa/avatar.jpeg\" \"$HOME/.config/nexa/config/avatars/cyber_neon.svg\"; do "
-            + "if [ -f \"$f\" ]; then echo \"$f\"; exit 0; fi; done"
-        ]
+        command: [Quickshell.env("HOME") + "/.config/nexa/scripts/nexa-avatar.sh", "get"]
         running: true
         stdout: SplitParser {
             splitMarker: "\n"

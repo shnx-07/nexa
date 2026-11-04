@@ -493,88 +493,139 @@ Singleton {
     readonly property color accent: accentOf(adapter.theme)
     readonly property color accent2: accent2Of(adapter.theme)
 
+    // Precalculated color memoization: eliminates heavy HSL / trig calculations
+    // on repeated evaluations across theme previews, frames, and wallpaper transitions.
+    property var _accentCache: ({})
+    property var _accent2Cache: ({})
+    property string _cachedColorKey: ""
+
+    function _checkColorInvalidation() {
+        const key = "" + Colors.primary + "|" + Colors.tertiary + "|" + _dark;
+        if (key !== _cachedColorKey) {
+            _cachedColorKey = key;
+            _accentCache = {};
+            _accent2Cache = {};
+        }
+    }
+
     function toneOf(id) {
         return has(id) ? (themeFor(id).tone ?? "") : "";
     }
 
     function accentOf(id) {
+        _checkColorInvalidation();
+        if (_accentCache[id] !== undefined)
+            return _accentCache[id];
+
+        let res;
         switch (toneOf(id)) {
         case "neon":
-            return _neon(_hue(Colors.primary, 0.86));
+            res = _neon(_hue(Colors.primary, 0.86));
+            break;
         case "muted":
-            return _muted(Colors.primary);
+            res = _muted(Colors.primary);
+            break;
         case "gilt":
-            return Qt.tint(Qt.hsla(0.118, 0.62, _dark ? 0.62 : 0.4, 1), Colors.withAlpha(Colors.primary, 0.08));
+            res = Qt.tint(Qt.hsla(0.118, 0.62, _dark ? 0.62 : 0.4, 1), Colors.withAlpha(Colors.primary, 0.08));
+            break;
         case "jewel":
-            return _jewel(_hue(Colors.primary, 0.62));
+            res = _jewel(_hue(Colors.primary, 0.62));
+            break;
         case "print":
-            return Qt.hsla(_hue(Colors.primary, 0), 0.66, _dark ? 0.62 : 0.42, 1);
+            res = Qt.hsla(_hue(Colors.primary, 0), 0.66, _dark ? 0.62 : 0.42, 1);
+            break;
         case "dusty":
-            return _weathered(Colors.primary);
+            res = _weathered(Colors.primary);
+            break;
         case "brass":
-            return Qt.tint(Qt.hsla(0.108, 0.5, _dark ? 0.6 : 0.36, 1), Colors.withAlpha(Colors.primary, 0.1));
+            res = Qt.tint(Qt.hsla(0.108, 0.5, _dark ? 0.6 : 0.36, 1), Colors.withAlpha(Colors.primary, 0.1));
+            break;
         case "lume":
-            return _biolum(_toSea(_hue(Colors.primary, 0.52)));
+            res = _biolum(_toSea(_hue(Colors.primary, 0.52)));
+            break;
         case "temple":
-            return Qt.tint(Qt.hsla(0.1, 0.84, _dark ? 0.58 : 0.4, 1), Colors.withAlpha(Colors.primary, 0.08));
+            res = Qt.tint(Qt.hsla(0.1, 0.84, _dark ? 0.58 : 0.4, 1), Colors.withAlpha(Colors.primary, 0.08));
+            break;
         case "heraldic": {
             const t = Heraldry.tincture;
-            return Qt.hsla(t.h, t.sat, _dark ? 0.6 : 0.4, 1);
+            res = Qt.hsla(t.h, t.sat, _dark ? 0.6 : 0.4, 1);
+            break;
         }
         default:
-            return Qt.color(Colors.primary);
+            res = Qt.color(Colors.primary);
+            break;
         }
+        _accentCache[id] = res;
+        return res;
     }
 
     function accent2Of(id) {
+        _checkColorInvalidation();
+        if (_accent2Cache[id] !== undefined)
+            return _accent2Cache[id];
+
+        let res;
         switch (toneOf(id)) {
         case "neon": {
             const a = _hue(Colors.primary, 0.86);
             const b = _hue(Colors.tertiary, 0.52);
-            return _neon(_hueGap(a, b) < 0.2 ? (a + 0.42) % 1 : b);
+            res = _neon(_hueGap(a, b) < 0.2 ? (a + 0.42) % 1 : b);
+            break;
         }
         case "muted":
-            return _muted(Colors.tertiary);
+            res = _muted(Colors.tertiary);
+            break;
         case "gilt": {
             // A jewel beside the gold: never gold itself.
             const golden = h => h > 0.06 && h < 0.18;
             const p = _hue(Colors.primary, -1);
             const t = _hue(Colors.tertiary, -1);
             const h = p >= 0 && !golden(p) ? p : t >= 0 && !golden(t) ? t : 0.47;
-            return Qt.hsla(h, 0.58, _dark ? 0.5 : 0.34, 1);
+            res = Qt.hsla(h, 0.58, _dark ? 0.5 : 0.34, 1);
+            break;
         }
         case "jewel": {
             const g = _hue(Colors.primary, 0.62);
             const b = _hue(Colors.tertiary, 0.95);
-            return _jewel(_hueGap(g, b) < 0.12 ? (g + 0.36) % 1 : b);
+            res = _jewel(_hueGap(g, b) < 0.12 ? (g + 0.36) % 1 : b);
+            break;
         }
         case "print":
-            return _dark ? Qt.color("#ece6d6") : Qt.color("#1c1b19");
+            res = _dark ? Qt.color("#ece6d6") : Qt.color("#1c1b19");
+            break;
         case "dusty":
-            return Qt.tint(Qt.hsla(0.118, 0.82, _dark ? 0.56 : 0.42, 1), Colors.withAlpha(Colors.tertiary, 0.1));
+            res = Qt.tint(Qt.hsla(0.118, 0.82, _dark ? 0.56 : 0.42, 1), Colors.withAlpha(Colors.tertiary, 0.1));
+            break;
         case "brass": {
             // The sky's enamel beside the brass: never golden itself.
             const golden = h => h > 0.05 && h < 0.2;
             const p = _hue(Colors.primary, -1);
             const t = _hue(Colors.tertiary, -1);
             const h = p >= 0 && !golden(p) ? p : t >= 0 && !golden(t) ? t : 0.62;
-            return Qt.hsla(h, 0.46, _dark ? 0.58 : 0.34, 1);
+            res = Qt.hsla(h, 0.46, _dark ? 0.58 : 0.34, 1);
+            break;
         }
         case "lume":
-            return Qt.tint(Qt.hsla(0.46, 0.7, _dark ? 0.7 : 0.34, 1), Colors.withAlpha(Colors.tertiary, 0.08));
+            res = Qt.tint(Qt.hsla(0.46, 0.7, _dark ? 0.7 : 0.34, 1), Colors.withAlpha(Colors.tertiary, 0.08));
+            break;
         case "temple": {
             // A pigment beside the gold: never golden itself.
             const golden = h => h > 0.05 && h < 0.17;
             const p = _hue(Colors.primary, -1);
             const t = _hue(Colors.tertiary, -1);
             const h = p >= 0 && !golden(p) ? p : t >= 0 && !golden(t) ? t : 0.015;
-            return Qt.hsla(h, 0.66, _dark ? 0.56 : 0.4, 1);
+            res = Qt.hsla(h, 0.66, _dark ? 0.56 : 0.4, 1);
+            break;
         }
         case "heraldic":
-            return Qt.tint(Qt.hsla(0.6, 0.09, _dark ? 0.8 : 0.34, 1), Colors.withAlpha(Colors.primary, 0.06));
+            res = Qt.tint(Qt.hsla(0.6, 0.09, _dark ? 0.8 : 0.34, 1), Colors.withAlpha(Colors.primary, 0.06));
+            break;
         default:
-            return Qt.color(Colors.tertiary);
+            res = Qt.color(Colors.tertiary);
+            break;
         }
+        _accent2Cache[id] = res;
+        return res;
     }
 
     // A colour role: a Colors name, or a theme's toned "accent" / "accent2".
@@ -733,7 +784,7 @@ Singleton {
             // Another theme's overrides are live: start from the real config.
             _reverting = true;
             revertGuard.restart();
-            hyprctl.exec(["sh", "-c", "hyprctl reload >/dev/null && hyprctl eval \"$1\"", "sh", lua]);
+            hyprctl.exec(["hyprctl", "--batch", "reload ; eval " + lua]);
         } else {
             hyprctl.exec(["hyprctl", "eval", lua]);
         }
@@ -770,11 +821,13 @@ Singleton {
         target: Colors
 
         function onPrimaryChanged() {
+            root._checkColorInvalidation();
             if (root.enabled)
                 syncTimer.restart();
         }
 
         function onTertiaryChanged() {
+            root._checkColorInvalidation();
             if (root.enabled)
                 syncTimer.restart();
         }

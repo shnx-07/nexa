@@ -16,7 +16,7 @@ pub use hardware::{audio, battery, brightness, network, screenFilter, screenTemp
 pub use media_tools::{media, recorder, screenshot, snipping};
 pub use wallpaper::slideshow;
 pub use services::{
-    appLauncher, clipboard, command, commandSearch, notifications, search, weather,
+    appLauncher, clipboard, commandSearch, notifications, search, weather,
 };
 
 use std::env;
@@ -631,6 +631,10 @@ fn main() {
                     let title = if args.len() > 3 { args[3].as_str() } else { "" };
                     let artist = if args.len() > 4 { args[4].as_str() } else { "" };
                     media::run_fetch(title, artist);
+                }
+                "status" => {
+                    let player = if args.len() > 3 { Some(args[3].as_str()) } else { None };
+                    media::run_status(player);
                 }
                 "info" => media::run_info(),
                 "watch" => media::watch_daemon(),

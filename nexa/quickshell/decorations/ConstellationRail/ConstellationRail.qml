@@ -204,13 +204,12 @@ Item {
             onLineColorChanged: waveCanvas.requestPaint()
             onLineAlphaChanged: waveCanvas.requestPaint()
 
-            // Single unified paint trigger: exactly matches audio frames (30fps)
+            // Single unified paint trigger: active ONLY when audio is actively playing with energy
             Connections {
                 target: Services.AudioVisualizer
+                enabled: root.visible && waveCanvas.currentAmp > 0.05 && Services.Media.isPlaying
                 function onFrameTick() {
-                    if (waveCanvas.currentAmp > 0.05) {
-                        waveCanvas.requestPaint();
-                    }
+                    waveCanvas.requestPaint();
                 }
             }
 

@@ -223,10 +223,11 @@ Item {
     function setWarmth(enabled) {
         if (root.warmthEnabled === enabled || root.applying) return
         root.warmthEnabled = enabled
-        const cmd = enabled
-            ? root.nexad + " screenTemp mode wallpaper && " + root.nexad + " screenTemp enable"
-            : root.nexad + " screenTemp disable"
-        warmthProcess.command = ["sh", "-c", cmd]
+        if (enabled) {
+            warmthProcess.command = ["sh", "-c", "\"$1\" screenTemp mode wallpaper && \"$1\" screenTemp enable", "sh", root.nexad]
+        } else {
+            warmthProcess.command = [root.nexad, "screenTemp", "disable"]
+        }
         warmthProcess.running = true
     }
 
@@ -235,7 +236,9 @@ Item {
         Quickshell.execDetached([
             "sh",
             "-c",
-            "mkdir -p \"$HOME/.config/nexa/config\" && printf '%s\\n' \"" + (enabled ? "true" : "false") + "\" > \"$HOME/.config/nexa/config/glass.conf\""
+            "mkdir -p \"$HOME/.config/nexa/config\" && printf '%s\\n' \"$1\" > \"$HOME/.config/nexa/config/glass.conf\" && hyprctl reload",
+            "sh",
+            enabled ? "true" : "false"
         ])
     }
 
@@ -383,7 +386,7 @@ Item {
 
     Process {
         id: warmthStatusProcess
-        command: ["sh", "-c", root.nexad + " screenTemp info"]
+        command: [root.nexad, "screenTemp", "info"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const output = text.trim()

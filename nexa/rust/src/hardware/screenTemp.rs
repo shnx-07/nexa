@@ -1,6 +1,6 @@
 use std::{
     env, fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 
@@ -67,12 +67,14 @@ fn clamp_temperature(value: u32) -> u32 {
 }
 
 fn command_exists(name: &str) -> bool {
-    Command::new("sh")
-        .arg("-c")
-        .arg(format!("command -v {name} >/dev/null 2>&1"))
-        .status()
-        .map(|status| status.success())
-        .unwrap_or(false)
+    let path = Path::new(name);
+    if path.components().count() > 1 {
+        return path.is_file();
+    }
+    let Some(path_var) = env::var_os("PATH") else {
+        return false;
+    };
+    env::split_paths(&path_var).any(|dir| dir.join(name).is_file())
 }
 
 fn cleanup_hyprsunset() {

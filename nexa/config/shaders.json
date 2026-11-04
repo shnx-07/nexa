@@ -1,9 +1,9 @@
 {
   "active": "off",
-  "opacity": 1,
-  "speed": 0.6,
-  "intensity": 0.65,
-  "contrast_veil": 0.2,
+  "opacity": 0.9500000000000001,
+  "speed": 0.7000000000000001,
+  "intensity": 1,
+  "contrast_veil": 0.35000000000000003,
   "pause_when_hidden": true,
   "presets": {
     "liquid_glass": {
@@ -47,6 +47,18 @@
       "subtitle": "Black",
       "icon": "⚫",
       "file": "theme/noirhalftone.frag.qsb"
+    },
+    "astral": {
+      "name": "Astral Deep Space",
+      "subtitle": "Drifting Nebula & Stars",
+      "icon": "🌌",
+      "file": "theme/astral.frag.qsb"
+    },
+    "distant_sun": {
+      "name": "Distant Sun",
+      "subtitle": "Astral Deep Space & Flare",
+      "icon": "☀️",
+      "file": "theme/distant_sun.frag.qsb"
     }
   }
 }

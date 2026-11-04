@@ -1,10 +1,10 @@
 {
   "enabled": true,
-  "style": "constellation",
+  "style": "simple_line",
   "mode": "workspaces",
-  "direction": "left-to-right",
-  "speed": 1.2,
-  "glow_intensity": 0.95,
-  "particle_count": 8,
-  "line_opacity": 0.4
+  "direction": "right-to-left",
+  "speed": 1.1,
+  "glow_intensity": 0.8,
+  "particle_count": 14,
+  "line_opacity": 0.8
 }

@@ -1,0 +1,353 @@
+[
+  {
+    "id": "Genshin",
+    "name": "Genshin",
+    "description": "Genshin Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/Genshin/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/Genshin/dawn.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/Genshin"
+  },
+  {
+    "id": "R1999_1",
+    "name": "R1999_1",
+    "description": "Reverse 1999 Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/R1999_1/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/R1999_1/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/R1999_1"
+  },
+  {
+    "id": "R1999_2",
+    "name": "R1999_2",
+    "description": "Reverse 1999 Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/R1999_2/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/R1999_2/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/R1999_2"
+  },
+  {
+    "id": "clockwork",
+    "name": "clockwork",
+    "description": "Neo- Orbital - Clockwork",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/clockwork/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/clockwork"
+  },
+  {
+    "id": "dog-samurai",
+    "name": "dog-samurai",
+    "description": "Dog Samurai Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/dog-samurai/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/dog-samurai/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/dog-samurai"
+  },
+  {
+    "id": "enfield",
+    "name": "enfield",
+    "description": "enfield Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/enfield/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/enfield/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/enfield"
+  },
+  {
+    "id": "field",
+    "name": "field",
+    "description": "Field",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/field/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/field"
+  },
+  {
+    "id": "forest",
+    "name": "forest",
+    "description": "forest Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/forest/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/forest/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/forest"
+  },
+  {
+    "id": "girl-coffee",
+    "name": "girl-coffee",
+    "description": "just a girl holdin coffee",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/girl-coffee/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/girl-coffee"
+  },
+  {
+    "id": "girl-pillow",
+    "name": "girl-pillow",
+    "description": "Girl Pillow",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/girl-pillow/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/girl-pillow"
+  },
+  {
+    "id": "last-of-us",
+    "name": "last-of-us",
+    "description": "The Last of Us Part II Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/last-of-us/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/last-of-us/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/last-of-us"
+  },
+  {
+    "id": "man-bicycle",
+    "name": "man-bicycle",
+    "description": "Man Bicycle",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/man-bicycle/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/man-bicycle"
+  },
+  {
+    "id": "material-you",
+    "name": "Material-you",
+    "description": "Google Pixel / Material You inspired Lockscreen Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/material-you/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/material-you"
+  },
+  {
+    "id": "material-you-dark",
+    "name": "Material-you-dark",
+    "description": "Google Pixel / Material You inspired Lockscreen Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/material-you-dark/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/material-you-dark"
+  },
+  {
+    "id": "minecraft",
+    "name": "minecraft",
+    "description": "minecraft Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/minecraft/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/minecraft"
+  },
+  {
+    "id": "nier-automata",
+    "name": "nier-automata",
+    "description": "nier-automata Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/nier-automata/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/nier-automata"
+  },
+  {
+    "id": "ninesols",
+    "name": "ninesols",
+    "description": "Nine Sols Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/ninesols/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/ninesols"
+  },
+  {
+    "id": "ninja_gaiden",
+    "name": "ninja_gaiden",
+    "description": "ninja_gaiden Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/ninja_gaiden/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/ninja_gaiden"
+  },
+  {
+    "id": "nothing",
+    "name": "nothing",
+    "description": "Nothing OS inspired Lockscreen Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/nothing/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/nothing"
+  },
+  {
+    "id": "osu",
+    "name": "osu",
+    "description": "Osu! inspired login theme.",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/osu/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/osu"
+  },
+  {
+    "id": "osumania",
+    "name": "osumania",
+    "description": "osu!mania theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/osumania/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/osumania"
+  },
+  {
+    "id": "pixel-coffee",
+    "name": "pixel-coffee",
+    "description": "pixel-coffee Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-coffee/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-coffee/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-coffee"
+  },
+  {
+    "id": "pixel-cyberpunk",
+    "name": "pixel-cyberpunk",
+    "description": "Pixel Cyberpunk Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-cyberpunk/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-cyberpunk/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-cyberpunk"
+  },
+  {
+    "id": "pixel-dusk-city",
+    "name": "pixel-dusk-city",
+    "description": "pixel-dusk-city Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-dusk-city/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-dusk-city/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-dusk-city"
+  },
+  {
+    "id": "pixel-emerald",
+    "name": "pixel-emerald",
+    "description": "Pixel Emerald Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-emerald/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-emerald/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-emerald"
+  },
+  {
+    "id": "pixel-hollowknight",
+    "name": "pixel-hollowknight",
+    "description": "pixel-hollowknight Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-hollowknight/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-hollowknight/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-hollowknight"
+  },
+  {
+    "id": "pixel-munchlax",
+    "name": "pixel-munchlax",
+    "description": "pixel-munchlax Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-munchlax/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-munchlax/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-munchlax"
+  },
+  {
+    "id": "pixel-night-city",
+    "name": "pixel-night-city",
+    "description": "pixel-night-city Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-night-city/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-night-city/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-night-city"
+  },
+  {
+    "id": "pixel-rainyroom",
+    "name": "pixel-rainyroom",
+    "description": "pixel-rainyroom Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-rainyroom/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-rainyroom/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-rainyroom"
+  },
+  {
+    "id": "pixel-sakura",
+    "name": "pixel-sakura",
+    "description": "Pixel Sakura Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-sakura/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-sakura/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-sakura"
+  },
+  {
+    "id": "pixel-skyscrapers",
+    "name": "pixel-skyscrapers",
+    "description": "pixel-skyscrapers Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-skyscrapers/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-skyscrapers/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-skyscrapers"
+  },
+  {
+    "id": "pixel-waterfall",
+    "name": "pixel-waterfall",
+    "description": "Pixel Waterfall Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/pixel-waterfall/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/pixel-waterfall/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/pixel-waterfall"
+  },
+  {
+    "id": "star-rail",
+    "name": "star-rail",
+    "description": "star-rail Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/star-rail/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/star-rail/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/star-rail"
+  },
+  {
+    "id": "sword",
+    "name": "sword",
+    "description": "sword Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/sword/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/sword/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/sword"
+  },
+  {
+    "id": "terraria",
+    "name": "terraria",
+    "description": "terraria Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/terraria/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/terraria"
+  },
+  {
+    "id": "windows_7",
+    "name": "windows_7",
+    "description": "windows_7 Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/windows_7/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/windows_7"
+  },
+  {
+    "id": "winter",
+    "name": "winter",
+    "description": "winter Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/winter/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/winter/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/winter"
+  },
+  {
+    "id": "women-umbrella",
+    "name": "women-umbrella",
+    "description": "Totoro theme ~",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/women-umbrella/preview.jpg",
+    "video": "",
+    "hasVideo": false,
+    "path": "/home/shnx/.config/nexa/sddm/themes/women-umbrella"
+  },
+  {
+    "id": "wuwa",
+    "name": "wuwa",
+    "description": "wuwa Qylock Theme",
+    "preview": "file:///home/shnx/.config/nexa/sddm/themes/wuwa/preview.jpg",
+    "video": "file:///home/shnx/.config/nexa/sddm/themes/wuwa/bg.mp4",
+    "hasVideo": true,
+    "path": "/home/shnx/.config/nexa/sddm/themes/wuwa"
+  }
+]

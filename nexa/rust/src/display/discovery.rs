@@ -61,9 +61,12 @@ fn default_scale() -> f32 {
     1.0
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 struct HyprWorkspaceRef {
+    #[serde(default)]
     pub id: i32,
+    #[serde(default)]
+    pub name: String,
 }
 
 /// Raw JSON schema returned by `hyprctl workspaces -j`.

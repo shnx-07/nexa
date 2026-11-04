@@ -19,45 +19,12 @@ PopupWindow {
     // BATTERY STATE (RUST NEXAD BACKEND)
     // ============================================================
 
-    property int percent: Services.SystemState.batteryPercentage
-    property bool charging: Services.SystemState.batteryCharging
-    property real watts: 0.0
-    property real health: 100
-    property int timeToFull: 0
-    property int timeToEmpty: 0
-
-    Process {
-        id: batteryStatusProc
-        command: [
-            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
-            "battery",
-            "status"
-        ]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const data = JSON.parse(this.text.trim())
-                    root.percent = data.percentage ?? root.percent
-                    root.charging = data.charging ?? root.charging
-                    root.watts = data.power_watts ?? root.watts
-                    root.health = data.health_percentage ?? root.health
-                    root.timeToFull = data.time_to_full ?? 0
-                    root.timeToEmpty = data.time_to_empty ?? 0
-                } catch (e) {}
-            }
-        }
-    }
-
-    Timer {
-        interval: 3000
-        repeat: true
-        running: root.visible
-        onTriggered: {
-            if (!batteryStatusProc.running) {
-                batteryStatusProc.running = true
-            }
-        }
-    }
+    readonly property int percent: Services.SystemState.batteryPercentage
+    readonly property bool charging: Services.SystemState.batteryCharging
+    readonly property real watts: Services.SystemState.batteryWatts
+    readonly property real health: Services.SystemState.batteryHealth
+    readonly property int timeToFull: Services.SystemState.batteryTimeToFull
+    readonly property int timeToEmpty: Services.SystemState.batteryTimeToEmpty
 
 
 
@@ -97,9 +64,6 @@ PopupWindow {
         if (visible) {
             root.animatedPercent = 0
             arcSweepTimer.start()
-            if (!batteryStatusProc.running) {
-                batteryStatusProc.running = true
-            }
         }
     }
 

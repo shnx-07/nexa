@@ -1369,11 +1369,15 @@ fn launch_desktop_file(path_str: &str) -> Result<(), String> {
     }
 
     let cleaned_exec = clean_desktop_exec(&exec);
-    if cleaned_exec.is_empty() {
+    let tokens: Vec<String> = cleaned_exec
+        .split_whitespace()
+        .map(|s| s.to_string())
+        .collect();
+    if tokens.is_empty() {
         return Err(format!("no Exec line found in {path_str}"));
     }
 
-    let final_command = if terminal {
+    let mut cmd = if terminal {
         let term = env::var("TERMINAL").unwrap_or_else(|_| "kitty".to_string());
         let app_name = desktop_path
             .file_stem()
@@ -1381,19 +1385,22 @@ fn launch_desktop_file(path_str: &str) -> Result<(), String> {
             .unwrap_or("app")
             .to_lowercase();
 
+        let mut c = Command::new(&term);
+        c.arg("--class").arg(&app_name);
         if term.contains("alacritty") {
-            format!("{term} --class {app_name} -e {cleaned_exec}")
-        } else {
-            format!("{term} --class {app_name} {cleaned_exec}")
+            c.arg("-e");
         }
+        c.args(&tokens);
+        c
     } else {
-        cleaned_exec
+        let mut c = Command::new(&tokens[0]);
+        if tokens.len() > 1 {
+            c.args(&tokens[1..]);
+        }
+        c
     };
 
-    Command::new("sh")
-        .arg("-c")
-        .arg(format!("exec {final_command}"))
-        .current_dir(workdir)
+    cmd.current_dir(workdir)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())

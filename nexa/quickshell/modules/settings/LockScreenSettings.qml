@@ -1,5 +1,6 @@
 // pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Layouts
 import QtQuick.Effects
 import Quickshell
 import "../../theme/colors"
@@ -17,6 +18,7 @@ Item {
     signal requestClose()
     signal requestLock()
 
+    property string activeTab: (Nexa.Theme.currentLockSubTab && Nexa.Theme.currentLockSubTab !== "") ? Nexa.Theme.currentLockSubTab : "native"
     property int cursor: 0
     readonly property int columns: width > 760 ? 3 : 2
     function rad(n) { return n; }
@@ -27,7 +29,13 @@ Item {
     function preview(id) {
         if (Services.LockScreen.has(id)) {
             root.requestClose();
-            Quickshell.execDetached(["sh", "-c", "sleep 0.35; QS_LOCK_THEME=" + id + " exec quickshell -p \"$HOME/.config/nexa/quickshell/modules/lockthemes/LockPreview.qml\""]);
+            Quickshell.execDetached([
+                "env",
+                "QS_LOCK_THEME=" + id,
+                "quickshell",
+                "-p",
+                Quickshell.env("HOME") + "/.config/nexa/quickshell/modules/lockthemes/LockPreview.qml"
+            ]);
         }
     }
 
@@ -75,33 +83,153 @@ Item {
         }
     }
 
-    Column {
+    ColumnLayout {
         anchors.fill: parent
-        spacing: 16
+        spacing: 14
 
-        // ── Theme Cards Grid ──────────────────────────────────────────────────
-        Flickable {
-            id: themeFlickable
-            width: parent.width
-            height: parent.height - footer.height - parent.spacing
-            contentHeight: grid.height + 20
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
+        // ── SUB-TABS SWITCHER: [ Nexa Native ] | [ SDDM Themes ] ─────────────
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 44
+            radius: Nexa.Theme.radiusSm
+            color: Nexa.Theme.cardBackground
+            border.width: 1
+            border.color: Nexa.Theme.border
 
-            NexaUI.NexaSmoothScroll {}
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                spacing: 6
 
-            Grid {
-                id: grid
-                x: 8
-                y: 8
-                width: parent.width - 16
-                columns: root.columns
-                spacing: 16
+                // Tab 1: Nexa Native
+                Rectangle {
+                    id: nativeTabBtn
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    radius: Nexa.Theme.radiusXs
+                    readonly property bool isSelected: root.activeTab === "native"
+                    color: isSelected ? Nexa.Theme.primaryContainer : (nativeMouse.containsMouse ? Nexa.Theme.hover : "transparent")
+                    border.width: isSelected ? 1 : 0
+                    border.color: isSelected ? Nexa.Theme.primary : "transparent"
 
-                readonly property real cardW: (width - (columns - 1) * spacing) / columns
+                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
 
-                Repeater {
-                    model: root.themes
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        Text {
+                            text: "󰌾"
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: 17
+                            color: nativeTabBtn.isSelected ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                        }
+
+                        StyledText {
+                            text: "Nexa Native"
+                            font.pixelSize: 13
+                            font.weight: nativeTabBtn.isSelected ? Font.Bold : Font.Medium
+                            color: nativeTabBtn.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                        }
+                    }
+
+                    MouseArea {
+                        id: nativeMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.activeTab = "native"
+                            Nexa.Theme.currentLockSubTab = "native"
+                        }
+                    }
+                }
+
+                // Tab 2: SDDM Themes
+                Rectangle {
+                    id: sddmTabBtn
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    radius: Nexa.Theme.radiusXs
+                    readonly property bool isSelected: root.activeTab === "sddm"
+                    color: isSelected ? Nexa.Theme.primaryContainer : (sddmMouse.containsMouse ? Nexa.Theme.hover : "transparent")
+                    border.width: isSelected ? 1 : 0
+                    border.color: isSelected ? Nexa.Theme.primary : "transparent"
+
+                    Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        Text {
+                            text: "󱓞"
+                            font.family: Nexa.Theme.iconFontFamily
+                            font.pixelSize: 17
+                            color: sddmTabBtn.isSelected ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                        }
+
+                        StyledText {
+                            text: "SDDM Themes"
+                            font.pixelSize: 13
+                            font.weight: sddmTabBtn.isSelected ? Font.Bold : Font.Medium
+                            color: sddmTabBtn.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                        }
+                    }
+
+                    MouseArea {
+                        id: sddmMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.activeTab = "sddm"
+                            Nexa.Theme.currentLockSubTab = "sddm"
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── TAB CONTENT AREA ─────────────────────────────────────────────────
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            // 1. Nexa Native Lock Themes View
+            Item {
+                id: nativeView
+                anchors.fill: parent
+                visible: root.activeTab === "native"
+
+                Column {
+                    anchors.fill: parent
+                    spacing: 16
+
+                    // ── Theme Cards Grid ──────────────────────────────────────────
+                    Flickable {
+                        id: themeFlickable
+                        width: parent.width
+                        height: parent.height - footer.height - parent.spacing
+                        contentHeight: grid.height + 20
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+
+                        NexaUI.NexaSmoothScroll {}
+
+                        Grid {
+                            id: grid
+                            x: 8
+                            y: 8
+                            width: parent.width - 16
+                            columns: root.columns
+                            spacing: 16
+
+                            readonly property real cardW: (width - (columns - 1) * spacing) / columns
+
+                            Repeater {
+                                model: root.themes
 
                     Rectangle {
                         id: card
@@ -148,6 +276,7 @@ Item {
                             onEntered: root.cursor = card.index
                             onClicked: {
                                 Services.LockScreen.select(card.modelData.id);
+                                Services.Sddm.clearDesktopLockTheme();
                                 root.requestClose();
                             }
                         }
@@ -355,6 +484,15 @@ Item {
                     font.pixelSize: 12
                     color: Nexa.Theme.mutedText
                 }
+            }
+        }
+    }
+}
+
+            // 2. Dedicated SDDM Themes View
+            SddmThemesTab {
+                anchors.fill: parent
+                visible: root.activeTab === "sddm"
             }
         }
     }

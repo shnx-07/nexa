@@ -94,19 +94,9 @@ Item {
     Process {
         id: sysInfoProc
         command: [
-            "sh", "-c",
-            [
-                "printf 'USER %s\\n' \"$(whoami)\"; ",
-                "printf 'HOST %s\\n' \"$(hostname)\"; ",
-                "printf 'OS %s\\n' \"$(grep -s '^PRETTY_NAME=' /etc/os-release | cut -d= -f2 | tr -d '\"')\"; ",
-                "printf 'KERNEL %s\\n' \"$(uname -r -m)\"; ",
-                "printf 'SHELL %s\\n' \"${SHELL##*/}\"; ",
-                "printf 'UPTIME %s\\n' \"$(uptime -p 2>/dev/null | sed 's/^up //')\"; ",
-                "printf 'CPU %s\\n' \"$(lscpu 2>/dev/null | awk -F: '/Model name/ {gsub(/^[ \\t]+/, \"\", $2); print $2; exit}')\"; ",
-                "printf 'MEMORY %s\\n' \"$(free -h 2>/dev/null | awk '/^Mem:/ {print $3 \" / \" $2}')\"; ",
-                "( . \"$HOME/.config/nexa/config/wallpaper.conf\" 2>/dev/null; printf 'WALLPAPER %s\\n' \"$WALLPAPER\"; printf 'WALLPAPER_TYPE %s\\n' \"${WALLPAPER_TYPE:-image}\"; ); ",
-                "( . \"$HOME/.config/nexa/config/lockscreen.conf\" 2>/dev/null; printf 'LOCK_WALLPAPER %s\\n' \"$WALLPAPER\"; printf 'LOCK_WALLPAPER_TYPE %s\\n' \"${WALLPAPER_TYPE:-image}\"; ); "
-            ].join("")
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "system",
+            "profile"
         ]
         running: false
         stdout: StdioCollector {
@@ -141,12 +131,7 @@ Item {
     // ── Avatar Path Finder ────────────────────────────────────────────────────
     Process {
         id: avatarFinder
-        command: [
-            "sh", "-c",
-            "for f in \"$HOME/.face\" \"$HOME/.config/nexa/avatar.png\" \"$HOME/.config/nexa/avatar.jpg\" \"$HOME/.config/nexa/avatar.svg\" \"$HOME/.config/nexa/avatar.webp\" \"$HOME/.config/nexa/config/avatars/cyber_neon.svg\"; do " +
-            "  if [ -f \"$f\" ]; then echo \"$f\"; exit 0; fi; " +
-            "done; exit 1"
-        ]
+        command: [Quickshell.env("HOME") + "/.config/nexa/scripts/nexa-avatar.sh", "get"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {

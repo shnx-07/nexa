@@ -33,7 +33,7 @@ Item {
     readonly property bool shuffle: Services.LockScreen.shuffle
 
     function open() {
-        if (!tab || tab === "lock") tab = "profile";
+        if (!tab) tab = "profile";
         visible = true;
         keys.forceActiveFocus();
         closeAnim.stop();
@@ -53,12 +53,12 @@ Item {
     }
 
     function openTab(which) {
+        if (!visible)
+            open();
         if (which === "performance" || which === "system" || which === "profile" || which === "sound" || which === "display" || which === "bars" || which === "decorations" || which === "motion" || which === "lock" || which === "power")
             tab = which;
         else
             tab = "profile";
-        if (!visible)
-            open();
     }
 
     function lockNow() {
@@ -878,6 +878,7 @@ Item {
                     Loader {
                         id: contentLoader
                         anchors.fill: parent
+                        active: root.visible
                         sourceComponent: {
                             if (root.tab === "profile") return profileTabComponent;
                             if (root.tab === "performance") return performanceTabComponent;

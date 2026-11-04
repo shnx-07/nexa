@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../../services" as Services
 
 Item {
     id: root
@@ -9,7 +10,7 @@ Item {
     // STATE
     // ============================================================
 
-    property int brightness: 1
+    property int brightness: Services.SystemState.brightness
 
     property int current: 0
     property int maximum: 0
@@ -153,15 +154,6 @@ Item {
     // ============================================================
     // LIVE STATE
     // ============================================================
-
-    Timer {
-        interval: 2500
-        repeat: true
-        running: root.visible
-
-        onTriggered:
-            root.refresh()
-    }
 
     onVisibleChanged: {
         if (root.visible)

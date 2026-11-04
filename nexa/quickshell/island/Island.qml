@@ -1,4 +1,5 @@
 import QtQuick
+import Qt5Compat.GraphicalEffects
 import Quickshell.Io
 import Quickshell
 import Quickshell.Hyprland
@@ -55,8 +56,14 @@ PanelWindow {
     implicitWidth: 920
     implicitHeight: 660
 
+    // Synchronize vertical position with the TopBar pills and rail for pixel-perfect symmetry
+    readonly property int effectiveBarHeight: (Services.BarConfig.position === "top" && Services.BarConfig.height > 0)
+        ? Services.BarConfig.height
+        : Nexa.Theme.barHeight
+    readonly property int compactTopMargin: Math.max(4, Math.round((effectiveBarHeight - root.compactHeight) / 2))
+
     margins {
-        top: 3
+        top: root.compactTopMargin
 
         left: Math.round(
             ((screen ? screen.width : 1920) - implicitWidth) / 2
@@ -220,12 +227,8 @@ PanelWindow {
         }
     }
 
-    Timer {
-        id: volumeSyncTimer
-        interval: 120
-        repeat: false
-        onTriggered: volumeQueryProcess.running = true
-    }
+    // ============================================================
+    
 
     Connections {
         target: Services.SystemState
@@ -234,7 +237,36 @@ PanelWindow {
                 root.osdValue = Math.max(0.01, Math.min(1.0, Services.SystemState.brightness / 100.0))
             }
         }
+        function onVolumeChanged() {
+            if (root.osdType === "volume" || !root.osdActive) {
+                root.osdValue = Math.max(0.0, Math.min(1.0, Services.SystemState.volume / 100.0))
+            }
+        }
+        function onMutedChanged() {
+            root.osdMuted = Services.SystemState.muted
+        }
+        function onInputVolumeChanged() {
+            if (root.osdType === "mic") {
+                root.osdValue = Math.max(0.0, Math.min(1.0, Services.SystemState.inputVolume / 100.0))
+            }
+        }
+        function onInputMutedChanged() {
+            root.osdMicMuted = Services.SystemState.inputMuted
+        }
+        function onAirplaneEnabledChanged() {
+            root.osdAirplaneEnabled = Services.SystemState.airplaneEnabled
+        }
+        function onWifiConnectedChanged() {
+            if (!root.wifiWatcherReady) return
+            if (Services.SystemState.wifiConnected && !root.wifiWasConnected) {
+                root.triggerWifiOsd(Services.SystemState.wifiSsid, Services.SystemState.wifiSignal, Services.SystemState.wifiHasInternet)
+            }
+            root.wifiWasConnected = Services.SystemState.wifiConnected
+        }
     }
+
+    // ============================================================
+    
 
     Timer {
         id: statePersistDebounceTimer
@@ -249,64 +281,11 @@ PanelWindow {
         }
     }
 
-    Process {
-        id: volumeQueryProcess
-        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const text = this.text.trim()
-                if (text.startsWith("Volume:")) {
-                    const isMuted = text.includes("[MUTED]")
-                    const clean = text.replace("Volume:", "").replace("[MUTED]", "").trim()
-                    const val = parseFloat(clean)
-                    if (!isNaN(val)) {
-                        root.osdValue = Math.max(0.0, Math.min(1.0, val))
-                        root.osdMuted = isMuted
-                        statePersistDebounceTimer.restart()
-                    }
-                }
-            }
-        }
-    }
+    // ============================================================
+    
 
 
-    Process {
-        id: airplaneToggleProcess
-        command: [
-            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
-            "system",
-            "airplane",
-            "toggle"
-        ]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const data = JSON.parse(this.text.trim())
-                    root.osdAirplaneEnabled = Boolean(data.enabled)
-                } catch (e) {}
-            }
-        }
-    }
-
-    Process {
-        id: airplaneQueryProcess
-        command: [
-            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
-            "system",
-            "airplane",
-            "info"
-        ]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const data = JSON.parse(this.text.trim())
-                    root.osdAirplaneEnabled = Boolean(data.enabled)
-                } catch (e) {}
-            }
-        }
-    }
-
-    function triggerVolumeUp(): void {
+    function triggerVolumeUp() {
         if (root.full || root.specialModeActive) return
         root.osdType = "volume"
         root.osdMuted = false
@@ -314,38 +293,35 @@ PanelWindow {
         root.osdValue = Math.min(1.0, root.osdValue + 0.05)
         root.osdActive = true
         osdDismissTimer.restart()
-        Quickshell.execDetached(["wpctl", "set-volume", "-l", "1", "@DEFAULT_AUDIO_SINK@", "5%+"])
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "up", "5"])
         if (prevValue < 0.999) {
-            Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "volumne"])
+            Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "volume"])
         }
-        volumeSyncTimer.restart()
     }
 
-    function triggerVolumeDown(): void {
+    function triggerVolumeDown() {
         if (root.full || root.specialModeActive) return
         root.osdType = "volume"
         const prevValue = root.osdValue
         root.osdValue = Math.max(0.0, root.osdValue - 0.05)
         root.osdActive = true
         osdDismissTimer.restart()
-        Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"])
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "down", "5"])
         if (prevValue > 0.001) {
-            Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "volumne"])
+            Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "volume"])
         }
-        volumeSyncTimer.restart()
     }
 
-    function triggerToggleMute(): void {
+    function triggerToggleMute() {
         if (root.full || root.specialModeActive) return
         root.osdType = "mute"
         root.osdMuted = !root.osdMuted
         root.osdActive = true
         osdDismissTimer.restart()
-        Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
-        volumeSyncTimer.restart()
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "toggle-mute"])
     }
 
-    function triggerBrightnessUp(): void {
+    function triggerBrightnessUp() {
         if (root.full || root.specialModeActive) return
         root.osdType = "brightness"
         root.osdValue = Math.min(1.0, root.osdValue + 0.05)
@@ -359,7 +335,7 @@ PanelWindow {
         ])
     }
 
-    function triggerBrightnessDown(): void {
+    function triggerBrightnessDown() {
         if (root.full || root.specialModeActive) return
         root.osdType = "brightness"
         root.osdValue = Math.max(0.01, root.osdValue - 0.05)
@@ -373,60 +349,30 @@ PanelWindow {
         ])
     }
 
-    Timer {
-        id: micSyncTimer
-        interval: 120
-        repeat: false
-        onTriggered: micQueryProcess.running = true
-    }
-
-    Process {
-        id: micQueryProcess
-        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const text = this.text.trim()
-                if (text.startsWith("Volume:")) {
-                    const isMuted = text.includes("[MUTED]")
-                    const clean = text.replace("Volume:", "").replace("[MUTED]", "").trim()
-                    const val = parseFloat(clean)
-                    if (!isNaN(val)) {
-                        if (root.osdType === "mic") {
-                            root.osdValue = Math.max(0.0, Math.min(1.0, val))
-                        }
-                        root.osdMicMuted = isMuted
-                        statePersistDebounceTimer.restart()
-                    }
-                }
-            }
-        }
-    }
-
-    function triggerToggleMicMute(): void {
+    function triggerToggleMicMute() {
         if (root.full || root.specialModeActive) return
         root.osdType = "mic"
         root.osdMicMuted = !root.osdMicMuted
         root.osdMuted = root.osdMicMuted
         root.osdActive = true
         osdDismissTimer.restart()
-        Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"])
-        micSyncTimer.restart()
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "input-toggle-mute"])
     }
 
-    function triggerToggleAirplane(): void {
+    function triggerToggleAirplane() {
         if (root.full || root.specialModeActive) return
         root.osdType = "airplane"
         root.osdAirplaneEnabled = !root.osdAirplaneEnabled
         root.osdActive = true
         osdDismissTimer.restart()
-        airplaneToggleProcess.running = true
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "system", "airplane", "toggle"])
     }
 
     // ============================================================
     // BATTERY HARDWARE OSD (DRIVEN NATIVELY BY RUST DAEMON)
     // ============================================================
 
-    function triggerBatteryOsd(charging: bool, pct: int): void {
+    function triggerBatteryOsd(charging: bool, pct: int) {
         if (root.full || root.specialModeActive) return
         root.osdType = "battery"
         root.osdBatteryCharging = charging
@@ -438,7 +384,7 @@ PanelWindow {
         osdDismissTimer.restart()
     }
 
-    function triggerLowBatteryAlert(pct: int): void {
+    function triggerLowBatteryAlert(pct: int) {
         if (root.full || root.specialModeActive) return
         root.osdType = "battery_low"
         root.osdBatteryCharging = false
@@ -475,6 +421,9 @@ PanelWindow {
         }
     }
 
+    // ============================================================
+    
+
     Connections {
         target: Bluetooth.devices
         function onValuesChanged() {
@@ -493,7 +442,10 @@ PanelWindow {
         }
     }
 
-    function triggerBluetoothOsd(device: var): void {
+    // ============================================================
+    
+
+    function triggerBluetoothOsd(device) {
         if (!device || root.full || root.specialModeActive) return
         root.osdType = "bluetooth"
         root.osdTitle = (device.name && device.name.length > 0) ? device.name : "Bluetooth Device"
@@ -550,64 +502,11 @@ PanelWindow {
         }
     }
 
-    Timer {
-        id: wifiQueryDelayTimer
-        interval: 650
-        repeat: false
-        onTriggered: {
-            wifiStatusQueryProcess.running = true
-        }
-    }
+    // ============================================================
+    // WIFI HARDWARE OSD (DRIVEN NATIVELY BY RUST DAEMON)
+    // ============================================================
 
-    Process {
-        id: wifiStatusQueryProcess
-        command: ["bash", "-c", "nmcli -t -f ACTIVE,SSID,SIGNAL dev wifi | grep '^yes:'; nmcli -t -f CONNECTIVITY g"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const lines = this.text.trim().split("\n")
-                let ssid = ""
-                let strength = 0
-                let connectivity = "full"
-
-                for (let line of lines) {
-                    const l = line.trim()
-                    if (l.startsWith("yes:")) {
-                        const parts = l.split(":")
-                        if (parts.length >= 2) ssid = parts[1]
-                        if (parts.length >= 3) strength = parseInt(parts[2]) || 0
-                    } else if (l === "full" || l === "limited" || l === "none" || l === "portal") {
-                        connectivity = l
-                    }
-                }
-
-                // If nmcli line is empty, fallback to device network name
-                if (ssid.length === 0 && wifiDevice) {
-                    for (let n of wifiDevice.networks.values) {
-                        if (n.connected) {
-                            ssid = n.name
-                            strength = Math.round(n.signalStrength * 100)
-                            break
-                        }
-                    }
-                }
-
-                const hasInternet = (connectivity === "full")
-                root.triggerWifiOsd(ssid, strength, hasInternet)
-            }
-        }
-    }
-
-    onWifiConnectedChanged: {
-        if (!root.wifiWatcherReady) return
-
-        if (wifiConnected && !wifiWasConnected) {
-            // Delay 650ms to allow IP address assignment and connectivity verification
-            wifiQueryDelayTimer.restart()
-        }
-        root.wifiWasConnected = wifiConnected
-    }
-
-    function triggerWifiOsd(ssid: string, strength: int, hasInternet: bool): void {
+    function triggerWifiOsd(ssid, strength, hasInternet) {
         if (root.full || root.specialModeActive) return
         root.osdType = "wifi"
         root.osdTitle = (ssid && ssid.length > 0) ? ssid : "Wi-Fi Network"
@@ -622,7 +521,7 @@ PanelWindow {
     // KEYBOARD LOCK (CAPS LOCK / NUM LOCK) WATCHER
     // ============================================================
 
-    function triggerCapsLockOsd(enabled: bool): void {
+    function triggerCapsLockOsd(enabled: bool) {
         if (root.full || root.specialModeActive) return
         root.osdType = "capslock"
         root.osdTitle = "Caps Lock"
@@ -631,7 +530,7 @@ PanelWindow {
         osdDismissTimer.restart()
     }
 
-    function triggerNumLockOsd(enabled: bool): void {
+    function triggerNumLockOsd(enabled: bool) {
         if (root.full || root.specialModeActive) return
         root.osdType = "numlock"
         root.osdTitle = "Num Lock"
@@ -663,13 +562,16 @@ PanelWindow {
         }
     }
 
+    // ============================================================
+    
+
     property string specialMode: "none"
     // none | search | command | power | appLauncher | controlCenter
 
     readonly property bool specialModeActive:
         specialMode !== "none"
 
-    function enterSpecialMode(mode: string): void {
+    function enterSpecialMode(mode: string) {
         root.osdActive = false
         root.osdType = "none"
         osdDismissTimer.stop()
@@ -682,14 +584,17 @@ PanelWindow {
         islandFocus.forceActiveFocus()
     }
 
-    function openControlCenter(page: int): void {
+    function openControlCenter(page: int) {
         root.enterSpecialMode("controlCenter")
         if (page !== undefined && page >= 0) {
             islandContent.setControlCenterPage(page)
         }
     }
 
-    function toggleControlCenter(): void {
+    // ============================================================
+    
+
+    function toggleControlCenter() {
         if (root.specialMode === "controlCenter") {
             root.closeIsland()
         } else {
@@ -697,11 +602,14 @@ PanelWindow {
         }
     }
 
-    function openShelf(): void {
+    // ============================================================
+    
+
+    function openShelf() {
         root.enterSpecialMode("shelf")
     }
 
-    function toggleShelf(): void {
+    function toggleShelf() {
         if (root.specialMode === "shelf") {
             root.closeIsland()
         } else {
@@ -709,11 +617,14 @@ PanelWindow {
         }
     }
 
-    function openQuickSettings(): void {
+    // ============================================================
+    
+
+    function openQuickSettings() {
         root.openControlCenter(0)
     }
 
-    function openNotifications(): void {
+    function openNotifications() {
         root.openControlCenter(1)
         Quickshell.execDetached([
             Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
@@ -725,23 +636,23 @@ PanelWindow {
     IpcHandler {
         target: "nexaIsland"
 
-        function triggerCapsLockOsd(enabled: bool): void {
+        function triggerCapsLockOsd(enabled: bool) {
             root.triggerCapsLockOsd(enabled)
         }
 
-        function triggerNumLockOsd(enabled: bool): void {
+        function triggerNumLockOsd(enabled: bool) {
             root.triggerNumLockOsd(enabled)
         }
 
-        function triggerBatteryOsd(charging: string, pct: int): void {
+        function triggerBatteryOsd(charging: string, pct: int) {
             root.triggerBatteryOsd(charging === "true" || charging === "1", pct)
         }
 
-        function triggerLowBatteryAlert(pct: int): void {
+        function triggerLowBatteryAlert(pct: int) {
             root.triggerLowBatteryAlert(pct || 22)
         }
 
-        function triggerBluetoothOsd(name: string, icon: string): void {
+        function triggerBluetoothOsd(name: string, icon: string) {
             let batt = Services.SystemState.bluetoothDeviceBattery
             root.triggerBluetoothOsd({
                 name: (name && name.length > 0) ? name : (Services.SystemState.bluetoothDeviceName || "Bluetooth Device"),
@@ -751,7 +662,7 @@ PanelWindow {
             })
         }
 
-        function triggerWifiOsd(ssid: string, strength: int, hasInternet: string): void {
+        function triggerWifiOsd(ssid: string, strength: int, hasInternet: string) {
             const hasNet = (hasInternet === "true" || hasInternet === "1")
             root.triggerWifiOsd(
                 (ssid && ssid.length > 0) ? ssid : (Services.SystemState.wifiSsid || "Wi-Fi Network"),
@@ -760,47 +671,47 @@ PanelWindow {
             )
         }
 
-        function volumeUp(): void {
+        function volumeUp() {
             root.triggerVolumeUp()
         }
 
-        function volumeDown(): void {
+        function volumeDown() {
             root.triggerVolumeDown()
         }
 
-        function toggleMute(): void {
+        function toggleMute() {
             root.triggerToggleMute()
         }
 
-        function toggleMicMute(): void {
+        function toggleMicMute() {
             root.triggerToggleMicMute()
         }
 
-        function brightnessUp(): void {
+        function brightnessUp() {
             root.triggerBrightnessUp()
         }
 
-        function brightnessDown(): void {
+        function brightnessDown() {
             root.triggerBrightnessDown()
         }
 
-        function toggleAirplane(): void {
+        function toggleAirplane() {
             root.triggerToggleAirplane()
         }
 
-        function openSearch(): void {
+        function openSearch() {
             root.enterSpecialMode("search")
         }
 
-        function openCommand(): void {
+        function openCommand() {
             root.enterSpecialMode("command")
         }
 
-        function openPower(): void {
+        function openPower() {
             root.enterSpecialMode("power")
         }
 
-        function togglePower(): void {
+        function togglePower() {
             if (root.specialMode === "power") {
                 root.closeIsland()
             } else {
@@ -808,11 +719,11 @@ PanelWindow {
             }
         }
 
-        function openAppLauncher(): void {
+        function openAppLauncher() {
             root.enterSpecialMode("appLauncher")
         }
 
-        function toggleAppLauncher(): void {
+        function toggleAppLauncher() {
             if (root.specialMode === "appLauncher") {
                 root.closeIsland()
             } else {
@@ -820,14 +731,14 @@ PanelWindow {
             }
         }
 
-        function openControlCenter(page: int): void {
+        function openControlCenter(page: int) {
             root.enterSpecialMode("controlCenter")
             if (page !== undefined && page >= 0) {
                 islandContent.setControlCenterPage(page)
             }
         }
 
-        function toggleControlCenter(): void {
+        function toggleControlCenter() {
             if (root.specialMode === "controlCenter") {
                 root.closeIsland()
             } else {
@@ -835,7 +746,7 @@ PanelWindow {
             }
         }
 
-        function openNotifications(): void {
+        function openNotifications() {
             root.openControlCenter(1)
             Quickshell.execDetached([
                 Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
@@ -844,30 +755,33 @@ PanelWindow {
             ])
         }
 
-        function openQuickSettings(): void {
+        function openQuickSettings() {
             root.openControlCenter(0)
         }
 
-        function openFullSection(name: string): void {
+        function openFullSection(name: string) {
             islandContent.section = name || "music"
             root.full = true
             root.hovered = false
             islandFocus.forceActiveFocus()
         }
 
-        function refreshRecorder(): void {
+        function refreshRecorder() {
             islandContent.refreshRecorder()
         }
 
-        function close(): void {
+        function close() {
             root.closeIsland()
         }
     }
 
+    // ============================================================
+    
+
     IpcHandler {
         target: "appLauncher"
 
-        function open(): void {
+        function open() {
             root.specialMode = "appLauncher"
             root.full = true
             root.hovered = false
@@ -875,12 +789,12 @@ PanelWindow {
             islandFocus.forceActiveFocus()
         }
 
-        function close(): void {
+        function close() {
             if (root.specialMode === "appLauncher")
                 root.closeIsland()
         }
 
-        function toggle(): void {
+        function toggle() {
             if (root.specialMode === "appLauncher") {
                 root.closeIsland()
             } else {
@@ -893,72 +807,84 @@ PanelWindow {
         }
     }
 
+    // ============================================================
+    
+
     IpcHandler {
         target: "controlCenter"
 
-        function open(): void {
+        function open() {
             root.openControlCenter(0)
         }
 
-        function close(): void {
+        function close() {
             if (root.specialMode === "controlCenter")
                 root.closeIsland()
         }
 
-        function toggle(): void {
+        function toggle() {
             root.toggleControlCenter()
         }
 
-        function openNotifications(): void {
+        function openNotifications() {
             root.openNotifications()
         }
 
-        function openQuickSettings(): void {
+        function openQuickSettings() {
             root.openQuickSettings()
         }
     }
+
+    // ============================================================
+    
 
     IpcHandler {
         target: "sidePanel"
 
-        function toggle(): void {
+        function toggle() {
             root.toggleControlCenter()
         }
 
-        function open(): void {
+        function open() {
             root.openControlCenter(0)
         }
 
-        function close(): void {
+        function close() {
             if (root.specialMode === "controlCenter")
                 root.closeIsland()
         }
 
-        function openNotifications(): void {
+        function openNotifications() {
             root.openNotifications()
         }
 
-        function openQuickSettings(): void {
+        function openQuickSettings() {
             root.openQuickSettings()
         }
     }
 
+    // ============================================================
+    
+
     IpcHandler {
         target: "fileShelf"
 
-        function open(): void {
+        function open() {
             root.openShelf()
         }
 
-        function close(): void {
+        function close() {
             if (root.specialMode === "shelf")
                 root.closeIsland()
         }
 
-        function toggle(): void {
+        function toggle() {
             root.toggleShelf()
         }
     }
+
+    // ============================================================
+    
 
 
     // ============================================================
@@ -994,8 +920,9 @@ PanelWindow {
         if (root.specialMode === "shelf")
             return root.shelfWidth
 
-        if (root.full || root.specialModeActive)
+        if (root.full || root.specialModeActive) {
             return root.fullWidth
+        }
 
         if (root.osdActive) {
             if (root.osdType === "volume")
@@ -1046,8 +973,11 @@ PanelWindow {
         if (root.specialMode === "shelf")
             return root.shelfHeight
 
-        if (root.full || root.specialModeActive)
+        if (root.full || root.specialModeActive) {
+            if (islandContent.section === "music")
+                return 310
             return root.fullHeight
+        }
 
         if (root.osdActive) {
             if (root.osdType === "volume")
@@ -1131,6 +1061,13 @@ PanelWindow {
         root.hovered = false
     }
 
+    function openFullSection(name: string) {
+        islandContent.section = name || "music"
+        root.full = true
+        root.hovered = false
+        islandFocus.forceActiveFocus()
+    }
+
     // ============================================================
     // INPUT MASK
     //
@@ -1143,7 +1080,11 @@ PanelWindow {
 
     mask: Region {
         item: island
+        Region {
+            item: islandClockBtn
+        }
     }
+    
 
 
     // ============================================================
@@ -1172,6 +1113,9 @@ PanelWindow {
             root.closeIsland()
         }
     }
+
+    // ============================================================
+    
 
 
     // ============================================================
@@ -1528,14 +1472,46 @@ PanelWindow {
           }
 
         }
+
+        // ========================================================
+        // TOP-LEVEL BORDER RIM OVERLAY
+        // ========================================================
+        // Guarantees border is ALWAYS drawn cleanly above all content layers
+        // (including full-bleed album art in Media view) and respects
+        // Nexa.Theme.windowBorderSize and Nexa.Theme.borderStrong.
+        Rectangle {
+            id: islandBorderOverlay
+            anchors.fill: parent
+            radius: island.radius
+            color: "transparent"
+            border.width: island.border.width
+            border.color: island.border.color
+            enabled: false
+            z: 100
+        }
     }
 
+    IslandClockButton {
+        id: islandClockBtn
+        anchors.left: island.right
+        anchors.leftMargin: 8
+        anchors.verticalCenter: island.verticalCenter
+        visible: islandContent.mediaContextActive && !root.full && !root.hovered && !root.specialModeActive && !root.osdActive && !root.notificationActive
+        onClicked: {
+            root.openFullSection("clock")
+        }
+    }
+    
+
     Component.onCompleted: {
-        volumeQueryProcess.running = true
-        micQueryProcess.running = true
-        airplaneQueryProcess.running = true
         if (Services.SystemState.brightness > 0) {
             root.osdValue = Math.max(0.01, Math.min(1.0, Services.SystemState.brightness / 100.0))
         }
+        root.osdMuted = Services.SystemState.muted
+        root.osdMicMuted = Services.SystemState.inputMuted
+        root.osdAirplaneEnabled = Services.SystemState.airplaneEnabled
     }
+
+    // ============================================================
+    
 }

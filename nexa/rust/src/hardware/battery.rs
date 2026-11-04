@@ -204,6 +204,10 @@ pub fn run_watch() -> Result<(), String> {
                     s.battery_percentage = st.percentage;
                     s.battery_charging = st.charging;
                     s.on_battery = st.on_battery;
+                    s.battery_power_watts = st.power_watts;
+                    s.battery_health_percentage = st.health_percentage;
+                    s.battery_time_to_full = st.time_to_full;
+                    s.battery_time_to_empty = st.time_to_empty;
                 });
             }
 

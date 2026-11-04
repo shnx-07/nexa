@@ -137,6 +137,13 @@ Item {
     // ============================================================
 
     property string section: "clock"
+    property string previousSection: "clock"
+
+    onSectionChanged: {
+        if (section !== "music") {
+            previousSection = section
+        }
+    }
 
 
     // ============================================================
@@ -578,31 +585,37 @@ Item {
             bottom: parent.bottom
             top: parent.top
 
-
-            // Full Music starts below the main Island navigation.
+            // Full Music takes full container (has own integrated studio header)
             topMargin:
                 root.full
                 && root.section === "music"
-                ? root.fullContentTop
-                : 0
-
+                ? 0
+                : (root.full ? root.fullContentTop : 0)
 
             leftMargin:
-                root.full
+                root.full && root.section !== "music"
                 ? Nexa.Theme.spacingLg
-                  : 0
-
+                : 0
 
             rightMargin:
-                root.full
+                root.full && root.section !== "music"
                 ? Nexa.Theme.spacingLg
                 : 0
-
 
             bottomMargin:
-                root.full
+                root.full && root.section !== "music"
                 ? Nexa.Theme.spacingLg
                 : 0
+        }
+
+        onRequestBack: {
+            root.section = root.previousSection || "clock"
+        }
+
+        onRequestOpenClock: {
+            root.section = "clock"
+            clockModule.page = 0
+            root.requestOpenClockSection()
         }
 
 
@@ -661,6 +674,7 @@ Item {
         visible:
           root.full
           && !root.specialModeActive
+          && root.section !== "music"
 
         // Keep above the Clock background if necessary,
         // while individual section content remains below nav.
@@ -690,28 +704,18 @@ Item {
 
 
             Repeater {
-                model: {
-                    var items = [
-                        {
-                            name: "clock",
-                            icon: "󰥔",
-                            label: "Clock"
-                        },
-                        {
-                            name: "controlCenter",
-                            icon: "󰂚",
-                            label: "Panel"
-                        }
-                    ];
-                    if (root.mediaContextActive || root.section === "music") {
-                        items.push({
-                            name: "music",
-                            icon: "󰎆",
-                            label: "Music"
-                        });
+                model: [
+                    {
+                        name: "clock",
+                        icon: "󰥔",
+                        label: "Clock"
+                    },
+                    {
+                        name: "controlCenter",
+                        icon: "󰂚",
+                        label: "Panel"
                     }
-                    return items;
-                }
+                ]
 
 
                 delegate: Rectangle {

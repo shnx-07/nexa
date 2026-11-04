@@ -80,12 +80,12 @@ impl Default for SoundConfig {
 }
 
 pub fn get_sound_dir() -> PathBuf {
-    let home = env::var("HOME").unwrap_or_else(|_| "/home/shnx".to_string());
+    let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
     PathBuf::from(home).join(".config/nexa/sounds")
 }
 
 pub fn get_config_path() -> PathBuf {
-    let home = env::var("HOME").unwrap_or_else(|_| "/home/shnx".to_string());
+    let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
     PathBuf::from(home).join(".config/nexa/config/sound.json")
 }
 
