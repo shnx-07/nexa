@@ -4,8 +4,7 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 
 Item {
@@ -507,11 +506,43 @@ Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            radius: Nexa.Theme.radiusLg
-            color: Nexa.Theme.cardBackground
-            border.width: Nexa.Theme.borderThin
-            border.color: Nexa.Theme.border
+            radius: NexaUI.NexaTokens.radiusLg
+            color: NexaUI.NexaColors.surfaceContainer
+            border.width: NexaUI.NexaTokens.borderThin
+            border.color: NexaUI.NexaColors.border
             clip: true
+
+            // Apple Tactile 4-stop Depth Micro-Gradient
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                antialiasing: true
+                visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+                opacity: NexaUI.NexaOptics.gradientIntensity
+                gradient: Gradient {
+                    GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.045) }
+                    GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.010) }
+                    GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                    GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.120) }
+                }
+            }
+
+            // Top Chamfer Specular Highlight
+            Rectangle {
+                anchors.top: parent.top
+                anchors.topMargin: 1
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Math.max(0, parent.width - parent.radius * 1.6)
+                height: 1
+                visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+                opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.30) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
 
             ColumnLayout {
                 anchors.fill: parent
@@ -528,8 +559,8 @@ Item {
                         text: root.hasWeather
                             ? root.weatherIcon(root.weatherData.current.icon)
                             : "󰖐"
-                        color: Nexa.Theme.primary
-                        font.family: Nexa.Theme.iconFontFamily
+                        color: NexaUI.NexaColors.primary
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 52
                     }
 
@@ -541,10 +572,10 @@ Item {
                             text: root.hasWeather
                                 ? root.temperature(root.weatherData.current.temperature)
                                 : "--°"
-                            color: Nexa.Theme.text
-                            font.family: Nexa.Theme.fontFamily
+                            color: NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 38
-                            font.weight: Font.DemiBold
+                            font.weight: NexaUI.NexaTypography.weightBold
                         }
 
                         // Min / Max
@@ -554,9 +585,10 @@ Item {
                                   + " / "
                                   + root.temperature(root.weatherData.current.max_temperature)
                                 : "-- / --"
-                            color: Nexa.Theme.primary
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 12
+                            color: NexaUI.NexaColors.primary
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeSm
+                            font.weight: NexaUI.NexaTypography.weightMedium
                         }
 
                         // Condition
@@ -564,43 +596,46 @@ Item {
                             text: root.hasWeather
                                 ? root.weatherData.current.condition
                                 : root.loading ? "Loading…" : "Unavailable"
-                            color: Nexa.Theme.text
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
+                            color: NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeSm
+                            font.weight: NexaUI.NexaTypography.weightMedium
                         }
 
                         // Location button
                         Rectangle {
                             id: locationButton
-                            height: 22
-                            width: locationRow.implicitWidth + 14
-                            radius: Nexa.Theme.radiusSm
-                            color: locationMouse.containsMouse ? Nexa.Theme.hover : "transparent"
+                            height: 24
+                            width: locationRow.implicitWidth + 16
+                            radius: NexaUI.NexaTokens.radiusPill
+                            color: locationMouse.containsMouse ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.08) : NexaUI.NexaColors.alpha(NexaUI.NexaColors.surfaceContainerLow, 0.6)
+                            border.width: NexaUI.NexaTokens.borderThin
+                            border.color: locationMouse.containsMouse ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                             Row {
                                 id: locationRow
                                 anchors.centerIn: parent
-                                spacing: 4
+                                spacing: 6
 
                                 Text {
                                     text: "󰍎"
-                                    color: Nexa.Theme.primary
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    color: NexaUI.NexaColors.primary
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 11
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
                                 Text {
                                     text: root.locationText()
-                                    color: locationMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: 11
+                                    color: locationMouse.containsMouse ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                    font.weight: NexaUI.NexaTypography.weightMedium
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
                                 Text {
                                     text: root.locationEditorOpen ? "󰅃" : "󰅀"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 10
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
@@ -621,7 +656,7 @@ Item {
                 Rectangle {
                     Layout.fillWidth: true
                     height: 1
-                    color: Nexa.Theme.divider
+                    color: NexaUI.NexaColors.border
                 }
 
                 Flickable {
@@ -633,7 +668,7 @@ Item {
                     contentWidth: width
                     boundsBehavior: Flickable.StopAtBounds
 
-                    NexaUI.NexaSmoothScroll {}
+                    NexaUI.NexaScroll {}
 
                     ScrollBar.vertical: ScrollBar {
                         id: detailsScrollBar
@@ -645,15 +680,15 @@ Item {
 
                         contentItem: Rectangle {
                             implicitWidth: 3
-                            radius: Nexa.Theme.radiusPill
-                            color: detailsScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                            opacity: (detailsScrollBar.active || detailsScrollBar.hovered) ? 0.6 : 0.0
+                            radius: NexaUI.NexaTokens.radiusPill
+                            color: detailsScrollBar.hovered ? NexaUI.NexaColors.primary : NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.38)
+                            opacity: (detailsScrollBar.active || detailsScrollBar.hovered) ? 0.8 : 0.0
 
                             Behavior on opacity {
-                                NumberAnimation { duration: Nexa.Theme.animationNormal }
+                                NumberAnimation { duration: NexaUI.NexaMotion.durationNormal }
                             }
                             Behavior on color {
-                                ColorAnimation { duration: Nexa.Theme.animationFast }
+                                ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                             }
                         }
 
@@ -662,11 +697,11 @@ Item {
 
                     Column {
                         id: detailsCol
-                        width: parent.width - (parent.contentHeight > parent.height ? (Nexa.Theme.spacingSm + 4) : 0)
+                        width: parent.width - (parent.contentHeight > parent.height ? (NexaUI.NexaTokens.spacingSm + 4) : 0)
                         spacing: 0
 
                         Behavior on width {
-                            NumberAnimation { duration: Nexa.Theme.animationFast }
+                            NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
                         }
 
                         // Helper component
@@ -686,27 +721,27 @@ Item {
                                 Text {
                                     Layout.preferredWidth: 20
                                     text: parent.parent.icon
-                                    color: Nexa.Theme.primary
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: NexaUI.NexaColors.primary
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
                                     horizontalAlignment: Text.AlignHCenter
                                 }
 
                                 Text {
                                     Layout.fillWidth: true
                                     text: parent.parent.label
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
                                     elide: Text.ElideRight
                                 }
 
                                 Text {
                                     text: parent.parent.value
-                                    color: Nexa.Theme.text
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeXs
-                                    font.weight: Font.Medium
+                                    color: NexaUI.NexaColors.text
+                                    font.family: NexaUI.NexaTypography.familyMono
+                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                    font.weight: NexaUI.NexaTypography.weightSemiBold
                                     horizontalAlignment: Text.AlignRight
                                 }
                             }
@@ -717,7 +752,7 @@ Item {
                                 anchors.right: parent.right
                                 anchors.bottom: parent.bottom
                                 height: 1
-                                color: Nexa.Theme.divider
+                                color: NexaUI.NexaColors.border
                             }
                         }
 
@@ -775,11 +810,43 @@ Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            radius: Nexa.Theme.radiusLg
-            color: Nexa.Theme.cardBackground
-            border.width: Nexa.Theme.borderThin
-            border.color: Nexa.Theme.border
+            radius: NexaUI.NexaTokens.radiusLg
+            color: NexaUI.NexaColors.surfaceContainer
+            border.width: NexaUI.NexaTokens.borderThin
+            border.color: NexaUI.NexaColors.border
             clip: true
+
+            // Apple Tactile 4-stop Depth Micro-Gradient
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                antialiasing: true
+                visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+                opacity: NexaUI.NexaOptics.gradientIntensity
+                gradient: Gradient {
+                    GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.045) }
+                    GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.010) }
+                    GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                    GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.120) }
+                }
+            }
+
+            // Top Chamfer Specular Highlight
+            Rectangle {
+                anchors.top: parent.top
+                anchors.topMargin: 1
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Math.max(0, parent.width - parent.radius * 1.6)
+                height: 1
+                visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+                opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.30) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
 
             ColumnLayout {
                 anchors.fill: parent
@@ -793,16 +860,17 @@ Item {
 
                     // Daily / Hourly pill toggle
                     Rectangle {
-                        width: 130
+                        width: 136
                         height: 28
-                        radius: Nexa.Theme.radiusSm
-                        color: Nexa.Theme.surface
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
+                        radius: NexaUI.NexaTokens.radiusPill
+                        color: NexaUI.NexaColors.surfaceContainerLow
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: NexaUI.NexaColors.border
 
                         RowLayout {
                             anchors.fill: parent
-                            spacing: 0
+                            anchors.margins: 2
+                            spacing: 2
 
                             ForecastButton {
                                 Layout.fillWidth: true
@@ -827,19 +895,21 @@ Item {
                     Rectangle {
                         width: 28
                         height: 28
-                        radius: Nexa.Theme.radiusSm
-                        color: refreshMouse.containsMouse ? Nexa.Theme.hoverStrong : "transparent"
+                        radius: NexaUI.NexaTokens.radiusPill
+                        color: refreshMouse.containsMouse ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.08) : "transparent"
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: refreshMouse.containsMouse ? NexaUI.NexaColors.border : "transparent"
 
                         Text {
                             anchors.centerIn: parent
                             text: "󰑐"
-                            color: root.loading ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.iconFontFamily
-                            font.pixelSize: Nexa.Theme.iconSm
+                            color: root.loading ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyIcon
+                            font.pixelSize: 14
                             rotation: root.loading ? 360 : 0
 
                             Behavior on rotation {
-                                NumberAnimation { duration: Nexa.Theme.animationSlow; easing.type: Nexa.Theme.easingStandard }
+                                NumberAnimation { duration: NexaUI.NexaMotion.durationSlow; easing.type: NexaUI.NexaMotion.standardEasing }
                             }
                         }
 
@@ -857,7 +927,7 @@ Item {
                 Rectangle {
                     Layout.fillWidth: true
                     height: 1
-                    color: Nexa.Theme.divider
+                    color: NexaUI.NexaColors.border
                 }
 
                 // ── Scrollable forecast list ──────────────────────
@@ -870,7 +940,7 @@ Item {
                     contentWidth: width
                     boundsBehavior: Flickable.StopAtBounds
 
-                    NexaUI.NexaSmoothScroll {}
+                    NexaUI.NexaScroll {}
 
                     ScrollBar.vertical: ScrollBar {
                         id: forecastScrollBar
@@ -882,15 +952,15 @@ Item {
 
                         contentItem: Rectangle {
                             implicitWidth: 3
-                            radius: Nexa.Theme.radiusPill
-                            color: forecastScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                            opacity: (forecastScrollBar.active || forecastScrollBar.hovered) ? 0.6 : 0.0
+                            radius: NexaUI.NexaTokens.radiusPill
+                            color: forecastScrollBar.hovered ? NexaUI.NexaColors.primary : NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.38)
+                            opacity: (forecastScrollBar.active || forecastScrollBar.hovered) ? 0.8 : 0.0
 
                             Behavior on opacity {
-                                NumberAnimation { duration: Nexa.Theme.animationNormal }
+                                NumberAnimation { duration: NexaUI.NexaMotion.durationNormal }
                             }
                             Behavior on color {
-                                ColorAnimation { duration: Nexa.Theme.animationFast }
+                                ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                             }
                         }
 
@@ -900,12 +970,12 @@ Item {
                     // DAILY
                     Column {
                         id: dailyCol
-                        width: parent.width - (parent.contentHeight > parent.height ? (Nexa.Theme.spacingSm + 4) : 0)
+                        width: parent.width - (parent.contentHeight > parent.height ? (NexaUI.NexaTokens.spacingSm + 4) : 0)
                         visible: root.forecastMode === 0
                         spacing: 0
 
                         Behavior on width {
-                            NumberAnimation { duration: Nexa.Theme.animationFast }
+                            NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
                         }
 
                         Repeater {
@@ -917,27 +987,27 @@ Item {
 
                                 RowLayout {
                                     anchors.fill: parent
-                                    anchors.leftMargin: 2
-                                    anchors.rightMargin: 2
+                                    anchors.leftMargin: 4
+                                    anchors.rightMargin: 4
                                     spacing: 8
 
                                     // Day name
                                     Text {
-                                        Layout.preferredWidth: 30
+                                        Layout.preferredWidth: 32
                                         text: root.dayName(modelData.date)
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeXs
-                                        font.weight: Font.Medium
+                                        color: NexaUI.NexaColors.text
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                        font.weight: NexaUI.NexaTypography.weightSemiBold
                                     }
 
                                     // Icon
                                     Text {
                                         Layout.preferredWidth: 22
                                         text: root.weatherIcon(modelData.icon)
-                                        color: Nexa.Theme.primary
-                                        font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: Nexa.Theme.iconLg
+                                        color: NexaUI.NexaColors.primary
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: 18
                                         horizontalAlignment: Text.AlignHCenter
                                     }
 
@@ -949,18 +1019,18 @@ Item {
                                         Text {
                                             Layout.fillWidth: true
                                             text: root.temperature(modelData.min_temperature) + " / " + root.temperature(modelData.max_temperature)
-                                            color: Nexa.Theme.text
-                                            font.family: Nexa.Theme.fontFamily
-                                            font.pixelSize: Nexa.Theme.fontSizeXs
-                                            font.weight: Font.Medium
+                                            color: NexaUI.NexaColors.text
+                                            font.family: NexaUI.NexaTypography.familyBody
+                                            font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                            font.weight: NexaUI.NexaTypography.weightMedium
                                             elide: Text.ElideRight
                                         }
                                         Text {
                                             Layout.fillWidth: true
                                             text: modelData.condition
-                                            color: Nexa.Theme.mutedText
-                                            font.family: Nexa.Theme.fontFamily
-                                            font.pixelSize: Nexa.Theme.fontSizeXs
+                                            color: NexaUI.NexaColors.mutedText
+                                            font.family: NexaUI.NexaTypography.familyBody
+                                            font.pixelSize: NexaUI.NexaTypography.sizeXs
                                             elide: Text.ElideRight
                                         }
                                     }
@@ -970,9 +1040,9 @@ Item {
                                         Layout.preferredWidth: 34
                                         text: Math.round(modelData.precipitation_probability) + "%"
                                         horizontalAlignment: Text.AlignRight
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyMono
+                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
                                     }
                                 }
 
@@ -982,7 +1052,7 @@ Item {
                                     anchors.right: parent.right
                                     anchors.bottom: parent.bottom
                                     height: 1
-                                    color: Nexa.Theme.divider
+                                    color: NexaUI.NexaColors.border
                                 }
                             }
                         }
@@ -991,12 +1061,12 @@ Item {
                     // HOURLY
                     Column {
                         id: hourlyCol
-                        width: parent.width - (parent.contentHeight > parent.height ? (Nexa.Theme.spacingSm + 4) : 0)
+                        width: parent.width - (parent.contentHeight > parent.height ? (NexaUI.NexaTokens.spacingSm + 4) : 0)
                         visible: root.forecastMode === 1
                         spacing: 0
 
                         Behavior on width {
-                            NumberAnimation { duration: Nexa.Theme.animationFast }
+                            NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
                         }
 
                         Repeater {
@@ -1008,24 +1078,24 @@ Item {
 
                                 RowLayout {
                                     anchors.fill: parent
-                                    anchors.leftMargin: 2
-                                    anchors.rightMargin: 2
+                                    anchors.leftMargin: 4
+                                    anchors.rightMargin: 4
                                     spacing: 8
 
                                     Text {
                                         Layout.preferredWidth: 38
                                         text: root.hourlyTime(modelData.time)
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyMono
+                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
                                     }
 
                                     Text {
                                         Layout.preferredWidth: 22
                                         text: root.weatherIcon(modelData.icon)
-                                        color: Nexa.Theme.primary
-                                        font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: Nexa.Theme.iconLg
+                                        color: NexaUI.NexaColors.primary
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: 18
                                         horizontalAlignment: Text.AlignHCenter
                                     }
 
@@ -1035,17 +1105,17 @@ Item {
 
                                         Text {
                                             text: root.temperature(modelData.temperature)
-                                            color: Nexa.Theme.text
-                                            font.family: Nexa.Theme.fontFamily
-                                            font.pixelSize: Nexa.Theme.fontSizeXs
-                                            font.weight: Font.Medium
+                                            color: NexaUI.NexaColors.text
+                                            font.family: NexaUI.NexaTypography.familyBody
+                                            font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                            font.weight: NexaUI.NexaTypography.weightMedium
                                         }
                                         Text {
                                             Layout.fillWidth: true
                                             text: modelData.condition
-                                            color: Nexa.Theme.mutedText
-                                            font.family: Nexa.Theme.fontFamily
-                                            font.pixelSize: Nexa.Theme.fontSizeXs
+                                            color: NexaUI.NexaColors.mutedText
+                                            font.family: NexaUI.NexaTypography.familyBody
+                                            font.pixelSize: NexaUI.NexaTypography.sizeXs
                                             elide: Text.ElideRight
                                         }
                                     }
@@ -1054,9 +1124,9 @@ Item {
                                         Layout.preferredWidth: 34
                                         text: Math.round(modelData.precipitation_probability) + "%"
                                         horizontalAlignment: Text.AlignRight
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyMono
+                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
                                     }
                                 }
 
@@ -1065,7 +1135,7 @@ Item {
                                     anchors.right: parent.right
                                     anchors.bottom: parent.bottom
                                     height: 1
-                                    color: Nexa.Theme.divider
+                                    color: NexaUI.NexaColors.border
                                 }
                             }
                         }
@@ -1078,9 +1148,9 @@ Item {
                         text: root.errorText
                         wrapMode: Text.Wrap
                         width: parent.width
-                        color: Nexa.Theme.error
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeXs
+                        color: NexaUI.NexaColors.error
+                        font.family: NexaUI.NexaTypography.familyBody
+                        font.pixelSize: NexaUI.NexaTypography.sizeXs
                     }
                 }
             }
@@ -1109,32 +1179,53 @@ Item {
 
         z: 1000
 
-        width: 250
+        width: 260
         x: 12
         y: locationButton ? Math.max(8, locationButton.mapToItem(root, 0, 0).y + locationButton.height + 6) : 90
-        implicitHeight: locationLayout.implicitHeight + Nexa.Theme.spacingMd * 2
+        implicitHeight: locationLayout.implicitHeight + NexaUI.NexaTokens.spacingMd * 2
         height: Math.min(root.height - y - 10, implicitHeight)
 
         radius:
-            Nexa.Theme.radiusMd
+            NexaUI.NexaTokens.radiusMd
 
         color:
-            Nexa.Theme.surfaceContainerHigh
+            NexaUI.NexaColors.surfaceContainerHigh
 
         border.width:
-            Nexa.Theme.borderThin
+            NexaUI.NexaTokens.borderThin
 
         border.color:
-            Nexa.Theme.borderStrong
+            NexaUI.NexaColors.border
 
-        // Subtle depth highlight
+        // Apple Tactile 4-stop Depth Micro-Gradient
         Rectangle {
             anchors.fill: parent
-            anchors.margins: parent.border.width
-            radius: Math.max(0, parent.radius - parent.border.width)
+            radius: parent.radius
+            antialiasing: true
+            visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+            opacity: NexaUI.NexaOptics.gradientIntensity
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlight }
-                GradientStop { position: 0.5; color: "transparent" }
+                GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.045) }
+                GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.010) }
+                GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.120) }
+            }
+        }
+
+        // Top Chamfer Specular Highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: Math.max(0, parent.width - parent.radius * 1.6)
+            height: 1
+            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.30) }
+                GradientStop { position: 1.0; color: "transparent" }
             }
         }
 
@@ -1143,9 +1234,8 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: Nexa.Theme.spacingMd
-            spacing: Nexa.Theme.spacingSm
-
+            anchors.margins: NexaUI.NexaTokens.spacingMd
+            spacing: NexaUI.NexaTokens.spacingSm
 
             RowLayout {
                 Layout.fillWidth: true
@@ -1153,24 +1243,24 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     text: "Location"
-                    color: Nexa.Theme.text
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeSm
-                    font.weight: Nexa.Theme.fontWeightMedium
+                    color: NexaUI.NexaColors.text
+                    font.family: NexaUI.NexaTypography.familyBody
+                    font.pixelSize: NexaUI.NexaTypography.sizeSm
+                    font.weight: NexaUI.NexaTypography.weightSemiBold
                 }
 
                 Rectangle {
                     implicitWidth: 24
                     implicitHeight: 24
-                    radius: Nexa.Theme.radiusSm
-                    color: closeLocationMouse.containsMouse ? Nexa.Theme.hover : "transparent"
+                    radius: NexaUI.NexaTokens.radiusPill
+                    color: closeLocationMouse.containsMouse ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.08) : "transparent"
 
                     Text {
                         anchors.centerIn: parent
                         text: "󰅖"
-                        color: closeLocationMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
-                        font.family: Nexa.Theme.iconFontFamily
-                        font.pixelSize: Nexa.Theme.iconSm
+                        color: closeLocationMouse.containsMouse ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText
+                        font.family: NexaUI.NexaTypography.familyIcon
+                        font.pixelSize: 13
                     }
 
                     MouseArea {
@@ -1183,7 +1273,6 @@ Item {
                 }
             }
 
-
             // --------------------------------------------------------
             // AUTO
             // --------------------------------------------------------
@@ -1193,34 +1282,38 @@ Item {
                 Layout.preferredHeight: 30
 
                 radius:
-                    Nexa.Theme.radiusSm
+                    NexaUI.NexaTokens.radiusSm
 
                 color:
                     autoMouse.containsMouse
-                    ? Nexa.Theme.hover
-                    : Nexa.Theme.surface
+                    ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.08)
+                    : NexaUI.NexaColors.surfaceContainer
 
+                border.width:
+                    NexaUI.NexaTokens.borderThin
+
+                border.color:
+                    NexaUI.NexaColors.border
 
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: 8
                     anchors.rightMargin: 8
-
                     spacing: 7
-
 
                     Text {
                         text: "󰑐"
-                        color: Nexa.Theme.primary
-                        font.family: Nexa.Theme.iconFontFamily
+                        color: NexaUI.NexaColors.primary
+                        font.family: NexaUI.NexaTypography.familyIcon
                     }
 
                     Text {
                         Layout.fillWidth: true
                         text: "Automatic location"
-                        color: Nexa.Theme.text
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeXs
+                        color: NexaUI.NexaColors.text
+                        font.family: NexaUI.NexaTypography.familyBody
+                        font.pixelSize: NexaUI.NexaTypography.sizeXs
+                        font.weight: NexaUI.NexaTypography.weightMedium
                     }
                 }
 
@@ -1240,13 +1333,13 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 32
-                radius: Nexa.Theme.radiusSm
-                color: Nexa.Theme.surface
+                radius: NexaUI.NexaTokens.radiusSm
+                color: NexaUI.NexaColors.surfaceContainer
 
-                border.width: Nexa.Theme.borderThin
+                border.width: NexaUI.NexaTokens.borderThin
                 border.color: cityInput.activeFocus
-                    ? Nexa.Theme.primary
-                    : Nexa.Theme.border
+                    ? NexaUI.NexaColors.primary
+                    : NexaUI.NexaColors.border
 
                 RowLayout {
                     anchors.fill: parent
@@ -1256,18 +1349,19 @@ Item {
 
                     Text {
                         text: "󰍉"
-                        color: Nexa.Theme.mutedText
-                        font.family: Nexa.Theme.iconFontFamily
+                        color: NexaUI.NexaColors.mutedText
+                        font.family: NexaUI.NexaTypography.familyIcon
                     }
 
                     TextInput {
                         id: cityInput
                         Layout.fillWidth: true
                         text: root.locationQuery
-                        color: Nexa.Theme.text
-                        selectionColor: Nexa.Theme.primary
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeXs
+                        color: NexaUI.NexaColors.text
+                        selectionColor: NexaUI.NexaColors.primary
+                        font.family: NexaUI.NexaTypography.familyBody
+                        font.pixelSize: NexaUI.NexaTypography.sizeXs
+                        font.weight: NexaUI.NexaTypography.weightMedium
                         clip: true
 
                         onTextChanged: {
@@ -1281,8 +1375,8 @@ Item {
 
                     Text {
                         text: "󰄬"
-                        color: Nexa.Theme.primary
-                        font.family: Nexa.Theme.iconFontFamily
+                        color: NexaUI.NexaColors.primary
+                        font.family: NexaUI.NexaTypography.familyIcon
 
                         MouseArea {
                             anchors.fill: parent
@@ -1292,7 +1386,6 @@ Item {
                         }
                     }
                 }
-
 
                 Text {
                     visible:
@@ -1311,16 +1404,15 @@ Item {
                         "Enter city..."
 
                     color:
-                        Nexa.Theme.mutedText
+                        NexaUI.NexaColors.mutedText
 
                     font.family:
-                        Nexa.Theme.fontFamily
+                        NexaUI.NexaTypography.familyBody
 
                     font.pixelSize:
-                        Nexa.Theme.fontSizeXs
+                        NexaUI.NexaTypography.sizeXs
                 }
             }
-
 
             ListView {
                 id: locationResultsList
@@ -1333,11 +1425,8 @@ Item {
                     root.locationResults.length > 0
 
                 clip: true
-
                 spacing: 3
-
-                model:
-                    root.locationResults
+                model: root.locationResults
 
                 ScrollBar.vertical: ScrollBar {
                     id: resultsScrollBar
@@ -1349,15 +1438,15 @@ Item {
 
                     contentItem: Rectangle {
                         implicitWidth: 3
-                        radius: Nexa.Theme.radiusPill
-                        color: resultsScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                        opacity: (resultsScrollBar.active || resultsScrollBar.hovered) ? 0.6 : 0.0
+                        radius: NexaUI.NexaTokens.radiusPill
+                        color: resultsScrollBar.hovered ? NexaUI.NexaColors.primary : NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.38)
+                        opacity: (resultsScrollBar.active || resultsScrollBar.hovered) ? 0.8 : 0.0
 
                         Behavior on opacity {
-                            NumberAnimation { duration: Nexa.Theme.animationNormal }
+                            NumberAnimation { duration: NexaUI.NexaMotion.durationNormal }
                         }
                         Behavior on color {
-                            ColorAnimation { duration: Nexa.Theme.animationFast }
+                            ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                         }
                     }
 
@@ -1371,221 +1460,125 @@ Item {
                         locationResultsList.width - (locationResultsList.contentHeight > locationResultsList.height ? 8 : 0)
 
                     Behavior on width {
-                        NumberAnimation { duration: Nexa.Theme.animationFast }
+                        NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
                     }
 
                     height: 42
-
-                    radius:
-                        Nexa.Theme.radiusSm
-
+                    radius: NexaUI.NexaTokens.radiusSm
                     color:
                         resultMouse.containsMouse
-                        ? Nexa.Theme.hover
+                        ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.14)
                         : "transparent"
-
 
                     Column {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-
                         anchors.leftMargin: 8
                         anchors.rightMargin: 8
-
                         spacing: 1
 
-
                         Text {
-                            text:
-                                modelData.name
-
-                            color:
-                                Nexa.Theme.text
-
-                            font.family:
-                                Nexa.Theme.fontFamily
-
-                            font.pixelSize:
-                                Nexa.Theme.fontSizeXs
-
-                            font.weight:
-                                Nexa.Theme.fontWeightMedium
+                            text: modelData.name
+                            color: resultMouse.containsMouse ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeXs
+                            font.weight: NexaUI.NexaTypography.weightSemiBold
                         }
-
 
                         Text {
                             width: parent.width
-
                             text: {
                                 let parts = []
-
-                                if (modelData.admin1)
-                                    parts.push(modelData.admin1)
-
-                                if (modelData.country)
-                                    parts.push(modelData.country)
-
+                                if (modelData.admin1) parts.push(modelData.admin1)
+                                if (modelData.country) parts.push(modelData.country)
                                 return parts.join(", ")
                             }
-
-                            color:
-                                Nexa.Theme.mutedText
-
-                            font.family:
-                                Nexa.Theme.fontFamily
-
-                            font.pixelSize:
-                                10
-
-                            elide:
-                                Text.ElideRight
+                            color: NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: 10
+                            elide: Text.ElideRight
                         }
                     }
 
-
                     MouseArea {
                         id: resultMouse
-
                         anchors.fill: parent
                         hoverEnabled: true
-
-                        cursorShape:
-                            Qt.PointingHandCursor
-
+                        cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            root.setManualLocation(
-                                modelData.name
-                            )
+                            root.setManualLocation(modelData.name)
                         }
                     }
                 }
             }
 
-
             Text {
                 Layout.fillWidth: true
-
-                visible:
-                    root.locationStatus !== ""
-
-                text:
-                    root.locationStatus
-
-                color:
-                    Nexa.Theme.mutedText
-
-                font.family:
-                    Nexa.Theme.fontFamily
-
-                font.pixelSize:
-                    Nexa.Theme.fontSizeXs
-
-                elide:
-                    Text.ElideRight
+                visible: root.locationStatus !== ""
+                text: root.locationStatus
+                color: NexaUI.NexaColors.mutedText
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                elide: Text.ElideRight
             }
         }
     }
-
 
     // ============================================================
     // DETAIL ROW
     // ============================================================
 
     component WeatherDetailRow: Item {
-
         property string icon: ""
         property string label: ""
         property string value: ""
-
         property bool separatorVisible: true
-
 
         Layout.fillWidth: true
         Layout.preferredHeight: 30
         Layout.minimumHeight: 30
         Layout.maximumHeight: 30
 
-
         RowLayout {
             anchors.fill: parent
-
-            spacing:
-                Nexa.Theme.spacingSm
-
+            spacing: NexaUI.NexaTokens.spacingSm
 
             Text {
-                Layout.preferredWidth:
-                    Nexa.Theme.iconLg
-
-                text:
-                    parent.parent.icon
-
-                color:
-                    Nexa.Theme.primary
-
-                font.family:
-                    Nexa.Theme.iconFontFamily
-
-                font.pixelSize:
-                    Nexa.Theme.iconSm
-
-                horizontalAlignment:
-                    Text.AlignHCenter
+                Layout.preferredWidth: 22
+                text: parent.parent.icon
+                color: NexaUI.NexaColors.primary
+                font.family: NexaUI.NexaTypography.familyIcon
+                font.pixelSize: NexaUI.NexaTypography.sizeSm
+                horizontalAlignment: Text.AlignHCenter
             }
-
 
             Text {
                 Layout.fillWidth: true
-
-                text:
-                    parent.parent.label
-
-                color:
-                    Nexa.Theme.mutedText
-
-                font.family:
-                    Nexa.Theme.fontFamily
-
-                font.pixelSize:
-                    Nexa.Theme.fontSizeXs
+                text: parent.parent.label
+                color: NexaUI.NexaColors.mutedText
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: NexaUI.NexaTypography.sizeXs
             }
 
-
             Text {
-                text:
-                    parent.parent.value
-
-                color:
-                    Nexa.Theme.text
-
-                font.family:
-                    Nexa.Theme.fontFamily
-
-                font.pixelSize:
-                    Nexa.Theme.fontSizeXs
-
-                font.weight:
-                    Nexa.Theme.fontWeightMedium
+                text: parent.parent.value
+                color: NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyMono
+                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                font.weight: NexaUI.NexaTypography.weightSemiBold
             }
         }
 
-
         Rectangle {
-            visible:
-                parent.separatorVisible
-
+            visible: parent.separatorVisible
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-
             height: 1
-
-            color:
-                Nexa.Theme.divider
+            color: NexaUI.NexaColors.border
         }
     }
-
 
     // ============================================================
     // FORECAST BUTTON
@@ -1594,42 +1587,28 @@ Item {
     component ForecastButton: Rectangle {
         property string text: ""
         property bool selected: false
-
         signal clicked()
 
-        radius: Nexa.Theme.radiusSm
-
-        color:
-            selected
-            ? Nexa.Theme.primary
-            : buttonMouse.containsMouse
-                ? Nexa.Theme.hover
-                : "transparent"
+        radius: NexaUI.NexaTokens.radiusPill
+        color: selected
+            ? NexaUI.NexaColors.primary
+            : (buttonMouse.containsMouse ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.08) : "transparent")
 
         Text {
             anchors.centerIn: parent
-
             text: parent.text
-
-            color:
-                parent.selected
-                ? Nexa.Theme.onPrimary
-                : Nexa.Theme.mutedText
-
-            font.family: Nexa.Theme.fontFamily
-            font.pixelSize: Nexa.Theme.fontSizeXs
-            font.weight: Nexa.Theme.fontWeightMedium
+            color: parent.selected ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.mutedText
+            font.family: NexaUI.NexaTypography.familyBody
+            font.pixelSize: NexaUI.NexaTypography.sizeXs
+            font.weight: NexaUI.NexaTypography.weightSemiBold
         }
 
         MouseArea {
             id: buttonMouse
-
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-
-            onClicked:
-                parent.clicked()
+            onClicked: parent.clicked()
         }
     }
 }

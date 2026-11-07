@@ -109,11 +109,11 @@ fn random_index(max: usize) -> usize {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_nanos();
-    let mut x = nanos ^ 0x517cc1b727220a95;
-    x ^= x << 13;
-    x ^= x >> 7;
-    x ^= x << 17;
-    (x as usize) % max
+    let mut z = (nanos as u64).wrapping_add(0x9e3779b97f4a7c15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xbf58476d1ce4e5b9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94d049bb133111eb);
+    z = z ^ (z >> 31);
+    (z as usize) % max
 }
 
 fn classify_type(path: &Path) -> Option<&'static str> {
@@ -163,20 +163,23 @@ pub fn next() -> Result<String, String> {
         let path = entry.path();
         if path.is_file() {
             if let Some(kind) = classify_type(&path) {
-                if cfg.type_filter == "All" || cfg.type_filter.eq_ignore_ascii_case(kind) {
+                if cfg.type_filter.is_empty()
+                    || cfg.type_filter.eq_ignore_ascii_case("all")
+                    || cfg.type_filter.eq_ignore_ascii_case(kind)
+                {
                     candidates.push(path);
                 }
             }
         }
     }
 
-    if candidates.len() < 2 {
+    candidates.sort();
+
+    if candidates.is_empty() {
         notify_empty_folder();
-        if candidates.is_empty() {
-            return Err(
-                "No matching wallpapers found in ~/Pictures/Wallpapers/Slideshow".to_string(),
-            );
-        }
+        return Err(
+            "No matching wallpapers found in ~/Pictures/Wallpapers/Slideshow".to_string(),
+        );
     }
 
     let last_wall = get_last_wallpaper();
@@ -208,13 +211,14 @@ pub fn next() -> Result<String, String> {
     updated_cfg.last_changed = now;
     let _ = save_config(&updated_cfg);
 
-    let target = cfg.apply_target.as_str();
+    let target = &cfg.apply_target;
+    let t = target.trim().to_ascii_lowercase();
 
-    if target == "Background" || target == "Both" {
+    if t == "background" || t == "both" || t.is_empty() {
         let _ = super::apply::apply_desktop(&selected_str, None, false, false);
     }
 
-    if target == "Lock Screen" || target == "Both" {
+    if t == "lock screen" || t == "lock" || t == "lockscreen" || t == "both" {
         let _ = super::apply::set_lock(&selected_str);
     }
 
@@ -302,5 +306,115 @@ pub fn handle_set(args: &[String]) -> Result<(), String> {
     save_config(&cfg)?;
     print_status();
     Ok(())
+}
+
+pub fn pause() -> Result<(), String> {
+    let mut cfg = load_config();
+    cfg.paused = true;
+    save_config(&cfg)?;
+    print_status();
+    Ok(())
+}
+
+pub fn resume() -> Result<(), String> {
+    let mut cfg = load_config();
+    cfg.paused = false;
+    save_config(&cfg)?;
+    print_status();
+    Ok(())
+}
+
+pub fn toggle() -> Result<(), String> {
+    let mut cfg = load_config();
+    if cfg.enabled {
+        cfg.paused = !cfg.paused;
+    } else {
+        cfg.enabled = true;
+        cfg.paused = false;
+    }
+    save_config(&cfg)?;
+    print_status();
+    Ok(())
+}
+
+pub fn set_current(path: &str) -> Result<(), String> {
+    let mut cfg = load_config();
+    set_last_wallpaper(path);
+    cfg.last_wallpaper = path.to_string();
+    cfg.last_changed = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    save_config(&cfg)?;
+    Ok(())
+}
+
+pub fn prev() -> Result<String, String> {
+    let cfg = load_config();
+    if !cfg.last_wallpaper.is_empty() {
+        super::apply::apply_target(&cfg.last_wallpaper, &cfg.apply_target, None)?;
+        return Ok(cfg.last_wallpaper);
+    }
+    next()
+}
+
+pub fn parse_interval_secs(interval: &str) -> u64 {
+    match interval {
+        "1m" => 60,
+        "5m" => 300,
+        "10m" => 600,
+        "15m" => 900,
+        "30m" => 1800,
+        "1h" => 3600,
+        _ => 600,
+    }
+}
+
+pub fn is_screen_locked() -> bool {
+    let flag1 = PathBuf::from("/tmp/nexa-locked");
+    let flag2 = PathBuf::from("/tmp/hyprlock-active");
+    if flag1.exists() || flag2.exists() {
+        return true;
+    }
+    if let Ok(output) = Command::new("pgrep").arg("-x").arg("hyprlock").output() {
+        if output.status.success() {
+            return true;
+        }
+    }
+    false
+}
+
+pub fn run_daemon() -> ! {
+    eprintln!("[NEXA Slideshow Daemon] Started background scheduler");
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(5));
+
+        let cfg = load_config();
+        if !cfg.enabled || cfg.paused {
+            continue;
+        }
+
+        if is_screen_locked() {
+            continue;
+        }
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+
+        let interval_secs = parse_interval_secs(&cfg.interval);
+        let elapsed = now.saturating_sub(cfg.last_changed);
+
+        if elapsed >= interval_secs {
+            eprintln!(
+                "[NEXA Slideshow Daemon] Interval elapsed ({}s >= {}s), triggering next wallpaper",
+                elapsed, interval_secs
+            );
+            if let Err(e) = next() {
+                eprintln!("[NEXA Slideshow Daemon] Error changing wallpaper: {e}");
+            }
+        }
+    }
 }
 

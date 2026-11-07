@@ -92,6 +92,40 @@ fn main() {
                         wallpaper::print_list(dir);
                     }
                 }
+                "layout" => {
+                    let mut width = 1920.0f32;
+                    let mut height = 1080.0f32;
+                    let mut mode = "carousel";
+                    let mut i = 3;
+                    while i < args.len() {
+                        match args[i].as_str() {
+                            "--width" | "-w" if i + 1 < args.len() => {
+                                width = args[i + 1].parse().unwrap_or(1920.0);
+                                i += 1;
+                            }
+                            "--height" | "-h" if i + 1 < args.len() => {
+                                height = args[i + 1].parse().unwrap_or(1080.0);
+                                i += 1;
+                            }
+                            "--mode" | "-m" if i + 1 < args.len() => {
+                                mode = args[i + 1].as_str();
+                                i += 1;
+                            }
+                            _ => {}
+                        }
+                        i += 1;
+                    }
+                    wallpaper::print_layout_json(width, height, mode);
+                }
+                "preview" => {
+                    if args.len() < 4 {
+                        eprintln!("Missing wallpaper path");
+                        return;
+                    }
+                    let p = std::path::Path::new(&args[3]);
+                    let thumb = wallpaper::preview::PreviewEngine::get_or_render_thumbnail(p);
+                    println!("{}", thumb.display());
+                }
                 "restore" => {
                     if let Err(e) = wallpaper::restore_desktop() {
                         eprintln!("{e}");
@@ -200,9 +234,32 @@ fn main() {
                         return;
                     }
                     match args[3].as_str() {
+                        "daemon" | "watch" => {
+                            slideshow::run_daemon();
+                        }
                         "status" => slideshow::print_status(),
+                        "toggle" => {
+                            if let Err(e) = slideshow::toggle() {
+                                eprintln!("{e}");
+                            }
+                        }
+                        "pause" => {
+                            if let Err(e) = slideshow::pause() {
+                                eprintln!("{e}");
+                            }
+                        }
+                        "resume" => {
+                            if let Err(e) = slideshow::resume() {
+                                eprintln!("{e}");
+                            }
+                        }
                         "next" => {
                             if let Err(e) = slideshow::next() {
+                                eprintln!("{e}");
+                            }
+                        }
+                        "prev" => {
+                            if let Err(e) = slideshow::prev() {
                                 eprintln!("{e}");
                             }
                         }

@@ -153,6 +153,7 @@ Singleton {
         const cleanId = themeId.trim();
         Quickshell.execDetached([
             "env",
+            "QML_XHR_ALLOW_FILE_READ=1",
             "QS_THEME=" + cleanId,
             "QS_TESTING=1",
             "quickshell",

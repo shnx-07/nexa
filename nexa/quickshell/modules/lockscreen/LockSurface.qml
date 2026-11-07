@@ -8,8 +8,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
 
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 import "../../services" as Services
 
 
@@ -581,9 +580,9 @@ Item {
 
         color:
             Qt.rgba(
-                Nexa.Theme.background.r,
-                Nexa.Theme.background.g,
-                Nexa.Theme.background.b,
+                NexaUI.NexaColors.background.r,
+                NexaUI.NexaColors.background.g,
+                NexaUI.NexaColors.background.b,
                 root.loginVisible
                 ? 0.42
                 : 0.25
@@ -623,9 +622,9 @@ Item {
             implicitWidth: dateRow.implicitWidth + 24
             implicitHeight: 32
             radius: 16
-            color: Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.65)
+            color: Qt.rgba(NexaUI.NexaColors.surfaceContainer.r, NexaUI.NexaColors.surfaceContainer.g, NexaUI.NexaColors.surfaceContainer.b, 0.65)
             border.width: 1
-            border.color: Nexa.Theme.borderSubtle
+            border.color: NexaUI.NexaColors.borderSubtle
 
             Row {
                 id: dateRow
@@ -634,17 +633,17 @@ Item {
 
                 Rectangle {
                     width: 6; height: 6; radius: 3
-                    color: Nexa.Theme.primary
+                    color: NexaUI.NexaColors.primary
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: Qt.formatDateTime(new Date(), "dddd, d MMMM")
-                    color: Nexa.Theme.text
-                    font.family: Nexa.Theme.fontFamily
+                    color: NexaUI.NexaColors.text
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 12
-                    font.weight: Nexa.Theme.fontWeightMedium
+                    font.weight: Font.Medium
                 }
             }
         }
@@ -656,9 +655,9 @@ Item {
             implicitWidth: telemetryRow.implicitWidth + 24
             implicitHeight: 32
             radius: 16
-            color: Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.65)
+            color: Qt.rgba(NexaUI.NexaColors.surfaceContainer.r, NexaUI.NexaColors.surfaceContainer.g, NexaUI.NexaColors.surfaceContainer.b, 0.65)
             border.width: 1
-            border.color: Nexa.Theme.borderSubtle
+            border.color: NexaUI.NexaColors.borderSubtle
 
             Row {
                 id: telemetryRow
@@ -673,23 +672,23 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.isCharging ? "󰂄" : (root.batteryPct > 20 ? "󰁹" : "󰂃")
-                        color: root.isCharging ? Nexa.Theme.success : (root.batteryPct <= 20 ? Nexa.Theme.error : Nexa.Theme.text)
-                        font.family: Nexa.Theme.iconFontFamily
+                        color: root.isCharging ? NexaUI.NexaColors.success : (root.batteryPct <= 20 ? NexaUI.NexaColors.error : NexaUI.NexaColors.text)
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 15
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.batteryPct + "%"
-                        color: Nexa.Theme.text
-                        font.family: Nexa.Theme.monoFontFamily
+                        color: NexaUI.NexaColors.text
+                        font.family: NexaUI.NexaTypography.familyMono
                         font.pixelSize: 12
                     }
                 }
 
                 Rectangle {
                     width: 1; height: 12
-                    color: Nexa.Theme.borderSubtle
+                    color: NexaUI.NexaColors.borderSubtle
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
@@ -701,18 +700,18 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "󰣇"
-                        color: Nexa.Theme.primary
-                        font.family: Nexa.Theme.iconFontFamily
+                        color: NexaUI.NexaColors.primary
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 14
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "cachyos"
-                        color: Nexa.Theme.mutedText
-                        font.family: Nexa.Theme.fontFamily
+                        color: NexaUI.NexaColors.mutedText
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 12
-                        font.weight: Nexa.Theme.fontWeightMedium
+                        font.weight: Font.Medium
                     }
                 }
             }
@@ -762,12 +761,12 @@ Item {
                 )
 
             color:
-                Nexa.Theme.text
+                NexaUI.NexaColors.text
 
 
             font {
                 family:
-                    Nexa.Theme.fontFamily
+                    NexaUI.NexaTypography.familyBody
 
                 pixelSize:
                     root.loginVisible
@@ -775,7 +774,7 @@ Item {
                     : 78
 
                 weight:
-                    Nexa.Theme.fontWeightDemiBold
+                    Font.DemiBold
             }
 
 
@@ -801,18 +800,18 @@ Item {
                 )
 
             color:
-                Nexa.Theme.mutedText
+                NexaUI.NexaColors.mutedText
 
 
             font {
                 family:
-                    Nexa.Theme.fontFamily
+                    NexaUI.NexaTypography.familyBody
 
                 pixelSize:
-                    Nexa.Theme.fontSizeMd
+                    NexaUI.NexaTypography.sizeMd
 
                 weight:
-                    Nexa.Theme.fontWeightMedium
+                    Font.Medium
             }
         }
     }
@@ -898,8 +897,8 @@ Item {
                 color: "transparent"
                 border.width: passwordInput.activeFocus ? 2 : 1
                 border.color: passwordInput.activeFocus
-                    ? Nexa.Theme.primary
-                    : Nexa.Theme.borderSubtle
+                    ? NexaUI.NexaColors.primary
+                    : NexaUI.NexaColors.borderSubtle
 
                 Behavior on border.color {
                     ColorAnimation { duration: 250 }
@@ -933,7 +932,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: width / 2
-                    color: Nexa.Theme.surfaceContainerLowest
+                    color: NexaUI.NexaColors.surfaceContainerLowest
                 }
 
                 Image {
@@ -951,17 +950,17 @@ Item {
                     anchors.fill: parent
                     visible: !avatarImg.visible
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: Nexa.Theme.primary }
-                        GradientStop { position: 1.0; color: Nexa.Theme.tertiary }
+                        GradientStop { position: 0.0; color: NexaUI.NexaColors.primary }
+                        GradientStop { position: 1.0; color: NexaUI.NexaColors.tertiary }
                     }
 
                     Text {
                         anchors.centerIn: parent
                         text: root.username.length > 0 ? root.username.charAt(0).toUpperCase() : "N"
-                        color: Nexa.Theme.onPrimary
-                        font.family: Nexa.Theme.fontFamily
+                        color: NexaUI.NexaColors.onPrimary
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 36
-                        font.weight: Nexa.Theme.fontWeightBold
+                        font.weight: Font.Bold
                     }
                 }
             }
@@ -980,17 +979,17 @@ Item {
                 root.username
 
             color:
-                Nexa.Theme.text
+                NexaUI.NexaColors.text
 
 
             font {
                 family:
-                    Nexa.Theme.fontFamily
+                    NexaUI.NexaTypography.familyBody
 
                 pixelSize: 18
 
                 weight:
-                    Nexa.Theme.fontWeightMedium
+                    Font.Medium
             }
         }
 
@@ -1007,18 +1006,18 @@ Item {
             radius: 25
 
             color: Qt.rgba(
-                Nexa.Theme.surface.r,
-                Nexa.Theme.surface.g,
-                Nexa.Theme.surface.b,
+                NexaUI.NexaColors.surface.r,
+                NexaUI.NexaColors.surface.g,
+                NexaUI.NexaColors.surface.b,
                 passwordInput.activeFocus ? 0.90 : 0.70
             )
 
             border.width: 1
             border.color: root.authFailed
-                ? Nexa.Theme.error
+                ? NexaUI.NexaColors.error
                 : passwordInput.activeFocus
-                    ? Nexa.Theme.primary
-                    : Nexa.Theme.borderSubtle
+                    ? NexaUI.NexaColors.primary
+                    : NexaUI.NexaColors.borderSubtle
 
             Behavior on color {
                 ColorAnimation { duration: 150 }
@@ -1039,8 +1038,8 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "󰌾"
-                    color: passwordInput.activeFocus ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.iconFontFamily
+                    color: passwordInput.activeFocus ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                    font.family: NexaUI.NexaTypography.familyIcon
                     font.pixelSize: 16
 
                     Behavior on color {
@@ -1061,13 +1060,13 @@ Item {
                         TextInput.AlignVCenter
 
                     color:
-                        Nexa.Theme.text
+                        NexaUI.NexaColors.text
 
                     selectionColor:
-                        Nexa.Theme.primary
+                        NexaUI.NexaColors.primary
 
                     selectedTextColor:
-                        Nexa.Theme.background
+                        NexaUI.NexaColors.background
 
                     echoMode:
                         TextInput.Password
@@ -1080,7 +1079,7 @@ Item {
 
                     font {
                         family:
-                            Nexa.Theme.fontFamily
+                            NexaUI.NexaTypography.familyBody
 
                         pixelSize: 16
                     }
@@ -1105,12 +1104,12 @@ Item {
                             : "Password"
 
                         color:
-                            Nexa.Theme.mutedText
+                            NexaUI.NexaColors.mutedText
 
 
                         font {
                             family:
-                                Nexa.Theme.fontFamily
+                                NexaUI.NexaTypography.familyBody
 
                             pixelSize: 14
                         }
@@ -1173,23 +1172,23 @@ Item {
 
             color:
                 root.authFailed
-                ? Nexa.Theme.error
+                ? NexaUI.NexaColors.error
                 : root.authenticated
-                    ? Nexa.Theme.primary
-                    : Nexa.Theme.mutedText
+                    ? NexaUI.NexaColors.primary
+                    : NexaUI.NexaColors.mutedText
 
 
             font {
                 family:
-                    Nexa.Theme.fontFamily
+                    NexaUI.NexaTypography.familyBody
 
                 pixelSize: 12
 
                 weight:
                     root.authFailed
                     || root.authenticated
-                    ? Nexa.Theme.fontWeightMedium
-                    : Nexa.Theme.fontWeightRegular
+                    ? Font.Medium
+                    : Font.Normal
             }
         }
     }
@@ -1264,9 +1263,9 @@ Item {
         width: 270
         height: 52
         radius: 16
-        color: Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.75)
+        color: Qt.rgba(NexaUI.NexaColors.surfaceContainer.r, NexaUI.NexaColors.surfaceContainer.g, NexaUI.NexaColors.surfaceContainer.b, 0.75)
         border.width: 1
-        border.color: Nexa.Theme.borderSubtle
+        border.color: NexaUI.NexaColors.borderSubtle
         visible: root.hasLockMedia
         z: 25
 
@@ -1280,7 +1279,7 @@ Item {
                 Layout.preferredWidth: 38
                 Layout.preferredHeight: 38
                 radius: 10
-                color: Nexa.Theme.surfaceContainerHighest
+                color: NexaUI.NexaColors.surfaceContainerHighest
                 clip: true
 
                 Image {
@@ -1294,8 +1293,8 @@ Item {
                     anchors.centerIn: parent
                     visible: !root.lockPlayer || root.lockPlayer.trackArtUrl === ""
                     text: "󰎆"
-                    color: Nexa.Theme.primary
-                    font.family: Nexa.Theme.iconFontFamily
+                    color: NexaUI.NexaColors.primary
+                    font.family: NexaUI.NexaTypography.familyIcon
                     font.pixelSize: 18
                 }
             }
@@ -1308,18 +1307,18 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     text: root.lockPlayer ? root.lockPlayer.trackTitle : ""
-                    color: Nexa.Theme.text
-                    font.family: Nexa.Theme.fontFamily
+                    color: NexaUI.NexaColors.text
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 12
-                    font.weight: Nexa.Theme.fontWeightBold
+                    font.weight: Font.Bold
                     elide: Text.ElideRight
                 }
 
                 Text {
                     Layout.fillWidth: true
                     text: root.lockPlayer ? root.lockPlayer.trackArtist : ""
-                    color: Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.fontFamily
+                    color: NexaUI.NexaColors.mutedText
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 11
                     elide: Text.ElideRight
                 }
@@ -1330,13 +1329,13 @@ Item {
                 Layout.preferredWidth: 34
                 Layout.preferredHeight: 34
                 radius: 17
-                color: mediaBtnMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.hover
+                color: mediaBtnMouse.containsMouse ? NexaUI.NexaColors.hoverStrong : NexaUI.NexaColors.hover
 
                 Text {
                     anchors.centerIn: parent
                     text: (root.lockPlayer && root.lockPlayer.playbackState === MprisPlaybackState.Playing) ? "󰏤" : "󰐊"
-                    color: Nexa.Theme.text
-                    font.family: Nexa.Theme.iconFontFamily
+                    color: NexaUI.NexaColors.text
+                    font.family: NexaUI.NexaTypography.familyIcon
                     font.pixelSize: 16
                 }
 
@@ -1372,17 +1371,17 @@ Item {
             width: 38
             height: 38
             radius: 19
-            color: sleepMouse.containsMouse ? Nexa.Theme.hoverStrong : Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.65)
+            color: sleepMouse.containsMouse ? NexaUI.NexaColors.hoverStrong : Qt.rgba(NexaUI.NexaColors.surfaceContainer.r, NexaUI.NexaColors.surfaceContainer.g, NexaUI.NexaColors.surfaceContainer.b, 0.65)
             border.width: 1
-            border.color: Nexa.Theme.borderSubtle
+            border.color: NexaUI.NexaColors.borderSubtle
             scale: sleepMouse.pressed ? 0.92 : 1.0
             Behavior on scale { NumberAnimation { duration: 100 } }
 
             Text {
                 anchors.centerIn: parent
                 text: "󰤄"
-                color: Nexa.Theme.text
-                font.family: Nexa.Theme.iconFontFamily
+                color: NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyIcon
                 font.pixelSize: 16
             }
 
@@ -1400,17 +1399,17 @@ Item {
             width: 38
             height: 38
             radius: 19
-            color: rebootMouse.containsMouse ? Nexa.Theme.hoverStrong : Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.65)
+            color: rebootMouse.containsMouse ? NexaUI.NexaColors.hoverStrong : Qt.rgba(NexaUI.NexaColors.surfaceContainer.r, NexaUI.NexaColors.surfaceContainer.g, NexaUI.NexaColors.surfaceContainer.b, 0.65)
             border.width: 1
-            border.color: Nexa.Theme.borderSubtle
+            border.color: NexaUI.NexaColors.borderSubtle
             scale: rebootMouse.pressed ? 0.92 : 1.0
             Behavior on scale { NumberAnimation { duration: 100 } }
 
             Text {
                 anchors.centerIn: parent
                 text: "󰜉"
-                color: Nexa.Theme.text
-                font.family: Nexa.Theme.iconFontFamily
+                color: NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyIcon
                 font.pixelSize: 16
             }
 
@@ -1428,17 +1427,17 @@ Item {
             width: 38
             height: 38
             radius: 19
-            color: powerMouse.containsMouse ? Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.25) : Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.65)
+            color: powerMouse.containsMouse ? Qt.rgba(NexaUI.NexaColors.error.r, NexaUI.NexaColors.error.g, NexaUI.NexaColors.error.b, 0.25) : Qt.rgba(NexaUI.NexaColors.surfaceContainer.r, NexaUI.NexaColors.surfaceContainer.g, NexaUI.NexaColors.surfaceContainer.b, 0.65)
             border.width: 1
-            border.color: powerMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.borderSubtle
+            border.color: powerMouse.containsMouse ? NexaUI.NexaColors.error : NexaUI.NexaColors.borderSubtle
             scale: powerMouse.pressed ? 0.92 : 1.0
             Behavior on scale { NumberAnimation { duration: 100 } }
 
             Text {
                 anchors.centerIn: parent
                 text: "󰐥"
-                color: powerMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.text
-                font.family: Nexa.Theme.iconFontFamily
+                color: powerMouse.containsMouse ? NexaUI.NexaColors.error : NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyIcon
                 font.pixelSize: 16
             }
 
@@ -1480,14 +1479,14 @@ Item {
 
         color:
             Qt.rgba(
-                Nexa.Theme.surfaceContainerLow.r,
-                Nexa.Theme.surfaceContainerLow.g,
-                Nexa.Theme.surfaceContainerLow.b,
+                NexaUI.NexaColors.surfaceContainerLow.r,
+                NexaUI.NexaColors.surfaceContainerLow.g,
+                NexaUI.NexaColors.surfaceContainerLow.b,
                 0.68
             )
 
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.borderSubtle
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.borderSubtle
 
         SequentialAnimation on opacity {
             loops: Animation.Infinite
@@ -1520,15 +1519,15 @@ Item {
                 : "Click or press any key to unlock"
 
             color:
-                Nexa.Theme.mutedText
+                NexaUI.NexaColors.mutedText
 
 
             font {
                 family:
-                    Nexa.Theme.fontFamily
+                    NexaUI.NexaTypography.familyBody
 
                 pixelSize: 12
-                weight: Nexa.Theme.fontWeightMedium
+                weight: Font.Medium
             }
         }
     }
@@ -1629,6 +1628,7 @@ Item {
             const now = new Date()
             clockText.text = Qt.formatDateTime(now, "hh:mm")
             dateText.text = Qt.formatDateTime(now, "dddd, d MMMM")
+            root.loadLockWallpaper()
         }
     }
 
@@ -1643,6 +1643,15 @@ Item {
 
         loadLockWallpaper()
         root.forceActiveFocus()
+    }
+
+    Connections {
+        target: Services.LockScreen
+        function onWallpaperLoadedChanged() {
+            if (Services.LockScreen.wallpaperLoaded) {
+                root.loadLockWallpaper()
+            }
+        }
     }
 
 

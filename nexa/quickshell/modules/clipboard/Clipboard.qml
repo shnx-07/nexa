@@ -5,8 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 
 PanelWindow {
@@ -124,10 +123,10 @@ PanelWindow {
 
     function getCategoryColor(category) {
         switch (category) {
-            case "image": return Nexa.Theme.tertiary
-            case "link":  return Nexa.Theme.secondary
-            case "code":  return Nexa.Theme.success
-            default:      return Nexa.Theme.primary
+            case "image": return NexaUI.NexaColors.tertiary
+            case "link":  return NexaUI.NexaColors.secondary
+            case "code":  return NexaUI.NexaColors.success
+            default:      return NexaUI.NexaColors.primary
         }
     }
 
@@ -595,7 +594,7 @@ PanelWindow {
 
     Timer {
         id: closeTimer
-        interval: Nexa.Theme.animationFast
+        interval: NexaUI.NexaMotion.durationFast
         repeat: false
         onTriggered: {
             root.windowAlive = false
@@ -617,19 +616,24 @@ PanelWindow {
     Item {
         anchors.fill: parent
 
-        opacity: root.clipboardOpen ? Nexa.Theme.opacityFull : Nexa.Theme.opacityHidden
+        opacity: root.clipboardOpen ? 1.0 : 0.0
         scale: root.clipboardOpen ? 1.0 : 0.97
 
         Behavior on opacity {
             NumberAnimation {
-                duration: root.clipboardOpen ? Nexa.Theme.animationNormal : Nexa.Theme.animationFast
-                easing.type: root.clipboardOpen ? Nexa.Theme.easingEnter : Nexa.Theme.easingExit
+                duration: root.clipboardOpen ? NexaUI.NexaMotion.durationNormal : NexaUI.NexaMotion.durationFast
+                easing.type: root.clipboardOpen ? NexaUI.NexaMotion.standardEasing : NexaUI.NexaMotion.exitEasing
             }
         }
 
         Behavior on scale {
-            enabled: !Nexa.Theme.reducedMotion
-            NexaUI.NexaSpring { section: "clipboard"; customStiffness: 6.5; customDamping: 0.22 }
+            enabled: NexaUI.NexaMotion.enabled
+            SpringAnimation {
+                spring: NexaUI.NexaMotion.useSpring("clipboard") ? NexaUI.NexaMotion.springStiffness : 8.0
+                damping: NexaUI.NexaMotion.useSpring("clipboard") ? NexaUI.NexaMotion.springDamping : 1.0
+                mass: NexaUI.NexaMotion.springMass
+                epsilon: 0.002
+            }
         }
 
         // Click outside closes clipboard
@@ -642,6 +646,14 @@ PanelWindow {
         // MAIN DIALOG PANEL
         // ========================================================
 
+        // Nexa Drop Shadow for floating depth
+        NexaUI.NexaShadow {
+            id: panelShadow
+            targetItem: panel
+            elevation: 2
+            spread: 0.10
+        }
+
         Rectangle {
             id: panel
 
@@ -649,10 +661,10 @@ PanelWindow {
             width: Math.min(root.panelWidth, parent.width - 40)
             height: Math.min(root.panelHeight, parent.height - 60)
 
-            radius: Nexa.Theme.nexaRounding
-            color: Nexa.Theme.panelBackground
-            border.width: Nexa.Theme.borderThin
-            border.color: Nexa.Theme.border
+            radius: NexaUI.NexaTokens.nexaRounding
+            color: NexaUI.NexaColors.surfaceContainer
+            border.width: NexaUI.NexaTokens.borderThin
+            border.color: NexaUI.NexaColors.border
 
             clip: true
 
@@ -666,16 +678,37 @@ PanelWindow {
                 anchors.fill: parent
             }
 
-            // Continuous-corner top glass highlight
+            // Tactile 4-stop OLED Depth Micro-Gradient
             Rectangle {
                 anchors.fill: parent
-                anchors.margins: parent.border.width
-                radius: Math.max(0, parent.radius - parent.border.width)
+                radius: parent.radius
+                antialiasing: parent.radius > 0
+                visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+                opacity: NexaUI.NexaOptics.gradientIntensity
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlightStrong }
-                    GradientStop { position: 0.25; color: "transparent" }
+                    GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.055) }
+                    GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.012) }
+                    GradientStop { position: 0.75; color: Qt.rgba(0, 0, 0, 0.000) }
+                    GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.120) }
                 }
+            }
+
+            // Top Chamfer Specular Highlight
+            Rectangle {
+                anchors.top: parent.top
+                anchors.topMargin: 1
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.radius > 0 ? Math.max(0, parent.width - parent.radius * 1.6) : parent.width
+                height: 1
+                visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+                opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
                 z: 10
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.30) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
             }
 
             ColumnLayout {
@@ -692,8 +725,8 @@ PanelWindow {
                     Layout.topMargin: root.outerPadding
                     Layout.leftMargin: root.outerPadding
                     Layout.rightMargin: root.outerPadding
-                    Layout.bottomMargin: Nexa.Theme.spacingSm
-                    spacing: Nexa.Theme.spacingLg
+                    Layout.bottomMargin: NexaUI.NexaTokens.spacingSm
+                    spacing: NexaUI.NexaTokens.spacingLg
 
                     // =============================================
                     // LEFT COLUMN (HEADER, SEARCH, TABS, LIST)
@@ -705,40 +738,40 @@ PanelWindow {
                         Layout.maximumWidth: root.leftWidth
                         Layout.fillWidth: false
                         Layout.fillHeight: true
-                        spacing: Nexa.Theme.spacingMd
+                        spacing: NexaUI.NexaTokens.spacingMd
 
                         // -----------------------------------------
                         // LEFT HEADER
                         // -----------------------------------------
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: Nexa.Theme.spacingSm
+                            spacing: NexaUI.NexaTokens.spacingSm
 
                             Text {
                                 text: "Clipboard"
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXl
-                                font.weight: Nexa.Theme.fontWeightBold
+                                color: NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyDisplay
+                                font.pixelSize: NexaUI.NexaTypography.sizeXl
+                                font.weight: NexaUI.NexaTypography.weightBold
                             }
 
                             // Clips count badge
                             Rectangle {
                                 implicitWidth: countText.implicitWidth + 12
                                 implicitHeight: 20
-                                radius: Nexa.Theme.radiusPill
-                                color: Nexa.Theme.surfaceContainerHigh
-                                border.width: Nexa.Theme.borderThin
-                                border.color: Nexa.Theme.borderSubtle
+                                radius: NexaUI.NexaTokens.radiusPill
+                                color: NexaUI.NexaColors.surfaceContainerHigh
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: NexaUI.NexaColors.borderSubtle
 
                                 Text {
                                     id: countText
                                     anchors.centerIn: parent
                                     text: root.entries.length + " clips"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeXs
-                                    font.weight: Nexa.Theme.fontWeightMedium
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                    font.weight: NexaUI.NexaTypography.weightMedium
                                 }
                             }
 
@@ -748,15 +781,15 @@ PanelWindow {
                             Rectangle {
                                 width: 32
                                 height: 32
-                                radius: Nexa.Theme.radiusSm
-                                color: refreshMouse.containsMouse ? Nexa.Theme.hoverStrong : "transparent"
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: refreshMouse.containsMouse ? NexaUI.NexaColors.hoverOverlay : "transparent"
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰑐"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
                                 }
 
                                 MouseArea {
@@ -772,18 +805,18 @@ PanelWindow {
                             Rectangle {
                                 width: 32
                                 height: 32
-                                radius: Nexa.Theme.radiusSm
-                                color: clearMouse.containsMouse ? Nexa.Theme.hoverStrong : "transparent"
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: clearMouse.containsMouse ? NexaUI.NexaColors.hoverOverlay : "transparent"
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰆴"
-                                    color: clearMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: clearMouse.containsMouse ? NexaUI.NexaColors.error : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
 
                                     Behavior on color {
-                                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                                        ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                                     }
                                 }
 
@@ -806,13 +839,13 @@ PanelWindow {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 40
-                            radius: Nexa.Theme.radiusMd
-                            color: searchInput.activeFocus ? Nexa.Theme.inputBackgroundFocus : Nexa.Theme.inputBackground
-                            border.width: searchInput.activeFocus ? Nexa.Theme.borderNormal : Nexa.Theme.borderThin
-                            border.color: searchInput.activeFocus ? Nexa.Theme.focusBorder : Nexa.Theme.borderSubtle
+                            radius: NexaUI.NexaTokens.radiusMd
+                            color: searchInput.activeFocus ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh
+                            border.width: searchInput.activeFocus ? NexaUI.NexaTokens.borderMedium : NexaUI.NexaTokens.borderThin
+                            border.color: searchInput.activeFocus ? NexaUI.NexaColors.primary : NexaUI.NexaColors.borderSubtle
 
                             Behavior on border.color {
-                                ColorAnimation { duration: Nexa.Theme.animationFast }
+                                ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                             }
 
                             RowLayout {
@@ -823,12 +856,12 @@ PanelWindow {
 
                                 Text {
                                     text: "󰍉"
-                                    color: searchInput.activeFocus ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: searchInput.activeFocus ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
 
                                     Behavior on color {
-                                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                                        ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                                     }
                                 }
 
@@ -841,20 +874,20 @@ PanelWindow {
                                         anchors.verticalCenter: parent.verticalCenter
                                         visible: searchInput.text.length === 0
                                         text: "Filter clipboard history..."
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeSm
                                     }
 
                                     TextInput {
                                         id: searchInput
                                         anchors.fill: parent
                                         verticalAlignment: TextInput.AlignVCenter
-                                        color: Nexa.Theme.text
-                                        selectionColor: Nexa.Theme.primary
-                                        selectedTextColor: Nexa.Theme.primaryText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
+                                        color: NexaUI.NexaColors.text
+                                        selectionColor: NexaUI.NexaColors.primary
+                                        selectedTextColor: NexaUI.NexaColors.onPrimary
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeSm
                                         clip: true
 
                                         onTextChanged: searchDebounce.restart()
@@ -924,14 +957,14 @@ PanelWindow {
                                     width: 20
                                     height: 20
                                     radius: 10
-                                    color: clearSearchMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
+                                    color: clearSearchMouse.containsMouse ? NexaUI.NexaColors.hoverOverlay : NexaUI.NexaColors.surfaceContainerHigh
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: "󰅖"
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: Nexa.Theme.icon2Xs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: NexaUI.NexaTypography.size2Xs
                                     }
 
                                     MouseArea {
@@ -971,21 +1004,21 @@ PanelWindow {
 
                                     implicitHeight: 28
                                     implicitWidth: pillRow.implicitWidth + 16
-                                    radius: Nexa.Theme.radiusPill
+                                    radius: NexaUI.NexaTokens.radiusPill
 
-                                    color: active ? Nexa.Theme.primarySurfaceStrong
-                                                  : hovered ? Nexa.Theme.hoverStrong
-                                                            : Nexa.Theme.surfaceContainerLow
+                                    color: active ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.18)
+                                                  : hovered ? NexaUI.NexaColors.surfaceContainerHigh
+                                                            : NexaUI.NexaColors.surfaceContainerLow
 
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: active ? Nexa.Theme.primary : Nexa.Theme.borderSubtle
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: active ? NexaUI.NexaColors.primary : NexaUI.NexaColors.borderSubtle
 
                                     Behavior on color {
-                                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                                        ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                                     }
 
                                     Behavior on border.color {
-                                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                                        ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                                     }
 
                                     Row {
@@ -995,19 +1028,19 @@ PanelWindow {
 
                                         Text {
                                             text: modelData.label
-                                            color: filterPill.active ? Nexa.Theme.primary : (filterPill.hovered ? Nexa.Theme.text : Nexa.Theme.mutedText)
-                                            font.family: Nexa.Theme.fontFamily
-                                            font.pixelSize: Nexa.Theme.fontSizeXs
-                                            font.weight: filterPill.active ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightNormal
+                                            color: filterPill.active ? NexaUI.NexaColors.primary : (filterPill.hovered ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText)
+                                            font.family: NexaUI.NexaTypography.familyBody
+                                            font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                            font.weight: filterPill.active ? NexaUI.NexaTypography.weightSemiBold : NexaUI.NexaTypography.weightRegular
                                         }
 
                                         Text {
                                             visible: modelData.count >= 0
                                             text: modelData.count
-                                            color: filterPill.active ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                            color: filterPill.active ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
                                             opacity: filterPill.active ? 0.9 : 0.6
-                                            font.family: Nexa.Theme.monoFontFamily
-                                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                                            font.family: NexaUI.NexaTypography.familyMono
+                                            font.pixelSize: NexaUI.NexaTypography.size2Xs
                                         }
                                     }
 
@@ -1048,8 +1081,8 @@ PanelWindow {
                                 spacing: 6
                                 clip: true
                                 boundsBehavior: Flickable.StopAtBounds
-                                flickDeceleration: Nexa.Theme.flickDeceleration
-                                maximumFlickVelocity: Nexa.Theme.flickVelocityMax
+                                flickDeceleration: 1500
+                                maximumFlickVelocity: 3000
                                 pixelAligned: false
 
                                 NexaUI.NexaSmoothScroll {}
@@ -1072,22 +1105,22 @@ PanelWindow {
                                     // Card background container
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: Nexa.Theme.radiusSm
+                                        radius: NexaUI.NexaTokens.radiusSm
 
                                         color: entryDelegate.selected
-                                            ? Nexa.Theme.selectedSurface
-                                            : (entryMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.cardBackground)
+                                            ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.16)
+                                            : (entryMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer)
 
-                                        border.width: Nexa.Theme.borderThin
+                                        border.width: NexaUI.NexaTokens.borderThin
                                         border.color: entryDelegate.selected
-                                            ? Nexa.Theme.selectedBorder
-                                            : (modelData.pinned ? Nexa.Theme.primary : Nexa.Theme.borderSubtle)
+                                            ? NexaUI.NexaColors.primary
+                                            : (modelData.pinned ? NexaUI.NexaColors.primary : NexaUI.NexaColors.borderSubtle)
 
                                         Behavior on color {
-                                            ColorAnimation { duration: Nexa.Theme.animationFast }
+                                            ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                                         }
                                         Behavior on border.color {
-                                            ColorAnimation { duration: Nexa.Theme.animationFast }
+                                            ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                                         }
 
                                         // Left vertical accent indicator bar
@@ -1097,11 +1130,11 @@ PanelWindow {
                                             width: 3.5
                                             height: entryDelegate.selected ? 26 : 0
                                             radius: 2
-                                            color: Nexa.Theme.primary
+                                            color: NexaUI.NexaColors.primary
                                             visible: entryDelegate.selected
 
                                             Behavior on height {
-                                                NumberAnimation { duration: Nexa.Theme.animationFast }
+                                                NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
                                             }
                                         }
                                     }
@@ -1129,17 +1162,17 @@ PanelWindow {
                                         Rectangle {
                                             Layout.preferredWidth: 38
                                             Layout.preferredHeight: 38
-                                            radius: Nexa.Theme.radiusSm
+                                            radius: NexaUI.NexaTokens.radiusSm
                                             color: entryDelegate.selected
                                                 ? Qt.rgba(entryDelegate.categoryColor.r, entryDelegate.categoryColor.g, entryDelegate.categoryColor.b, 0.18)
-                                                : Nexa.Theme.surfaceContainerHigh
+                                                : NexaUI.NexaColors.surfaceContainerHigh
 
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: entryDelegate.categoryIcon
                                                 color: entryDelegate.categoryColor
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: Nexa.Theme.iconMd
+                                                font.family: NexaUI.NexaTypography.familyIcon
+                                                font.pixelSize: NexaUI.NexaTypography.sizeMd
                                             }
                                         }
 
@@ -1152,15 +1185,15 @@ PanelWindow {
                                             Text {
                                                 Layout.fillWidth: true
                                                 text: modelData.type === "image" ? "Image clip" : (modelData.preview || "")
-                                                color: entryDelegate.selected ? Nexa.Theme.primary : Nexa.Theme.text
-                                                font.family: Nexa.Theme.fontFamily
-                                                font.pixelSize: Nexa.Theme.fontSizeSm
-                                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                                color: entryDelegate.selected ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                                                font.family: NexaUI.NexaTypography.familyBody
+                                                font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                                font.weight: NexaUI.NexaTypography.weightSemiBold
                                                 elide: Text.ElideRight
                                                 maximumLineCount: 1
 
                                                 Behavior on color {
-                                                    ColorAnimation { duration: Nexa.Theme.animationFast }
+                                                    ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                                                 }
                                             }
 
@@ -1181,9 +1214,9 @@ PanelWindow {
                                                         anchors.centerIn: parent
                                                         text: entryDelegate.categoryLabel
                                                         color: entryDelegate.categoryColor
-                                                        font.family: Nexa.Theme.fontFamily
-                                                        font.pixelSize: Nexa.Theme.fontSize2Xs
-                                                        font.weight: Nexa.Theme.fontWeightDemiBold
+                                                        font.family: NexaUI.NexaTypography.familyBody
+                                                        font.pixelSize: NexaUI.NexaTypography.size2Xs
+                                                        font.weight: NexaUI.NexaTypography.weightSemiBold
                                                     }
                                                 }
 
@@ -1193,9 +1226,9 @@ PanelWindow {
                                                     text: modelData.type === "image"
                                                         ? root.formatBytes(modelData.size_bytes || 0)
                                                         : (modelData.preview ? (modelData.preview.length + " chars") : root.formatBytes(modelData.size_bytes || 0))
-                                                    color: Nexa.Theme.mutedText
-                                                    font.family: Nexa.Theme.fontFamily
-                                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                                    color: NexaUI.NexaColors.mutedText
+                                                    font.family: NexaUI.NexaTypography.familyBody
+                                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
                                                     elide: Text.ElideRight
                                                 }
                                             }
@@ -1208,14 +1241,14 @@ PanelWindow {
                                             width: 26
                                             height: 26
                                             radius: 6
-                                            color: quickPinMouse.containsMouse ? Nexa.Theme.hoverStrong : "transparent"
+                                            color: quickPinMouse.containsMouse ? NexaUI.NexaColors.hoverOverlay : "transparent"
 
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: "󰐃"
-                                                color: modelData.pinned ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: Nexa.Theme.iconSm
+                                                color: modelData.pinned ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                                                font.family: NexaUI.NexaTypography.familyIcon
+                                                font.pixelSize: NexaUI.NexaTypography.sizeSm
                                             }
 
                                             MouseArea {
@@ -1241,18 +1274,18 @@ PanelWindow {
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: "󰅇"
-                                    color: Nexa.Theme.mutedText
+                                    color: NexaUI.NexaColors.mutedText
                                     opacity: 0.5
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 36
                                 }
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: searchInput.text.length > 0 ? "No matches found" : "No clips in this filter"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeSm
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
                                 }
                             }
                         }
@@ -1268,7 +1301,7 @@ PanelWindow {
                         Layout.minimumWidth: 1
                         Layout.maximumWidth: 1
                         Layout.fillWidth: false
-                        color: Nexa.Theme.divider
+                        color: NexaUI.NexaColors.borderSubtle
                     }
 
                     // =============================================
@@ -1279,32 +1312,32 @@ PanelWindow {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
                         Layout.fillHeight: true
-                        spacing: Nexa.Theme.spacingMd
+                        spacing: NexaUI.NexaTokens.spacingMd
 
                         // -----------------------------------------
                         // PREVIEW HEADER
                         // -----------------------------------------
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: Nexa.Theme.spacingMd
+                            spacing: NexaUI.NexaTokens.spacingMd
 
                             // Type icon badge
                             Rectangle {
                                 width: 40
                                 height: 40
-                                radius: Nexa.Theme.radiusSm
+                                radius: NexaUI.NexaTokens.radiusSm
                                 color: root.selectedEntry
                                     ? Qt.rgba(root.getCategoryColor(root.getItemCategory(root.selectedEntry)).r,
                                               root.getCategoryColor(root.getItemCategory(root.selectedEntry)).g,
                                               root.getCategoryColor(root.getItemCategory(root.selectedEntry)).b, 0.16)
-                                    : Nexa.Theme.surfaceContainerHigh
+                                    : NexaUI.NexaColors.surfaceContainerHigh
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: root.selectedEntry ? root.getCategoryIcon(root.getItemCategory(root.selectedEntry)) : "󰅇"
-                                    color: root.selectedEntry ? root.getCategoryColor(root.getItemCategory(root.selectedEntry)) : Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconMd
+                                    color: root.selectedEntry ? root.getCategoryColor(root.getItemCategory(root.selectedEntry)) : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeMd
                                 }
                             }
 
@@ -1322,10 +1355,10 @@ PanelWindow {
                                         if (cat === "code")  return "Code Snippet"
                                         return "Text Clip"
                                     }
-                                    color: Nexa.Theme.text
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeLg
-                                    font.weight: Nexa.Theme.fontWeightDemiBold
+                                    color: NexaUI.NexaColors.text
+                                    font.family: NexaUI.NexaTypography.familyDisplay
+                                    font.pixelSize: NexaUI.NexaTypography.sizeLg
+                                    font.weight: NexaUI.NexaTypography.weightSemiBold
                                 }
 
                                 RowLayout {
@@ -1334,33 +1367,33 @@ PanelWindow {
 
                                     Text {
                                         text: root.formatBytes(root.selectedSize)
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
                                     }
 
                                     Text {
                                         visible: root.selectedType === "text" && root.textCharCount > 0
                                         text: "•  " + root.textCharCount + " chars"
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
                                     }
 
                                     Text {
                                         visible: root.selectedType === "text" && root.textLineCount > 1
                                         text: "•  " + root.textLineCount + " lines"
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
                                     }
 
                                     Text {
                                         visible: root.selectedType === "image" && previewImage.sourceSize.width > 0
                                         text: "•  " + previewImage.sourceSize.width + " × " + previewImage.sourceSize.height + " px"
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
                                     }
                                 }
                             }
@@ -1374,18 +1407,18 @@ PanelWindow {
                             Rectangle {
                                 Layout.preferredWidth: 34
                                 Layout.preferredHeight: 34
-                                radius: Nexa.Theme.radiusSm
+                                radius: NexaUI.NexaTokens.radiusSm
                                 color: root.selectedEntry && root.selectedEntry.pinned
-                                    ? Nexa.Theme.primarySurfaceStrong
-                                    : (pinMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh)
-                                opacity: root.selectedEntry ? 1 : Nexa.Theme.opacityDisabled
+                                    ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.2)
+                                    : (pinMouse.containsMouse ? NexaUI.NexaColors.hoverOverlay : NexaUI.NexaColors.surfaceContainerHigh)
+                                opacity: root.selectedEntry ? 1 : 0.4
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰐃"
-                                    color: root.selectedEntry && root.selectedEntry.pinned ? Nexa.Theme.primary : Nexa.Theme.text
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: root.selectedEntry && root.selectedEntry.pinned ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
                                 }
 
                                 MouseArea {
@@ -1402,16 +1435,16 @@ PanelWindow {
                             Rectangle {
                                 Layout.preferredWidth: 34
                                 Layout.preferredHeight: 34
-                                radius: Nexa.Theme.radiusSm
-                                color: deleteMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
-                                opacity: root.selectedEntry ? 1 : Nexa.Theme.opacityDisabled
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: deleteMouse.containsMouse ? NexaUI.NexaColors.hoverOverlay : NexaUI.NexaColors.surfaceContainerHigh
+                                opacity: root.selectedEntry ? 1 : 0.4
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰆴"
-                                    color: deleteMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: deleteMouse.containsMouse ? NexaUI.NexaColors.error : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
                                 }
 
                                 MouseArea {
@@ -1431,15 +1464,15 @@ PanelWindow {
                             Rectangle {
                                 Layout.preferredWidth: 34
                                 Layout.preferredHeight: 34
-                                radius: Nexa.Theme.radiusSm
-                                color: closeMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: closeMouse.containsMouse ? NexaUI.NexaColors.hoverOverlay : NexaUI.NexaColors.surfaceContainerHigh
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰅖"
-                                    color: Nexa.Theme.text
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: NexaUI.NexaColors.text
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
                                 }
 
                                 MouseArea {
@@ -1458,10 +1491,10 @@ PanelWindow {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: Nexa.Theme.radiusMd
-                            color: Nexa.Theme.surfaceContainerLow
-                            border.width: Nexa.Theme.borderThin
-                            border.color: Nexa.Theme.borderSubtle
+                            radius: NexaUI.NexaTokens.radiusMd
+                            color: NexaUI.NexaColors.surfaceContainerLow
+                            border.width: NexaUI.NexaTokens.borderThin
+                            border.color: NexaUI.NexaColors.borderSubtle
                             clip: true
 
                             // Empty state
@@ -1473,18 +1506,18 @@ PanelWindow {
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: "󰅈"
-                                    color: Nexa.Theme.mutedText
+                                    color: NexaUI.NexaColors.mutedText
                                     opacity: 0.4
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 48
                                 }
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: "Select a clip to view details"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeMd
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeMd
                                 }
                             }
 
@@ -1498,8 +1531,8 @@ PanelWindow {
                                 contentHeight: clipboardText.implicitHeight
                                 clip: true
                                 boundsBehavior: Flickable.StopAtBounds
-                                flickDeceleration: Nexa.Theme.flickDeceleration
-                                maximumFlickVelocity: Nexa.Theme.flickVelocityMax
+                                flickDeceleration: 1500
+                                maximumFlickVelocity: 3000
                                 pixelAligned: false
 
                                 NexaUI.NexaSmoothScroll {}
@@ -1510,7 +1543,7 @@ PanelWindow {
                                     contentItem: Rectangle {
                                         implicitWidth: 4
                                         radius: 2
-                                        color: Qt.rgba(Nexa.Theme.text.r, Nexa.Theme.text.g, Nexa.Theme.text.b, cbScrollBar.hovered ? 0.5 : 0.2)
+                                        color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.text, cbScrollBar.hovered ? 0.5 : 0.2)
                                     }
                                 }
 
@@ -1518,9 +1551,9 @@ PanelWindow {
                                     id: clipboardText
                                     width: textPreview.width
                                     text: root.selectedContent
-                                    color: Nexa.Theme.text
-                                    font.family: root.isCode(root.selectedContent) ? Nexa.Theme.monoFontFamily : Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeMd
+                                    color: NexaUI.NexaColors.text
+                                    font.family: root.isCode(root.selectedContent) ? NexaUI.NexaTypography.familyMono : NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeMd
                                     lineHeight: 1.3
                                     wrapMode: Text.WrapAnywhere
                                     textFormat: Text.PlainText
@@ -1535,10 +1568,10 @@ PanelWindow {
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    radius: Nexa.Theme.radiusSm
-                                    color: Nexa.Theme.surfaceContainer
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: Nexa.Theme.borderSubtle
+                                    radius: NexaUI.NexaTokens.radiusSm
+                                    color: NexaUI.NexaColors.surfaceContainer
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: NexaUI.NexaColors.borderSubtle
                                     clip: true
 
                                     Image {
@@ -1568,10 +1601,10 @@ PanelWindow {
                                 visible: root.selectedType === "text" && root.isLink(root.selectedContent)
                                 implicitHeight: 36
                                 implicitWidth: openUrlContent.implicitWidth + 24
-                                radius: Nexa.Theme.radiusSm
-                                color: openUrlMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
-                                border.width: Nexa.Theme.borderThin
-                                border.color: Nexa.Theme.secondary
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: openUrlMouse.containsMouse ? NexaUI.NexaColors.hoverOverlay : NexaUI.NexaColors.surfaceContainerHigh
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: NexaUI.NexaColors.secondary
 
                                 RowLayout {
                                     id: openUrlContent
@@ -1580,16 +1613,16 @@ PanelWindow {
 
                                     Text {
                                         text: "󰌹"
-                                        color: Nexa.Theme.secondary
-                                        font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: Nexa.Theme.iconSm
+                                        color: NexaUI.NexaColors.secondary
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: NexaUI.NexaTypography.sizeSm
                                     }
                                     Text {
                                         text: "Open in Browser"
-                                        color: Nexa.Theme.text
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
-                                        font.weight: Nexa.Theme.fontWeightMedium
+                                        color: NexaUI.NexaColors.text
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                        font.weight: NexaUI.NexaTypography.weightMedium
                                     }
                                 }
 
@@ -1607,10 +1640,10 @@ PanelWindow {
                                 visible: root.selectedType === "image" && root.selectedImageSource.length > 0
                                 implicitHeight: 36
                                 implicitWidth: openImgContent.implicitWidth + 24
-                                radius: Nexa.Theme.radiusSm
-                                color: openImgMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
-                                border.width: Nexa.Theme.borderThin
-                                border.color: Nexa.Theme.tertiary
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: openImgMouse.containsMouse ? NexaUI.NexaColors.hoverOverlay : NexaUI.NexaColors.surfaceContainerHigh
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: NexaUI.NexaColors.tertiary
 
                                 RowLayout {
                                     id: openImgContent
@@ -1619,16 +1652,16 @@ PanelWindow {
 
                                     Text {
                                         text: "󰋩"
-                                        color: Nexa.Theme.tertiary
-                                        font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: Nexa.Theme.iconSm
+                                        color: NexaUI.NexaColors.tertiary
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: NexaUI.NexaTypography.sizeSm
                                     }
                                     Text {
                                         text: "Open in Viewer"
-                                        color: Nexa.Theme.text
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
-                                        font.weight: Nexa.Theme.fontWeightMedium
+                                        color: NexaUI.NexaColors.text
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                        font.weight: NexaUI.NexaTypography.weightMedium
                                     }
                                 }
 
@@ -1650,13 +1683,13 @@ PanelWindow {
                             Rectangle {
                                 implicitHeight: 36
                                 implicitWidth: copyContent.implicitWidth + 24
-                                radius: Nexa.Theme.radiusSm
+                                radius: NexaUI.NexaTokens.radiusSm
                                 color: copyBtnMouse.pressed
-                                    ? Nexa.Theme.primarySurfaceStrong
-                                    : (copyBtnMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.primaryContainer)
+                                    ? NexaUI.NexaColors.pressOverlay(NexaUI.NexaColors.primary)
+                                    : (copyBtnMouse.containsMouse ? NexaUI.NexaColors.primary : NexaUI.NexaColors.primaryContainer)
 
                                 Behavior on color {
-                                    ColorAnimation { duration: Nexa.Theme.animationFast }
+                                    ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                                 }
 
                                 RowLayout {
@@ -1666,22 +1699,22 @@ PanelWindow {
 
                                     Text {
                                         text: "󰆏"
-                                        color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.primaryContainerText
-                                        font.family: Nexa.Theme.iconFontFamily
-                                        font.pixelSize: Nexa.Theme.iconSm
+                                        color: copyBtnMouse.containsMouse ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.primary
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: NexaUI.NexaTypography.sizeSm
                                     }
                                     Text {
                                         text: "Copy to Clipboard"
-                                        color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.primaryContainerText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
-                                        font.weight: Nexa.Theme.fontWeightDemiBold
+                                        color: copyBtnMouse.containsMouse ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.primary
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                        font.weight: NexaUI.NexaTypography.weightSemiBold
                                     }
                                     Text {
                                         text: "↵"
-                                        color: copyBtnMouse.containsMouse ? Nexa.Theme.primaryText : Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.monoFontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeXs
+                                        color: copyBtnMouse.containsMouse ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyMono
+                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
                                     }
                                 }
 
@@ -1711,7 +1744,7 @@ PanelWindow {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         height: 1
-                        color: Nexa.Theme.borderSubtle
+                        color: NexaUI.NexaColors.borderSubtle
                     }
 
                     RowLayout {
@@ -1726,21 +1759,21 @@ PanelWindow {
                                 width: 20
                                 height: 16
                                 radius: 3
-                                color: Nexa.Theme.surfaceContainerHigh
+                                color: NexaUI.NexaColors.surfaceContainerHigh
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
                                     text: "↑↓"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.monoFontFamily
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyMono
                                     font.pixelSize: 10
                                 }
                             }
                             Text {
                                 text: "Navigate"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1751,22 +1784,22 @@ PanelWindow {
                                 width: 22
                                 height: 16
                                 radius: 3
-                                color: Nexa.Theme.surfaceContainerHigh
+                                color: NexaUI.NexaColors.surfaceContainerHigh
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
                                     text: "↵"
-                                    color: Nexa.Theme.primary
-                                    font.family: Nexa.Theme.monoFontFamily
+                                    color: NexaUI.NexaColors.primary
+                                    font.family: NexaUI.NexaTypography.familyMono
                                     font.pixelSize: 11
                                     font.weight: Font.Bold
                                 }
                             }
                             Text {
                                 text: "Copy & Close"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1777,21 +1810,21 @@ PanelWindow {
                                 width: 18
                                 height: 16
                                 radius: 3
-                                color: Nexa.Theme.surfaceContainerHigh
+                                color: NexaUI.NexaColors.surfaceContainerHigh
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
                                     text: "P"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.monoFontFamily
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyMono
                                     font.pixelSize: 10
                                 }
                             }
                             Text {
                                 text: "Pin / Unpin"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1802,21 +1835,21 @@ PanelWindow {
                                 width: 24
                                 height: 16
                                 radius: 3
-                                color: Nexa.Theme.surfaceContainerHigh
+                                color: NexaUI.NexaColors.surfaceContainerHigh
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
                                     text: "Del"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.monoFontFamily
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyMono
                                     font.pixelSize: 10
                                 }
                             }
                             Text {
                                 text: "Delete"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1829,21 +1862,21 @@ PanelWindow {
                                 width: 26
                                 height: 16
                                 radius: 3
-                                color: Nexa.Theme.surfaceContainerHigh
+                                color: NexaUI.NexaColors.surfaceContainerHigh
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
                                     text: "ESC"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.monoFontFamily
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyMono
                                     font.pixelSize: 9
                                 }
                             }
                             Text {
                                 text: "Close"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1862,21 +1895,21 @@ PanelWindow {
 
                 implicitWidth: toastRow.implicitWidth + 24
                 implicitHeight: 34
-                radius: Nexa.Theme.radiusPill
+                radius: NexaUI.NexaTokens.radiusPill
 
-                color: Nexa.Theme.surfaceContainerHighest
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.primary
+                color: NexaUI.NexaColors.surfaceContainerHighest
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.primary
 
                 opacity: root.toastVisible ? 1 : 0
                 scale: root.toastVisible ? 1 : 0.85
                 z: 800
 
                 Behavior on opacity {
-                    NumberAnimation { duration: 160 }
+                    NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
                 }
                 Behavior on scale {
-                    NumberAnimation { duration: 160; easing.type: Easing.OutBack }
+                    NumberAnimation { duration: NexaUI.NexaMotion.durationFast; easing.type: Easing.OutBack }
                 }
 
                 Row {
@@ -1886,16 +1919,16 @@ PanelWindow {
 
                     Text {
                         text: "󰄬"
-                        color: Nexa.Theme.primary
-                        font.family: Nexa.Theme.iconFontFamily
-                        font.pixelSize: Nexa.Theme.iconSm
+                        color: NexaUI.NexaColors.primary
+                        font.family: NexaUI.NexaTypography.familyIcon
+                        font.pixelSize: NexaUI.NexaTypography.sizeSm
                     }
                     Text {
                         text: root.toastText
-                        color: Nexa.Theme.text
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeSm
-                        font.weight: Nexa.Theme.fontWeightDemiBold
+                        color: NexaUI.NexaColors.text
+                        font.family: NexaUI.NexaTypography.familyBody
+                        font.pixelSize: NexaUI.NexaTypography.sizeSm
+                        font.weight: NexaUI.NexaTypography.weightSemiBold
                     }
                 }
             }
@@ -1914,10 +1947,10 @@ PanelWindow {
                     anchors.centerIn: parent
                     width: 380
                     implicitHeight: modalColumn.implicitHeight + 40
-                    radius: Nexa.Theme.radiusMd
-                    color: Nexa.Theme.panelBackgroundElevated
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.borderStrong
+                    radius: NexaUI.NexaTokens.radiusMd
+                    color: NexaUI.NexaColors.surfaceContainerHighest
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.borderStrong
 
                     ColumnLayout {
                         id: modalColumn
@@ -1931,13 +1964,13 @@ PanelWindow {
                             width: 44
                             height: 44
                             radius: 22
-                            color: Nexa.Theme.errorContainer
+                            color: NexaUI.NexaColors.errorContainer
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "󰆴"
-                                color: Nexa.Theme.error
-                                font.family: Nexa.Theme.iconFontFamily
+                                color: NexaUI.NexaColors.error
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 22
                             }
                         }
@@ -1946,10 +1979,10 @@ PanelWindow {
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.confirmClear ? "Clear Entire Clipboard?" : "Delete Clipboard Item?"
-                            color: Nexa.Theme.text
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeLg
-                            font.weight: Nexa.Theme.fontWeightBold
+                            color: NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyDisplay
+                            font.pixelSize: NexaUI.NexaTypography.sizeLg
+                            font.weight: NexaUI.NexaTypography.weightBold
                         }
 
                         // Subtitle
@@ -1959,9 +1992,9 @@ PanelWindow {
                             text: root.confirmClear
                                 ? "All saved history items will be permanently removed."
                                 : "This item will be removed from your clipboard history."
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeSm
+                            color: NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeSm
                             wrapMode: Text.Wrap
                         }
 
@@ -1976,18 +2009,18 @@ PanelWindow {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 36
-                                radius: Nexa.Theme.radiusSm
-                                color: modalCancelMouse.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
-                                border.width: Nexa.Theme.borderThin
-                                border.color: Nexa.Theme.borderSubtle
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: modalCancelMouse.containsMouse ? NexaUI.NexaColors.hoverOverlay : NexaUI.NexaColors.surfaceContainerHigh
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: NexaUI.NexaColors.borderSubtle
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "Cancel"
-                                    color: Nexa.Theme.text
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeSm
-                                    font.weight: Nexa.Theme.fontWeightMedium
+                                    color: NexaUI.NexaColors.text
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                    font.weight: NexaUI.NexaTypography.weightMedium
                                 }
 
                                 MouseArea {
@@ -2006,16 +2039,16 @@ PanelWindow {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 36
-                                radius: Nexa.Theme.radiusSm
-                                color: modalConfirmMouse.containsMouse ? Nexa.Theme.error : Nexa.Theme.errorContainer
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: modalConfirmMouse.containsMouse ? NexaUI.NexaColors.error : NexaUI.NexaColors.errorContainer
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: root.confirmClear ? "Clear All" : "Delete"
-                                    color: modalConfirmMouse.containsMouse ? Nexa.Theme.onError : Nexa.Theme.error
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeSm
-                                    font.weight: Nexa.Theme.fontWeightDemiBold
+                                    color: modalConfirmMouse.containsMouse ? NexaUI.NexaColors.onError : NexaUI.NexaColors.error
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                    font.weight: NexaUI.NexaTypography.weightSemiBold
                                 }
 
                                 MouseArea {

@@ -9,6 +9,7 @@
   "show_tray": true,
   "show_battery": true,
   "show_network": true,
+  "show_settings": true,
   "show_power": true,
   "show_music": true
 }

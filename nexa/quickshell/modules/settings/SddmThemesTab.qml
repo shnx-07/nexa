@@ -5,8 +5,7 @@ import QtQuick.Controls
 import QtQuick.Effects
 import QtMultimedia
 import Quickshell
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 import "../lockthemes/components"
 import "../../services" as Services
 
@@ -27,10 +26,10 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 52
-            radius: Nexa.Theme.radiusMd
-            color: Nexa.Theme.cardBackground
-            border.width: 1
-            border.color: Nexa.Theme.border
+            radius: NexaUI.NexaTokens.radiusMd
+            color: NexaUI.NexaColors.surfaceContainer
+            border.width: NexaUI.NexaTokens.borderThin
+            border.color: NexaUI.NexaColors.border
 
             RowLayout {
                 anchors.fill: parent
@@ -44,23 +43,23 @@ Item {
 
                     Text {
                         text: "󱓞"
-                        font.family: Nexa.Theme.iconFontFamily
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 18
-                        color: Nexa.Theme.primary
+                        color: NexaUI.NexaColors.primary
                     }
 
                     StyledText {
                         text: "SDDM Theme Library"
                         font.pixelSize: 14
                         font.weight: Font.Bold
-                        color: Nexa.Theme.text
+                        color: NexaUI.NexaColors.text
                     }
 
                     Rectangle {
                         height: 22
                         width: countText.implicitWidth + 14
                         radius: 11
-                        color: Nexa.Theme.surfaceContainerHigh
+                        color: NexaUI.NexaColors.surfaceContainerHigh
 
                         StyledText {
                             id: countText
@@ -68,7 +67,7 @@ Item {
                             text: (root.allThemes ? root.allThemes.length : 39) + " Themes"
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                         }
                     }
                 }
@@ -79,10 +78,10 @@ Item {
                 ClickableRect {
                     Layout.preferredHeight: 36
                     Layout.preferredWidth: testRow.implicitWidth + 20
-                    radius: Nexa.Theme.radiusXs
-                    color: testBtnArea.containsMouse ? Nexa.Theme.cardBackgroundElevated : Nexa.Theme.surfaceContainer
+                    radius: NexaUI.NexaTokens.radiusXs
+                    color: testBtnArea.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer
                     border.width: 1
-                    border.color: Nexa.Theme.border
+                    border.color: NexaUI.NexaColors.border
 
                     MouseArea {
                         id: testBtnArea
@@ -99,16 +98,16 @@ Item {
 
                         Text {
                             text: "󰐊"
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 15
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
 
                         StyledText {
                             text: "Test"
                             font.pixelSize: 12
                             font.weight: Font.DemiBold
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
                     }
                 }
@@ -119,12 +118,12 @@ Item {
                     readonly property bool isCurrentNexaLock: Services.Sddm.activeDesktopSddmTheme === root.selectedThemeId
                     Layout.preferredHeight: 36
                     Layout.preferredWidth: applyNexaRow.implicitWidth + 24
-                    radius: Nexa.Theme.radiusXs
+                    radius: NexaUI.NexaTokens.radiusXs
                     color: isCurrentNexaLock
                         ? Qt.rgba(30/255, 64/255, 175/255, 0.3)
-                        : (applyNexaMouse.containsMouse ? Nexa.Theme.cardBackgroundElevated : Nexa.Theme.surfaceContainer)
+                        : (applyNexaMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer)
                     border.width: 1
-                    border.color: isCurrentNexaLock ? "#60a5fa" : Nexa.Theme.border
+                    border.color: isCurrentNexaLock ? "#60a5fa" : NexaUI.NexaColors.border
 
                     MouseArea {
                         id: applyNexaMouse
@@ -141,16 +140,16 @@ Item {
 
                         Text {
                             text: applyNexaBtn.isCurrentNexaLock ? "󰄬" : "󰌾"
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 15
-                            color: applyNexaBtn.isCurrentNexaLock ? "#60a5fa" : Nexa.Theme.text
+                            color: applyNexaBtn.isCurrentNexaLock ? "#60a5fa" : NexaUI.NexaColors.text
                         }
 
                         StyledText {
                             text: applyNexaBtn.isCurrentNexaLock ? "Active on Nexa" : "Apply for Nexa"
                             font.pixelSize: 12
                             font.weight: Font.DemiBold
-                            color: applyNexaBtn.isCurrentNexaLock ? "#60a5fa" : Nexa.Theme.text
+                            color: applyNexaBtn.isCurrentNexaLock ? "#60a5fa" : NexaUI.NexaColors.text
                         }
                     }
                 }
@@ -161,10 +160,10 @@ Item {
                     readonly property bool isCurrentSddm: Services.Sddm.activeSddmTheme === root.selectedThemeId
                     Layout.preferredHeight: 36
                     Layout.preferredWidth: applySddmRow.implicitWidth + 24
-                    radius: Nexa.Theme.radiusXs
+                    radius: NexaUI.NexaTokens.radiusXs
                     color: Services.Sddm.applying 
-                        ? Nexa.Theme.mutedText 
-                        : (applySddmMouse.containsMouse ? Nexa.Theme.primaryHover : Nexa.Theme.primary)
+                        ? NexaUI.NexaColors.mutedText 
+                        : (applySddmMouse.containsMouse ? Qt.lighter(NexaUI.NexaColors.primary, 1.1) : NexaUI.NexaColors.primary)
                     enabled: !Services.Sddm.applying
 
                     MouseArea {
@@ -182,16 +181,16 @@ Item {
 
                         Text {
                             text: "󰞌"
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 15
-                            color: Nexa.Theme.onPrimary
+                            color: NexaUI.NexaColors.onPrimary
                         }
 
                         StyledText {
                             text: Services.Sddm.applying ? "Applying..." : "Apply for SDDM"
                             font.pixelSize: 12
                             font.weight: Font.Bold
-                            color: Nexa.Theme.onPrimary
+                            color: NexaUI.NexaColors.onPrimary
                         }
                     }
                 }
@@ -232,17 +231,35 @@ Item {
 
                         width: sddmGrid.cardW
                         height: thumbItem.height + infoCol.implicitHeight + 28
-                        radius: Nexa.Theme.radiusLg
+                        radius: NexaUI.NexaTokens.radiusLg
                         z: isSelected ? 5 : 1
 
                         color: isSelected
-                            ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.08)
-                            : (cardHover.containsMouse ? Nexa.Theme.cardBackgroundElevated : Nexa.Theme.cardBackground)
+                            ? Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.08)
+                            : (cardHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer)
 
                         border.width: isSelected ? 2 : (isActiveInSddm ? 1.5 : 1)
-                        border.color: isSelected ? Nexa.Theme.primary : (isActiveInSddm ? "#4ade80" : Nexa.Theme.border)
+                        border.color: isSelected ? NexaUI.NexaColors.primary : (isActiveInSddm ? "#4ade80" : NexaUI.NexaColors.border)
 
-                        Behavior on color { ColorAnimation { duration: 140 } }
+                        Behavior on color { ColorAnimation { duration: NexaUI.NexaMotion.durationInstant } }
+
+                        // Top Specular Highlight (Layer 2 specular beam)
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.topMargin: 1
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: Math.max(0, parent.width - parent.radius * 1.6)
+                            height: 1
+                            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+                            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+                            z: 2
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.35) }
+                                GradientStop { position: 1.0; color: "transparent" }
+                            }
+                        }
 
                         MouseArea {
                             id: cardHover
@@ -261,7 +278,7 @@ Item {
                             height: Math.round(width * 9 / 16)
                             radius: 14
                             clip: true
-                            color: Nexa.Theme.surfaceContainerLowest
+                            color: NexaUI.NexaColors.surfaceContainerLowest
 
                             Image {
                                 anchors.fill: parent
@@ -334,7 +351,7 @@ Item {
 
                                     Text {
                                         text: "󰕧"
-                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.family: NexaUI.NexaTypography.familyIcon
                                         font.pixelSize: 12
                                         color: "#38bdf8"
                                     }
@@ -347,7 +364,6 @@ Item {
                                     }
                                 }
                             }
-
 
                             // Active SDDM Badge
                             Rectangle {
@@ -370,7 +386,7 @@ Item {
 
                                     Text {
                                         text: "󰄬"
-                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.family: NexaUI.NexaTypography.familyIcon
                                         font.pixelSize: 13
                                         color: "#4ade80"
                                     }
@@ -405,7 +421,7 @@ Item {
 
                                     Text {
                                         text: "󰌾"
-                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.family: NexaUI.NexaTypography.familyIcon
                                         font.pixelSize: 13
                                         color: "#93c5fd"
                                     }
@@ -428,9 +444,9 @@ Item {
                                 height: 26
                                 width: selRow.implicitWidth + 16
                                 radius: 13
-                                color: Nexa.Theme.primary
+                                color: NexaUI.NexaColors.primary
                                 border.width: 1
-                                border.color: Nexa.Theme.primary
+                                border.color: NexaUI.NexaColors.primary
 
                                 RowLayout {
                                     id: selRow
@@ -439,16 +455,16 @@ Item {
 
                                     Text {
                                         text: "󰄬"
-                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.family: NexaUI.NexaTypography.familyIcon
                                         font.pixelSize: 13
-                                        color: Nexa.Theme.onPrimary
+                                        color: NexaUI.NexaColors.onPrimary
                                     }
 
                                     StyledText {
                                         text: "Selected"
                                         font.pixelSize: 11
                                         font.weight: Font.Bold
-                                        color: Nexa.Theme.onPrimary
+                                        color: NexaUI.NexaColors.onPrimary
                                     }
                                 }
                             }
@@ -462,7 +478,7 @@ Item {
                                 radius: 17
                                 z: 15
                                 visible: cardHover.containsMouse || cardPreviewBtn.hovered
-                                color: cardPreviewBtn.hovered ? Nexa.Theme.primary : Qt.rgba(0, 0, 0, 0.78)
+                                color: cardPreviewBtn.hovered ? NexaUI.NexaColors.primary : Qt.rgba(0, 0, 0, 0.78)
                                 border.width: 1
                                 border.color: Qt.rgba(255, 255, 255, 0.22)
                                 onClicked: Services.Sddm.previewTheme(sddmCard.modelData.id)
@@ -474,16 +490,16 @@ Item {
 
                                     Text {
                                         text: "󰐊"
-                                        font.family: Nexa.Theme.iconFontFamily
+                                        font.family: NexaUI.NexaTypography.familyIcon
                                         font.pixelSize: 15
-                                        color: cardPreviewBtn.hovered ? Nexa.Theme.onPrimary : "white"
+                                        color: cardPreviewBtn.hovered ? NexaUI.NexaColors.onPrimary : "white"
                                     }
 
                                     StyledText {
                                         text: "Preview"
                                         font.pixelSize: 12
                                         font.weight: Font.DemiBold
-                                        color: cardPreviewBtn.hovered ? Nexa.Theme.onPrimary : "white"
+                                        color: cardPreviewBtn.hovered ? NexaUI.NexaColors.onPrimary : "white"
                                     }
                                 }
                             }
@@ -506,7 +522,7 @@ Item {
                                     text: sddmCard.modelData.name
                                     font.pixelSize: 15
                                     font.weight: Font.Bold
-                                    color: Nexa.Theme.text
+                                    color: NexaUI.NexaColors.text
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
                                 }
@@ -515,7 +531,7 @@ Item {
                                     text: "SDDM"
                                     font.pixelSize: 11
                                     font.weight: Font.DemiBold
-                                    color: Nexa.Theme.primary
+                                    color: NexaUI.NexaColors.primary
                                 }
                             }
 
@@ -523,7 +539,7 @@ Item {
                                 width: parent.width
                                 text: sddmCard.modelData.description || ""
                                 font.pixelSize: 12
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                                 wrapMode: Text.WordWrap
                                 maximumLineCount: 2
                                 elide: Text.ElideRight
@@ -539,10 +555,10 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 38
-            radius: Nexa.Theme.radiusSm
-            color: Nexa.Theme.cardBackground
-            border.width: 1
-            border.color: Nexa.Theme.border
+            radius: NexaUI.NexaTokens.radiusSm
+            color: NexaUI.NexaColors.surfaceContainer
+            border.width: NexaUI.NexaTokens.borderThin
+            border.color: NexaUI.NexaColors.border
 
             RowLayout {
                 anchors.fill: parent
@@ -553,16 +569,16 @@ Item {
                     spacing: 8
                     Text {
                         text: Services.Sddm.applying ? "󰞌" : (Services.Sddm.lastAppliedStatus.includes("Success") ? "󰄬" : (Services.Sddm.lastAppliedStatus.includes("Fail") || Services.Sddm.lastAppliedStatus.includes("cancel") ? "󰅖" : "󱓞"))
-                        font.family: Nexa.Theme.iconFontFamily
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 15
-                        color: Services.Sddm.applying ? Nexa.Theme.primary : (Services.Sddm.lastAppliedStatus.includes("Success") ? "#4ade80" : (Services.Sddm.lastAppliedStatus.includes("Fail") || Services.Sddm.lastAppliedStatus.includes("cancel") ? "#f87171" : Nexa.Theme.mutedText))
+                        color: Services.Sddm.applying ? NexaUI.NexaColors.primary : (Services.Sddm.lastAppliedStatus.includes("Success") ? "#4ade80" : (Services.Sddm.lastAppliedStatus.includes("Fail") || Services.Sddm.lastAppliedStatus.includes("cancel") ? "#f87171" : NexaUI.NexaColors.mutedText))
                     }
 
                     StyledText {
                         text: Services.Sddm.lastAppliedStatus.length > 0 ? Services.Sddm.lastAppliedStatus : "39 SDDM themes installed • Ready"
                         font.pixelSize: 12
                         font.weight: Font.Medium
-                        color: Services.Sddm.lastAppliedStatus.includes("Success") ? "#4ade80" : (Services.Sddm.lastAppliedStatus.includes("Fail") || Services.Sddm.lastAppliedStatus.includes("cancel") ? "#f87171" : (Services.Sddm.applying ? Nexa.Theme.primary : Nexa.Theme.mutedText))
+                        color: Services.Sddm.lastAppliedStatus.includes("Success") ? "#4ade80" : (Services.Sddm.lastAppliedStatus.includes("Fail") || Services.Sddm.lastAppliedStatus.includes("cancel") ? "#f87171" : (Services.Sddm.applying ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText))
                     }
                 }
 
@@ -571,7 +587,7 @@ Item {
                 StyledText {
                     text: "Select a theme and click Apply for Nexa or Apply for SDDM"
                     font.pixelSize: 12
-                    color: Nexa.Theme.mutedText
+                    color: NexaUI.NexaColors.mutedText
                 }
             }
         }

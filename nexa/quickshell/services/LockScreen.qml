@@ -15,6 +15,8 @@ import QtQuick
 Singleton {
     id: root
 
+    property string currentLockSubTab: "native"
+
     readonly property string defaultTheme: "xianxia"
 
     readonly property var themes: [
@@ -244,7 +246,9 @@ Singleton {
                 root._wallpaperType = type;
 
                 const filename = path.substring(path.lastIndexOf("/") + 1);
-                const thumb = Quickshell.env("HOME") + "/.cache/nexa/wallpapers/thumbs/" + filename + ".jpg";
+                const thumb = (type === "video" || type === "gif")
+                    ? (Quickshell.env("HOME") + "/.cache/nexa/wallpapers/thumbs/" + filename + ".jpg")
+                    : path;
                 root._wallpaperThumb = "file://" + encodeURI(thumb);
 
                 if (type === "video") {

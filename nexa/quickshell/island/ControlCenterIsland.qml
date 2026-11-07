@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
-import "../theme" as Nexa
+import "../NewNexaUI" as NexaUI
 import "../modules/settings/quicksettings" as QuickSettingsModule
 import "../modules/notifications" as NotificationModule
 import "../modules/weather" as WeatherModule
@@ -40,8 +40,8 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Nexa.Theme.spacingLg
-        spacing: Nexa.Theme.spacingMd
+        anchors.margins: NexaUI.NexaTokens.spacingLg
+        spacing: NexaUI.NexaTokens.spacingMd
 
 
         // --------------------------------------------------------
@@ -51,7 +51,7 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 38
-            spacing: Nexa.Theme.spacingMd
+            spacing: NexaUI.NexaTokens.spacingMd
 
             // Left: Back to Clock
             Rectangle {
@@ -59,16 +59,23 @@ Item {
                 width: 32
                 height: 32
                 radius: 16
-                color: clockBtnMouse.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainer
-                border.width: 1
-                border.color: Nexa.Theme.border
+                color: clockBtnMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: clockBtnMouse.containsMouse ? NexaUI.NexaColors.borderStrong : NexaUI.NexaColors.border
+
+                Behavior on color {
+                    ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
+                }
+                Behavior on border.color {
+                    ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
+                }
 
                 Text {
                     anchors.centerIn: parent
                     text: "󰥔"
-                    color: Nexa.Theme.text
-                    font.family: Nexa.Theme.iconFontFamily
-                    font.pixelSize: 15
+                    color: clockBtnMouse.containsMouse ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText
+                    font.family: NexaUI.NexaTypography.familyIcon
+                    font.pixelSize: NexaUI.NexaTypography.sizeMd
                 }
 
                 MouseArea {
@@ -83,7 +90,7 @@ Item {
             // Title / Breadcrumb
             Row {
                 Layout.alignment: Qt.AlignVCenter
-                spacing: Nexa.Theme.spacingSm
+                spacing: NexaUI.NexaTokens.spacingSm
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -95,10 +102,10 @@ Item {
                         default: return "󰕰"
                         }
                     }
-                    color: Nexa.Theme.primary
+                    color: NexaUI.NexaColors.primary
                     font {
-                        family: Nexa.Theme.iconFontFamily
-                        pixelSize: Nexa.Theme.iconMd
+                        family: NexaUI.NexaTypography.familyIcon
+                        pixelSize: NexaUI.NexaTypography.sizeLg
                     }
                 }
 
@@ -112,11 +119,11 @@ Item {
                         default: return "Control Center"
                         }
                     }
-                    color: Nexa.Theme.text
+                    color: NexaUI.NexaColors.text
                     font {
-                        family: Nexa.Theme.fontFamily
-                        pixelSize: Nexa.Theme.fontSizeMd
-                        weight: Nexa.Theme.fontWeightDemiBold
+                        family: NexaUI.NexaTypography.familyDisplay
+                        pixelSize: NexaUI.NexaTypography.sizeMd
+                        weight: NexaUI.NexaTypography.weightSemiBold
                     }
                 }
             }
@@ -128,10 +135,21 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 implicitHeight: 36
                 implicitWidth: 360
-                radius: 18
-                color: Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                radius: NexaUI.NexaTokens.radiusPill
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
+
+                // Top chamfer specular highlight
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    radius: parent.radius
+                    color: Qt.rgba(1, 1, 1, 0.12 * NexaUI.NexaOptics.specularIntensity)
+                    visible: NexaUI.NexaOptics.specularHighlight
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -173,8 +191,8 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: Nexa.Theme.borderThin
-            color: Nexa.Theme.divider
+            Layout.preferredHeight: NexaUI.NexaTokens.borderThin
+            color: NexaUI.NexaColors.borderSubtle
         }
 
 
@@ -195,11 +213,11 @@ Item {
                 x: -(root.currentPage * pageViewport.width)
 
                 Behavior on x {
-                    enabled: !Nexa.Theme.reducedMotion
+                    enabled: NexaUI.NexaMotion.enabled
                     SpringAnimation {
-                        spring: Nexa.Theme.springEnabled ? Nexa.Theme.springStiffness : 4.0
-                        damping: Nexa.Theme.springEnabled ? (Nexa.Theme.springDamping * 1.2) : 1.0
-                        mass: Nexa.Theme.springMass
+                        spring: NexaUI.NexaMotion.springStiffness
+                        damping: NexaUI.NexaMotion.springDamping
+                        mass: NexaUI.NexaMotion.springMass
                         epsilon: 0.25
                     }
                 }
@@ -256,42 +274,53 @@ Item {
 
         Layout.fillWidth: true
         Layout.fillHeight: true
-        radius: 15
+        radius: NexaUI.NexaTokens.radiusPill
 
         color: {
             if (tab.active)
-                return Nexa.Theme.selected
+                return NexaUI.NexaColors.primary
             if (tabMouse.containsMouse)
-                return Nexa.Theme.hover
+                return NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.08)
             return "transparent"
         }
 
         Behavior on color {
-            ColorAnimation { duration: Nexa.Theme.animationFast }
+            ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
+        }
+
+        // Top specular line when active
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            radius: parent.radius
+            color: Qt.rgba(1, 1, 1, 0.25 * NexaUI.NexaOptics.specularIntensity)
+            visible: tab.active && NexaUI.NexaOptics.specularHighlight
         }
 
         Row {
             anchors.centerIn: parent
-            spacing: 5
+            spacing: 6
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: tab.icon
-                color: tab.active ? Nexa.Theme.selectedText : Nexa.Theme.mutedText
+                color: tab.active ? NexaUI.NexaColors.onPrimary : (tabMouse.containsMouse ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText)
                 font {
-                    family: Nexa.Theme.iconFontFamily
-                    pixelSize: Nexa.Theme.iconSm
+                    family: NexaUI.NexaTypography.familyIcon
+                    pixelSize: NexaUI.NexaTypography.sizeSm
                 }
             }
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: tab.label
-                color: tab.active ? Nexa.Theme.selectedText : Nexa.Theme.mutedText
+                color: tab.active ? NexaUI.NexaColors.onPrimary : (tabMouse.containsMouse ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText)
                 font {
-                    family: Nexa.Theme.fontFamily
-                    pixelSize: Nexa.Theme.fontSizeXs
-                    weight: tab.active ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightMedium
+                    family: NexaUI.NexaTypography.familyBody
+                    pixelSize: NexaUI.NexaTypography.sizeXs
+                    weight: tab.active ? NexaUI.NexaTypography.weightSemiBold : NexaUI.NexaTypography.weightMedium
                 }
             }
         }
@@ -315,4 +344,3 @@ Item {
         }
     }
 }
-

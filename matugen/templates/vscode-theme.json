@@ -1,0 +1,227 @@
+{
+  "name": "Nexa",
+  "type": "dark",
+  "colors": {
+    "focusBorder": "{{colors.primary}}",
+    "foreground": "{{colors.on_surface}}",
+    "widget.shadow": "{{colors.shadow}}80",
+    "selection.background": "{{colors.primary_container}}",
+    "icon.foreground": "{{colors.primary}}",
+    "errorForeground": "{{colors.error}}",
+
+    "activityBar.background": "{{colors.surface_container_lowest}}",
+    "activityBar.foreground": "{{colors.primary}}",
+    "activityBar.inactiveForeground": "{{colors.on_surface_variant}}",
+    "activityBar.border": "{{colors.outline_variant}}40",
+    "activityBarBadge.background": "{{colors.primary}}",
+    "activityBarBadge.foreground": "{{colors.on_primary}}",
+
+    "sideBar.background": "{{colors.surface_container_low}}",
+    "sideBar.foreground": "{{colors.on_surface}}",
+    "sideBar.border": "{{colors.outline_variant}}40",
+    "sideBarTitle.foreground": "{{colors.on_surface}}",
+    "sideBarSectionHeader.background": "{{colors.surface_container}}",
+    "sideBarSectionHeader.foreground": "{{colors.primary}}",
+    "sideBarSectionHeader.border": "{{colors.outline_variant}}30",
+
+    "editorGroupHeader.tabsBackground": "{{colors.surface_container_low}}",
+    "editorGroupHeader.tabsBorder": "{{colors.outline_variant}}40",
+    "tab.activeBackground": "{{colors.background}}",
+    "tab.activeForeground": "{{colors.primary}}",
+    "tab.activeBorderTop": "{{colors.primary}}",
+    "tab.inactiveBackground": "{{colors.surface_container_low}}",
+    "tab.inactiveForeground": "{{colors.on_surface_variant}}",
+    "tab.border": "{{colors.outline_variant}}20",
+
+    "editor.background": "{{colors.background}}",
+    "editor.foreground": "{{colors.on_background}}",
+    "editorLineNumber.foreground": "{{colors.outline_variant}}",
+    "editorLineNumber.activeForeground": "{{colors.primary}}",
+    "editorCursor.foreground": "{{colors.primary}}",
+    "editor.selectionBackground": "{{colors.primary_container}}60",
+    "editor.selectionHighlightBackground": "{{colors.surface_container_highest}}50",
+    "editor.wordHighlightBackground": "{{colors.primary_container}}40",
+    "editor.lineHighlightBackground": "{{colors.surface_container_low}}40",
+    "editorIndentGuide.background": "{{colors.outline_variant}}30",
+    "editorIndentGuide.activeBackground": "{{colors.primary}}80",
+    "editorBracketMatch.background": "{{colors.primary_container}}50",
+    "editorBracketMatch.border": "{{colors.primary}}",
+
+    "statusBar.background": "{{colors.surface_container_lowest}}",
+    "statusBar.foreground": "{{colors.on_surface}}",
+    "statusBar.border": "{{colors.outline_variant}}40",
+    "statusBar.debuggingBackground": "{{colors.warning}}",
+    "statusBar.debuggingForeground": "{{colors.on_warning}}",
+    "statusBar.noFolderBackground": "{{colors.surface_container_lowest}}",
+    "statusBarItem.remoteBackground": "{{colors.primary}}",
+    "statusBarItem.remoteForeground": "{{colors.on_primary}}",
+    "statusBarItem.hoverBackground": "{{colors.surface_container_highest}}",
+
+    "titleBar.activeBackground": "{{colors.surface_container_lowest}}",
+    "titleBar.activeForeground": "{{colors.on_surface}}",
+    "titleBar.inactiveBackground": "{{colors.surface_container_lowest}}",
+    "titleBar.inactiveForeground": "{{colors.on_surface_variant}}",
+    "titleBar.border": "{{colors.outline_variant}}40",
+
+    "list.activeSelectionBackground": "{{colors.primary_container}}",
+    "list.activeSelectionForeground": "{{colors.on_primary_container}}",
+    "list.inactiveSelectionBackground": "{{colors.surface_container_high}}",
+    "list.inactiveSelectionForeground": "{{colors.on_surface}}",
+    "list.hoverBackground": "{{colors.surface_container}}",
+    "list.focusBackground": "{{colors.primary_container}}",
+    "list.highlightForeground": "{{colors.primary}}",
+
+    "button.background": "{{colors.primary}}",
+    "button.foreground": "{{colors.on_primary}}",
+    "button.hoverBackground": "{{colors.secondary}}",
+
+    "input.background": "{{colors.surface_container}}",
+    "input.foreground": "{{colors.on_surface}}",
+    "input.border": "{{colors.outline_variant}}",
+    "input.placeholderForeground": "{{colors.on_surface_variant}}80",
+    "inputOption.activeBorder": "{{colors.primary}}",
+
+    "dropdown.background": "{{colors.surface_container}}",
+    "dropdown.foreground": "{{colors.on_surface}}",
+    "dropdown.border": "{{colors.outline_variant}}",
+
+    "menu.background": "{{colors.surface_container_high}}",
+    "menu.foreground": "{{colors.on_surface}}",
+    "menu.selectionBackground": "{{colors.primary_container}}",
+    "menu.selectionForeground": "{{colors.on_primary_container}}",
+    "menu.separatorBackground": "{{colors.outline_variant}}",
+
+    "badge.background": "{{colors.primary}}",
+    "badge.foreground": "{{colors.on_primary}}",
+
+    "progressBar.background": "{{colors.primary}}",
+
+    "terminal.background": "{{colors.background}}",
+    "terminal.foreground": "{{colors.on_background}}",
+    "terminal.ansiBlack": "{{colors.surface}}",
+    "terminal.ansiRed": "{{colors.error}}",
+    "terminal.ansiGreen": "{{colors.success}}",
+    "terminal.ansiYellow": "{{colors.warning}}",
+    "terminal.ansiBlue": "{{colors.primary}}",
+    "terminal.ansiMagenta": "{{colors.tertiary}}",
+    "terminal.ansiCyan": "{{colors.info}}",
+    "terminal.ansiWhite": "{{colors.on_surface}}",
+    "terminal.ansiBrightBlack": "{{colors.outline}}",
+    "terminal.ansiBrightRed": "{{colors.error}}",
+    "terminal.ansiBrightGreen": "{{colors.success}}",
+    "terminal.ansiBrightYellow": "{{colors.warning}}",
+    "terminal.ansiBrightBlue": "{{colors.primary}}",
+    "terminal.ansiBrightMagenta": "{{colors.tertiary}}",
+    "terminal.ansiBrightCyan": "{{colors.info}}",
+    "terminal.ansiBrightWhite": "{{colors.on_background}}"
+  },
+  "tokenColors": [
+    {
+      "name": "Comment",
+      "scope": ["comment", "punctuation.definition.comment"],
+      "settings": {
+        "foreground": "{{colors.outline}}",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Keywords & Storage",
+      "scope": [
+        "keyword",
+        "storage",
+        "storage.type",
+        "keyword.control",
+        "keyword.operator.new",
+        "keyword.operator.expression"
+      ],
+      "settings": {
+        "foreground": "{{colors.tertiary}}",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Strings",
+      "scope": ["string", "punctuation.definition.string"],
+      "settings": {
+        "foreground": "{{colors.success}}"
+      }
+    },
+    {
+      "name": "Numbers & Constants",
+      "scope": [
+        "constant.numeric",
+        "constant.language",
+        "constant.character",
+        "constant.other"
+      ],
+      "settings": {
+        "foreground": "{{colors.warning}}"
+      }
+    },
+    {
+      "name": "Functions & Methods",
+      "scope": [
+        "entity.name.function",
+        "support.function",
+        "meta.function-call"
+      ],
+      "settings": {
+        "foreground": "{{colors.primary}}"
+      }
+    },
+    {
+      "name": "Classes & Types",
+      "scope": [
+        "entity.name.type",
+        "entity.name.class",
+        "support.class",
+        "support.type",
+        "entity.other.inherited-class"
+      ],
+      "settings": {
+        "foreground": "{{colors.secondary}}",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Variables & Parameters",
+      "scope": [
+        "variable",
+        "variable.parameter",
+        "variable.other"
+      ],
+      "settings": {
+        "foreground": "{{colors.on_background}}"
+      }
+    },
+    {
+      "name": "HTML & JSX Tags",
+      "scope": [
+        "entity.name.tag",
+        "punctuation.definition.tag"
+      ],
+      "settings": {
+        "foreground": "{{colors.primary}}"
+      }
+    },
+    {
+      "name": "Attributes",
+      "scope": ["entity.other.attribute-name"],
+      "settings": {
+        "foreground": "{{colors.secondary}}"
+      }
+    },
+    {
+      "name": "Operators & Punctuation",
+      "scope": [
+        "keyword.operator",
+        "punctuation.separator",
+        "punctuation.terminator",
+        "punctuation.accessor"
+      ],
+      "settings": {
+        "foreground": "{{colors.on_surface_variant}}"
+      }
+    }
+  ]
+}

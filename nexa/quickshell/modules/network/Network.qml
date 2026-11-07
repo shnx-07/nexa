@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
-import "../../theme" as Nexa
+import "../../NewNexaUI" as NexaUI
 
 
 Row {

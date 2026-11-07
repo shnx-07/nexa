@@ -3,10 +3,9 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import "../../../theme" as Nexa
 import "../../lockthemes/components"
 import "../../../services" as Services
-import "../../../theme/components" as NexaUI
+import "../../../NewNexaUI" as NexaUI
 
 Item {
     id: root
@@ -49,8 +48,8 @@ Item {
     readonly property int batteryPercent: Services.Battery ? Services.Battery.percentage : 100
 
     function rad(n) {
-        if (Nexa.Theme.nexaRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
+        if (NexaUI.NexaTokens.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (NexaUI.NexaTokens.nexaRounding / 10.0)));
     }
 
     function loadConfig() {
@@ -69,14 +68,14 @@ Item {
             "battery_saver_threshold": root.batterySaverThreshold
         };
         var jsonStr = JSON.stringify(cfg);
-        saveProcess.command = [Nexa.Theme.nexadBin, "hypr", "idle", "set", jsonStr];
+        saveProcess.command = [NexaUI.NexaTokens.nexadBin, "hypr", "idle", "set", jsonStr];
         saveProcess.running = true;
         showToast("✓ Power settings applied & synced");
     }
 
     Process {
         id: loadProcess
-        command: [Nexa.Theme.nexadBin, "hypr", "idle", "get"]
+        command: [NexaUI.NexaTokens.nexadBin, "hypr", "idle", "get"]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (this.text && this.text.trim() !== "") {
@@ -130,9 +129,9 @@ Item {
                 width: parent.width
                 height: 94
                 radius: root.rad(14)
-                color: Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 RowLayout {
                     anchors.fill: parent
@@ -143,16 +142,16 @@ Item {
                         width: 56
                         height: 56
                         radius: root.rad(12)
-                        color: root.isCharging ? Nexa.Theme.primaryContainer : Nexa.Theme.surfaceContainerHigh
-                        border.width: Nexa.Theme.borderThin
-                        border.color: root.isCharging ? Nexa.Theme.primary : Nexa.Theme.border
+                        color: root.isCharging ? NexaUI.NexaColors.primaryContainer : NexaUI.NexaColors.surfaceContainerHigh
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: root.isCharging ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                         Text {
                             anchors.centerIn: parent
                             text: root.isCharging ? "󱐋" : (root.batteryPercent > 20 ? "󰁹" : "󰂃")
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 26
-                            color: root.isCharging ? Nexa.Theme.primary : (root.batteryPercent <= 20 ? Nexa.Theme.error : Nexa.Theme.text)
+                            color: root.isCharging ? NexaUI.NexaColors.primary : (root.batteryPercent <= 20 ? NexaUI.NexaColors.error : NexaUI.NexaColors.text)
                         }
                     }
 
@@ -166,7 +165,7 @@ Item {
                                 text: root.isCharging ? "Plugged In & Charging (" + root.batteryPercent + "%)" : "Running on Battery (" + root.batteryPercent + "%)"
                                 font.pixelSize: 17
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             Rectangle {
@@ -174,9 +173,9 @@ Item {
                                 height: 22
                                 width: bSaverTxt.implicitWidth + 14
                                 radius: root.rad(6)
-                                color: Nexa.Theme.errorContainer
-                                border.width: Nexa.Theme.borderThin
-                                border.color: Nexa.Theme.error
+                                color: NexaUI.NexaColors.errorContainer
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: NexaUI.NexaColors.error
                                 anchors.verticalCenter: parent.verticalCenter
 
                                 StyledText {
@@ -185,7 +184,7 @@ Item {
                                     text: "󰂃 Safe Mode Active"
                                     font.pixelSize: 11
                                     font.weight: Font.Bold
-                                    color: Nexa.Theme.onErrorContainer
+                                    color: NexaUI.NexaColors.onErrorContainer
                                 }
                             }
                         }
@@ -193,7 +192,7 @@ Item {
                         StyledText {
                             text: root.isCharging ? "Active Profile: AC High Performance & Extended Sleep Timeouts" : "Active Profile: Dynamic Battery Conservation & Smart Dimming"
                             font.pixelSize: 12
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                         }
                     }
 
@@ -202,9 +201,9 @@ Item {
                         width: 120
                         height: 38
                         radius: root.rad(10)
-                        color: Nexa.Theme.surfaceContainerHigh
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
+                        color: NexaUI.NexaColors.surfaceContainerHigh
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: NexaUI.NexaColors.border
                         cursorShape: Qt.PointingHandCursor
                         onClicked: root.saveConfig()
 
@@ -213,15 +212,15 @@ Item {
                             spacing: 8
                             Text {
                                 text: "󰑐"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 14
-                                color: Nexa.Theme.primary
+                                color: NexaUI.NexaColors.primary
                             }
                             StyledText {
                                 text: "Sync Daemon"
                                 font.pixelSize: 12
                                 font.weight: Font.Medium
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                         }
                     }
@@ -235,9 +234,9 @@ Item {
                 width: parent.width
                 implicitHeight: lightCol.implicitHeight + 36
                 radius: root.rad(14)
-                color: Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 Column {
                     id: lightCol
@@ -250,9 +249,9 @@ Item {
                         spacing: 10
                         Text {
                             text: "󰌵"
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 20
-                            color: Nexa.Theme.primary
+                            color: NexaUI.NexaColors.primary
                         }
                         ColumnLayout {
                             spacing: 2
@@ -260,12 +259,12 @@ Item {
                                 text: "Screen Light & Backlight Timeout"
                                 font.pixelSize: 15
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                             StyledText {
                                 text: "Turns off display backlight when idle to preserve power and panel life."
                                 font.pixelSize: 12
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
                     }
@@ -277,8 +276,8 @@ Item {
 
                         Row {
                             spacing: 6
-                            Text { text: "󰁹"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 13; color: Nexa.Theme.mutedText }
-                            StyledText { text: "When running on battery:"; font.pixelSize: 12; font.weight: Font.Medium; color: Nexa.Theme.mutedText }
+                            Text { text: "󰁹"; font.family: NexaUI.NexaTypography.familyIcon; font.pixelSize: 13; color: NexaUI.NexaColors.mutedText }
+                            StyledText { text: "When running on battery:"; font.pixelSize: 12; font.weight: Font.Medium; color: NexaUI.NexaColors.mutedText }
                         }
 
                         Flow {
@@ -299,9 +298,9 @@ Item {
                                     width: bText.implicitWidth + 24
                                     height: 32
                                     radius: root.rad(8)
-                                    color: isSelected ? Nexa.Theme.primary : (hovered ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+                                    color: isSelected ? NexaUI.NexaColors.primary : (hovered ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: isSelected ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         root.screenOffBattery = modelData.secs;
@@ -314,7 +313,7 @@ Item {
                                         text: modelData.label
                                         font.pixelSize: 12
                                         font.weight: isSelected ? Font.Bold : Font.Normal
-                                        color: isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        color: isSelected ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                     }
                                 }
                             }
@@ -328,8 +327,8 @@ Item {
 
                         Row {
                             spacing: 6
-                            Text { text: "󱐋"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 13; color: Nexa.Theme.primary }
-                            StyledText { text: "When plugged into power (AC):"; font.pixelSize: 12; font.weight: Font.Medium; color: Nexa.Theme.mutedText }
+                            Text { text: "󱐋"; font.family: NexaUI.NexaTypography.familyIcon; font.pixelSize: 13; color: NexaUI.NexaColors.primary }
+                            StyledText { text: "When plugged into power (AC):"; font.pixelSize: 12; font.weight: Font.Medium; color: NexaUI.NexaColors.mutedText }
                         }
 
                         Flow {
@@ -349,9 +348,9 @@ Item {
                                     width: acText.implicitWidth + 24
                                     height: 32
                                     radius: root.rad(8)
-                                    color: isSelected ? Nexa.Theme.primary : (hovered ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+                                    color: isSelected ? NexaUI.NexaColors.primary : (hovered ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: isSelected ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         root.screenOffAc = modelData.secs;
@@ -364,7 +363,7 @@ Item {
                                         text: modelData.label
                                         font.pixelSize: 12
                                         font.weight: isSelected ? Font.Bold : Font.Normal
-                                        color: isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        color: isSelected ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                     }
                                 }
                             }
@@ -380,9 +379,9 @@ Item {
                 width: parent.width
                 implicitHeight: sleepCol.implicitHeight + 36
                 radius: root.rad(14)
-                color: Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 Column {
                     id: sleepCol
@@ -395,9 +394,9 @@ Item {
                         spacing: 10
                         Text {
                             text: "󰤄"
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 20
-                            color: Nexa.Theme.primary
+                            color: NexaUI.NexaColors.primary
                         }
                         ColumnLayout {
                             spacing: 2
@@ -405,12 +404,12 @@ Item {
                                 text: "Sleep & Suspend Device"
                                 font.pixelSize: 15
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                             StyledText {
                                 text: "Places device into low-power RAM suspend state after inactivity."
                                 font.pixelSize: 12
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
                     }
@@ -422,8 +421,8 @@ Item {
 
                         Row {
                             spacing: 6
-                            Text { text: "󰁹"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 13; color: Nexa.Theme.mutedText }
-                            StyledText { text: "On battery, suspend after:"; font.pixelSize: 12; font.weight: Font.Medium; color: Nexa.Theme.mutedText }
+                            Text { text: "󰁹"; font.family: NexaUI.NexaTypography.familyIcon; font.pixelSize: 13; color: NexaUI.NexaColors.mutedText }
+                            StyledText { text: "On battery, suspend after:"; font.pixelSize: 12; font.weight: Font.Medium; color: NexaUI.NexaColors.mutedText }
                         }
 
                         Flow {
@@ -443,9 +442,9 @@ Item {
                                     width: sbText.implicitWidth + 24
                                     height: 32
                                     radius: root.rad(8)
-                                    color: isSelected ? Nexa.Theme.primary : (hovered ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+                                    color: isSelected ? NexaUI.NexaColors.primary : (hovered ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: isSelected ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         root.sleepBattery = modelData.secs;
@@ -458,7 +457,7 @@ Item {
                                         text: modelData.label
                                         font.pixelSize: 12
                                         font.weight: isSelected ? Font.Bold : Font.Normal
-                                        color: isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        color: isSelected ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                     }
                                 }
                             }
@@ -472,8 +471,8 @@ Item {
 
                         Row {
                             spacing: 6
-                            Text { text: "󱐋"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 13; color: Nexa.Theme.primary }
-                            StyledText { text: "When plugged in, suspend after:"; font.pixelSize: 12; font.weight: Font.Medium; color: Nexa.Theme.mutedText }
+                            Text { text: "󱐋"; font.family: NexaUI.NexaTypography.familyIcon; font.pixelSize: 13; color: NexaUI.NexaColors.primary }
+                            StyledText { text: "When plugged in, suspend after:"; font.pixelSize: 12; font.weight: Font.Medium; color: NexaUI.NexaColors.mutedText }
                         }
 
                         Flow {
@@ -492,9 +491,9 @@ Item {
                                     width: saText.implicitWidth + 24
                                     height: 32
                                     radius: root.rad(8)
-                                    color: isSelected ? Nexa.Theme.primary : (hovered ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+                                    color: isSelected ? NexaUI.NexaColors.primary : (hovered ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: isSelected ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         root.sleepAc = modelData.secs;
@@ -507,7 +506,7 @@ Item {
                                         text: modelData.label
                                         font.pixelSize: 12
                                         font.weight: isSelected ? Font.Bold : Font.Normal
-                                        color: isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        color: isSelected ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                     }
                                 }
                             }
@@ -523,9 +522,9 @@ Item {
                 width: parent.width
                 implicitHeight: safeCol.implicitHeight + 36
                 radius: root.rad(14)
-                color: Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 Column {
                     id: safeCol
@@ -539,9 +538,9 @@ Item {
 
                         Text {
                             text: "󰂎"
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 20
-                            color: Nexa.Theme.primary
+                            color: NexaUI.NexaColors.primary
                         }
 
                         ColumnLayout {
@@ -551,12 +550,12 @@ Item {
                                 text: "Safe Mode (Battery Saver)"
                                 font.pixelSize: 15
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                             StyledText {
                                 text: "Extends battery longevity by engaging conservative power policies under threshold."
                                 font.pixelSize: 12
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -581,7 +580,7 @@ Item {
                             text: "Engage Safe Mode automatically when battery drops below:"
                             font.pixelSize: 12
                             font.weight: Font.Medium
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                         }
 
                         Flow {
@@ -600,9 +599,9 @@ Item {
                                     width: pctText.implicitWidth + 24
                                     height: 32
                                     radius: root.rad(8)
-                                    color: isSelected ? Nexa.Theme.primary : (hovered ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+                                    color: isSelected ? NexaUI.NexaColors.primary : (hovered ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: isSelected ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         root.batterySaverThreshold = modelData.pct;
@@ -615,7 +614,7 @@ Item {
                                         text: modelData.label
                                         font.pixelSize: 12
                                         font.weight: isSelected ? Font.Bold : Font.Normal
-                                        color: isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        color: isSelected ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                     }
                                 }
                             }
@@ -631,9 +630,9 @@ Item {
                 width: parent.width
                 implicitHeight: lockCol.implicitHeight + 36
                 radius: root.rad(14)
-                color: Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 Column {
                     id: lockCol
@@ -646,9 +645,9 @@ Item {
                         spacing: 10
                         Text {
                             text: "󰌾"
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 20
-                            color: Nexa.Theme.primary
+                            color: NexaUI.NexaColors.primary
                         }
                         ColumnLayout {
                             spacing: 2
@@ -656,12 +655,12 @@ Item {
                                 text: "Inactivity Screen Lock"
                                 font.pixelSize: 15
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                             StyledText {
                                 text: "Locks session and protects privacy after a period of idle inactivity."
                                 font.pixelSize: 12
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
                     }
@@ -673,8 +672,8 @@ Item {
 
                         Row {
                             spacing: 6
-                            Text { text: "󰁹"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 13; color: Nexa.Theme.mutedText }
-                            StyledText { text: "On battery, lock after:"; font.pixelSize: 12; font.weight: Font.Medium; color: Nexa.Theme.mutedText }
+                            Text { text: "󰁹"; font.family: NexaUI.NexaTypography.familyIcon; font.pixelSize: 13; color: NexaUI.NexaColors.mutedText }
+                            StyledText { text: "On battery, lock after:"; font.pixelSize: 12; font.weight: Font.Medium; color: NexaUI.NexaColors.mutedText }
                         }
 
                         Flow {
@@ -694,9 +693,9 @@ Item {
                                     width: lbText.implicitWidth + 24
                                     height: 32
                                     radius: root.rad(8)
-                                    color: isSelected ? Nexa.Theme.primary : (hovered ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+                                    color: isSelected ? NexaUI.NexaColors.primary : (hovered ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: isSelected ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         root.lockBattery = modelData.secs;
@@ -709,7 +708,7 @@ Item {
                                         text: modelData.label
                                         font.pixelSize: 12
                                         font.weight: isSelected ? Font.Bold : Font.Normal
-                                        color: isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        color: isSelected ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                     }
                                 }
                             }
@@ -723,8 +722,8 @@ Item {
 
                         Row {
                             spacing: 6
-                            Text { text: "󱐋"; font.family: Nexa.Theme.iconFontFamily; font.pixelSize: 13; color: Nexa.Theme.primary }
-                            StyledText { text: "When plugged in, lock after:"; font.pixelSize: 12; font.weight: Font.Medium; color: Nexa.Theme.mutedText }
+                            Text { text: "󱐋"; font.family: NexaUI.NexaTypography.familyIcon; font.pixelSize: 13; color: NexaUI.NexaColors.primary }
+                            StyledText { text: "When plugged in, lock after:"; font.pixelSize: 12; font.weight: Font.Medium; color: NexaUI.NexaColors.mutedText }
                         }
 
                         Flow {
@@ -744,9 +743,9 @@ Item {
                                     width: laText.implicitWidth + 24
                                     height: 32
                                     radius: root.rad(8)
-                                    color: isSelected ? Nexa.Theme.primary : (hovered ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+                                    color: isSelected ? NexaUI.NexaColors.primary : (hovered ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: isSelected ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         root.lockAc = modelData.secs;
@@ -759,7 +758,7 @@ Item {
                                         text: modelData.label
                                         font.pixelSize: 12
                                         font.weight: isSelected ? Font.Bold : Font.Normal
-                                        color: isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        color: isSelected ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                     }
                                 }
                             }
@@ -781,9 +780,9 @@ Item {
         width: toastTxt.implicitWidth + 32
         height: 36
         radius: root.rad(18)
-        color: Nexa.Theme.surfaceContainerHighest
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.primary
+        color: NexaUI.NexaColors.surfaceContainerHighest
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.primary
         opacity: root.toastVisible ? 1.0 : 0.0
         visible: opacity > 0
 
@@ -797,7 +796,7 @@ Item {
             text: root.toastMessage
             font.pixelSize: 12
             font.weight: Font.Medium
-            color: Nexa.Theme.text
+            color: NexaUI.NexaColors.text
         }
     }
 }

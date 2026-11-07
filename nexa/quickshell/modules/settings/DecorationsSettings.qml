@@ -4,8 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 import "../../services" as Services
 
 Item {
@@ -16,8 +15,8 @@ Item {
     signal requestClose()
 
     function rad(n) {
-        if (Nexa.Theme.nexaRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
+        if (NexaUI.NexaTokens.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (NexaUI.NexaTokens.nexaRounding / 10.0)));
     }
 
     readonly property string configPath:
@@ -148,16 +147,16 @@ Item {
                     width: 44
                     height: 44
                     radius: root.rad(22)
-                    color: Nexa.Theme.primaryContainer
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    color: NexaUI.NexaColors.primaryContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
 
                     Text {
                         anchors.centerIn: parent
                         text: ""
-                        font.family: Nexa.Theme.iconFontFamily
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 20
-                        color: Nexa.Theme.onPrimaryContainer
+                        color: NexaUI.NexaColors.onPrimaryContainer
                     }
                 }
 
@@ -167,17 +166,17 @@ Item {
 
                     Text {
                         text: "Top Bar Visual Decorations"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 16
                         font.weight: Font.Bold
-                        color: Nexa.Theme.text
+                        color: NexaUI.NexaColors.text
                     }
 
                     Text {
                         text: "Configure ambient horizon rails, star beads, parallax drift & audio wave undulation"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 12
-                        color: Nexa.Theme.mutedText
+                        color: NexaUI.NexaColors.mutedText
                     }
                 }
 
@@ -186,18 +185,18 @@ Item {
                     width: resetTxt.implicitWidth + 24
                     height: 34
                     radius: root.rad(8)
-                    color: resetHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    color: resetHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
 
                     Text {
                         id: resetTxt
                         anchors.centerIn: parent
                         text: "Reset Defaults"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 11
                         font.weight: Font.Medium
-                        color: Nexa.Theme.text
+                        color: NexaUI.NexaColors.text
                     }
 
                     MouseArea {
@@ -227,9 +226,9 @@ Item {
                 Layout.fillWidth: true
                 height: 140
                 radius: root.rad(14)
-                color: Nexa.Theme.cardBackground
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
                 clip: true
 
                 // Specular top highlight
@@ -238,7 +237,7 @@ Item {
                     anchors.right: parent.right
                     anchors.top: parent.top
                     height: 1
-                    color: Nexa.Theme.edgeHighlightStrong
+                    color: NexaUI.NexaColors.borderStrong
                 }
 
                 ColumnLayout {
@@ -255,10 +254,10 @@ Item {
                                 root.railStyle === "none" ? "CLEAN BAR (NO DECORATION)" :
                                 root.railStyle === "simple_line" ? "SIMPLE WAVE LINE" : "CONSTELLATION RAIL"
                             )
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                         }
 
                         Item { Layout.fillWidth: true }
@@ -269,9 +268,9 @@ Item {
                             width: waveSimTxt.implicitWidth + 20
                             height: 26
                             radius: root.rad(13)
-                            color: root.previewWaving ? Nexa.Theme.secondaryContainer : Nexa.Theme.surfaceContainerHigh
-                            border.width: Nexa.Theme.borderThin
-                            border.color: root.previewWaving ? Nexa.Theme.primary : Nexa.Theme.border
+                            color: root.previewWaving ? NexaUI.NexaColors.secondaryContainer : NexaUI.NexaColors.surfaceContainerHigh
+                            border.width: NexaUI.NexaTokens.borderThin
+                            border.color: root.previewWaving ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                             Row {
                                 anchors.centerIn: parent
@@ -280,19 +279,19 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.previewWaving ? "󰎈" : "󰐊"
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 11
-                                    color: root.previewWaving ? Nexa.Theme.onSecondaryContainer : Nexa.Theme.text
+                                    color: root.previewWaving ? NexaUI.NexaColors.onSecondaryContainer : NexaUI.NexaColors.text
                                 }
 
                                 Text {
                                     id: waveSimTxt
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.isActuallyPlaying ? "Live Music Active" : (root.previewSimulateWave ? "Simulating Music" : "Simulate Music Wave")
-                                    font.family: Nexa.Theme.fontFamily
+                                    font.family: NexaUI.NexaTypography.familyBody
                                     font.pixelSize: 10
                                     font.weight: Font.Medium
-                                    color: root.previewWaving ? Nexa.Theme.onSecondaryContainer : Nexa.Theme.text
+                                    color: root.previewWaving ? NexaUI.NexaColors.onSecondaryContainer : NexaUI.NexaColors.text
                                 }
                             }
 
@@ -314,8 +313,8 @@ Item {
                         Layout.fillHeight: true
                         radius: root.rad(8)
                         color: "#0c0d12"
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: NexaUI.NexaColors.border
                         clip: true
 
                         // Island Mock Pill
@@ -327,7 +326,7 @@ Item {
                             radius: root.rad(14)
                             color: "#181920"
                             border.width: 1
-                            border.color: Nexa.Theme.border
+                            border.color: NexaUI.NexaColors.border
                             z: 10
 
                             Behavior on width {
@@ -341,18 +340,18 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.previewWaving ? "󰎈" : "󱑂"
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 12
-                                    color: Nexa.Theme.primary
+                                    color: NexaUI.NexaColors.primary
                                 }
 
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.previewWaving ? "Playing Audio..." : "11:00 PM"
-                                    font.family: Nexa.Theme.fontFamily
+                                    font.family: NexaUI.NexaTypography.familyBody
                                     font.pixelSize: 11
                                     font.weight: Font.Medium
-                                    color: Nexa.Theme.text
+                                    color: NexaUI.NexaColors.text
                                 }
                             }
                         }
@@ -396,7 +395,7 @@ Item {
                                 property real amp: parent.waveAmp
                                 property real phase: parent.waveRipple
                                 property real op: root.lineOpacity
-                                property color col: Nexa.Theme.primary
+                                property color col: NexaUI.NexaColors.primary
                                 property real gapHalf: (previewIsland.width / 2) + 12
 
                                 onAmpChanged: requestPaint()
@@ -469,12 +468,12 @@ Item {
                                     Rectangle {
                                         anchors.centerIn: parent
                                         width: 12; height: 12; radius: 6
-                                        color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.25 * root.glowIntensity)
+                                        color: Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.25 * root.glowIntensity)
                                     }
                                     Rectangle {
                                         anchors.centerIn: parent
                                         width: 3.5; height: 3.5; radius: 1.75
-                                        color: Nexa.Theme.text
+                                        color: NexaUI.NexaColors.text
                                     }
                                 }
                             }
@@ -496,12 +495,12 @@ Item {
                                     Rectangle {
                                         anchors.centerIn: parent
                                         width: 16; height: 16; radius: 8
-                                        color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.45 * root.glowIntensity)
+                                        color: Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.45 * root.glowIntensity)
                                     }
                                     Rectangle {
                                         anchors.centerIn: parent
                                         width: 4.5; height: 4.5; radius: 2.25
-                                        color: Nexa.Theme.text
+                                        color: NexaUI.NexaColors.text
                                     }
                                 }
                             }
@@ -514,9 +513,9 @@ Item {
                             anchors.bottomMargin: 8
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: "No decoration active · Clean stock top bar"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 11
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                         }
                     }
                 }
@@ -527,11 +526,11 @@ Item {
             // ────────────────────────────────────────────────────────────
             Text {
                 text: "DECORATION STYLE"
-                font.family: Nexa.Theme.fontFamily
+                font.family: NexaUI.NexaTypography.familyBody
                 font.pixelSize: 11
                 font.weight: Font.DemiBold
                 font.letterSpacing: 1.0
-                color: Nexa.Theme.mutedText
+                color: NexaUI.NexaColors.mutedText
                 Layout.topMargin: 4
             }
 
@@ -546,10 +545,10 @@ Item {
                     height: 100
                     radius: root.rad(12)
                     color: root.railStyle === "none"
-                        ? Nexa.Theme.selectedSurface
-                        : (noneCardMouse.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.cardBackground)
-                    border.width: root.railStyle === "none" ? 1.5 : Nexa.Theme.borderThin
-                    border.color: root.railStyle === "none" ? Nexa.Theme.primary : Nexa.Theme.border
+                        ? NexaUI.NexaColors.primaryContainer
+                        : (noneCardMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer)
+                    border.width: root.railStyle === "none" ? 1.5 : NexaUI.NexaTokens.borderThin
+                    border.color: root.railStyle === "none" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -560,31 +559,31 @@ Item {
                             spacing: 10
                             Text {
                                 text: "󰅖"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 18
-                                color: root.railStyle === "none" ? Nexa.Theme.primary : Nexa.Theme.text
+                                color: root.railStyle === "none" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
                             }
                             Text {
                                 text: "None (Clean)"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 14
                                 font.weight: Font.Bold
-                                color: root.railStyle === "none" ? Nexa.Theme.primary : Nexa.Theme.text
+                                color: root.railStyle === "none" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
                             }
                             Item { Layout.fillWidth: true }
                             Rectangle {
                                 width: 14; height: 14; radius: 7
-                                color: root.railStyle === "none" ? Nexa.Theme.primary : "transparent"
+                                color: root.railStyle === "none" ? NexaUI.NexaColors.primary : "transparent"
                                 border.width: 1.5
-                                border.color: root.railStyle === "none" ? Nexa.Theme.primary : Nexa.Theme.outline
+                                border.color: root.railStyle === "none" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.outline
                             }
                         }
 
                         Text {
                             text: "Clean stock top bar without extra lines or particles. Pure minimalism."
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 11
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                             wrapMode: Text.WordWrap
                             Layout.fillWidth: true
                         }
@@ -610,10 +609,10 @@ Item {
                     height: 100
                     radius: root.rad(12)
                     color: root.railStyle === "simple_line"
-                        ? Nexa.Theme.selectedSurface
-                        : (simpleCardMouse.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.cardBackground)
-                    border.width: root.railStyle === "simple_line" ? 1.5 : Nexa.Theme.borderThin
-                    border.color: root.railStyle === "simple_line" ? Nexa.Theme.primary : Nexa.Theme.border
+                        ? NexaUI.NexaColors.primaryContainer
+                        : (simpleCardMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer)
+                    border.width: root.railStyle === "simple_line" ? 1.5 : NexaUI.NexaTokens.borderThin
+                    border.color: root.railStyle === "simple_line" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -624,31 +623,31 @@ Item {
                             spacing: 10
                             Text {
                                 text: "󰈺"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 20
-                                color: root.railStyle === "simple_line" ? Nexa.Theme.primary : Nexa.Theme.text
+                                color: root.railStyle === "simple_line" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
                             }
                             Text {
                                 text: "Simple Wave Line"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 14
                                 font.weight: Font.Bold
-                                color: root.railStyle === "simple_line" ? Nexa.Theme.primary : Nexa.Theme.text
+                                color: root.railStyle === "simple_line" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
                             }
                             Item { Layout.fillWidth: true }
                             Rectangle {
                                 width: 14; height: 14; radius: 7
-                                color: root.railStyle === "simple_line" ? Nexa.Theme.primary : "transparent"
+                                color: root.railStyle === "simple_line" ? NexaUI.NexaColors.primary : "transparent"
                                 border.width: 1.5
-                                border.color: root.railStyle === "simple_line" ? Nexa.Theme.primary : Nexa.Theme.outline
+                                border.color: root.railStyle === "simple_line" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.outline
                             }
                         }
 
                         Text {
                             text: "Sleek continuous rail without beads. Dynamically undulates into soundwaves on music playback."
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 11
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                             wrapMode: Text.WordWrap
                             Layout.fillWidth: true
                         }
@@ -674,10 +673,10 @@ Item {
                     height: 100
                     radius: root.rad(12)
                     color: root.railStyle === "constellation"
-                        ? Nexa.Theme.selectedSurface
-                        : (constellCardMouse.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.cardBackground)
-                    border.width: root.railStyle === "constellation" ? 1.5 : Nexa.Theme.borderThin
-                    border.color: root.railStyle === "constellation" ? Nexa.Theme.primary : Nexa.Theme.border
+                        ? NexaUI.NexaColors.primaryContainer
+                        : (constellCardMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer)
+                    border.width: root.railStyle === "constellation" ? 1.5 : NexaUI.NexaTokens.borderThin
+                    border.color: root.railStyle === "constellation" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -688,31 +687,31 @@ Item {
                             spacing: 10
                             Text {
                                 text: ""
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 18
-                                color: root.railStyle === "constellation" ? Nexa.Theme.primary : Nexa.Theme.text
+                                color: root.railStyle === "constellation" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
                             }
                             Text {
                                 text: "Constellation Rail"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 14
                                 font.weight: Font.Bold
-                                color: root.railStyle === "constellation" ? Nexa.Theme.primary : Nexa.Theme.text
+                                color: root.railStyle === "constellation" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
                             }
                             Item { Layout.fillWidth: true }
                             Rectangle {
                                 width: 14; height: 14; radius: 7
-                                color: root.railStyle === "constellation" ? Nexa.Theme.primary : "transparent"
+                                color: root.railStyle === "constellation" ? NexaUI.NexaColors.primary : "transparent"
                                 border.width: 1.5
-                                border.color: root.railStyle === "constellation" ? Nexa.Theme.primary : Nexa.Theme.outline
+                                border.color: root.railStyle === "constellation" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.outline
                             }
                         }
 
                         Text {
                             text: "Dual-speed drifting beads with luminous flares riding dynamic audio waves along the rail."
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 11
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                             wrapMode: Text.WordWrap
                             Layout.fillWidth: true
                         }
@@ -737,20 +736,20 @@ Item {
             // ────────────────────────────────────────────────────────────
             Text {
                 text: "ANIMATION & GEOMETRY TUNING"
-                font.family: Nexa.Theme.fontFamily
+                font.family: NexaUI.NexaTypography.familyBody
                 font.pixelSize: 11
                 font.weight: Font.DemiBold
                 font.letterSpacing: 1.0
-                color: Nexa.Theme.mutedText
+                color: NexaUI.NexaColors.mutedText
                 Layout.topMargin: 8
             }
 
             Rectangle {
                 Layout.fillWidth: true
                 radius: root.rad(14)
-                color: Nexa.Theme.cardBackground
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
                 implicitHeight: paramsCol.implicitHeight + 32
 
                 ColumnLayout {
@@ -769,16 +768,16 @@ Item {
                             spacing: 2
                             Text {
                                 text: "Bead Drift Direction"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 13
                                 font.weight: Font.Medium
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                             Text {
                                 text: "Horizontal direction of drifting constellation particles along the rail"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -786,9 +785,9 @@ Item {
                         Rectangle {
                             width: 220; height: 34
                             radius: root.rad(17)
-                            color: Nexa.Theme.surfaceContainerHigh
-                            border.width: Nexa.Theme.borderThin
-                            border.color: Nexa.Theme.border
+                            color: NexaUI.NexaColors.surfaceContainerHigh
+                            border.width: NexaUI.NexaTokens.borderThin
+                            border.color: NexaUI.NexaColors.border
 
                             Row {
                                 anchors.fill: parent
@@ -800,7 +799,7 @@ Item {
                                     width: (parent.width - 4) / 2
                                     height: parent.height
                                     radius: root.rad(14)
-                                    color: root.railDirection === "left-to-right" ? Nexa.Theme.primary : "transparent"
+                                    color: root.railDirection === "left-to-right" ? NexaUI.NexaColors.primary : "transparent"
 
                                     Row {
                                         anchors.centerIn: parent
@@ -810,15 +809,15 @@ Item {
                                             text: "→"
                                             font.pixelSize: 13
                                             font.weight: Font.Bold
-                                            color: root.railDirection === "left-to-right" ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                            color: root.railDirection === "left-to-right" ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                         }
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: "Left to Right"
-                                            font.family: Nexa.Theme.fontFamily
+                                            font.family: NexaUI.NexaTypography.familyBody
                                             font.pixelSize: 11
                                             font.weight: Font.Medium
-                                            color: root.railDirection === "left-to-right" ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                            color: root.railDirection === "left-to-right" ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                         }
                                     }
 
@@ -837,7 +836,7 @@ Item {
                                     width: (parent.width - 4) / 2
                                     height: parent.height
                                     radius: root.rad(14)
-                                    color: root.railDirection === "right-to-left" ? Nexa.Theme.primary : "transparent"
+                                    color: root.railDirection === "right-to-left" ? NexaUI.NexaColors.primary : "transparent"
 
                                     Row {
                                         anchors.centerIn: parent
@@ -847,15 +846,15 @@ Item {
                                             text: "←"
                                             font.pixelSize: 13
                                             font.weight: Font.Bold
-                                            color: root.railDirection === "right-to-left" ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                            color: root.railDirection === "right-to-left" ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                         }
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: "Right to Left"
-                                            font.family: Nexa.Theme.fontFamily
+                                            font.family: NexaUI.NexaTypography.familyBody
                                             font.pixelSize: 11
                                             font.weight: Font.Medium
-                                            color: root.railDirection === "right-to-left" ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                            color: root.railDirection === "right-to-left" ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                         }
                                     }
 
@@ -875,7 +874,7 @@ Item {
                     // Divider
                     Rectangle {
                         Layout.fillWidth: true; height: 1
-                        color: Nexa.Theme.border; opacity: 0.5
+                        color: NexaUI.NexaColors.border; opacity: 0.5
                         visible: root.railStyle === "constellation"
                     }
 
@@ -889,16 +888,16 @@ Item {
                             spacing: 2
                             Text {
                                 text: "Animation Drift Speed"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 13
                                 font.weight: Font.Medium
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                             Text {
                                 text: "Controls baseline velocity of slow and fast particle layers (" + root.railSpeed.toFixed(1) + "x)"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -921,7 +920,7 @@ Item {
                     // Divider
                     Rectangle {
                         Layout.fillWidth: true; height: 1
-                        color: Nexa.Theme.border; opacity: 0.5
+                        color: NexaUI.NexaColors.border; opacity: 0.5
                         visible: root.railStyle === "constellation"
                     }
 
@@ -935,16 +934,16 @@ Item {
                             spacing: 2
                             Text {
                                 text: "Bead Glow Intensity"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 13
                                 font.weight: Font.Medium
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                             Text {
                                 text: "Opacity and radius of luminous halos surrounding beads (" + Math.round(root.glowIntensity * 100) + "%)"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -967,7 +966,7 @@ Item {
                     // Divider
                     Rectangle {
                         Layout.fillWidth: true; height: 1
-                        color: Nexa.Theme.border; opacity: 0.5
+                        color: NexaUI.NexaColors.border; opacity: 0.5
                         visible: root.railStyle === "constellation"
                     }
 
@@ -981,16 +980,16 @@ Item {
                             spacing: 2
                             Text {
                                 text: "Star Bead Density"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 13
                                 font.weight: Font.Medium
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                             Text {
                                 text: "Total number of constellation particles orbiting the rail (" + root.particleCount + " beads)"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -1013,7 +1012,7 @@ Item {
                     // Divider
                     Rectangle {
                         Layout.fillWidth: true; height: 1
-                        color: Nexa.Theme.border; opacity: 0.5
+                        color: NexaUI.NexaColors.border; opacity: 0.5
                         visible: root.railStyle !== "none"
                     }
 
@@ -1027,16 +1026,16 @@ Item {
                             spacing: 2
                             Text {
                                 text: "Horizon Rail Line Opacity"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 13
                                 font.weight: Font.Medium
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                             Text {
                                 text: "Subtlety of the horizontal track line (" + Math.round(root.lineOpacity * 100) + "%)"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -1069,9 +1068,9 @@ Item {
         width: toastTextItem.implicitWidth + 36
         height: 38
         radius: root.rad(19)
-        color: Nexa.Theme.surfaceContainerHighest
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.border
+        color: NexaUI.NexaColors.surfaceContainerHighest
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.border
         opacity: root.toastVisible ? 1.0 : 0.0
         visible: opacity > 0.01
 
@@ -1086,19 +1085,19 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "󰄬"
-                font.family: Nexa.Theme.iconFontFamily
+                font.family: NexaUI.NexaTypography.familyIcon
                 font.pixelSize: 14
-                color: Nexa.Theme.primary
+                color: NexaUI.NexaColors.primary
             }
 
             Text {
                 id: toastTextItem
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.toastText
-                font.family: Nexa.Theme.fontFamily
+                font.family: NexaUI.NexaTypography.familyBody
                 font.pixelSize: 12
                 font.weight: Font.Medium
-                color: Nexa.Theme.text
+                color: NexaUI.NexaColors.text
             }
         }
     }

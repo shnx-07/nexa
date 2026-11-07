@@ -3,8 +3,8 @@
   "style": "simple_line",
   "mode": "workspaces",
   "direction": "right-to-left",
-  "speed": 1.1,
-  "glow_intensity": 0.8,
+  "speed": 1.0,
+  "glow_intensity": 0.85,
   "particle_count": 14,
   "line_opacity": 0.8
 }

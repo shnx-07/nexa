@@ -1,6 +1,6 @@
 {
   "master_enabled": true,
-  "master_volume": 33,
+  "master_volume": 55,
   "sounds": {
     "lock": {
       "enabled": true,
@@ -10,13 +10,13 @@
       "enabled": true,
       "volume": 16
     },
-    "volumne": {
-      "enabled": true,
-      "volume": 36
-    },
     "low_battery": {
       "enabled": true,
       "volume": 82
+    },
+    "volumne": {
+      "enabled": true,
+      "volume": 95
     }
   }
 }

@@ -1,0 +1,365 @@
+// pragma ComponentBehavior: Bound
+import QtQuick
+import QtQuick.Layouts
+import Quickshell
+import "../../../NewNexaUI" as NexaUI
+
+Rectangle {
+    id: root
+
+    required property var presetData
+    property string stagedPresetId: ""
+    property string activePresetId: ""
+    property string activeStyle: ""
+    property string currentMode: "dark"
+    property bool isFavorited: false
+
+    signal cardSelected(string presetId, string mode)
+    signal toggleFavoriteRequested(string presetId)
+
+    readonly property bool isStaged: root.stagedPresetId === root.presetData.id
+    readonly property bool isSystemActive: root.activeStyle === "preset" && root.activePresetId === root.presetData.id
+
+    readonly property string displayName: {
+        const p = root.presetData;
+        if (!p) return "";
+        if (p.id === "extras/Dark" || (p.name === "extras" && p.id && p.id.indexOf("Dark") >= 0)) {
+            return "Material 3 Dark";
+        }
+        if (p.id === "extras/Light" || (p.name === "extras" && p.id && p.id.indexOf("Light") >= 0)) {
+            return "Material 3 Light";
+        }
+        if (!p.name) return p.id || "";
+        return p.name.replace(/([a-z])([A-Z])/g, '$1 $2');
+    }
+
+    readonly property bool isDualPreset: {
+        const p = root.presetData;
+        return p && p.variants && p.variants.length > 1;
+    }
+
+    readonly property bool isLightPreset: {
+        const p = root.presetData;
+        if (!p) return false;
+        if (root.isDualPreset) return false;
+        if (p.id === "extras/Light") return true;
+        const nameLower = ((p.name || "") + " " + (p.id || "")).toLowerCase();
+        return nameLower.indexOf("light") >= 0 || nameLower.indexOf("dawn") >= 0 || nameLower.indexOf("latte") >= 0;
+    }
+
+    readonly property color col0: {
+        const prev = root.presetData && root.presetData.previews;
+        if (prev) {
+            let arr = prev[root.currentMode];
+            if (!arr || arr.length === 0)
+                arr = prev["default"] || prev["dark"] || prev["light"];
+            if (arr && arr.length > 0) return arr[0];
+        }
+        return NexaUI.NexaColors.primary;
+    }
+
+    readonly property color col1: {
+        const prev = root.presetData && root.presetData.previews;
+        if (prev) {
+            let arr = prev[root.currentMode];
+            if (!arr || arr.length === 0)
+                arr = prev["default"] || prev["dark"] || prev["light"];
+            if (arr && arr.length > 1) return arr[1];
+        }
+        return NexaUI.NexaColors.secondary;
+    }
+
+    readonly property color col2: {
+        const prev = root.presetData && root.presetData.previews;
+        if (prev) {
+            let arr = prev[root.currentMode];
+            if (!arr || arr.length === 0)
+                arr = prev["default"] || prev["dark"] || prev["light"];
+            if (arr && arr.length > 2) return arr[2];
+        }
+        return NexaUI.NexaColors.tertiary;
+    }
+
+    height: 66
+    radius: NexaUI.NexaTokens.radiusSm
+
+    color: isStaged
+        ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.08)
+        : (cardMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer)
+
+    border.width: isStaged ? 1.5 : (isSystemActive ? 1.0 : 1.0)
+    border.color: isStaged ? NexaUI.NexaColors.primary : (isSystemActive ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border)
+
+    Behavior on color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
+    Behavior on border.color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
+
+    RowLayout {
+        anchors.fill: parent
+        anchors.leftMargin: 12
+        anchors.rightMargin: 10
+        anchors.topMargin: 8
+        anchors.bottomMargin: 8
+        spacing: 8
+        z: 1
+
+        // Left: Preset Title & Status Pills
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 4
+
+            Text {
+                text: root.displayName
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: 13
+                font.weight: root.isStaged ? NexaUI.NexaTypography.weightBold : NexaUI.NexaTypography.weightSemiBold
+                color: root.isStaged ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
+
+            Row {
+                spacing: 6
+
+                // For Dual-Mode Presets: Interactive [ 󰖔 Dark ] and [ 󰖙 Light ] pills
+                Row {
+                    visible: root.isDualPreset
+                    spacing: 4
+
+                    // Dark Mode Pill
+                    Rectangle {
+                        height: 18
+                        width: darkPillRow.implicitWidth + 8
+                        radius: 9
+                        readonly property bool isActive: (root.isStaged || root.isSystemActive) ? (root.currentMode === "dark") : false
+                        color: isActive ? NexaUI.NexaColors.primary : (darkPillHov.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHighest)
+                        border.width: isActive ? 1 : 0
+                        border.color: NexaUI.NexaColors.primary
+
+                        Row {
+                            id: darkPillRow
+                            anchors.centerIn: parent
+                            spacing: 3
+                            Text {
+                                text: "󰖔"
+                                font.family: NexaUI.NexaTypography.familyIcon
+                                font.pixelSize: 10
+                                color: parent.parent.isActive ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.mutedText
+                            }
+                            Text {
+                                text: "Dark"
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 9
+                                font.weight: parent.parent.isActive ? NexaUI.NexaTypography.weightBold : NexaUI.NexaTypography.weightRegular
+                                color: parent.parent.isActive ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.mutedText
+                            }
+                        }
+
+                        MouseArea {
+                            id: darkPillHov
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            propagateComposedEvents: false
+                            onClicked: (mouse) => {
+                                mouse.accepted = true;
+                                root.cardSelected(root.presetData.id, "dark");
+                            }
+                        }
+                    }
+
+                    // Light Mode Pill
+                    Rectangle {
+                        height: 18
+                        width: lightPillRow.implicitWidth + 8
+                        radius: 9
+                        readonly property bool isActive: (root.isStaged || root.isSystemActive) ? (root.currentMode === "light") : false
+                        color: isActive ? "#e5a50a" : (lightPillHov.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHighest)
+                        border.width: isActive ? 1 : 0
+                        border.color: isActive ? "#e5a50a" : "transparent"
+
+                        Row {
+                            id: lightPillRow
+                            anchors.centerIn: parent
+                            spacing: 3
+                            Text {
+                                text: "󰖙"
+                                font.family: NexaUI.NexaTypography.familyIcon
+                                font.pixelSize: 10
+                                color: parent.parent.isActive ? "#1a1a24" : "#e5a50a"
+                            }
+                            Text {
+                                text: "Light"
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 9
+                                font.weight: parent.parent.isActive ? NexaUI.NexaTypography.weightBold : NexaUI.NexaTypography.weightRegular
+                                color: parent.parent.isActive ? "#1a1a24" : NexaUI.NexaColors.mutedText
+                            }
+                        }
+
+                        MouseArea {
+                            id: lightPillHov
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            propagateComposedEvents: false
+                            onClicked: (mouse) => {
+                                mouse.accepted = true;
+                                root.cardSelected(root.presetData.id, "light");
+                            }
+                        }
+                    }
+                }
+
+                // For Standalone Presets: Single Badge
+                Rectangle {
+                    visible: !root.isDualPreset
+                    height: 18
+                    width: singlePillRow.implicitWidth + 8
+                    radius: 9
+                    color: root.isLightPreset ? Qt.rgba(0.9, 0.65, 0.05, 0.15) : NexaUI.NexaColors.surfaceContainerHighest
+
+                    Row {
+                        id: singlePillRow
+                        anchors.centerIn: parent
+                        spacing: 3
+                        Text {
+                            text: root.isLightPreset ? "󰖙" : "󰖔"
+                            font.family: NexaUI.NexaTypography.familyIcon
+                            font.pixelSize: 10
+                            color: root.isLightPreset ? "#e5a50a" : NexaUI.NexaColors.mutedText
+                        }
+                        Text {
+                            text: root.isLightPreset ? "Light" : "Dark"
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: 9
+                            font.weight: NexaUI.NexaTypography.weightMedium
+                            color: root.isLightPreset ? "#e5a50a" : NexaUI.NexaColors.mutedText
+                        }
+                    }
+                }
+
+                // Active Badge
+                Rectangle {
+                    visible: root.isSystemActive
+                    height: 18
+                    width: activeText.implicitWidth + 10
+                    radius: 9
+                    color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.15)
+
+                    Text {
+                        id: activeText
+                        anchors.centerIn: parent
+                        text: "Active"
+                        font.family: NexaUI.NexaTypography.familyBody
+                        font.pixelSize: 9
+                        font.weight: NexaUI.NexaTypography.weightSemiBold
+                        color: NexaUI.NexaColors.primary
+                    }
+                }
+
+                // Staged indicator (if not active)
+                Rectangle {
+                    visible: root.isStaged && !root.isSystemActive
+                    height: 18
+                    width: stagedText.implicitWidth + 10
+                    radius: 9
+                    color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.15)
+
+                    Text {
+                        id: stagedText
+                        anchors.centerIn: parent
+                        text: "Selected"
+                        font.family: NexaUI.NexaTypography.familyBody
+                        font.pixelSize: 9
+                        font.weight: NexaUI.NexaTypography.weightSemiBold
+                        color: NexaUI.NexaColors.primary
+                    }
+                }
+            }
+        }
+
+        // Right: Connected 3-Tone Capsule Swatch Ribbon
+        Rectangle {
+            Layout.preferredWidth: 60
+            Layout.preferredHeight: 22
+            radius: 11
+            clip: true
+            border.width: 1
+            border.color: NexaUI.NexaColors.border
+
+            Row {
+                anchors.fill: parent
+
+                Rectangle {
+                    width: 20
+                    height: parent.height
+                    color: root.col0
+                }
+
+                Rectangle {
+                    width: 20
+                    height: parent.height
+                    color: root.col1
+                }
+
+                Rectangle {
+                    width: 20
+                    height: parent.height
+                    color: root.col2
+                }
+            }
+        }
+
+        // Star / Favorite Toggle Button
+        Rectangle {
+            id: starBtn
+            Layout.preferredWidth: 28
+            Layout.preferredHeight: 28
+            radius: 14
+            z: 2
+            color: root.isFavorited
+                ? Qt.rgba(0.96, 0.62, 0.04, 0.18)
+                : (starMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : "transparent")
+            border.width: root.isFavorited ? 1 : 0
+            border.color: root.isFavorited ? Qt.rgba(0.96, 0.62, 0.04, 0.4) : "transparent"
+
+            Behavior on color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
+
+            Text {
+                anchors.centerIn: parent
+                text: root.isFavorited ? "" : ""
+                font.family: NexaUI.NexaTypography.familyIcon
+                font.pixelSize: 14
+                color: root.isFavorited ? "#f59e0b" : (starMouse.containsMouse ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText)
+            }
+
+            MouseArea {
+                id: starMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                propagateComposedEvents: false
+                onClicked: (mouse) => {
+                    mouse.accepted = true;
+                    root.toggleFavoriteRequested(root.presetData.id);
+                }
+            }
+        }
+    }
+
+    MouseArea {
+        id: cardMouse
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: {
+            if (root.isDualPreset) {
+                root.cardSelected(root.presetData.id, root.currentMode);
+            } else if (root.isLightPreset) {
+                root.cardSelected(root.presetData.id, "light");
+            } else {
+                root.cardSelected(root.presetData.id, "dark");
+            }
+        }
+    }
+}

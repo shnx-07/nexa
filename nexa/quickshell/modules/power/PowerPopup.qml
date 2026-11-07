@@ -2,21 +2,12 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
-
+import "../../NewNexaUI" as NexaUI
 
 PanelWindow {
     id: root
 
-
-    // ============================================================
-    // POWER POPUP
-    // ============================================================
-
     property var anchorItem: null
-
     visible: false
 
     anchors {
@@ -27,26 +18,15 @@ PanelWindow {
     }
 
     color: "transparent"
-
     aboveWindows: true
     exclusionMode: ExclusionMode.Ignore
-
     focusable: visible
 
-
-    // ============================================================
-    // HYPRLAND LAYER
-    // ============================================================
-
     WlrLayershell.namespace: "nexa-power"
-
 
     readonly property string nexadBin:
         Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
 
-    // ============================================================
-    // POWER COMMAND
-    // ============================================================
     function runLockAction() {
         console.log("NEXA power action: lock")
         Quickshell.execDetached([root.nexadBin, "power", "lock"])
@@ -59,132 +39,116 @@ PanelWindow {
         root.visible = false
     }
 
-
-    // ============================================================
-    // ESCAPE
-    // ============================================================
-
     Shortcut {
         sequence: "Escape"
-
         enabled: root.visible
-
-        onActivated:
-            root.visible = false
+        onActivated: root.visible = false
     }
 
-
-    // ============================================================
-    // FULLSCREEN BACKGROUND
-    // ============================================================
-
+    // Fullscreen backdrop
     Rectangle {
         id: backdrop
-
         anchors.fill: parent
-
         z: 0
-
-        color: Qt.rgba(
-            0.02,
-            0.02,
-            0.02,
-            0.58
-        )
-
+        color: Qt.rgba(0.02, 0.02, 0.02, 0.58)
         opacity: root.visible ? 1.0 : 0.0
 
         Behavior on opacity {
             NumberAnimation {
-                duration: 200
-                easing.type: Nexa.Theme.easingEnter
+                duration: NexaUI.NexaMotion.durationFast
+                easing.type: NexaUI.NexaMotion.decelerateEasing
             }
         }
 
-
-        // Clicking outside the power controls closes the popup.
-
         MouseArea {
             id: backdropMouse
-
             anchors.fill: parent
-
             hoverEnabled: false
-
-            onClicked:
-                root.visible = false
+            onClicked: root.visible = false
         }
     }
 
-
-    // ============================================================
-    // POWER CONTAINER
-    // ============================================================
+    // GPU-Accelerated Nexa Shadow for Power Dialog (Layer 1)
+    NexaUI.NexaShadow {
+        id: powerShadow
+        targetItem: powerContainer
+        elevation: 2
+        spread: 0.10
+    }
 
     Rectangle {
         id: powerContainer
-
         anchors.centerIn: parent
-
         z: 10
-
-        width:
-            powerRow.width + 36
-
-        height:
-            powerRow.height + 30
-
-        radius: 16
-
-        color: Qt.rgba(
-            0.03,
-            0.03,
-            0.03,
-            0.52
-        )
-
-        border.width: 0
+        width: powerRow.width + 36
+        height: powerRow.height + 30
+        radius: NexaUI.NexaTokens.radiusLg
+        color: NexaUI.NexaColors.surfaceContainer
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.border
+        clip: true
 
         NexaUI.NexaShaderSubstrate {
             anchors.fill: parent
             radius: parent.radius
         }
 
+        // Layer 1 4-stop micro-gradient
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+            opacity: NexaUI.NexaOptics.gradientIntensity * 0.75
+            gradient: Gradient {
+                GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.06) }
+                GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.02) }
+                GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.00) }
+                GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.12) }
+            }
+        }
 
-        // Spring entrance when popup opens
-        scale: root.visible ? 1.0 : 0.90
+        // Layer 1 Top Specular Chamfer Highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: Math.max(0, parent.width - parent.radius * 1.6)
+            height: 1
+            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+            z: 2
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.35) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        scale: root.visible ? 1.0 : 0.92
         opacity: root.visible ? 1.0 : 0.0
 
         Behavior on scale {
-            NumberAnimation {
-                duration: Nexa.Theme.animationSpring
-                easing.type: Nexa.Theme.easingSpring
+            enabled: NexaUI.NexaMotion.enabled
+            SpringAnimation {
+                spring: NexaUI.NexaMotion.useSpring("popups") ? NexaUI.NexaMotion.springStiffness : 8.0
+                damping: NexaUI.NexaMotion.useSpring("popups") ? NexaUI.NexaMotion.springDamping : 1.0
+                mass: NexaUI.NexaMotion.springMass
+                epsilon: 0.002
             }
         }
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Nexa.Theme.popEnterDuration
-                easing.type: Nexa.Theme.easingEnter
+                duration: NexaUI.NexaMotion.durationFast
+                easing.type: NexaUI.NexaMotion.decelerateEasing
             }
         }
 
-
-        // ========================================================
-        // POWER BUTTON ROW
-        // ========================================================
-
         Row {
             id: powerRow
-
             anchors.centerIn: parent
-
             spacing: 12
-
-
-            // ====================================================
-            // 1 — LOCK
-            // ====================================================
 
             PowerCard {
                 number: "1"
@@ -192,15 +156,8 @@ PanelWindow {
                 icon: "⏻"
                 cardIndex: 0
                 popupVisible: root.visible
-
-                onTriggered:
-                    root.runLockAction()
+                onTriggered: root.runLockAction()
             }
-
-
-            // ====================================================
-            // 2 — SUSPEND
-            // ====================================================
 
             PowerCard {
                 number: "2"
@@ -208,15 +165,8 @@ PanelWindow {
                 icon: "◐"
                 cardIndex: 1
                 popupVisible: root.visible
-
-                onTriggered:
-                    root.runPowerAction("suspend")
+                onTriggered: root.runPowerAction("suspend")
             }
-
-
-            // ====================================================
-            // 3 — LOGOUT
-            // ====================================================
 
             PowerCard {
                 number: "3"
@@ -224,15 +174,8 @@ PanelWindow {
                 icon: "⇥"
                 cardIndex: 2
                 popupVisible: root.visible
-
-                onTriggered:
-                    root.runPowerAction("logout")
+                onTriggered: root.runPowerAction("logout")
             }
-
-
-            // ====================================================
-            // 4 — REBOOT
-            // ====================================================
 
             PowerCard {
                 number: "4"
@@ -240,15 +183,8 @@ PanelWindow {
                 icon: "⏸"
                 cardIndex: 3
                 popupVisible: root.visible
-
-                onTriggered:
-                    root.runPowerAction("reboot")
+                onTriggered: root.runPowerAction("reboot")
             }
-
-
-            // ====================================================
-            // 5 — SHUTDOWN
-            // ====================================================
 
             PowerCard {
                 number: "5"
@@ -256,251 +192,86 @@ PanelWindow {
                 icon: "◒"
                 cardIndex: 4
                 popupVisible: root.visible
-
-                onTriggered:
-                    root.runPowerAction("shutdown")
+                contentColor: NexaUI.NexaColors.error
+                onTriggered: root.runPowerAction("shutdown")
             }
         }
     }
 
-
-    // ============================================================
-    // POWER CARD
-    // ============================================================
-
-    component PowerCard: Rectangle {
+    // Layer 2 Power Card (Option A)
+    component PowerCard: NexaUI.NexaCard {
         id: card
-
 
         required property string number
         required property string label
         required property string icon
         property int cardIndex: 0
         property bool popupVisible: false
+        property color contentColor: NexaUI.NexaColors.text
 
         signal triggered()
 
-
-        // ========================================================
-        // SIZE
-        // ========================================================
-
         width: 138
         height: 120
-
-        radius: 10
-
-
-        // ========================================================
-        // STAGGERED SLIDE-UP ENTRANCE
-        // ========================================================
+        interactive: true
+        padding: 0
 
         opacity: popupVisible ? 1.0 : 0.0
         y: popupVisible ? 0 : 14
 
         Behavior on opacity {
             SequentialAnimation {
-                PauseAnimation { duration: card.cardIndex * Nexa.Theme.staggerBase }
+                PauseAnimation { duration: card.cardIndex * 35 }
                 NumberAnimation {
-                    duration: Nexa.Theme.popEnterDuration
-                    easing.type: Nexa.Theme.easingEnter
+                    duration: NexaUI.NexaMotion.durationFast
+                    easing.type: Easing.OutCubic
                 }
             }
         }
 
         Behavior on y {
             SequentialAnimation {
-                PauseAnimation { duration: card.cardIndex * Nexa.Theme.staggerBase }
+                PauseAnimation { duration: card.cardIndex * 35 }
                 NumberAnimation {
-                    duration: Nexa.Theme.animationNormal
-                    easing.type: Nexa.Theme.easingEnter
+                    duration: NexaUI.NexaMotion.durationNormal
+                    easing.type: Easing.OutCubic
                 }
             }
         }
 
-
-        // ========================================================
-        // GLASS BACKGROUND
-        // ========================================================
-
-        color:
-            cardMouse.containsMouse
-            ? Qt.rgba(
-                0.10,
-                0.10,
-                0.10,
-                0.32
-            )
-            : Qt.rgba(
-                0.05,
-                0.05,
-                0.05,
-                0.72
-            )
-
-
-        border.width: 0
-
-        // ========================================================
-        // SCALE
-        // ========================================================
-
-        scale:
-            cardMouse.pressed
-            ? 0.97
-            : cardMouse.containsMouse
-                ? 1.02
-                : 1.0
-
-
-        // ========================================================
-        // ANIMATIONS
-        // ========================================================
-
-        Behavior on color {
-            ColorAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-            }
+        onClicked: {
+            console.log("NEXA power button clicked:", card.number)
+            card.triggered()
         }
-
-
-        Behavior on scale {
-            NumberAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-
-                easing.type:
-                    Nexa.Theme.easingStandard
-            }
-        }
-
-
-        // ========================================================
-        // CONTENT
-        // ========================================================
 
         Column {
             anchors.centerIn: parent
-
             spacing: 6
 
-
-            // ----------------------------------------------------
-            // LARGE ICON
-            // ----------------------------------------------------
-
             Text {
-                anchors.horizontalCenter:
-                    parent.horizontalCenter
-
-                text:
-                    card.icon
-
-                color: Qt.rgba(
-                    1,
-                    1,
-                    1,
-                    0.95
-                )
-
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
-
-                    pixelSize: 31
-
-                    weight:
-                        Nexa.Theme.fontWeightMedium
-                }
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: card.icon
+                color: card.contentColor
+                font.family: NexaUI.NexaTypography.familyIcon
+                font.pixelSize: 31
             }
 
-
-            // ----------------------------------------------------
-            // ACTION LABEL
-            // ----------------------------------------------------
-
             Text {
-                anchors.horizontalCenter:
-                    parent.horizontalCenter
-
-                text:
-                    card.label
-
-                color: Qt.rgba(
-                    1,
-                    1,
-                    1,
-                    0.80
-                )
-
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
-
-                    pixelSize: Nexa.Theme.fontSizeSm
-
-                    weight:
-                        Nexa.Theme.fontWeightMedium
-                }
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: card.label
+                color: card.contentColor
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: NexaUI.NexaTypography.sizeSm
+                font.weight: Font.Medium
             }
 
-
-            // ----------------------------------------------------
-            // SMALL SHORTCUT NUMBER
-            // ----------------------------------------------------
-
             Text {
-                anchors.horizontalCenter:
-                    parent.horizontalCenter
-
-                text:
-                    card.number
-
-                color: Qt.rgba(
-                    1,
-                    1,
-                    1,
-                    0.40
-                )
-
-                font {
-                    family:
-                        Nexa.Theme.fontFamily
-
-                    pixelSize: 9
-
-                    weight:
-                        Nexa.Theme.fontWeightMedium
-                }
-            }
-        }
-
-
-        // ========================================================
-        // BUTTON INPUT
-        // ========================================================
-
-        MouseArea {
-            id: cardMouse
-
-            anchors.fill: parent
-
-            z: 20
-
-            hoverEnabled: true
-
-            cursorShape:
-                Qt.PointingHandCursor
-
-
-            onClicked: {
-                console.log(
-                    "NEXA power button clicked:",
-                    card.number
-                )
-
-                card.triggered()
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: card.number
+                color: NexaUI.NexaColors.mutedText
+                font.family: NexaUI.NexaTypography.familyMono
+                font.pixelSize: 9
+                font.weight: Font.Medium
             }
         }
     }

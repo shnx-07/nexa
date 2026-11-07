@@ -5,8 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 
 Item {
@@ -139,13 +138,13 @@ Item {
             right: parent.right
 
             topMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
 
             leftMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
 
             rightMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
         }
 
         height: 28
@@ -155,14 +154,14 @@ Item {
             text: "󰆍"
 
             color:
-                Nexa.Theme.primary
+                NexaUI.NexaColors.primary
 
             font {
                 family:
-                    Nexa.Theme.iconFontFamily
+                    NexaUI.NexaTypography.familyIcon
 
                 pixelSize:
-                    Nexa.Theme.iconSm
+                    NexaUI.NexaTokens.iconSm
             }
         }
 
@@ -174,17 +173,17 @@ Item {
                 "Command"
 
             color:
-                Nexa.Theme.text
+                NexaUI.NexaColors.text
 
             font {
                 family:
-                    Nexa.Theme.fontFamily
+                    NexaUI.NexaTypography.familyBody
 
                 pixelSize:
-                    Nexa.Theme.fontSizeSm
+                    NexaUI.NexaTypography.sizeSm
 
                 weight:
-                    Nexa.Theme.fontWeightDemiBold
+                    NexaUI.NexaTypography.weightSemiBold
             }
         }
 
@@ -196,14 +195,14 @@ Item {
                 : "ESC"
 
             color:
-                Nexa.Theme.mutedText
+                NexaUI.NexaColors.mutedText
 
             font {
                 family:
-                    Nexa.Theme.monoFontFamily
+                    NexaUI.NexaTypography.familyMono
 
                 pixelSize:
-                    Nexa.Theme.fontSize2Xs
+                    NexaUI.NexaTypography.size2Xs
             }
         }
     }
@@ -228,30 +227,30 @@ Item {
 
 
             topMargin:
-                Nexa.Theme.spacingMd
+                NexaUI.NexaTokens.spacingMd
 
             leftMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
 
             rightMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
         }
 
         height: 54
 
         radius:
-            Nexa.Theme.radiusMd
+            NexaUI.NexaTokens.radiusMd
 
         color:
-            Nexa.Theme.inputBackgroundFocus
+            NexaUI.NexaColors.surfaceContainer
 
         border.width:
-            Nexa.Theme.borderNormal
+            NexaUI.NexaTokens.borderMedium
 
         border.color:
             commandInput.activeFocus
-            ? Nexa.Theme.primary
-            : Nexa.Theme.border
+            ? NexaUI.NexaColors.primary
+            : NexaUI.NexaColors.border
 
 
         RowLayout {
@@ -259,31 +258,31 @@ Item {
                 fill: parent
 
                 leftMargin:
-                    Nexa.Theme.spacingLg
+                    NexaUI.NexaTokens.spacingLg
 
                 rightMargin:
-                    Nexa.Theme.spacingLg
+                    NexaUI.NexaTokens.spacingLg
             }
 
             spacing:
-                Nexa.Theme.spacingMd
+                NexaUI.NexaTokens.spacingMd
 
 
             Text {
                 text: "❯"
 
                 color:
-                    Nexa.Theme.primary
+                    NexaUI.NexaColors.primary
 
                 font {
                     family:
-                        Nexa.Theme.monoFontFamily
+                        NexaUI.NexaTypography.familyMono
 
                     pixelSize:
-                        Nexa.Theme.fontSizeLg
+                        NexaUI.NexaTypography.sizeLg
 
                     weight:
-                        Nexa.Theme.fontWeightBold
+                        NexaUI.NexaTypography.weightBold
                 }
             }
 
@@ -296,23 +295,23 @@ Item {
                 Layout.fillWidth: true
 
                 color:
-                    Nexa.Theme.text
+                    NexaUI.NexaColors.text
 
                 selectionColor:
-                    Nexa.Theme.primary
+                    NexaUI.NexaColors.primary
 
                 selectedTextColor:
-                    Nexa.Theme.primaryText
+                    NexaUI.NexaColors.onPrimary
 
                 clip: true
 
 
                 font {
                     family:
-                        Nexa.Theme.monoFontFamily
+                        NexaUI.NexaTypography.familyMono
 
                     pixelSize:
-                        Nexa.Theme.fontSizeMd
+                        NexaUI.NexaTypography.sizeMd
                 }
 
 
@@ -327,7 +326,7 @@ Item {
                         "Enter command..."
 
                     color:
-                        Nexa.Theme.mutedText
+                        NexaUI.NexaColors.mutedText
 
                     verticalAlignment:
                         Text.AlignVCenter
@@ -381,29 +380,29 @@ Item {
 
 
             topMargin:
-                Nexa.Theme.spacingMd
+                NexaUI.NexaTokens.spacingMd
 
             leftMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
 
             rightMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
 
             bottomMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
         }
 
         radius:
-            Nexa.Theme.radiusMd
+            NexaUI.NexaTokens.radiusMd
 
         color:
-            Nexa.Theme.cardBackground
+            NexaUI.NexaColors.surfaceContainer
 
         border.width:
-            Nexa.Theme.borderThin
+            NexaUI.NexaTokens.borderThin
 
         border.color:
-            Nexa.Theme.border
+            NexaUI.NexaColors.border
 
         clip: true
 
@@ -422,7 +421,7 @@ Item {
                 && !root.running
 
             spacing:
-                Nexa.Theme.spacingSm
+                NexaUI.NexaTokens.spacingSm
 
 
             Text {
@@ -432,14 +431,14 @@ Item {
                 text: "󰆍"
 
                 color:
-                    Nexa.Theme.mutedText
+                    NexaUI.NexaColors.mutedText
 
                 font {
                     family:
-                        Nexa.Theme.iconFontFamily
+                        NexaUI.NexaTypography.familyIcon
 
                     pixelSize:
-                        Nexa.Theme.icon2Xl
+                        32
                 }
             }
 
@@ -452,14 +451,14 @@ Item {
                     "Run a shell command"
 
                 color:
-                    Nexa.Theme.mutedText
+                    NexaUI.NexaColors.mutedText
 
                 font {
                     family:
-                        Nexa.Theme.fontFamily
+                        NexaUI.NexaTypography.familyBody
 
                     pixelSize:
-                        Nexa.Theme.fontSizeSm
+                        NexaUI.NexaTypography.sizeSm
                 }
             }
         }
@@ -480,14 +479,14 @@ Item {
                 "Running command…"
 
             color:
-                Nexa.Theme.mutedText
+                NexaUI.NexaColors.mutedText
 
             font {
                 family:
-                    Nexa.Theme.monoFontFamily
+                    NexaUI.NexaTypography.familyMono
 
                 pixelSize:
-                    Nexa.Theme.fontSizeSm
+                    NexaUI.NexaTypography.sizeSm
             }
         }
 
@@ -503,7 +502,7 @@ Item {
                 fill: parent
 
                 margins:
-                    Nexa.Theme.spacingMd
+                    NexaUI.NexaTokens.spacingMd
             }
 
             visible:
@@ -525,10 +524,10 @@ Item {
                 Flickable.StopAtBounds
 
             flickDeceleration:
-                Nexa.Theme.flickDeceleration
+                1500
 
             maximumFlickVelocity:
-                Nexa.Theme.flickVelocityMax
+                2500
 
             NexaUI.NexaSmoothScroll {}
 
@@ -542,14 +541,14 @@ Item {
                     implicitWidth: 3
                     radius: width / 2
                     color: Qt.rgba(
-                        Nexa.Theme.text.r,
-                        Nexa.Theme.text.g,
-                        Nexa.Theme.text.b,
+                        NexaUI.NexaColors.text.r,
+                        NexaUI.NexaColors.text.g,
+                        NexaUI.NexaColors.text.b,
                         cmdScrollBar.hovered ? 0.5 : 0.18
                     )
 
                     Behavior on color {
-                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                        ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                     }
                 }
 
@@ -564,7 +563,7 @@ Item {
                     outputFlick.width
 
                 spacing:
-                    Nexa.Theme.spacingMd
+                    NexaUI.NexaTokens.spacingMd
 
 
                 RowLayout {
@@ -583,18 +582,18 @@ Item {
 
                         color:
                             root.exitCode === 0
-                            ? Nexa.Theme.success
-                            : Nexa.Theme.error
+                            ? NexaUI.NexaColors.success
+                            : NexaUI.NexaColors.error
 
                         font {
                             family:
-                                Nexa.Theme.fontFamily
+                                NexaUI.NexaTypography.familyBody
 
                             pixelSize:
-                                Nexa.Theme.fontSizeXs
+                                NexaUI.NexaTypography.sizeXs
 
                             weight:
-                                Nexa.Theme.fontWeightDemiBold
+                                NexaUI.NexaTypography.weightSemiBold
                         }
                     }
                 }
@@ -611,7 +610,7 @@ Item {
                         root.output
 
                     color:
-                        Nexa.Theme.text
+                        NexaUI.NexaColors.text
 
                     wrapMode:
                         Text.WrapAnywhere
@@ -621,10 +620,10 @@ Item {
 
                     font {
                         family:
-                            Nexa.Theme.monoFontFamily
+                            NexaUI.NexaTypography.familyMono
 
                         pixelSize:
-                            Nexa.Theme.fontSizeXs
+                            NexaUI.NexaTypography.sizeXs
                     }
                 }
 
@@ -640,7 +639,7 @@ Item {
                         root.errorOutput
 
                     color:
-                        Nexa.Theme.error
+                        NexaUI.NexaColors.error
 
                     wrapMode:
                         Text.WrapAnywhere
@@ -650,10 +649,10 @@ Item {
 
                     font {
                         family:
-                            Nexa.Theme.monoFontFamily
+                            NexaUI.NexaTypography.familyMono
 
                         pixelSize:
-                            Nexa.Theme.fontSizeXs
+                            NexaUI.NexaTypography.sizeXs
                     }
                 }
             }

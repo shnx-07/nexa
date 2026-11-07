@@ -152,6 +152,8 @@ pub struct SpecialWorkspaceInfo {
 
     name: String,
     display_name: String,
+    icon: String,
+    window_count: usize,
 
     active: bool,
 
@@ -331,6 +333,17 @@ fn make_window(client: &HyprClient, active_window: &str) -> WorkspaceWindow {
     }
 }
 
+fn scratchpad_icon(display_name: &str) -> &'static str {
+    match display_name.to_lowercase().as_str() {
+        "terminal" => "󰆍",
+        "files" => "󰉋",
+        "magic" | "quick scratchpad" => "󰏤",
+        "music" => "󰝚",
+        "chat" => "󰭹",
+        _ => "󰏤",
+    }
+}
+
 // ============================================================
 // WORKSPACE INFO
 // ============================================================
@@ -432,12 +445,17 @@ pub fn info() -> Result<WorkspaceState, String> {
                 || format!("special:{}", an) == workspace.name
         });
 
+        let icon = scratchpad_icon(&display_name).to_string();
+        let window_count = windows.len();
+
         special_workspaces.push(SpecialWorkspaceInfo {
             id: workspace.id,
 
             name: workspace.name.clone(),
 
             display_name,
+            icon,
+            window_count,
 
             active: is_act,
 
@@ -461,10 +479,13 @@ pub fn info() -> Result<WorkspaceState, String> {
             let is_act = active_special_names
                 .iter()
                 .any(|an| an == *k_disp || an == *k_name);
+            let icon = scratchpad_icon(k_disp).to_string();
             special_workspaces.push(SpecialWorkspaceInfo {
                 id: *k_id,
                 name: k_name.to_string(),
                 display_name: k_disp.to_string(),
+                icon,
+                window_count: 0,
                 active: is_act,
                 monitor: hypr_monitors
                     .first()

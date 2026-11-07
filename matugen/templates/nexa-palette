@@ -10,6 +10,7 @@ SURFACE_CONTAINER="{{colors.surface_container}}"
 SURFACE_CONTAINER_LOW="{{colors.surface_container_low}}"
 SURFACE_CONTAINER_HIGH="{{colors.surface_container_high}}"
 SURFACE_CONTAINER_HIGHEST="{{colors.surface_container_highest}}"
+SURFACE_CONTAINER_LOWEST="{{colors.surface_container_lowest}}"
 
 PRIMARY="{{colors.primary}}"
 PRIMARY_TEXT="{{colors.on_primary}}"
@@ -29,10 +30,27 @@ TERTIARY_CONTAINER_TEXT="{{colors.on_tertiary_container}}"
 TEXT="{{colors.on_background}}"
 MUTED_TEXT="{{colors.on_surface_variant}}"
 
+INVERSE_SURFACE="{{colors.inverse_surface}}"
+INVERSE_ON_SURFACE="{{colors.inverse_on_surface}}"
+INVERSE_PRIMARY="{{colors.inverse_primary}}"
+
 ERROR="{{colors.error}}"
 ERROR_TEXT="{{colors.on_error}}"
 ERROR_CONTAINER="{{colors.error_container}}"
 
+SUCCESS="{{colors.success}}"
+SUCCESS_TEXT="{{colors.on_success}}"
+SUCCESS_CONTAINER="{{colors.success_container}}"
+
+WARNING="{{colors.warning}}"
+WARNING_TEXT="{{colors.on_warning}}"
+WARNING_CONTAINER="{{colors.warning_container}}"
+
+INFO="{{colors.info}}"
+INFO_TEXT="{{colors.on_info}}"
+INFO_CONTAINER="{{colors.info_container}}"
+
 OUTLINE="{{colors.outline}}"
 OUTLINE_VARIANT="{{colors.outline_variant}}"
 SHADOW="{{colors.shadow}}"
+SCRIM="{{colors.scrim}}"

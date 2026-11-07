@@ -1,31 +1,26 @@
 import QtQuick
 import Quickshell
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
-
+import "../../NewNexaUI" as NexaUI
 
 Item {
     id: root
 
-
     // ============================================================
     // SIZE
     // ============================================================
-
-    implicitWidth: Nexa.Theme.controlHeightSm
-    implicitHeight: Nexa.Theme.controlHeightSm
-
+    implicitWidth: NexaUI.NexaTokens.controlHeightSm
+    implicitHeight: NexaUI.NexaTokens.controlHeightSm
 
     // ============================================================
     // POWER BUTTON
     // ============================================================
-
-    NexaUI.NexaIconButton {
+    NexaUI.NexaButton {
         id: button
         anchors.fill: parent
+        variant: "icon"
         radius: height / 2
         icon: "⏻"
-        iconColor: Nexa.Theme.error
+        iconColor: NexaUI.NexaColors.error
         onClicked: {
             Quickshell.execDetached([
                 "qs",
@@ -38,7 +33,4 @@ Item {
             ])
         }
     }
-
-
-
 }

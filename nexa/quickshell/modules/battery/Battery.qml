@@ -1,9 +1,7 @@
 import QtQuick
 import Quickshell
 import "../../services" as Services
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
-
+import "../../NewNexaUI" as NexaUI
 
 Item {
     id: root
@@ -12,7 +10,6 @@ Item {
     readonly property int percent: Services.SystemState.batteryPercentage
     readonly property bool charging: Services.SystemState.batteryCharging
     readonly property bool onBattery: Services.SystemState.onBattery
-
 
     readonly property real compactWidth: 54
 
@@ -26,55 +23,55 @@ Item {
     readonly property bool isExpanded: mouse.containsMouse || popup.visible
     readonly property real contentLabelWidth: statusTextItem.implicitWidth
     readonly property real targetWidth: isExpanded
-        ? (compactWidth + contentLabelWidth + Nexa.Theme.spacingXs)
+        ? (compactWidth + contentLabelWidth + NexaUI.NexaTokens.spacingXs)
         : compactWidth
 
     implicitWidth: targetWidth
-    implicitHeight: Nexa.Theme.controlHeightSm
+    implicitHeight: NexaUI.NexaTokens.controlHeightSm
 
     Behavior on implicitWidth {
-        enabled: !Nexa.Theme.reducedMotion
-        NexaUI.NexaSpring { section: "popups"; customStiffness: 5.5; customDamping: 0.26 }
+        enabled: !NexaUI.NexaMotion.reducedMotion
+        SpringAnimation {
+            spring: NexaUI.NexaMotion.springStiffness
+            damping: NexaUI.NexaMotion.springDamping
+            mass: NexaUI.NexaMotion.springMass
+        }
     }
-
 
     Rectangle {
         id: button
 
         anchors.fill: parent
-        radius: Nexa.Theme.nexaRounding === 0 ? 0 : Nexa.Theme.radiusSm
+        radius: NexaUI.NexaTokens.radiusSm
 
         color: (mouse.containsMouse || popup.visible)
-            ? Nexa.Theme.hover
+            ? NexaUI.NexaColors.surfaceContainerHigh
             : "transparent"
 
         scale: mouse.pressed
-            ? Nexa.Theme.pressScale
-            : Nexa.Theme.normalScale
+            ? NexaUI.NexaMotion.scalePress
+            : 1.0
 
         Behavior on color {
             ColorAnimation {
-                duration: Nexa.Theme.animationFast
+                duration: NexaUI.NexaMotion.durationFast
             }
         }
 
         Behavior on scale {
             NumberAnimation {
-                duration: Nexa.Theme.animationFast
-                easing.type: Nexa.Theme.easingStandard
+                duration: NexaUI.NexaMotion.durationFast
+                easing.type: NexaUI.NexaMotion.easingStandard
             }
         }
 
-
         Row {
             anchors.centerIn: parent
-            spacing: Nexa.Theme.spacingXs
-
+            spacing: NexaUI.NexaTokens.spacingXs
 
             // ----------------------------------------------------
             // HORIZONTAL BATTERY
             // ----------------------------------------------------
-
             Item {
                 width: 22
                 height: 12
@@ -88,14 +85,12 @@ Item {
                     width: 19
                     height: 11
                     radius: 2.5
-
                     color: "transparent"
 
                     border {
-                        width: 1
-                        color: Nexa.Theme.mutedText
+                        width: NexaUI.NexaTokens.borderThin
+                        color: NexaUI.NexaColors.mutedText
                     }
-
 
                     Rectangle {
                         anchors {
@@ -114,48 +109,41 @@ Item {
 
                         color:
                             root.charging
-                            ? Nexa.Theme.success
+                            ? NexaUI.NexaColors.success
                             : root.percent <= 15
-                                ? Nexa.Theme.error
+                                ? NexaUI.NexaColors.error
                                 : root.percent <= 30
-                                    ? Nexa.Theme.warning
-                                    : Nexa.Theme.primary
+                                    ? NexaUI.NexaColors.warning
+                                    : NexaUI.NexaColors.primary
 
                         Behavior on color {
                             ColorAnimation {
-                                duration: Nexa.Theme.animationNormal
-                                easing.type: Nexa.Theme.easingStandard
+                                duration: NexaUI.NexaMotion.durationNormal
+                                easing.type: NexaUI.NexaMotion.easingStandard
                             }
                         }
 
                         Behavior on width {
                             NumberAnimation {
-                                duration: Nexa.Theme.animationNormal
-                                easing.type: Nexa.Theme.easingDecelerate
+                                duration: NexaUI.NexaMotion.durationNormal
+                                easing.type: NexaUI.NexaMotion.easingDecelerate
                             }
                         }
                     }
 
-
                     // ⚡ overlay — centered inside the battery body
                     Text {
                         anchors.centerIn: parent
-
                         visible: root.charging
-
                         text: "⚡"
-
                         z: 1
-
-                        color: Nexa.Theme.onSurface
-
+                        color: NexaUI.NexaColors.onSurface
                         font {
-                            family: Nexa.Theme.fontFamily
-                            pixelSize: Nexa.Theme.fontSize2Xs
+                            family: NexaUI.NexaTypography.familyBody
+                            pixelSize: NexaUI.NexaTypography.size2Xs
                         }
                     }
                 }
-
 
                 // Battery tip
                 Rectangle {
@@ -167,29 +155,25 @@ Item {
                     width: 2
                     height: 5
                     radius: 1
-
-                    color: Nexa.Theme.mutedText
+                    color: NexaUI.NexaColors.mutedText
                 }
             }
 
-
-
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-
                 text: root.ready
                     ? root.percent + "%"
                     : "--"
 
                 color:
                     root.percent <= 15
-                    ? Nexa.Theme.error
-                    : Nexa.Theme.text
+                    ? NexaUI.NexaColors.error
+                    : NexaUI.NexaColors.text
 
                 font {
-                    family: Nexa.Theme.fontFamily
-                    pixelSize: Nexa.Theme.fontSizeXs
-                    weight: Nexa.Theme.fontWeightMedium
+                    family: NexaUI.NexaTypography.familyBody
+                    pixelSize: NexaUI.NexaTypography.sizeXs
+                    weight: NexaUI.NexaTypography.weightMedium
                 }
             }
 
@@ -203,7 +187,7 @@ Item {
                 opacity: Math.max(0.0, Math.min(1.0, (root.width - root.compactWidth) / 16.0))
 
                 Behavior on opacity {
-                    NumberAnimation { duration: Nexa.Theme.animationFast }
+                    NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
                 }
 
                 Text {
@@ -213,43 +197,31 @@ Item {
                         verticalCenter: parent.verticalCenter
                     }
                     text: "· " + root.statusText
-                    color: Nexa.Theme.mutedText
+                    color: NexaUI.NexaColors.mutedText
                     font {
-                        family: Nexa.Theme.fontFamily
-                        pixelSize: Nexa.Theme.fontSizeXs
-                        weight: Nexa.Theme.fontWeightMedium
+                        family: NexaUI.NexaTypography.familyBody
+                        pixelSize: NexaUI.NexaTypography.sizeXs
+                        weight: NexaUI.NexaTypography.weightMedium
                     }
                 }
             }
         }
 
-
         MouseArea {
             id: mouse
-
             anchors.fill: parent
-
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-
-            // Popup visible is the ONLY open/close state.
             onClicked:
                 popup.visible = !popup.visible
         }
     }
 
-
     // ------------------------------------------------------------
     // DETAILS
     // ------------------------------------------------------------
-
     BatteryPopup {
         id: popup
-
         anchorItem: button
-    }   // ------------------------------------------------------------
-    // NOTIFICATIONS
-    //
-    // Low / critical / full battery hook goes here later.
-    // ------------------------------------------------------------
+    }
 }

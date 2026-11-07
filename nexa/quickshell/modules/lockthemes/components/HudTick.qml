@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import "../../../theme/colors"
+import "../../../NewNexaUI" as NexaUI
 
 // Accent stroke along a HUD piece's top-left chamfer (desktop theme); pairs
 // with HudMask using the same `cut`.
@@ -9,7 +9,7 @@ Shape {
 
     property real cut: 7
     property real length: 10
-    property color color: Colors.primary
+    property color color: NexaUI.NexaColors.primary
 
     anchors.fill: parent
     preferredRendererType: Shape.CurveRenderer

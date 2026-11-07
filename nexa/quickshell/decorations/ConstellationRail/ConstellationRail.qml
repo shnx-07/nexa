@@ -1,8 +1,8 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "../../theme" as Nexa
 import "../../services" as Services
+import "../../NewNexaUI" as NexaUI
 
 Item {
     id: root
@@ -197,7 +197,7 @@ Item {
             property real currentAmp: root.waveAmplitude
             property real currentWPhase: root.wavePhase
             property var currentBars: Services.AudioVisualizer.bars
-            property color lineColor: Nexa.Theme.primary
+            property color lineColor: NexaUI.NexaColors.primary
             property real lineAlpha: root.lineOpacity
 
             // Immediate repaint when theme color or opacity changes (e.g. wallpaper change)
@@ -325,9 +325,9 @@ Item {
                     height: width
                     radius: width / 2
                     color: Qt.rgba(
-                        Nexa.Theme.primary.r,
-                        Nexa.Theme.primary.g,
-                        Nexa.Theme.primary.b,
+                        NexaUI.NexaColors.primary.r,
+                        NexaUI.NexaColors.primary.g,
+                        NexaUI.NexaColors.primary.b,
                         isActiveWs ? (0.35 * root.glowIntensity) : ((0.18 + Services.AudioVisualizer.bass * 0.15) * root.glowIntensity)
                     )
 
@@ -348,9 +348,9 @@ Item {
                     height: width
                     radius: width / 2
                     color: {
-                        if (isActiveWs) return Nexa.Theme.text;
-                        if (isOccupiedWs) return Nexa.Theme.primary;
-                        return Qt.rgba(Nexa.Theme.text.r, Nexa.Theme.text.g, Nexa.Theme.text.b, 0.70);
+                        if (isActiveWs) return NexaUI.NexaColors.text;
+                        if (isOccupiedWs) return NexaUI.NexaColors.primary;
+                        return Qt.rgba(NexaUI.NexaColors.text.r, NexaUI.NexaColors.text.g, NexaUI.NexaColors.text.b, 0.70);
                     }
                 }
             }
@@ -405,9 +405,9 @@ Item {
                     height: width
                     radius: width / 2
                     color: Qt.rgba(
-                        Nexa.Theme.primary.r,
-                        Nexa.Theme.primary.g,
-                        Nexa.Theme.primary.b,
+                        NexaUI.NexaColors.primary.r,
+                        NexaUI.NexaColors.primary.g,
+                        NexaUI.NexaColors.primary.b,
                         isActiveWs ? (0.55 * root.glowIntensity) : ((0.32 + Services.AudioVisualizer.energy * 0.20) * root.glowIntensity)
                     )
 
@@ -427,7 +427,7 @@ Item {
                     width: isActiveWs ? 6.0 : (isOccupiedWs ? 5.0 : 4.2)
                     height: width
                     radius: width / 2
-                    color: Nexa.Theme.text
+                    color: NexaUI.NexaColors.text
 
                     Behavior on width { NumberAnimation { duration: 180 } }
                 }

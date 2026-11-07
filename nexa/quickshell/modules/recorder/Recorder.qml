@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
-import "../../theme" as Nexa
+import "../../NewNexaUI" as NexaUI
 
 
 Item {
@@ -293,13 +293,13 @@ Item {
             anchors.fill: parent
 
             anchors.leftMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
 
             anchors.rightMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
 
             spacing:
-                Nexa.Theme.spacingSm
+                NexaUI.NexaTokens.spacingSm
 
             Text {
                 text:
@@ -308,17 +308,17 @@ Item {
                     : "Recording started"
 
                 color:
-                    Nexa.Theme.text
+                    NexaUI.NexaColors.text
 
                 font {
                     family:
-                        Nexa.Theme.fontFamily
+                        NexaUI.NexaTypography.familyBody
 
                     pixelSize:
-                        Nexa.Theme.fontSizeSm
+                        NexaUI.NexaTypography.sizeSm
 
                     weight:
-                        Nexa.Theme.fontWeightMedium
+                        NexaUI.NexaTypography.weightMedium
                 }
             }
 
@@ -333,17 +333,17 @@ Item {
                     )
 
                 color:
-                    Nexa.Theme.text
+                    NexaUI.NexaColors.text
 
                 font {
                     family:
-                        Nexa.Theme.monoFontFamily
+                        NexaUI.NexaTypography.familyMono
 
                     pixelSize:
-                        Nexa.Theme.fontSizeSm
+                        NexaUI.NexaTypography.sizeSm
 
                     weight:
-                        Nexa.Theme.fontWeightDemiBold
+                        NexaUI.NexaTypography.weightSemiBold
                 }
             }
 
@@ -355,8 +355,8 @@ Item {
 
                 color:
                     root.paused
-                    ? Nexa.Theme.mutedText
-                    : Nexa.Theme.error
+                    ? NexaUI.NexaColors.mutedText
+                    : NexaUI.NexaColors.error
             }
         }
     }
@@ -379,19 +379,19 @@ Item {
             anchors.fill: parent
 
             anchors.leftMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
 
             anchors.rightMargin:
-                Nexa.Theme.spacingLg
+                NexaUI.NexaTokens.spacingLg
 
             anchors.topMargin:
-                Nexa.Theme.spacingMd
+                NexaUI.NexaTokens.spacingMd
 
             anchors.bottomMargin:
-                Nexa.Theme.spacingMd
+                NexaUI.NexaTokens.spacingMd
 
             spacing:
-                Nexa.Theme.spacingSm
+                NexaUI.NexaTokens.spacingSm
 
             RowLayout {
                 Layout.fillWidth: true
@@ -403,17 +403,17 @@ Item {
                         : "Screen recording"
 
                     color:
-                        Nexa.Theme.text
+                        NexaUI.NexaColors.text
 
                     font {
                         family:
-                            Nexa.Theme.fontFamily
+                            NexaUI.NexaTypography.familyBody
 
                         pixelSize:
-                            Nexa.Theme.fontSizeSm
+                            NexaUI.NexaTypography.sizeSm
 
                         weight:
-                            Nexa.Theme.fontWeightDemiBold
+                            NexaUI.NexaTypography.weightSemiBold
                     }
                 }
 
@@ -428,8 +428,8 @@ Item {
 
                     color:
                         root.paused
-                        ? Nexa.Theme.mutedText
-                        : Nexa.Theme.error
+                        ? NexaUI.NexaColors.mutedText
+                        : NexaUI.NexaColors.error
                 }
 
                 Text {
@@ -439,17 +439,17 @@ Item {
                         )
 
                     color:
-                        Nexa.Theme.text
+                        NexaUI.NexaColors.text
 
                     font {
                         family:
-                            Nexa.Theme.monoFontFamily
+                            NexaUI.NexaTypography.familyMono
 
                         pixelSize:
-                            Nexa.Theme.fontSizeSm
+                            NexaUI.NexaTypography.sizeSm
 
                         weight:
-                            Nexa.Theme.fontWeightDemiBold
+                            NexaUI.NexaTypography.weightSemiBold
                     }
                 }
             }
@@ -458,7 +458,7 @@ Item {
                 Layout.fillWidth: true
 
                 spacing:
-                    Nexa.Theme.spacingSm
+                    NexaUI.NexaTokens.spacingSm
 
                 Item {
                     Layout.fillWidth: true
@@ -475,20 +475,20 @@ Item {
                     height: 32
 
                     radius:
-                        Nexa.Theme.radiusSm
+                        NexaUI.NexaTokens.radiusSm
 
                     color:
                         pauseMouse.pressed
-                        ? Nexa.Theme.pressed
+                        ? NexaUI.NexaColors.surfaceContainerHighest
                         : pauseMouse.containsMouse
-                          ? Nexa.Theme.hoverStrong
-                          : Nexa.Theme.buttonBackground
+                          ? NexaUI.NexaColors.hoverStrong
+                          : NexaUI.NexaColors.surfaceContainerHigh
 
                     Row {
                         anchors.centerIn: parent
 
                         spacing:
-                            Nexa.Theme.spacingXs
+                            NexaUI.NexaTokens.spacingXs
 
                         Text {
                             text:
@@ -497,14 +497,14 @@ Item {
                                 : "󰏤"
 
                             color:
-                                Nexa.Theme.text
+                                NexaUI.NexaColors.text
 
                             font {
                                 family:
-                                    Nexa.Theme.iconFontFamily
+                                    NexaUI.NexaTypography.familyIcon
 
                                 pixelSize:
-                                    Nexa.Theme.iconSm
+                                    NexaUI.NexaTokens.iconSm
                             }
                         }
 
@@ -515,17 +515,17 @@ Item {
                                 : "Pause"
 
                             color:
-                                Nexa.Theme.text
+                                NexaUI.NexaColors.text
 
                             font {
                                 family:
-                                    Nexa.Theme.fontFamily
+                                    NexaUI.NexaTypography.familyBody
 
                                 pixelSize:
-                                    Nexa.Theme.fontSizeXs
+                                    NexaUI.NexaTypography.sizeXs
 
                                 weight:
-                                    Nexa.Theme.fontWeightMedium
+                                    NexaUI.NexaTypography.weightMedium
                             }
                         }
                     }
@@ -560,47 +560,47 @@ Item {
                     height: 32
 
                     radius:
-                        Nexa.Theme.radiusSm
+                        NexaUI.NexaTokens.radiusSm
 
                     color:
                         stopMouse.pressed
-                        ? Nexa.Theme.pressed
+                        ? NexaUI.NexaColors.surfaceContainerHighest
                         : stopMouse.containsMouse
-                          ? Nexa.Theme.hoverStrong
-                          : Nexa.Theme.buttonBackground
+                          ? NexaUI.NexaColors.hoverStrong
+                          : NexaUI.NexaColors.surfaceContainerHigh
 
                     Row {
                         anchors.centerIn: parent
 
                         spacing:
-                            Nexa.Theme.spacingXs
+                            NexaUI.NexaTokens.spacingXs
 
                         Rectangle {
                             width: 9
                             height: 9
 
                             radius:
-                                Nexa.Theme.radiusXs
+                                NexaUI.NexaTokens.radiusXs
 
                             color:
-                                Nexa.Theme.error
+                                NexaUI.NexaColors.error
                         }
 
                         Text {
                             text: "Stop"
 
                             color:
-                                Nexa.Theme.text
+                                NexaUI.NexaColors.text
 
                             font {
                                 family:
-                                    Nexa.Theme.fontFamily
+                                    NexaUI.NexaTypography.familyBody
 
                                 pixelSize:
-                                    Nexa.Theme.fontSizeXs
+                                    NexaUI.NexaTypography.sizeXs
 
                                 weight:
-                                    Nexa.Theme.fontWeightMedium
+                                    NexaUI.NexaTypography.weightMedium
                             }
                         }
                     }

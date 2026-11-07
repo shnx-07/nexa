@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls
-import "../../../theme/colors"
+import "../../../NewNexaUI" as NexaUI
 
 // Button with the shell's background/label styling, replacing the hand-written
 // `background: Rectangle` + `contentItem: Text` pair.
@@ -10,9 +10,9 @@ Button {
     property real radius: 14
     property int borderWidth: 1
     property color backgroundColor: "transparent"
-    property color hoverColor: Colors.surface_container_high
-    property color borderColor: Colors.outline_variant
-    property color textColor: Colors.on_surface
+    property color hoverColor: NexaUI.NexaColors.surfaceContainerHigh
+    property color borderColor: NexaUI.NexaColors.outlineVariant
+    property color textColor: NexaUI.NexaColors.text
     property int fontPixelSize: 14
     property int fontWeight: Font.Medium
 

@@ -6,8 +6,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Networking
 
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 
 PopupWindow {
@@ -95,8 +94,8 @@ PopupWindow {
     // WINDOW CONFIGURATION
     // ============================================================
 
-    implicitWidth: 420
-    implicitHeight: Math.min(540, Math.max(300, contentColumn.implicitHeight + Nexa.Theme.spacingMd * 2))
+    implicitWidth: 452
+    implicitHeight: Math.min(572, Math.max(332, contentColumn.implicitHeight + NexaUI.NexaTokens.spacingMd * 2 + 32))
 
     color: "transparent"
     grabFocus: true
@@ -106,12 +105,12 @@ PopupWindow {
 
         rect.x:
             root.anchorItem
-            ? root.anchorItem.width
+            ? root.anchorItem.width + 16
             : 0
 
         rect.y:
             root.anchorItem
-            ? root.anchorItem.height + Nexa.Theme.spacingSm
+            ? root.anchorItem.height + NexaUI.NexaTokens.spacingSm - 16
             : 0
 
         rect.width: 1
@@ -359,75 +358,108 @@ PopupWindow {
     // POPUP MAIN PANEL
     // ============================================================
 
+    // GPU-Accelerated Nexa Drop Shadow for WiFi Popup
+    NexaUI.NexaShadow {
+        id: panelShadow
+        targetItem: panelBackground
+        elevation: 1
+        spread: 0.08
+    }
+
     Rectangle {
         id: panelBackground
         anchors.fill: parent
+        anchors.margins: 16
 
-        radius: Nexa.Theme.radiusLg
-        color: Nexa.Theme.panelBackground
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.borderStrong
+        radius: NexaUI.NexaTokens.radiusLg
+        color: NexaUI.NexaColors.surfaceContainer
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.borderStrong
 
         NexaUI.NexaShaderSubstrate {
             anchors.fill: parent
             radius: parent.radius
         }
 
-        // Continuous-corner top glass highlight
+        // Apple / Tactile 4-stop Depth Micro-Gradient
         Rectangle {
             anchors.fill: parent
-            anchors.margins: parent.border.width
-            radius: Math.max(0, parent.radius - parent.border.width)
+            radius: panelBackground.radius
+            antialiasing: panelBackground.radius > 0
+            visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+            opacity: NexaUI.NexaOptics.gradientIntensity
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlight }
-                GradientStop { position: 0.35; color: "transparent" }
+                GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.055) }
+                GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.012) }
+                GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.140) }
             }
         }
 
-        opacity: root.visible ? Nexa.Theme.opacityFull : Nexa.Theme.opacityHidden
-        scale: root.visible ? Nexa.Theme.normalScale : 0.96
+        // Top Chamfer Specular Highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: panelBackground.radius > 0 ? Math.max(0, parent.width - panelBackground.radius * 1.6) : parent.width
+            height: 1
+            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.32) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        opacity: root.visible ? 1.0 : 0.0
+        scale: root.visible ? 1.0 : 0.96
         transformOrigin: Item.TopRight
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Nexa.Theme.popEnterDuration
-                easing.type: Nexa.Theme.easingStandard
-                easing.bezierCurve: Nexa.Theme.easingFluidCurve
+                duration: NexaUI.NexaMotion.durationNormal
+                easing.type: NexaUI.NexaMotion.easingStandard
             }
         }
 
         Behavior on scale {
-            enabled: !Nexa.Theme.reducedMotion
-            NexaUI.NexaSpring { section: "popups"; customStiffness: 6.0; customDamping: 0.22 }
+            enabled: NexaUI.NexaMotion.enabled
+            SpringAnimation {
+                spring: NexaUI.NexaMotion.useSpring("popups") ? NexaUI.NexaMotion.springStiffness : 8.0
+                damping: NexaUI.NexaMotion.useSpring("popups") ? NexaUI.NexaMotion.springDamping : 1.0
+                mass: NexaUI.NexaMotion.springMass
+                epsilon: 0.002
+            }
         }
 
         ColumnLayout {
             id: contentColumn
             anchors.fill: parent
-            anchors.margins: Nexa.Theme.spacingMd
-            spacing: Nexa.Theme.spacingSm
+            anchors.margins: NexaUI.NexaTokens.spacingMd
+            spacing: NexaUI.NexaTokens.spacingSm
 
             // ====================================================
             // HEADER BAR
             // ====================================================
             RowLayout {
                 Layout.fillWidth: true
-                spacing: Nexa.Theme.spacingSm
+                spacing: NexaUI.NexaTokens.spacingSm
 
                 // Status Icon & Titles
                 RowLayout {
-                    spacing: Nexa.Theme.spacingSm
+                    spacing: NexaUI.NexaTokens.spacingSm
 
                     Text {
                         text: "󰤨"
-                        color: root.wifiEnabled ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                        font.family: Nexa.Theme.iconFontFamily
-                        font.pixelSize: Nexa.Theme.iconMd
+                        color: root.wifiEnabled ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                        font.family: NexaUI.NexaTypography.familyIcon
+                        font.pixelSize: NexaUI.NexaTypography.sizeMd
 
                         Behavior on color {
                             ColorAnimation {
-                                duration: Nexa.Theme.motionInteraction
-                                easing.bezierCurve: Nexa.Theme.easingFluidCurve
+                                duration: NexaUI.NexaMotion.durationFast
                             }
                         }
                     }
@@ -437,10 +469,10 @@ PopupWindow {
 
                         Text {
                             text: "Wi-Fi"
-                            color: Nexa.Theme.text
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeSm
-                            font.weight: Nexa.Theme.fontWeightDemiBold
+                            color: NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeSm
+                            font.weight: NexaUI.NexaTypography.weightSemiBold
                         }
 
                         Text {
@@ -450,9 +482,9 @@ PopupWindow {
                                 if (root.isScanning) return "Scanning nearby…"
                                 return root.availableList.length + " networks found"
                             }
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                            color: NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.size2Xs
                             elide: Text.ElideRight
                             Layout.maximumWidth: 220
                         }
@@ -461,57 +493,15 @@ PopupWindow {
 
                 Item { Layout.fillWidth: true }
 
-                // Rescan Button (Stable hover background, only icon rotates)
-                Rectangle {
-                    implicitWidth: Nexa.Theme.controlHeightMd
-                    implicitHeight: Nexa.Theme.controlHeightMd
-                    radius: Nexa.Theme.radiusMd
-                    antialiasing: true
-                    color: refreshMouse.pressed ? Nexa.Theme.pressed
-                         : refreshMouse.containsMouse ? Nexa.Theme.hoverStrong
-                         : "transparent"
-                    scale: refreshMouse.pressed ? Nexa.Theme.pressScale
-                         : refreshMouse.containsMouse ? Nexa.Theme.hoverScale
-                         : Nexa.Theme.normalScale
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: Nexa.Theme.motionInteraction
-                            easing.bezierCurve: Nexa.Theme.easingFluidCurve
-                        }
-                    }
-
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: Nexa.Theme.motionInteraction
-                            easing.bezierCurve: Nexa.Theme.easingFluidCurve
-                        }
-                    }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "󰑐"
-                        color: root.isScanning ? Nexa.Theme.primary : (refreshMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText)
-                        font.family: Nexa.Theme.iconFontFamily
-                        font.pixelSize: Nexa.Theme.iconSm
-
-                        RotationAnimator on rotation {
-                            running: root.isScanning && root.visible
-                            from: 0
-                            to: 360
-                            duration: 1200
-                            loops: Animation.Infinite
-                        }
-                    }
-
-                    MouseArea {
-                        id: refreshMouse
-                        anchors.fill: parent
-                        enabled: root.wifiEnabled && !networkProcess.running
-                        hoverEnabled: true
-                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        onClicked: root.refreshNetworks()
-                    }
+                // Rescan Button
+                NexaUI.NexaButton {
+                    variant: "icon"
+                    icon: "󰑐"
+                    iconSize: NexaUI.NexaTypography.sizeSm
+                    implicitWidth: NexaUI.NexaTokens.controlHeightMd
+                    implicitHeight: NexaUI.NexaTokens.controlHeightMd
+                    interactive: root.wifiEnabled && !networkProcess.running
+                    onClicked: root.refreshNetworks()
                 }
 
                 // Wi-Fi Master Toggle
@@ -527,10 +517,10 @@ PopupWindow {
                 visible: root.actionError !== ""
                 Layout.fillWidth: true
                 text: root.actionError
-                color: Nexa.Theme.error
-                font.family: Nexa.Theme.fontFamily
-                font.pixelSize: Nexa.Theme.fontSize2Xs
-                font.weight: Nexa.Theme.fontWeightMedium
+                color: NexaUI.NexaColors.error
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: NexaUI.NexaTypography.size2Xs
+                font.weight: NexaUI.NexaTypography.weightMedium
             }
 
             // ====================================================
@@ -540,7 +530,7 @@ PopupWindow {
                 id: activeNetworkCard
                 visible: root.connectedNetwork !== null && root.wifiEnabled
                 Layout.fillWidth: true
-                padding: Nexa.Theme.spacingSm
+                padding: NexaUI.NexaTokens.spacingSm
                 implicitHeight: Math.max(52, activeRow.implicitHeight + padding * 2)
                 selected: true
 
@@ -551,14 +541,14 @@ PopupWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.leftMargin: activeNetworkCard.padding
                     anchors.rightMargin: activeNetworkCard.padding
-                    spacing: Nexa.Theme.spacingSm
+                    spacing: NexaUI.NexaTokens.spacingSm
 
                     // Prominent Signal Glyph
                     Text {
                         text: root.connectedNetwork ? root.signalIcon(root.connectedNetwork) : "󰤭"
-                        color: Nexa.Theme.primary
-                        font.family: Nexa.Theme.iconFontFamily
-                        font.pixelSize: Nexa.Theme.iconLg
+                        color: NexaUI.NexaColors.primary
+                        font.family: NexaUI.NexaTypography.familyIcon
+                        font.pixelSize: NexaUI.NexaTypography.sizeLg
                         Layout.alignment: Qt.AlignVCenter
                     }
 
@@ -570,49 +560,52 @@ PopupWindow {
 
                         Text {
                             text: root.connectedNetwork ? root.connectedNetwork.name : ""
-                            color: Nexa.Theme.text
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeSm
-                            font.weight: Nexa.Theme.fontWeightDemiBold
+                            color: NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeSm
+                            font.weight: NexaUI.NexaTypography.weightSemiBold
                             elide: Text.ElideRight
                             Layout.fillWidth: true
                         }
 
                         RowLayout {
-                            spacing: Nexa.Theme.spacingXs
+                            spacing: NexaUI.NexaTokens.spacingXs
                             Layout.alignment: Qt.AlignVCenter
 
-                            NexaUI.NexaActiveIndicator {
+                            Rectangle {
+                                implicitWidth: NexaUI.NexaTokens.indicatorWidth
+                                implicitHeight: NexaUI.NexaTokens.indicatorHeight
+                                radius: NexaUI.NexaTokens.radiusPill
+                                color: NexaUI.NexaColors.primary
                                 Layout.alignment: Qt.AlignVCenter
                             }
 
                             Text {
                                 text: "Connected · " + root.signalPercent(root.connectedNetwork) + "%"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                                 Layout.alignment: Qt.AlignVCenter
                             }
                         }
                     }
 
                     // Forget Active Network Button
-                    NexaUI.NexaIconButton {
+                    NexaUI.NexaButton {
+                        variant: "icon"
                         icon: "󰆴"
-                        iconSize: Nexa.Theme.iconSm
-                        implicitWidth: Nexa.Theme.controlHeightSm
-                        implicitHeight: Nexa.Theme.controlHeightSm
-                        iconColor: hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
+                        iconSize: NexaUI.NexaTypography.sizeSm
+                        implicitWidth: NexaUI.NexaTokens.controlHeightSm
+                        implicitHeight: NexaUI.NexaTokens.controlHeightSm
                         Layout.alignment: Qt.AlignVCenter
                         onClicked: root.forgetNetwork(root.connectedNetwork)
                     }
 
                     // Disconnect Active Network Button
                     NexaUI.NexaButton {
+                        variant: "tonal"
                         text: "Disconnect"
-                        textSize: Nexa.Theme.fontSizeXs
-                        implicitHeight: Nexa.Theme.controlHeightSm
-                        horizontalPadding: Nexa.Theme.spacingSm
+                        implicitHeight: NexaUI.NexaTokens.controlHeightSm
                         Layout.alignment: Qt.AlignVCenter
                         onClicked: root.disconnectCurrent()
                     }
@@ -626,7 +619,7 @@ PopupWindow {
                 id: passwordCard
                 visible: root.selectedNetwork !== null && root.wifiEnabled
                 Layout.fillWidth: true
-                padding: Nexa.Theme.spacingMd
+                padding: NexaUI.NexaTokens.spacingMd
                 selected: true
                 implicitHeight: passwordColumn.implicitHeight + padding * 2
 
@@ -635,52 +628,52 @@ PopupWindow {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    spacing: Nexa.Theme.spacingSm
+                    spacing: NexaUI.NexaTokens.spacingSm
 
                     // Title & Security Info
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: Nexa.Theme.spacingXs
+                        spacing: NexaUI.NexaTokens.spacingXs
 
                         Text {
                             text: root.selectedNetwork ? "Connect to " + root.selectedNetwork.name : ""
-                            color: Nexa.Theme.text
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeSm
-                            font.weight: Nexa.Theme.fontWeightDemiBold
+                            color: NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeSm
+                            font.weight: NexaUI.NexaTypography.weightSemiBold
                             elide: Text.ElideRight
                             Layout.fillWidth: true
                         }
 
                         Text {
                             text: "󰌾 Secured"
-                            color: Nexa.Theme.primary
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSize2Xs
-                            font.weight: Nexa.Theme.fontWeightMedium
+                            color: NexaUI.NexaColors.primary
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.size2Xs
+                            font.weight: NexaUI.NexaTypography.weightMedium
                         }
                     }
 
                     // Password Input Container
                     Rectangle {
                         Layout.fillWidth: true
-                        implicitHeight: Nexa.Theme.controlHeightMd
-                        radius: Nexa.Theme.radiusSm
-                        color: Nexa.Theme.inputBackground
-                        border.width: Nexa.Theme.borderThin
-                        border.color: root.connectError !== "" ? Nexa.Theme.error
-                                    : passwordInputField.activeFocus ? Nexa.Theme.focusBorder
-                                    : Nexa.Theme.border
+                        implicitHeight: NexaUI.NexaTokens.controlHeightMd
+                        radius: NexaUI.NexaTokens.radiusSm
+                        color: NexaUI.NexaColors.surfaceContainerHigh
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: root.connectError !== "" ? NexaUI.NexaColors.error
+                                    : passwordInputField.activeFocus ? NexaUI.NexaColors.primary
+                                    : NexaUI.NexaColors.border
 
                         Behavior on border.color {
-                            ColorAnimation { duration: Nexa.Theme.animationFast }
+                            ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                         }
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.leftMargin: Nexa.Theme.spacingSm
-                            anchors.rightMargin: Nexa.Theme.spacingXs
-                            spacing: Nexa.Theme.spacingXs
+                            anchors.leftMargin: NexaUI.NexaTokens.spacingSm
+                            anchors.rightMargin: NexaUI.NexaTokens.spacingXs
+                            spacing: NexaUI.NexaTokens.spacingXs
 
                             Item {
                                 Layout.fillWidth: true
@@ -691,13 +684,13 @@ PopupWindow {
                                     anchors.fill: parent
                                     verticalAlignment: TextInput.AlignVCenter
                                     text: root.password
-                                    color: Nexa.Theme.text
+                                    color: NexaUI.NexaColors.text
                                     echoMode: root.showPassword ? TextInput.Normal : TextInput.Password
                                     enabled: !root.connecting
                                     selectByMouse: true
                                     focus: true
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
 
                                     onTextChanged: {
                                         root.password = text
@@ -720,18 +713,20 @@ PopupWindow {
                                     anchors.verticalCenter: parent.verticalCenter
                                     enabled: false
                                     text: "Enter password"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
                                 }
                             }
 
                             // Show / Hide Password Icon
-                            NexaUI.NexaIconButton {
+                            NexaUI.NexaButton {
+                                variant: "icon"
                                 icon: root.showPassword ? "󰛐" : "󰈈"
-                                iconSize: Nexa.Theme.iconSm
-                                implicitWidth: Nexa.Theme.controlHeightSm
-                                implicitHeight: Nexa.Theme.controlHeightSm
+                                iconSize: NexaUI.NexaTypography.sizeSm
+                                implicitWidth: NexaUI.NexaTokens.controlHeightSm
+                                implicitHeight: NexaUI.NexaTokens.controlHeightSm
+                                Layout.alignment: Qt.AlignVCenter
                                 onClicked: root.showPassword = !root.showPassword
                             }
                         }
@@ -740,21 +735,22 @@ PopupWindow {
                     // Action Buttons Row
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: Nexa.Theme.spacingSm
+                        spacing: NexaUI.NexaTokens.spacingSm
 
                         Item { Layout.fillWidth: true }
 
                         NexaUI.NexaButton {
+                            variant: "tonal"
                             text: "Cancel"
-                            textSize: Nexa.Theme.fontSizeXs
+                            implicitHeight: NexaUI.NexaTokens.controlHeightSm
                             interactive: !root.connecting
                             onClicked: root.cancelConnect()
                         }
 
                         NexaUI.NexaButton {
+                            variant: "filled"
                             text: root.connecting ? "Connecting…" : "Connect"
-                            textSize: Nexa.Theme.fontSizeXs
-                            selected: true
+                            implicitHeight: NexaUI.NexaTokens.controlHeightSm
                             interactive: root.password.length > 0 && !root.connecting
                             onClicked: root.connectSelected()
                         }
@@ -765,10 +761,10 @@ PopupWindow {
                         visible: root.connectError !== ""
                         Layout.fillWidth: true
                         text: root.connectError
-                        color: Nexa.Theme.error
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSize2Xs
-                        font.weight: Nexa.Theme.fontWeightMedium
+                        color: NexaUI.NexaColors.error
+                        font.family: NexaUI.NexaTypography.familyBody
+                        font.pixelSize: NexaUI.NexaTypography.size2Xs
+                        font.weight: NexaUI.NexaTypography.weightMedium
                         wrapMode: Text.WordWrap
                     }
                 }
@@ -780,17 +776,17 @@ PopupWindow {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                implicitHeight: Math.min(320, Math.max(100, listInnerColumn.implicitHeight + Nexa.Theme.spacingSm * 2))
-                radius: Nexa.Theme.radiusMd
-                color: Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                implicitHeight: Math.min(320, Math.max(100, listInnerColumn.implicitHeight + NexaUI.NexaTokens.spacingSm * 2))
+                radius: NexaUI.NexaTokens.radiusMd
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 ColumnLayout {
                     id: listInnerColumn
                     anchors.fill: parent
-                    anchors.margins: Nexa.Theme.spacingSm
-                    spacing: Nexa.Theme.spacingSm
+                    anchors.margins: NexaUI.NexaTokens.spacingSm
+                    spacing: NexaUI.NexaTokens.spacingSm
 
                     // Section Title Row
                     RowLayout {
@@ -799,29 +795,29 @@ PopupWindow {
 
                         Text {
                             text: "Available Networks"
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSize2Xs
-                            font.weight: Nexa.Theme.fontWeightDemiBold
+                            color: NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.size2Xs
+                            font.weight: NexaUI.NexaTypography.weightSemiBold
                         }
 
                         Item { Layout.fillWidth: true }
 
                         // Network Count Badge
                         Rectangle {
-                            implicitWidth: countText.implicitWidth + Nexa.Theme.spacingSm
+                            implicitWidth: countText.implicitWidth + NexaUI.NexaTokens.spacingSm
                             implicitHeight: 18
-                            radius: 9
-                            color: Nexa.Theme.surfaceContainerHighest
+                            radius: NexaUI.NexaTokens.radiusPill
+                            color: NexaUI.NexaColors.surfaceContainerHighest
 
                             Text {
                                 id: countText
                                 anchors.centerIn: parent
                                 text: root.availableList.length.toString()
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSize2Xs
-                                font.weight: Nexa.Theme.fontWeightMedium
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.size2Xs
+                                font.weight: NexaUI.NexaTypography.weightMedium
                             }
                         }
                     }
@@ -834,11 +830,11 @@ PopupWindow {
                         Layout.fillHeight: true
                         implicitHeight: Math.min(260, Math.max(50, contentHeight))
                         clip: true
-                        spacing: Nexa.Theme.spacingXs
+                        spacing: NexaUI.NexaTokens.spacingXs
                         model: root.availableList
 
-                        flickDeceleration: Nexa.Theme.flickDeceleration
-                        maximumFlickVelocity: Nexa.Theme.flickVelocityMax
+                        flickDeceleration: 1750
+                        maximumFlickVelocity: 2500
                         pixelAligned: true
                         boundsBehavior: Flickable.StopAtBounds
                         reuseItems: true
@@ -857,14 +853,14 @@ PopupWindow {
                             contentItem: Rectangle {
                                 implicitWidth: 3
                                 radius: 1.5
-                                color: wifiScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                color: wifiScrollBar.hovered ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
                                 opacity: (wifiScrollBar.active || wifiScrollBar.hovered) ? 0.6 : 0.0
 
                                 Behavior on opacity {
-                                    NumberAnimation { duration: Nexa.Theme.animationNormal }
+                                    NumberAnimation { duration: NexaUI.NexaMotion.durationNormal }
                                 }
                                 Behavior on color {
-                                    ColorAnimation { duration: Nexa.Theme.animationFast }
+                                    ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                                 }
                             }
 
@@ -875,48 +871,38 @@ PopupWindow {
                             id: networkItem
                             required property var modelData
 
-                            width: networkListView.width - (networkListView.contentHeight > networkListView.height ? (Nexa.Theme.spacingSm + 4) : 0)
+                            width: networkListView.width - (networkListView.contentHeight > networkListView.height ? (NexaUI.NexaTokens.spacingSm + 4) : 0)
                             height: 48
-                            radius: Nexa.Theme.radiusSm
+                            radius: NexaUI.NexaTokens.radiusSm
 
                             Behavior on width {
-                                NumberAnimation { duration: Nexa.Theme.animationFast }
+                                NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
                             }
 
                             readonly property bool isConnectingThis:
                                 root.connectingNetwork === networkItem.modelData
 
-                            color: itemMouse.pressed ? Nexa.Theme.pressed
-                                 : itemMouse.containsMouse ? Nexa.Theme.hover
-                                 : Nexa.Theme.surfaceContainerHigh
+                            color: itemMouse.pressed ? NexaUI.NexaColors.surfaceContainerHighest
+                                 : itemMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh
+                                 : NexaUI.NexaColors.surfaceContainerLow
 
-                            border.width: Nexa.Theme.borderThin
-                            border.color: isConnectingThis ? Nexa.Theme.primary
-                                        : itemMouse.containsMouse ? Nexa.Theme.borderStrong
-                                        : Nexa.Theme.border
+                            border.width: NexaUI.NexaTokens.borderThin
+                            border.color: isConnectingThis ? NexaUI.NexaColors.primary
+                                        : itemMouse.containsMouse ? NexaUI.NexaColors.borderStrong
+                                        : NexaUI.NexaColors.border
 
                             scale: itemMouse.pressed ? 0.985 : 1.0
 
                             Behavior on color {
-                                ColorAnimation {
-                                    duration: Nexa.Theme.motionInteraction
-                                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
-                                }
+                                ColorAnimation { duration: 120 }
                             }
 
                             Behavior on border.color {
-                                ColorAnimation {
-                                    duration: Nexa.Theme.motionInteraction
-                                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
-                                }
+                                ColorAnimation { duration: 120 }
                             }
 
                             Behavior on scale {
-                                NumberAnimation {
-                                    duration: Nexa.Theme.motionInteraction
-                                    easing.type: Nexa.Theme.easingStandard
-                                    easing.bezierCurve: Nexa.Theme.easingFluidCurve
-                                }
+                                NumberAnimation { duration: 120 }
                             }
 
                             // Card Click Handler
@@ -932,20 +918,20 @@ PopupWindow {
 
                             RowLayout {
                                 anchors.fill: parent
-                                anchors.leftMargin: Nexa.Theme.spacingSm
-                                anchors.rightMargin: Nexa.Theme.spacingSm
+                                anchors.leftMargin: NexaUI.NexaTokens.spacingSm
+                                anchors.rightMargin: NexaUI.NexaTokens.spacingSm
                                 z: 1
-                                spacing: Nexa.Theme.spacingSm
+                                spacing: NexaUI.NexaTokens.spacingSm
 
                                 // Signal Strength Icon
                                 Text {
                                     text: root.signalIcon(networkItem.modelData)
-                                    color: networkItem.isConnectingThis ? Nexa.Theme.primary
-                                         : root.signalPercent(networkItem.modelData) >= 50 ? Nexa.Theme.primary
-                                         : root.signalPercent(networkItem.modelData) >= 25 ? Nexa.Theme.text
-                                         : Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconMd
+                                    color: networkItem.isConnectingThis ? NexaUI.NexaColors.primary
+                                         : root.signalPercent(networkItem.modelData) >= 50 ? NexaUI.NexaColors.primary
+                                         : root.signalPercent(networkItem.modelData) >= 25 ? NexaUI.NexaColors.text
+                                         : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeMd
                                 }
 
                                 // Network SSID
@@ -953,19 +939,19 @@ PopupWindow {
                                     Layout.fillWidth: true
                                     text: networkItem.modelData.name
                                     elide: Text.ElideRight
-                                    color: Nexa.Theme.text
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeXs
-                                    font.weight: Nexa.Theme.fontWeightMedium
+                                    color: NexaUI.NexaColors.text
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                    font.weight: NexaUI.NexaTypography.weightMedium
                                 }
 
                                 // Connecting Spinner
                                 Text {
                                     visible: networkItem.isConnectingThis
                                     text: "󰑐"
-                                    color: Nexa.Theme.primary
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconSm
+                                    color: NexaUI.NexaColors.primary
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
 
                                     RotationAnimator on rotation {
                                         running: root.visible && networkItem.isConnectingThis
@@ -981,16 +967,16 @@ PopupWindow {
                                     visible: networkItem.modelData.known && !networkItem.isConnectingThis
                                     implicitWidth: savedBadgeText.implicitWidth + 8
                                     implicitHeight: 18
-                                    radius: 9
-                                    color: Nexa.Theme.surfaceContainerHighest
+                                    radius: NexaUI.NexaTokens.radiusPill
+                                    color: NexaUI.NexaColors.surfaceContainerHighest
 
                                     Text {
                                         id: savedBadgeText
                                         anchors.centerIn: parent
                                         text: "Saved"
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.size2Xs
                                     }
                                 }
 
@@ -998,27 +984,28 @@ PopupWindow {
                                 Text {
                                     visible: root.isSecured(networkItem.modelData)
                                     text: "󰌾"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: Nexa.Theme.iconXs
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
                                 }
 
                                 // Signal Percentage
                                 Text {
                                     text: root.signalPercent(networkItem.modelData) + "%"
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
                                 }
 
                                 // Forget Saved Network Icon Button
-                                NexaUI.NexaIconButton {
+                                NexaUI.NexaButton {
+                                    variant: "icon"
                                     visible: networkItem.modelData.known
                                     icon: "󰆴"
-                                    iconSize: Nexa.Theme.iconSm
-                                    implicitWidth: Nexa.Theme.controlHeightSm
-                                    implicitHeight: Nexa.Theme.controlHeightSm
-                                    iconColor: hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                    iconSize: NexaUI.NexaTypography.sizeSm
+                                    implicitWidth: NexaUI.NexaTokens.controlHeightSm
+                                    implicitHeight: NexaUI.NexaTokens.controlHeightSm
+                                    Layout.alignment: Qt.AlignVCenter
                                     onClicked: root.forgetNetwork(networkItem.modelData)
                                 }
                             }
@@ -1035,15 +1022,15 @@ PopupWindow {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.alignment: Qt.AlignCenter
-                        spacing: Nexa.Theme.spacingMd
+                        spacing: NexaUI.NexaTokens.spacingMd
 
                         Item { Layout.fillHeight: true }
 
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: "󰤭"
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.iconFontFamily
+                            color: NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 48
                         }
 
@@ -1054,18 +1041,18 @@ PopupWindow {
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "Wi-Fi is turned off"
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                color: NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                font.weight: NexaUI.NexaTypography.weightSemiBold
                             }
 
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "Turn on Wi-Fi to find and connect to networks"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                             }
                         }
 
@@ -1073,7 +1060,7 @@ PopupWindow {
                             Layout.alignment: Qt.AlignHCenter
                             text: "Turn On Wi-Fi"
                             icon: "󰤨"
-                            selected: true
+                            variant: "filled"
                             onClicked: root.toggleWifi()
                         }
 
@@ -1086,15 +1073,15 @@ PopupWindow {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.alignment: Qt.AlignCenter
-                        spacing: Nexa.Theme.spacingSm
+                        spacing: NexaUI.NexaTokens.spacingSm
 
                         Item { Layout.fillHeight: true }
 
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.isScanning ? "󰑐" : "󰤭"
-                            color: root.isScanning ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.iconFontFamily
+                            color: root.isScanning ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 32
 
                             RotationAnimator on rotation {
@@ -1110,19 +1097,19 @@ PopupWindow {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.isScanning ? "Searching for networks…"
                                 : (root.connectedNetwork ? "No other networks found" : "No networks found")
-                            color: Nexa.Theme.text
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeSm
-                            font.weight: Nexa.Theme.fontWeightMedium
+                            color: NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeSm
+                            font.weight: NexaUI.NexaTypography.weightMedium
                         }
 
                         Text {
                             visible: !root.isScanning
                             Layout.alignment: Qt.AlignHCenter
                             text: "Click refresh to scan for nearby Wi-Fi"
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeXs
+                            color: NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeXs
                         }
 
                         NexaUI.NexaButton {
@@ -1130,6 +1117,7 @@ PopupWindow {
                             Layout.alignment: Qt.AlignHCenter
                             text: "Rescan"
                             icon: "󰑐"
+                            variant: "filled"
                             onClicked: root.refreshNetworks()
                         }
 

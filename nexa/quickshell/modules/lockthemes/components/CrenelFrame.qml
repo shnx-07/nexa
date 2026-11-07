@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import "../../../theme/colors"
+import "../../../NewNexaUI" as NexaUI
 import "../../../services" as Services
 
 // Siege frame for shell pieces under the desktop theme: a fill whose top
@@ -13,7 +13,7 @@ Shape {
 
     property real merlon: 8
     property real depth: 3
-    property color fill: Colors.surface_container
+    property color fill: NexaUI.NexaColors.surfaceContainer
     property color stroke: Services.DesktopTheme.accentOf("siege")
     property real strokeWidth: 1
     property real inset: 0.5

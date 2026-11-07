@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import "../../../theme/colors"
+import "../../../NewNexaUI" as NexaUI
 import "../../../services" as Services
 
 // Cathedral frame for shell pieces under the desktop theme: a fill with its
@@ -12,7 +12,7 @@ Shape {
     id: frame
 
     property real cut: 5
-    property color fill: Colors.surface_container
+    property color fill: NexaUI.NexaColors.surfaceContainer
     property color stroke: Services.DesktopTheme.accentOf("gothic")
     property real strokeWidth: 1
     // Distance of the inner line from the outer one; 0 for none.

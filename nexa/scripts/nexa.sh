@@ -53,8 +53,16 @@ do_start() {
     fi
 
     cd "$HOME"
-    export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
     export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    if [ -z "${WAYLAND_DISPLAY:-}" ]; then
+        for sock in "$XDG_RUNTIME_DIR"/wayland-*; do
+            if [ -S "$sock" ]; then
+                export WAYLAND_DISPLAY="$(basename "$sock")"
+                break
+            fi
+        done
+        export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
+    fi
     export QS_ICON_THEME="breeze-dark"
     export QS_NO_RELOAD_POPUP=1
     setsid quickshell -p "$SHELL_PATH" >/tmp/nexa-quickshell.log 2>&1 &

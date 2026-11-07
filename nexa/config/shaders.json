@@ -1,9 +1,12 @@
 {
+  "activeShader": "off",
   "active": "off",
-  "opacity": 0.9500000000000001,
-  "speed": 0.7000000000000001,
+  "opacity": 0.85,
+  "shaderSpeed": 1,
+  "speed": 1,
+  "shaderIntensity": 1,
   "intensity": 1,
-  "contrast_veil": 0.35000000000000003,
+  "contrast_veil": 0.3,
   "pause_when_hidden": true,
   "presets": {
     "liquid_glass": {
@@ -18,12 +21,6 @@
       "icon": "󰇒",
       "file": "theme/starfall.frag.qsb"
     },
-    "off": {
-      "name": "Default (Off)",
-      "subtitle": "Clean Dark Glass",
-      "icon": "󰛐",
-      "file": ""
-    },
     "aurora": {
       "name": "Aurora Waves",
       "subtitle": "Ethereal Curtains",
@@ -32,19 +29,19 @@
     },
     "liquidglass": {
       "name": "Glass",
-      "subtitle": "test",
+      "subtitle": "Liquid Refraction",
       "icon": "󰄛",
       "file": "theme/liquidglass.frag.qsb"
     },
     "rain_glass": {
       "name": "Rain Glass",
-      "subtitle": "Raining Strom",
+      "subtitle": "Rain Storm Glass",
       "icon": "🌧",
       "file": "theme/rain_glass.frag.qsb"
     },
     "noirhalftone": {
-      "name": "Noirhalftone",
-      "subtitle": "Black",
+      "name": "Noir Halftone",
+      "subtitle": "Monochrome Dot Matrix",
       "icon": "⚫",
       "file": "theme/noirhalftone.frag.qsb"
     },
@@ -59,6 +56,12 @@
       "subtitle": "Astral Deep Space & Flare",
       "icon": "☀️",
       "file": "theme/distant_sun.frag.qsb"
+    },
+    "off": {
+      "name": "Default (Off)",
+      "subtitle": "Clean Dark Glass",
+      "icon": "󰛐",
+      "file": ""
     }
   }
 }

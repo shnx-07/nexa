@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import "../../../services" as Services
-import "../../../theme/colors"
+import "../../../NewNexaUI" as NexaUI
 
 Item {
     id: root
@@ -31,8 +31,8 @@ Item {
 
                 // Simplified gradient (slightly faster)
                 gradient: Gradient {
-                    GradientStop { position: 0;   color: Colors.primary_container }
-                    GradientStop { position: 1;   color: Colors.primary }
+                    GradientStop { position: 0;   color: NexaUI.NexaColors.primaryContainer }
+                    GradientStop { position: 1;   color: NexaUI.NexaColors.primary }
                 }
 
                 anchors.verticalCenter: parent.verticalCenter

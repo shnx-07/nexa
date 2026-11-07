@@ -2,9 +2,9 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
 
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 import "../appLauncher" as AppLauncher
 
 NexaUI.NexaCard {
@@ -12,23 +12,31 @@ NexaUI.NexaCard {
 
     // ------------------------------------------------------------
     // ACTIVE APPLICATION & TITLE
+    // Dual fallback: ToplevelManager (Wayland) + Hyprland.focusedWindow
+    // Ensures floating terminal, file manager & scratchpads never disappear
     // ------------------------------------------------------------
 
-    readonly property var app: ToplevelManager.activeToplevel
+    readonly property var app: (typeof ToplevelManager !== "undefined") ? ToplevelManager.activeToplevel : null
+    readonly property var hyprWindow: (typeof Hyprland !== "undefined" && Hyprland.focusedWindow) ? Hyprland.focusedWindow : null
 
-    readonly property string appId:
-        app?.appId ?? ""
+    readonly property string appId: {
+        if (app && app.appId && app.appId !== "") return app.appId;
+        if (hyprWindow && hyprWindow.class && hyprWindow.class !== "") return hyprWindow.class;
+        return "";
+    }
 
-    readonly property bool hasApp:
-        appId !== ""
+    readonly property bool hasApp: appId !== ""
 
     readonly property string appName: {
         if (!hasApp) return ""
         return AppLauncher.AppRegistry.cleanAppName(appId)
     }
 
-    readonly property string windowTitle:
-        app?.title ?? ""
+    readonly property string windowTitle: {
+        if (app && app.title && app.title !== "") return app.title;
+        if (hyprWindow && hyprWindow.title && hyprWindow.title !== "") return hyprWindow.title;
+        return "";
+    }
 
     readonly property string displayText: {
         if (!hasApp) return ""
@@ -44,13 +52,15 @@ NexaUI.NexaCard {
 
     readonly property int fixedPillWidth: 210
 
-    implicitHeight: Nexa.Theme.controlHeightSm
+    implicitHeight: NexaUI.NexaTokens.controlHeightSm
+    customHeight: NexaUI.NexaTokens.controlHeightSm
 
     implicitWidth: hasApp
         ? fixedPillWidth
-        : Nexa.Theme.controlHeightSm
+        : NexaUI.NexaTokens.controlHeightSm
 
-    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
+    radius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(height / 2, NexaUI.NexaTokens.radiusLg)
+    customRadius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(height / 2, NexaUI.NexaTokens.radiusLg)
 
     // ------------------------------------------------------------
     // SURFACE
@@ -61,8 +71,8 @@ NexaUI.NexaCard {
 
     Behavior on implicitWidth {
         NumberAnimation {
-            duration: Nexa.Theme.motionSelection
-            easing.type: Nexa.Theme.easingStandard
+            duration: NexaUI.NexaMotion.durationNormal
+            easing.type: NexaUI.NexaMotion.standardEasing
         }
     }
 
@@ -79,18 +89,18 @@ NexaUI.NexaCard {
 
         anchors {
             fill: parent
-            leftMargin: Nexa.Theme.spacingSm
-            rightMargin: Nexa.Theme.spacingSm
+            leftMargin: NexaUI.NexaTokens.spacingSm
+            rightMargin: NexaUI.NexaTokens.spacingSm
         }
 
-        spacing: Nexa.Theme.spacingXs
+        spacing: NexaUI.NexaTokens.spacingXs
 
         // Application Icon
         Image {
             id: appIcon
 
-            Layout.preferredWidth: Nexa.Theme.iconSm
-            Layout.preferredHeight: Nexa.Theme.iconSm
+            Layout.preferredWidth: NexaUI.NexaTokens.iconSm
+            Layout.preferredHeight: NexaUI.NexaTokens.iconSm
             Layout.alignment: Qt.AlignVCenter
 
             source: root.hasApp ? root.appIconSource(root.appId) : ""
@@ -101,148 +111,101 @@ NexaUI.NexaCard {
             smooth: true
             mipmap: true
 
-            onStatusChanged: {
-                if (status === Image.Error && source !== "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg") {
-                    source = "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg"
-                }
-            }
-
-            scale: root.hovered ? 1.08 : 1.0
-
-            Behavior on scale {
+            Behavior on opacity {
                 NumberAnimation {
-                    duration: Nexa.Theme.animationFast
-                    easing.type: Nexa.Theme.easingStandard
+                    duration: NexaUI.NexaMotion.durationFast
+                    easing.type: NexaUI.NexaMotion.standardEasing
                 }
             }
         }
 
-        // Separator Line (|)
-        Rectangle {
-            Layout.preferredWidth: 1
-            Layout.preferredHeight: 14
-            Layout.alignment: Qt.AlignVCenter
-
-            color: Nexa.Theme.divider
-            opacity: 0.6
-
-            visible: root.hasApp
-        }
-
-        // Sliding Marquee Ticker Container
+        // Animated Marquee Ticker for App Title
         Item {
-            id: marqueeContainer
+            id: tickerContainer
 
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.alignment: Qt.AlignVCenter
             clip: true
+
             visible: root.hasApp
 
             readonly property bool needsScroll:
-                marqueeText.implicitWidth > width
+                tickerText.implicitWidth > tickerContainer.width
 
-            readonly property real overflowDist:
-                Math.max(0, marqueeText.implicitWidth - width)
+            readonly property real scrollDistance:
+                Math.max(0, tickerText.implicitWidth - tickerContainer.width)
 
             Text {
-                id: marqueeText
+                id: tickerText
 
-                x: 0
                 anchors.verticalCenter: parent.verticalCenter
+                x: tickerContainer.needsScroll ? -tickerAnim.scrollX : 0
 
                 text: root.displayText
+                color: NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: NexaUI.NexaTypography.sizeSm
+                font.weight: NexaUI.NexaTypography.weightMedium
 
-                color: root.hovered
-                    ? Nexa.Theme.text
-                    : Nexa.Theme.mutedText
-
-                font {
-                    family: Nexa.Theme.fontFamily
-                    pixelSize: Nexa.Theme.fontSizeXs
-                    weight: Nexa.Theme.fontWeightMedium
-                }
+                elide: tickerContainer.needsScroll ? Text.ElideNone : Text.ElideRight
 
                 Behavior on color {
                     ColorAnimation {
-                        duration: Nexa.Theme.animationFast
+                        duration: NexaUI.NexaMotion.durationFast
+                        easing.type: NexaUI.NexaMotion.standardEasing
                     }
                 }
             }
 
             SequentialAnimation {
-                id: tickerAnimation
-                running: marqueeContainer.needsScroll && root.hovered
+                id: tickerAnim
+
+                property real scrollX: 0
+
+                running: tickerContainer.needsScroll && !root.hovered
                 loops: Animation.Infinite
+
+                PauseAnimation { duration: 2500 }
+
+                NumberAnimation {
+                    target: tickerAnim
+                    property: "scrollX"
+                    from: 0
+                    to: tickerContainer.scrollDistance
+                    duration: Math.max(1200, tickerContainer.scrollDistance * 28)
+                    easing.type: Easing.Linear
+                }
 
                 PauseAnimation { duration: 1800 }
 
                 NumberAnimation {
-                    target: marqueeText
-                    property: "x"
-                    from: 0
-                    to: -marqueeContainer.overflowDist - 16
-                    duration: Math.max(1400, (marqueeContainer.overflowDist + 16) * 35)
-                    easing.type: Easing.InOutQuad
-                }
-
-                PauseAnimation { duration: 1500 }
-
-                NumberAnimation {
-                    target: marqueeText
-                    property: "x"
+                    target: tickerAnim
+                    property: "scrollX"
+                    from: tickerContainer.scrollDistance
                     to: 0
-                    duration: Math.max(1000, (marqueeContainer.overflowDist + 16) * 25)
-                    easing.type: Easing.InOutQuad
+                    duration: Math.max(800, tickerContainer.scrollDistance * 16)
+                    easing.type: NexaUI.NexaMotion.standardEasing
                 }
-            }
-
-            onWidthChanged: {
-                marqueeText.x = 0
-                if (needsScroll && root.hovered) tickerAnimation.restart()
-                else tickerAnimation.stop()
             }
 
             Connections {
                 target: root
-                function onHoveredChanged() {
-                    if (!root.hovered) {
-                        tickerAnimation.stop()
-                        marqueeText.x = 0
-                    } else if (marqueeContainer.needsScroll) {
-                        tickerAnimation.restart()
-                    }
-                }
                 function onDisplayTextChanged() {
-                    marqueeText.x = 0
-                    if (marqueeContainer.needsScroll && root.hovered) tickerAnimation.restart()
-                    else tickerAnimation.stop()
-                }
-                function onHasAppChanged() {
-                    marqueeText.x = 0
-                    if (marqueeContainer.needsScroll && root.hovered) tickerAnimation.restart()
-                    else tickerAnimation.stop()
+                    tickerAnim.scrollX = 0
+                    tickerAnim.restart()
                 }
             }
         }
-    }
 
-    // ------------------------------------------------------------
-    // EMPTY STATE (WHEN NO ACTIVE WINDOW)
-    // ------------------------------------------------------------
-
-    Rectangle {
-        anchors.centerIn: parent
-
-        visible: !root.hasApp
-
-        width: Nexa.Theme.spacingXs
-        height: Nexa.Theme.spacingXs
-
-        radius: Nexa.Theme.radiusPill
-
-        color: Nexa.Theme.mutedText
-
-        opacity: Nexa.Theme.opacitySecondary
+        // Empty state dot when no active window
+        Rectangle {
+            Layout.alignment: Qt.AlignCenter
+            visible: !root.hasApp
+            width: 6
+            height: 6
+            radius: 3
+            color: NexaUI.NexaColors.mutedText
+            opacity: 0.5
+        }
     }
 }

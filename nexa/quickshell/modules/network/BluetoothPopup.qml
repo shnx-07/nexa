@@ -6,8 +6,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../services" as Services
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 PopupWindow {
     id: root
@@ -52,8 +51,8 @@ PopupWindow {
     // WINDOW GEOMETRY & ANCHORING
     // ============================================================
 
-    implicitWidth: 380
-    implicitHeight: Math.min(540, Math.max(340, mainLayout.implicitHeight + Nexa.Theme.spacingMd * 2))
+    implicitWidth: 412
+    implicitHeight: Math.min(572, Math.max(372, mainLayout.implicitHeight + NexaUI.NexaTokens.spacingMd * 2 + 32))
 
     color: "transparent"
     grabFocus: true
@@ -63,12 +62,12 @@ PopupWindow {
 
         rect.x:
             root.anchorItem
-            ? root.anchorItem.width
+            ? root.anchorItem.width + 16
             : 0
 
         rect.y:
             root.anchorItem
-            ? root.anchorItem.height + Nexa.Theme.spacingSm
+            ? root.anchorItem.height + NexaUI.NexaTokens.spacingSm - 16
             : 0
 
         rect.width: 1
@@ -261,49 +260,100 @@ PopupWindow {
     // MAIN POPUP CONTAINER
     // ============================================================
 
+    // GPU-Accelerated Nexa Drop Shadow for Bluetooth Popup
+    NexaUI.NexaShadow {
+        id: panelShadow
+        targetItem: mainSurface
+        elevation: 1
+        spread: 0.08
+    }
+
     Rectangle {
         id: mainSurface
         anchors.fill: parent
-        radius: Nexa.Theme.radiusLg
-        color: Nexa.Theme.panelBackground
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.border
+        anchors.margins: 16
+        radius: NexaUI.NexaTokens.nexaRounding === 0 ? 0 : Math.min(mainSurface.height / 2, NexaUI.NexaTokens.nexaRounding)
+        color: NexaUI.NexaColors.surfaceContainer
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.border
 
         NexaUI.NexaShaderSubstrate {
             anchors.fill: parent
             radius: parent.radius
         }
 
-        // Static continuous-corner glass gradient highlight
+        // Apple / Tactile 4-stop Depth Micro-Gradient
         Rectangle {
             anchors.fill: parent
-            anchors.margins: mainSurface.border.width
-            radius: Math.max(0, mainSurface.radius - mainSurface.border.width)
+            radius: mainSurface.radius
+            antialiasing: mainSurface.radius > 0
+            visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+            opacity: NexaUI.NexaOptics.gradientIntensity
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlightStrong }
-                GradientStop { position: 0.45; color: "transparent" }
+                GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.055) }
+                GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.012) }
+                GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.140) }
+            }
+        }
+
+        // Top Chamfer Specular Highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: mainSurface.radius > 0 ? Math.max(0, parent.width - mainSurface.radius * 1.6) : parent.width
+            height: 1
+            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.32) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        scale: root.visible ? 1.0 : 0.97
+        opacity: root.visible ? 1.0 : 0.0
+        transformOrigin: Item.TopRight
+
+        Behavior on scale {
+            enabled: NexaUI.NexaMotion.enabled
+            SpringAnimation {
+                spring: NexaUI.NexaMotion.useSpring("popups") ? NexaUI.NexaMotion.springStiffness : 8.0
+                damping: NexaUI.NexaMotion.useSpring("popups") ? NexaUI.NexaMotion.springDamping : 1.0
+                mass: NexaUI.NexaMotion.springMass
+                epsilon: 0.002
+            }
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: NexaUI.NexaMotion.durationFast
+                easing.type: NexaUI.NexaMotion.decelerateEasing
             }
         }
 
         ColumnLayout {
             id: mainLayout
             anchors.fill: parent
-            anchors.margins: Nexa.Theme.spacingMd
-            spacing: Nexa.Theme.spacingMd
+            anchors.margins: NexaUI.NexaTokens.spacingMd
+            spacing: NexaUI.NexaTokens.spacingMd
 
             // ====================================================
             // TOP HEADER ROW
             // ====================================================
             RowLayout {
                 Layout.fillWidth: true
-                spacing: Nexa.Theme.spacingSm
+                spacing: NexaUI.NexaTokens.spacingSm
 
                 // Status Icon
                 Text {
                     text: root.connectedDevices.length > 0 ? "󰂱" : root.optimisticEnabled ? "󰂯" : "󰂲"
-                    color: root.connectedDevices.length > 0 ? Nexa.Theme.primary : root.optimisticEnabled ? Nexa.Theme.text : Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.iconFontFamily
-                    font.pixelSize: Nexa.Theme.iconLg
+                    color: root.connectedDevices.length > 0 ? NexaUI.NexaColors.primary : root.optimisticEnabled ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText
+                    font.family: NexaUI.NexaTypography.familyIcon
+                    font.pixelSize: NexaUI.NexaTypography.sizeLg
                     Layout.alignment: Qt.AlignVCenter
                 }
 
@@ -313,15 +363,15 @@ PopupWindow {
                     Layout.alignment: Qt.AlignVCenter
 
                     RowLayout {
-                        spacing: Nexa.Theme.spacingXs
+                        spacing: NexaUI.NexaTokens.spacingXs
                         Layout.alignment: Qt.AlignVCenter
 
                         Text {
                             text: "Bluetooth"
-                            color: Nexa.Theme.text
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeMd
-                            font.weight: Nexa.Theme.fontWeightDemiBold
+                            color: NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyDisplay
+                            font.pixelSize: NexaUI.NexaTypography.sizeMd
+                            font.weight: NexaUI.NexaTypography.weightSemiBold
                             Layout.alignment: Qt.AlignVCenter
                         }
 
@@ -331,7 +381,7 @@ PopupWindow {
                             implicitWidth: badgeText.implicitWidth + 10
                             implicitHeight: 18
                             radius: 9
-                            color: Nexa.Theme.surfaceContainerHighest
+                            color: NexaUI.NexaColors.surfaceContainerHighest
                             Layout.alignment: Qt.AlignVCenter
 
                             Text {
@@ -340,10 +390,10 @@ PopupWindow {
                                 text: root.connectedDevices.length > 0
                                       ? root.connectedDevices.length + " connected"
                                       : root.deviceCatalog.length.toString()
-                                color: root.connectedDevices.length > 0 ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSize2Xs
-                                font.weight: Nexa.Theme.fontWeightMedium
+                                color: root.connectedDevices.length > 0 ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.size2Xs
+                                font.weight: NexaUI.NexaTypography.weightMedium
                             }
                         }
                     }
@@ -353,9 +403,9 @@ PopupWindow {
                             : root.connectedDevices.length > 0 ? root.connectedDevices.length + (root.connectedDevices.length === 1 ? " device active" : " devices active")
                             : root.scanning ? "Searching for devices…"
                             : "Ready to connect"
-                        color: Nexa.Theme.mutedText
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                        color: NexaUI.NexaColors.mutedText
+                        font.family: NexaUI.NexaTypography.familyBody
+                        font.pixelSize: NexaUI.NexaTypography.size2Xs
                     }
                 }
 
@@ -372,9 +422,9 @@ PopupWindow {
                     Rectangle {
                         id: scanHoverBg
                         anchors.fill: parent
-                        radius: Nexa.Theme.radiusPill
-                        color: scanArea.containsMouse ? Nexa.Theme.hover : "transparent"
-                        border.color: scanArea.containsMouse ? Nexa.Theme.borderSubtle : "transparent"
+                        radius: NexaUI.NexaTokens.radiusPill
+                        color: scanArea.containsMouse ? NexaUI.NexaColors.hoverOverlay : "transparent"
+                        border.color: scanArea.containsMouse ? NexaUI.NexaColors.borderSubtle : "transparent"
                         border.width: 1
 
                         Behavior on color { ColorAnimation { duration: 150 } }
@@ -384,9 +434,9 @@ PopupWindow {
                         id: scanIcon
                         anchors.centerIn: parent
                         text: "󰑐"
-                        font.family: Nexa.Theme.iconFontFamily
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 16
-                        color: root.scanning ? Nexa.Theme.primary : Nexa.Theme.onSurface
+                        color: root.scanning ? NexaUI.NexaColors.primary : NexaUI.NexaColors.onSurface
 
                         RotationAnimator on rotation {
                             from: 0
@@ -431,10 +481,10 @@ PopupWindow {
                 visible: root.actionError !== ""
                 Layout.fillWidth: true
                 text: root.actionError
-                color: Nexa.Theme.error
-                font.family: Nexa.Theme.fontFamily
-                font.pixelSize: Nexa.Theme.fontSize2Xs
-                font.weight: Nexa.Theme.fontWeightMedium
+                color: NexaUI.NexaColors.error
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: NexaUI.NexaTypography.size2Xs
+                font.weight: NexaUI.NexaTypography.weightMedium
             }
 
             // ====================================================
@@ -447,7 +497,7 @@ PopupWindow {
                     id: connectedCard
                     required property var modelData
                     Layout.fillWidth: true
-                    padding: Nexa.Theme.spacingSm
+                    padding: NexaUI.NexaTokens.spacingSm
                     implicitHeight: Math.max(52, connectedRow.implicitHeight + padding * 2)
                     selected: true
 
@@ -458,22 +508,22 @@ PopupWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.leftMargin: connectedCard.padding
                         anchors.rightMargin: connectedCard.padding
-                        spacing: Nexa.Theme.spacingSm
+                        spacing: NexaUI.NexaTokens.spacingSm
 
                         // Capsule Device Glyph
                         Rectangle {
                             implicitWidth: 32
                             implicitHeight: 32
-                            radius: Nexa.Theme.radiusPill
-                            color: Nexa.Theme.primaryContainer
+                            radius: NexaUI.NexaTokens.radiusPill
+                            color: NexaUI.NexaColors.surfaceContainerHigh
                             Layout.alignment: Qt.AlignVCenter
 
                             Text {
                                 anchors.centerIn: parent
                                 text: root.deviceGlyph(connectedCard.modelData.device_type)
-                                color: Nexa.Theme.primary
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 16
+                                color: NexaUI.NexaColors.primary
+                                font.family: NexaUI.NexaTypography.familyIcon
+                                font.pixelSize: NexaUI.NexaTypography.sizeMd
                             }
                         }
 
@@ -485,19 +535,23 @@ PopupWindow {
 
                             Text {
                                 text: root.deviceName(connectedCard.modelData)
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                color: NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                font.weight: NexaUI.NexaTypography.weightSemiBold
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
                             }
 
                             RowLayout {
-                                spacing: Nexa.Theme.spacingXs
+                                spacing: NexaUI.NexaTokens.spacingXs
                                 Layout.alignment: Qt.AlignVCenter
 
-                                NexaUI.NexaActiveIndicator {
+                                Rectangle {
+                                    implicitWidth: NexaUI.NexaTokens.indicatorWidth
+                                    implicitHeight: NexaUI.NexaTokens.indicatorHeight
+                                    radius: NexaUI.NexaTokens.radiusPill
+                                    color: NexaUI.NexaColors.primary
                                     Layout.alignment: Qt.AlignVCenter
                                 }
 
@@ -509,32 +563,31 @@ PopupWindow {
                                         }
                                         return str
                                     }
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeXs
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
                                     Layout.alignment: Qt.AlignVCenter
                                 }
                             }
                         }
 
                         // Forget Button
-                        NexaUI.NexaIconButton {
+                        NexaUI.NexaButton {
+                            variant: "icon"
                             icon: "󰆴"
-                            iconSize: Nexa.Theme.iconSm
-                            implicitWidth: Nexa.Theme.controlHeightSm
-                            implicitHeight: Nexa.Theme.controlHeightSm
-                            iconColor: hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
+                            iconSize: NexaUI.NexaTypography.sizeSm
+                            implicitWidth: NexaUI.NexaTokens.controlHeightSm
+                            implicitHeight: NexaUI.NexaTokens.controlHeightSm
                             Layout.alignment: Qt.AlignVCenter
-                            enabled: !actionProcess.running
+                            interactive: !actionProcess.running
                             onClicked: root.forgetDevice(connectedCard.modelData)
                         }
 
                         // Disconnect Button
                         NexaUI.NexaButton {
+                            variant: "tonal"
                             text: root.isPending(connectedCard.modelData) ? "Disconnecting…" : "Disconnect"
-                            textSize: Nexa.Theme.fontSizeXs
-                            implicitHeight: Nexa.Theme.controlHeightSm
-                            horizontalPadding: Nexa.Theme.spacingSm
+                            implicitHeight: NexaUI.NexaTokens.controlHeightSm
                             Layout.alignment: Qt.AlignVCenter
                             interactive: !actionProcess.running
                             onClicked: root.disconnectDevice(connectedCard.modelData)
@@ -549,17 +602,17 @@ PopupWindow {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                implicitHeight: Math.min(320, Math.max(220, listInnerColumn.implicitHeight + Nexa.Theme.spacingSm * 2))
-                radius: Nexa.Theme.radiusMd
-                color: Nexa.Theme.surfaceContainer
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                implicitHeight: Math.min(320, Math.max(220, listInnerColumn.implicitHeight + NexaUI.NexaTokens.spacingSm * 2))
+                radius: NexaUI.NexaTokens.radiusMd
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 ColumnLayout {
                     id: listInnerColumn
                     anchors.fill: parent
-                    anchors.margins: Nexa.Theme.spacingSm
-                    spacing: Nexa.Theme.spacingSm
+                    anchors.margins: NexaUI.NexaTokens.spacingSm
+                    spacing: NexaUI.NexaTokens.spacingSm
 
                     // ============================================
                     // EMPTY / DISABLED STATES
@@ -571,15 +624,15 @@ PopupWindow {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.alignment: Qt.AlignCenter
-                        spacing: Nexa.Theme.spacingMd
+                        spacing: NexaUI.NexaTokens.spacingMd
 
                         Item { Layout.fillHeight: true }
 
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: "󰂲"
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.iconFontFamily
+                            color: NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 48
                         }
 
@@ -590,18 +643,18 @@ PopupWindow {
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "Bluetooth is turned off"
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                color: NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                font.weight: NexaUI.NexaTypography.weightSemiBold
                             }
 
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "Turn on Bluetooth to find and connect to devices"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                             }
                         }
 
@@ -609,7 +662,7 @@ PopupWindow {
                             Layout.alignment: Qt.AlignHCenter
                             text: "Turn On Bluetooth"
                             icon: "󰂯"
-                            selected: true
+                            variant: "filled"
                             interactive: !actionProcess.running
                             onClicked: root.toggleBluetooth()
                         }
@@ -623,15 +676,15 @@ PopupWindow {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.alignment: Qt.AlignCenter
-                        spacing: Nexa.Theme.spacingSm
+                        spacing: NexaUI.NexaTokens.spacingSm
 
                         Item { Layout.fillHeight: true }
 
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.scanning ? "󰑐" : "󰂲"
-                            color: root.scanning ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.iconFontFamily
+                            color: root.scanning ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 32
 
                             RotationAnimator on rotation {
@@ -650,18 +703,18 @@ PopupWindow {
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: root.scanning ? "Searching for nearby devices…" : "No Bluetooth devices found"
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                color: NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                font.weight: NexaUI.NexaTypography.weightSemiBold
                             }
 
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "Make sure devices are in pairing mode"
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                             }
                         }
 
@@ -669,7 +722,7 @@ PopupWindow {
                             Layout.alignment: Qt.AlignHCenter
                             text: "Scan for Devices"
                             icon: "󰑐"
-                            selected: true
+                            variant: "filled"
                             interactive: !actionProcess.running
                             onClicked: root.toggleDiscovery()
                         }
@@ -688,8 +741,8 @@ PopupWindow {
                         contentHeight: deviceColumn.implicitHeight
                         contentWidth: width
                         boundsBehavior: Flickable.StopAtBounds
-                        flickDeceleration: Nexa.Theme.flickDeceleration
-                        maximumFlickVelocity: Nexa.Theme.flickVelocityMax
+                        flickDeceleration: 1750
+                        maximumFlickVelocity: 2500
                         pixelAligned: true
 
                         NexaUI.NexaSmoothScroll {}
@@ -705,23 +758,23 @@ PopupWindow {
 
                             contentItem: Rectangle {
                                 implicitWidth: 3
-                                radius: Nexa.Theme.radiusPill
-                                color: btScrollBar.hovered ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                radius: NexaUI.NexaTokens.radiusPill
+                                color: btScrollBar.hovered ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
                                 opacity: (btScrollBar.active || btScrollBar.hovered) ? 0.6 : 0.0
 
-                                Behavior on opacity { NumberAnimation { duration: Nexa.Theme.animationNormal } }
-                                Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                                Behavior on opacity { NumberAnimation { duration: NexaUI.NexaMotion.durationNormal } }
+                                Behavior on color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
                             }
                             background: null
                         }
 
                         Column {
                             id: deviceColumn
-                            width: deviceFlick.width - (deviceFlick.contentHeight > deviceFlick.height ? (Nexa.Theme.spacingSm + 4) : 0)
-                            spacing: Nexa.Theme.spacingSm
+                            width: deviceFlick.width - (deviceFlick.contentHeight > deviceFlick.height ? (NexaUI.NexaTokens.spacingSm + 4) : 0)
+                            spacing: NexaUI.NexaTokens.spacingSm
 
                             Behavior on width {
-                                NumberAnimation { duration: Nexa.Theme.animationFast }
+                                NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
                             }
 
                             // ----------------------------------------
@@ -729,24 +782,24 @@ PopupWindow {
                             // ----------------------------------------
                             Column {
                                 width: parent.width
-                                spacing: Nexa.Theme.spacingXs
+                                spacing: NexaUI.NexaTokens.spacingXs
                                 visible: root.pairedDevices.length > 0
 
                                 RowLayout {
                                     width: parent.width
                                     Text {
                                         text: "Paired Devices"
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSize2Xs
-                                        font.weight: Nexa.Theme.fontWeightDemiBold
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.size2Xs
+                                        font.weight: NexaUI.NexaTypography.weightSemiBold
                                     }
                                     Item { Layout.fillWidth: true }
                                     Text {
                                         text: root.pairedDevices.length.toString()
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.size2Xs
                                     }
                                 }
 
@@ -758,12 +811,12 @@ PopupWindow {
                                         required property var modelData
                                         width: deviceColumn.width
                                         height: 48
-                                        radius: Nexa.Theme.radiusSm
-                                        color: pairedMouse.pressed ? Nexa.Theme.pressed
-                                             : pairedMouse.containsMouse ? Nexa.Theme.hover
-                                             : Nexa.Theme.surfaceContainerHigh
-                                        border.width: Nexa.Theme.borderThin
-                                        border.color: pairedMouse.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.border
+                                        radius: NexaUI.NexaTokens.radiusSm
+                                        color: pairedMouse.pressed ? NexaUI.NexaColors.surfaceContainerHighest
+                                             : pairedMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh
+                                             : NexaUI.NexaColors.surfaceContainerLow
+                                        border.width: NexaUI.NexaTokens.borderThin
+                                        border.color: pairedMouse.containsMouse ? NexaUI.NexaColors.borderStrong : NexaUI.NexaColors.border
                                         scale: pairedMouse.pressed ? 0.985 : 1.0
 
                                         Behavior on color { ColorAnimation { duration: 120 } }
@@ -781,15 +834,15 @@ PopupWindow {
 
                                         RowLayout {
                                             anchors.fill: parent
-                                            anchors.leftMargin: Nexa.Theme.spacingSm
-                                            anchors.rightMargin: Nexa.Theme.spacingSm
-                                            spacing: Nexa.Theme.spacingSm
+                                            anchors.leftMargin: NexaUI.NexaTokens.spacingSm
+                                            anchors.rightMargin: NexaUI.NexaTokens.spacingSm
+                                            spacing: NexaUI.NexaTokens.spacingSm
 
                                             Text {
                                                 text: root.deviceGlyph(pairedItem.modelData.device_type)
-                                                color: Nexa.Theme.text
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: Nexa.Theme.iconMd
+                                                color: NexaUI.NexaColors.text
+                                                font.family: NexaUI.NexaTypography.familyIcon
+                                                font.pixelSize: NexaUI.NexaTypography.sizeMd
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
 
@@ -800,19 +853,19 @@ PopupWindow {
 
                                                 Text {
                                                     text: root.deviceName(pairedItem.modelData)
-                                                    color: Nexa.Theme.text
-                                                    font.family: Nexa.Theme.fontFamily
-                                                    font.pixelSize: Nexa.Theme.fontSizeXs
-                                                    font.weight: Nexa.Theme.fontWeightMedium
+                                                    color: NexaUI.NexaColors.text
+                                                    font.family: NexaUI.NexaTypography.familyBody
+                                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                                    font.weight: NexaUI.NexaTypography.weightMedium
                                                     elide: Text.ElideRight
                                                     Layout.fillWidth: true
                                                 }
 
                                                 Text {
                                                     text: root.isPending(pairedItem.modelData) ? "Connecting…" : "Paired"
-                                                    color: root.isPending(pairedItem.modelData) ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                                                    font.family: Nexa.Theme.fontFamily
-                                                    font.pixelSize: Nexa.Theme.fontSize2Xs
+                                                    color: root.isPending(pairedItem.modelData) ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                                                    font.family: NexaUI.NexaTypography.familyBody
+                                                    font.pixelSize: NexaUI.NexaTypography.size2Xs
                                                 }
                                             }
 
@@ -820,9 +873,9 @@ PopupWindow {
                                             Text {
                                                 visible: root.isPending(pairedItem.modelData)
                                                 text: "󰑐"
-                                                color: Nexa.Theme.primary
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: Nexa.Theme.iconSm
+                                                color: NexaUI.NexaColors.primary
+                                                font.family: NexaUI.NexaTypography.familyIcon
+                                                font.pixelSize: NexaUI.NexaTypography.sizeSm
                                                 Layout.alignment: Qt.AlignVCenter
 
                                                 RotationAnimator on rotation {
@@ -833,23 +886,22 @@ PopupWindow {
                                             }
 
                                             // Forget Button
-                                            NexaUI.NexaIconButton {
+                                            NexaUI.NexaButton {
+                                                variant: "icon"
                                                 icon: "󰆴"
-                                                iconSize: Nexa.Theme.iconSm
-                                                implicitWidth: Nexa.Theme.controlHeightSm
-                                                implicitHeight: Nexa.Theme.controlHeightSm
-                                                iconColor: hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                                iconSize: NexaUI.NexaTypography.sizeSm
+                                                implicitWidth: NexaUI.NexaTokens.controlHeightSm
+                                                implicitHeight: NexaUI.NexaTokens.controlHeightSm
                                                 Layout.alignment: Qt.AlignVCenter
-                                                enabled: !actionProcess.running
+                                                interactive: !actionProcess.running
                                                 onClicked: root.forgetDevice(pairedItem.modelData)
                                             }
 
                                             // Connect Button
                                             NexaUI.NexaButton {
+                                                variant: "tonal"
                                                 text: "Connect"
-                                                textSize: Nexa.Theme.fontSizeXs
-                                                implicitHeight: Nexa.Theme.controlHeightSm
-                                                horizontalPadding: Nexa.Theme.spacingSm
+                                                implicitHeight: NexaUI.NexaTokens.controlHeightSm
                                                 Layout.alignment: Qt.AlignVCenter
                                                 interactive: !actionProcess.running
                                                 onClicked: root.connectDevice(pairedItem.modelData)
@@ -864,24 +916,24 @@ PopupWindow {
                             // ----------------------------------------
                             Column {
                                 width: parent.width
-                                spacing: Nexa.Theme.spacingXs
+                                spacing: NexaUI.NexaTokens.spacingXs
                                 visible: root.availableDevices.length > 0
 
                                 RowLayout {
                                     width: parent.width
                                     Text {
                                         text: "Available Devices"
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSize2Xs
-                                        font.weight: Nexa.Theme.fontWeightDemiBold
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.size2Xs
+                                        font.weight: NexaUI.NexaTypography.weightSemiBold
                                     }
                                     Item { Layout.fillWidth: true }
                                     Text {
                                         text: root.availableDevices.length.toString()
-                                        color: Nexa.Theme.mutedText
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSize2Xs
+                                        color: NexaUI.NexaColors.mutedText
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.size2Xs
                                     }
                                 }
 
@@ -893,12 +945,12 @@ PopupWindow {
                                         required property var modelData
                                         width: deviceColumn.width
                                         height: 44
-                                        radius: Nexa.Theme.radiusSm
-                                        color: availMouse.pressed ? Nexa.Theme.pressed
-                                             : availMouse.containsMouse ? Nexa.Theme.hover
-                                             : Nexa.Theme.surfaceContainerHigh
-                                        border.width: Nexa.Theme.borderThin
-                                        border.color: availMouse.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.border
+                                        radius: NexaUI.NexaTokens.radiusSm
+                                        color: availMouse.pressed ? NexaUI.NexaColors.surfaceContainerHighest
+                                             : availMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh
+                                             : NexaUI.NexaColors.surfaceContainerLow
+                                        border.width: NexaUI.NexaTokens.borderThin
+                                        border.color: availMouse.containsMouse ? NexaUI.NexaColors.borderStrong : NexaUI.NexaColors.border
                                         scale: availMouse.pressed ? 0.985 : 1.0
 
                                         Behavior on color { ColorAnimation { duration: 120 } }
@@ -916,25 +968,25 @@ PopupWindow {
 
                                         RowLayout {
                                             anchors.fill: parent
-                                            anchors.leftMargin: Nexa.Theme.spacingSm
-                                            anchors.rightMargin: Nexa.Theme.spacingSm
-                                            spacing: Nexa.Theme.spacingSm
+                                            anchors.leftMargin: NexaUI.NexaTokens.spacingSm
+                                            anchors.rightMargin: NexaUI.NexaTokens.spacingSm
+                                            spacing: NexaUI.NexaTokens.spacingSm
 
                                             Text {
                                                 text: root.deviceGlyph(availItem.modelData.device_type)
-                                                color: Nexa.Theme.mutedText
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: Nexa.Theme.iconMd
+                                                color: NexaUI.NexaColors.mutedText
+                                                font.family: NexaUI.NexaTypography.familyIcon
+                                                font.pixelSize: NexaUI.NexaTypography.sizeMd
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
 
                                             Text {
                                                 Layout.fillWidth: true
                                                 text: root.deviceName(availItem.modelData)
-                                                color: Nexa.Theme.text
-                                                font.family: Nexa.Theme.fontFamily
-                                                font.pixelSize: Nexa.Theme.fontSizeXs
-                                                font.weight: Nexa.Theme.fontWeightMedium
+                                                color: NexaUI.NexaColors.text
+                                                font.family: NexaUI.NexaTypography.familyBody
+                                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                                font.weight: NexaUI.NexaTypography.weightMedium
                                                 elide: Text.ElideRight
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
@@ -943,9 +995,9 @@ PopupWindow {
                                             Text {
                                                 visible: root.isPending(availItem.modelData)
                                                 text: "󰑐"
-                                                color: Nexa.Theme.primary
-                                                font.family: Nexa.Theme.iconFontFamily
-                                                font.pixelSize: Nexa.Theme.iconSm
+                                                color: NexaUI.NexaColors.primary
+                                                font.family: NexaUI.NexaTypography.familyIcon
+                                                font.pixelSize: NexaUI.NexaTypography.sizeSm
                                                 Layout.alignment: Qt.AlignVCenter
 
                                                 RotationAnimator on rotation {
@@ -957,12 +1009,10 @@ PopupWindow {
 
                                             // Pair Button
                                             NexaUI.NexaButton {
+                                                variant: "filled"
                                                 text: root.isPending(availItem.modelData) ? "Pairing…" : "Pair"
-                                                textSize: Nexa.Theme.fontSizeXs
-                                                implicitHeight: Nexa.Theme.controlHeightSm
-                                                horizontalPadding: Nexa.Theme.spacingSm
+                                                implicitHeight: NexaUI.NexaTokens.controlHeightSm
                                                 Layout.alignment: Qt.AlignVCenter
-                                                selected: true
                                                 interactive: !actionProcess.running
                                                 onClicked: root.pairDevice(availItem.modelData)
                                             }

@@ -221,7 +221,12 @@ pub fn apply_desktop(
 
     let monitor_target = monitor.unwrap_or("*");
 
-    let (prev_kind, prev_thumb, _) = load_current_wallpaper_state();
+    let (prev_kind, prev_thumb, current_wp) = load_current_wallpaper_state();
+
+    if !opt_restore && !current_wp.is_empty() && resolved_path.to_string_lossy() == current_wp {
+        println!("desktop_wallpaper_unchanged={}", current_wp);
+        return Ok(());
+    }
 
     let mut theme_source_path = resolved_path.clone();
     let mut target_thumb = None;
@@ -308,17 +313,21 @@ pub fn set_lock(path: &str) -> Result<(), String> {
     let kind = classify(&path_buf)
         .ok_or_else(|| format!("Unsupported lock wallpaper: {}", path_buf.display()))?;
 
+    let (current_lock, _) = get_current_lock();
+    if !current_lock.is_empty() && path_buf.to_string_lossy() == current_lock {
+        println!("lock_wallpaper_unchanged={}", current_lock);
+        return Ok(());
+    }
+
     let config = lock_config_path();
     if let Some(parent) = config.parent() {
         fs::create_dir_all(parent)
             .map_err(|error| format!("Failed to create lockscreen config directory: {}", error))?;
     }
 
-    if kind == "video" || kind == "gif" {
-        let _ = ensure_thumbnail(&path_buf, kind);
-        if kind == "video" {
-            let _ = ensure_proxy(&path_buf, kind);
-        }
+    let _ = ensure_thumbnail(&path_buf, kind);
+    if kind == "video" {
+        let _ = ensure_proxy(&path_buf, kind);
     }
 
     let contents = format!(
@@ -330,6 +339,11 @@ pub fn set_lock(path: &str) -> Result<(), String> {
     fs::write(&config, contents)
         .map_err(|error| format!("Failed to save lock wallpaper: {}", error))?;
 
+    if let Ok(home) = env::var("HOME") {
+        let cache_wp = PathBuf::from(home).join(".cache/current_wallpaper");
+        let _ = fs::copy(&path_buf, &cache_wp);
+    }
+
     println!("lock_wallpaper={}|{}", kind, path_buf.display());
     Ok(())
 }
@@ -339,9 +353,10 @@ pub fn set_lock(path: &str) -> Result<(), String> {
 // ============================================================
 
 pub fn apply_target(path: &str, target: &str, monitor: Option<&str>) -> Result<(), String> {
-    match target {
-        "Lock Screen" | "lock" => set_lock(path),
-        "Both" | "both" => {
+    let t = target.trim().to_ascii_lowercase();
+    match t.as_str() {
+        "lock screen" | "lock" | "lockscreen" => set_lock(path),
+        "both" => {
             let _ = set_lock(path);
             apply_desktop(path, monitor, false, false)
         }

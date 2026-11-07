@@ -9,7 +9,7 @@ output_path = "~/.cache/nexa/theme/palette"
 
 [templates.nexa]
 input_path = "~/.config/matugen/templates/nexa-preset.qml"
-output_path = "~/.config/nexa/quickshell/theme/MatugenColors.qml"
+output_path = "~/.config/nexa/quickshell/NewNexaUI/core/MatugenColors.qml"
 
 [templates.kitty]
 input_path = "~/.config/matugen/templates/kitty-preset.conf"

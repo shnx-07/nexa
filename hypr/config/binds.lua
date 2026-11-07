@@ -159,7 +159,12 @@ for workspace = 1, 10 do
 end
 
 -- Cycle Workspaces
-hl.bind(MOD .. " + TAB", hl.dsp.focus({ workspace = "e+1" }))
+-- hl.bind(MOD .. " + TAB", hl.dsp.focus({ workspace = "e+1" }))
+hl.bind(MOD .. " + TAB", function()
+	if hl.plugin and hl.plugin.scrolloverview and hl.plugin.scrolloverview.overview then
+		hl.plugin.scrolloverview.overview("toggle")
+	end
+end)
 hl.bind(MOD .. " + SHIFT + TAB", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(MOD .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(MOD .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))

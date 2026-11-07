@@ -4,7 +4,7 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Wayland
 
-import "../../theme" as Nexa
+import "../../NewNexaUI" as NexaUI
 import "../appLauncher" as AppLauncher
 
 
@@ -121,8 +121,8 @@ Item {
 
     Behavior on scale {
         NumberAnimation {
-            duration: Nexa.Theme.motionInteraction
-            easing.type: Nexa.Theme.easingStandard
+            duration: NexaUI.NexaMotion.durationFast
+            easing.type: NexaUI.NexaMotion.standardEasing
         }
     }
 
@@ -135,16 +135,16 @@ Item {
     Behavior on x {
         enabled: !root.dragInProgress
         NumberAnimation {
-            duration: Nexa.Theme.motionLayout
-            easing.type: Nexa.Theme.easingStandard
+            duration: NexaUI.NexaMotion.durationNormal
+            easing.type: NexaUI.NexaMotion.standardEasing
         }
     }
 
     Behavior on y {
         enabled: !root.dragInProgress
         NumberAnimation {
-            duration: Nexa.Theme.motionLayout
-            easing.type: Nexa.Theme.easingStandard
+            duration: NexaUI.NexaMotion.durationNormal
+            easing.type: NexaUI.NexaMotion.standardEasing
         }
     }
 
@@ -155,8 +155,8 @@ Item {
     Rectangle {
         id: windowSurface
         anchors.fill: parent
-        radius: Nexa.Theme.radiusSm
-        color: Nexa.Theme.surfaceContainerLow
+        radius: NexaUI.NexaTokens.radiusSm
+        color: NexaUI.NexaColors.surfaceContainerLow
         clip: true
 
         // Live Wayland Screencopy
@@ -186,9 +186,9 @@ Item {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: root.appClass || root.title
-                color: Nexa.Theme.mutedText
-                font.family: Nexa.Theme.fontFamily
-                font.pixelSize: Nexa.Theme.fontSize2Xs
+                color: NexaUI.NexaColors.mutedText
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: NexaUI.NexaTypography.size2Xs
                 elide: Text.ElideRight
                 maximumLineCount: 1
                 width: Math.min(implicitWidth, root.width - 8)
@@ -203,22 +203,22 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Nexa.Theme.radiusSm
+        radius: NexaUI.NexaTokens.radiusSm
         color: root.pressed
-            ? Nexa.Theme.pressed
-            : (root.hovered ? Nexa.Theme.hover : "transparent")
+            ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.16)
+            : (root.hovered ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.08) : "transparent")
 
-        border.width: root.focused ? Nexa.Theme.borderNormal : Nexa.Theme.borderThin
+        border.width: root.focused ? NexaUI.NexaTokens.borderNormal : NexaUI.NexaTokens.borderThin
         border.color: root.focused
-            ? Nexa.Theme.primary
-            : (root.hovered ? Nexa.Theme.primary : Nexa.Theme.border)
+            ? NexaUI.NexaColors.primary
+            : (root.hovered ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border)
 
         Behavior on color {
-            ColorAnimation { duration: Nexa.Theme.animationFast }
+            ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
         }
 
         Behavior on border.color {
-            ColorAnimation { duration: Nexa.Theme.animationFast }
+            ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
         }
     }
 
@@ -232,8 +232,8 @@ Item {
         anchors.bottom: parent.bottom
         height: titleText.implicitHeight + 6
         visible: root.hovered && root.title !== ""
-        color: Nexa.Theme.scrimHeavy
-        radius: Nexa.Theme.radiusSm
+        color: NexaUI.NexaColors.scrim
+        radius: NexaUI.NexaTokens.radiusSm
 
         Text {
             id: titleText
@@ -241,9 +241,9 @@ Item {
             anchors.margins: 4
             verticalAlignment: Text.AlignVCenter
             text: root.title
-            color: Nexa.Theme.text
-            font.family: Nexa.Theme.fontFamily
-            font.pixelSize: Nexa.Theme.fontSize2Xs
+            color: NexaUI.NexaColors.text
+            font.family: NexaUI.NexaTypography.familyBody
+            font.pixelSize: NexaUI.NexaTypography.size2Xs
             elide: Text.ElideRight
             maximumLineCount: 1
         }

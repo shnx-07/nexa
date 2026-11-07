@@ -1,9 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
-
+import "../../NewNexaUI" as NexaUI
 
 Item {
     id: root
@@ -11,7 +9,7 @@ Item {
     // ============================================================
     // RESPONSIBILITY
     //
-    // Reusable Clock module:
+    // Reusable Clock module styled with NewNexaUI:
     // - Page 0: Clock / Calendar
     // - Page 1: Stopwatch
     // - Page 2: Focus (Pomodoro / Deep Work)
@@ -286,10 +284,10 @@ Item {
 
     readonly property color solarColor: {
         switch (solarPhase) {
-            case "morning": return Nexa.Theme.warning
-            case "afternoon": return Nexa.Theme.tertiary
-            case "evening": return Nexa.Theme.secondary
-            default: return Nexa.Theme.primary
+            case "morning": return NexaUI.NexaColors.warning
+            case "afternoon": return NexaUI.NexaColors.tertiary
+            case "evening": return NexaUI.NexaColors.secondary
+            default: return NexaUI.NexaColors.primary
         }
     }
 
@@ -306,69 +304,73 @@ Item {
             anchors.centerIn: parent
             visible: !root.stopwatchActive && !root.focusActive
             text: Qt.formatDateTime(root.currentTime, "hh:mm AP")
-            color: Nexa.Theme.text
-            font.family: Nexa.Theme.fontFamily
-            font.pixelSize: Nexa.Theme.fontSizeMd
-            font.weight: Nexa.Theme.fontWeightDemiBold
+            color: NexaUI.NexaColors.text
+            font.family: NexaUI.NexaTypography.familyBody
+            font.pixelSize: NexaUI.NexaTypography.sizeMd
+            font.weight: NexaUI.NexaTypography.weightSemiBold
+            font.features: NexaUI.NexaTypography.fontFeaturesTnum
         }
 
         // 2. STOPWATCH COMPACT (Priority 1)
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: Nexa.Theme.spacingMd
-            anchors.rightMargin: Nexa.Theme.spacingMd
+            anchors.leftMargin: NexaUI.NexaTokens.spacingMd
+            anchors.rightMargin: NexaUI.NexaTokens.spacingMd
             visible: root.stopwatchActive
-            spacing: Nexa.Theme.spacingMd
+            spacing: NexaUI.NexaTokens.spacingMd
 
             Text {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignLeft
                 text: Qt.formatDateTime(root.currentTime, "hh:mm AP")
-                color: Nexa.Theme.text
-                font.family: Nexa.Theme.fontFamily
-                font.pixelSize: Nexa.Theme.fontSizeMd
-                font.weight: Nexa.Theme.fontWeightDemiBold
+                color: NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: NexaUI.NexaTypography.sizeMd
+                font.weight: NexaUI.NexaTypography.weightSemiBold
+                font.features: NexaUI.NexaTypography.fontFeaturesTnum
             }
 
             Rectangle {
                 Layout.preferredWidth: 1
                 Layout.preferredHeight: 18
-                color: Nexa.Theme.divider
+                color: NexaUI.NexaColors.borderSubtle
             }
 
             Text {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignRight
                 text: root.stopwatchText(root.stopwatchElapsed)
-                color: root.stopwatchRunning ? Nexa.Theme.primary : Nexa.Theme.text
-                font.family: Nexa.Theme.monoFontFamily
-                font.pixelSize: Nexa.Theme.fontSizeMd
-                font.weight: Nexa.Theme.fontWeightDemiBold
+                color: root.stopwatchRunning ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyMono
+                font.pixelSize: NexaUI.NexaTypography.sizeMd
+                font.weight: NexaUI.NexaTypography.weightSemiBold
+                font.features: NexaUI.NexaTypography.fontFeaturesTnum
             }
         }
 
         // 3. FOCUS COMPACT (Priority 2)
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: Nexa.Theme.spacingMd
-            anchors.rightMargin: Nexa.Theme.spacingMd
+            anchors.leftMargin: NexaUI.NexaTokens.spacingMd
+            anchors.rightMargin: NexaUI.NexaTokens.spacingMd
             visible: root.focusActive && !root.stopwatchActive
-            spacing: Nexa.Theme.spacingMd
+            spacing: NexaUI.NexaTokens.spacingMd
 
             Text {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignLeft
                 text: Qt.formatDateTime(root.currentTime, "hh:mm AP")
-                color: Nexa.Theme.text
-                font.family: Nexa.Theme.fontFamily
-                font.pixelSize: Nexa.Theme.fontSizeMd
-                font.weight: Nexa.Theme.fontWeightDemiBold
+                color: NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: NexaUI.NexaTypography.sizeMd
+                font.weight: NexaUI.NexaTypography.weightSemiBold
+                font.features: NexaUI.NexaTypography.fontFeaturesTnum
             }
 
             Rectangle {
                 Layout.preferredWidth: 1
                 Layout.preferredHeight: 18
-                color: Nexa.Theme.divider
+                color: NexaUI.NexaColors.borderSubtle
             }
 
             RowLayout {
@@ -383,18 +385,19 @@ Item {
                 Text {
                     Layout.alignment: Qt.AlignVCenter
                     text: root.focusMode === "focus" ? "󰪠" : "󰛨"
-                    color: root.focusRunning ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.iconFontFamily
-                    font.pixelSize: Nexa.Theme.iconSm
+                    color: root.focusRunning ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                    font.family: NexaUI.NexaTypography.familyIcon
+                    font.pixelSize: NexaUI.NexaTypography.sizeSm
                 }
 
                 Text {
                     Layout.alignment: Qt.AlignVCenter
                     text: root.focusText(root.focusRemaining)
-                    color: root.focusRunning ? Nexa.Theme.primary : Nexa.Theme.text
-                    font.family: Nexa.Theme.monoFontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeMd
-                    font.weight: Nexa.Theme.fontWeightDemiBold
+                    color: root.focusRunning ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                    font.family: NexaUI.NexaTypography.familyMono
+                    font.pixelSize: NexaUI.NexaTypography.sizeMd
+                    font.weight: NexaUI.NexaTypography.weightSemiBold
+                    font.features: NexaUI.NexaTypography.fontFeaturesTnum
                 }
             }
         }
@@ -410,11 +413,11 @@ Item {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: Nexa.Theme.spacingLg
-            anchors.rightMargin: Nexa.Theme.spacingLg
-            anchors.topMargin: Nexa.Theme.spacingSm
-            anchors.bottomMargin: Nexa.Theme.spacingSm
-            spacing: Nexa.Theme.spacingLg
+            anchors.leftMargin: NexaUI.NexaTokens.spacingLg
+            anchors.rightMargin: NexaUI.NexaTokens.spacingLg
+            anchors.topMargin: NexaUI.NexaTokens.spacingSm
+            anchors.bottomMargin: NexaUI.NexaTokens.spacingSm
+            spacing: NexaUI.NexaTokens.spacingLg
 
             // Left: Clock & Date
             ColumnLayout {
@@ -423,17 +426,18 @@ Item {
 
                 Text {
                     text: Qt.formatDateTime(root.currentTime, "hh:mm:ss AP")
-                    color: Nexa.Theme.text
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeLg
-                    font.weight: Nexa.Theme.fontWeightDemiBold
+                    color: NexaUI.NexaColors.text
+                    font.family: NexaUI.NexaTypography.familyDisplay
+                    font.pixelSize: NexaUI.NexaTypography.sizeLg
+                    font.weight: NexaUI.NexaTypography.weightSemiBold
+                    font.features: NexaUI.NexaTypography.fontFeaturesTnum
                 }
 
                 Text {
                     text: Qt.formatDateTime(root.currentTime, "dddd, MMMM d")
-                    color: Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeXs
+                    color: NexaUI.NexaColors.mutedText
+                    font.family: NexaUI.NexaTypography.familyBody
+                    font.pixelSize: NexaUI.NexaTypography.sizeXs
                 }
             }
 
@@ -443,25 +447,27 @@ Item {
                 Layout.fillHeight: true
                 Layout.topMargin: 4
                 Layout.bottomMargin: 4
-                color: Nexa.Theme.divider
+                color: NexaUI.NexaColors.borderSubtle
             }
 
             // Right Option A: Stopwatch Hover Controls
             RowLayout {
                 visible: root.stopwatchActive
-                spacing: Nexa.Theme.spacingMd
+                spacing: NexaUI.NexaTokens.spacingMd
 
                 Text {
                     text: root.stopwatchText(root.stopwatchElapsed)
-                    color: root.stopwatchRunning ? Nexa.Theme.primary : Nexa.Theme.text
-                    font.family: Nexa.Theme.monoFontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeLg
-                    font.weight: Nexa.Theme.fontWeightDemiBold
+                    color: root.stopwatchRunning ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                    font.family: NexaUI.NexaTypography.familyMono
+                    font.pixelSize: NexaUI.NexaTypography.sizeLg
+                    font.weight: NexaUI.NexaTypography.weightSemiBold
+                    font.features: NexaUI.NexaTypography.fontFeaturesTnum
                 }
 
                 NexaUI.NexaButton {
                     implicitWidth: 84
                     implicitHeight: 32
+                    variant: root.stopwatchRunning ? "filled" : "tonal"
                     icon: root.stopwatchRunning ? "󰏤" : "󰐊"
                     text: root.stopwatchRunning ? "Pause" : "Resume"
                     onClicked: root.toggleStopwatch()
@@ -470,6 +476,7 @@ Item {
                 NexaUI.NexaButton {
                     implicitWidth: 84
                     implicitHeight: 32
+                    variant: "tonal"
                     icon: "󰑐"
                     text: "Restart"
                     onClicked: root.restartStopwatch()
@@ -479,7 +486,7 @@ Item {
             // Right Option B: Focus Hover Controls
             RowLayout {
                 visible: root.focusActive && !root.stopwatchActive
-                spacing: Nexa.Theme.spacingMd
+                spacing: NexaUI.NexaTokens.spacingMd
 
                 Column {
                     spacing: 2
@@ -488,30 +495,32 @@ Item {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: root.focusMode === "focus" ? "󰪠" : "󰛨"
-                            color: Nexa.Theme.primary
-                            font.family: Nexa.Theme.iconFontFamily
-                            font.pixelSize: Nexa.Theme.iconSm
+                            color: NexaUI.NexaColors.primary
+                            font.family: NexaUI.NexaTypography.familyIcon
+                            font.pixelSize: NexaUI.NexaTypography.sizeSm
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: (root.focusMode === "focus" ? "Focus" : "Break") + " • " + root.focusSessions + " done"
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSize2Xs
+                            color: NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.size2Xs
                         }
                     }
                     Text {
                         text: root.focusText(root.focusRemaining)
-                        color: root.focusRunning ? Nexa.Theme.primary : Nexa.Theme.text
-                        font.family: Nexa.Theme.monoFontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeLg
-                        font.weight: Nexa.Theme.fontWeightDemiBold
+                        color: root.focusRunning ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                        font.family: NexaUI.NexaTypography.familyMono
+                        font.pixelSize: NexaUI.NexaTypography.sizeLg
+                        font.weight: NexaUI.NexaTypography.weightSemiBold
+                        font.features: NexaUI.NexaTypography.fontFeaturesTnum
                     }
                 }
 
                 NexaUI.NexaButton {
                     implicitWidth: 84
                     implicitHeight: 32
+                    variant: root.focusRunning ? "filled" : "tonal"
                     icon: root.focusRunning ? "󰏤" : "󰐊"
                     text: root.focusRunning ? "Pause" : "Resume"
                     onClicked: root.toggleFocus()
@@ -520,6 +529,7 @@ Item {
                 NexaUI.NexaButton {
                     implicitWidth: 80
                     implicitHeight: 32
+                    variant: "tonal"
                     icon: "󰜉"
                     text: "Reset"
                     onClicked: root.resetFocus()
@@ -529,15 +539,15 @@ Item {
             // Right Option C: Day/Night Solar Greeting (Idle State)
             RowLayout {
                 visible: !root.stopwatchActive && !root.focusActive
-                spacing: Nexa.Theme.spacingMd
+                spacing: NexaUI.NexaTokens.spacingMd
 
                 Rectangle {
-                    implicitWidth: 34
-                    implicitHeight: 34
-                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : 17
-                    color: Qt.rgba(root.solarColor.r, root.solarColor.g, root.solarColor.b, 0.15)
-                    border.width: 1
-                    border.color: Qt.rgba(root.solarColor.r, root.solarColor.g, root.solarColor.b, 0.3)
+                    implicitWidth: 36
+                    implicitHeight: 36
+                    radius: NexaUI.NexaTokens.radiusSm
+                    color: NexaUI.NexaColors.alpha(root.solarColor, 0.15)
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.alpha(root.solarColor, 0.35)
 
                     Text {
                         anchors.centerIn: parent
@@ -551,18 +561,18 @@ Item {
 
                     Text {
                         text: root.solarGreeting
-                        color: Nexa.Theme.text
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeSm
-                        font.weight: Nexa.Theme.fontWeightDemiBold
+                        color: NexaUI.NexaColors.text
+                        font.family: NexaUI.NexaTypography.familyDisplay
+                        font.pixelSize: NexaUI.NexaTypography.sizeSm
+                        font.weight: NexaUI.NexaTypography.weightSemiBold
                     }
 
                     Text {
                         text: root.solarSubtitle
                         color: root.solarColor
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSize2Xs
-                        font.weight: Nexa.Theme.fontWeightMedium
+                        font.family: NexaUI.NexaTypography.familyBody
+                        font.pixelSize: NexaUI.NexaTypography.size2Xs
+                        font.weight: NexaUI.NexaTypography.weightMedium
                     }
                 }
             }
@@ -576,13 +586,13 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         visible: root.presentation === "full"
-        spacing: Nexa.Theme.spacingMd
+        spacing: NexaUI.NexaTokens.spacingMd
 
         // 3-Tab Segmented Navigation
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredHeight: 34
-            spacing: Nexa.Theme.spacingXs
+            spacing: NexaUI.NexaTokens.spacingSm
 
             Repeater {
                 model: [
@@ -596,9 +606,10 @@ Item {
                     required property var modelData
                     implicitWidth: 120
                     implicitHeight: 32
+                    variant: root.page === modelData.page ? "filled" : "tonal"
                     icon: modelData.icon
                     text: modelData.label
-                    selected: root.page === modelData.page
+                    checked: root.page === modelData.page
                     onClicked: root.page = modelData.page
                 }
             }
@@ -618,7 +629,7 @@ Item {
 
                 RowLayout {
                     anchors.fill: parent
-                    spacing: Nexa.Theme.spacingXl
+                    spacing: NexaUI.NexaTokens.spacingXl
 
                     // Clock side
                     Item {
@@ -627,41 +638,42 @@ Item {
 
                         ColumnLayout {
                             anchors.centerIn: parent
-                            spacing: Nexa.Theme.spacingXs
+                            spacing: NexaUI.NexaTokens.spacingXs
 
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: Qt.formatDateTime(root.currentTime, "hh:mm")
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: 38
-                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                color: NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyDisplay
+                                font.pixelSize: 42
+                                font.weight: NexaUI.NexaTypography.weightBold
+                                font.features: NexaUI.NexaTypography.fontFeaturesTnum
                             }
 
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: Qt.formatDateTime(root.currentTime, "AP")
-                                color: Nexa.Theme.primary
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeLg
-                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                color: NexaUI.NexaColors.primary
+                                font.family: NexaUI.NexaTypography.familyDisplay
+                                font.pixelSize: NexaUI.NexaTypography.sizeLg
+                                font.weight: NexaUI.NexaTypography.weightSemiBold
                             }
 
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: Qt.formatDateTime(root.currentTime, "dddd")
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeMd
-                                font.weight: Nexa.Theme.fontWeightMedium
+                                color: NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeMd
+                                font.weight: NexaUI.NexaTypography.weightMedium
                             }
 
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: Qt.formatDateTime(root.currentTime, "d MMMM yyyy")
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeSm
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeSm
                             }
                         }
                     }
@@ -669,16 +681,16 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: 1
                         Layout.fillHeight: true
-                        Layout.topMargin: Nexa.Theme.spacingSm
-                        Layout.bottomMargin: Nexa.Theme.spacingSm
-                        color: Nexa.Theme.divider
+                        Layout.topMargin: NexaUI.NexaTokens.spacingSm
+                        Layout.bottomMargin: NexaUI.NexaTokens.spacingSm
+                        color: NexaUI.NexaColors.borderSubtle
                     }
 
                     // Calendar side
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        spacing: Nexa.Theme.spacingSm
+                        spacing: NexaUI.NexaTokens.spacingSm
 
                         RowLayout {
                             Layout.fillWidth: true
@@ -686,6 +698,7 @@ Item {
                             NexaUI.NexaButton {
                                 implicitWidth: 32
                                 implicitHeight: 30
+                                variant: "tonal"
                                 icon: "󰅁"
                                 onClicked: root.previousMonth()
                             }
@@ -694,15 +707,16 @@ Item {
                                 Layout.fillWidth: true
                                 horizontalAlignment: Text.AlignHCenter
                                 text: Qt.formatDate(root.calendarMonth, "MMMM yyyy")
-                                color: Nexa.Theme.text
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeMd
-                                font.weight: Nexa.Theme.fontWeightDemiBold
+                                color: NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyDisplay
+                                font.pixelSize: NexaUI.NexaTypography.sizeMd
+                                font.weight: NexaUI.NexaTypography.weightSemiBold
                             }
 
                             NexaUI.NexaButton {
                                 implicitWidth: 76
                                 implicitHeight: 30
+                                variant: "tonal"
                                 text: "Today"
                                 onClicked: root.goCurrentMonth()
                             }
@@ -710,6 +724,7 @@ Item {
                             NexaUI.NexaButton {
                                 implicitWidth: 32
                                 implicitHeight: 30
+                                variant: "tonal"
                                 icon: "󰅂"
                                 onClicked: root.nextMonth()
                             }
@@ -727,10 +742,10 @@ Item {
                                     Layout.fillWidth: true
                                     horizontalAlignment: Text.AlignHCenter
                                     text: modelData
-                                    color: Nexa.Theme.mutedText
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: Nexa.Theme.fontSizeXs
-                                    font.weight: Nexa.Theme.fontWeightDemiBold
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                    font.weight: NexaUI.NexaTypography.weightSemiBold
                                 }
                             }
                         }
@@ -753,17 +768,41 @@ Item {
 
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
-                                    radius: Nexa.Theme.radiusSm
-                                    color: today ? Nexa.Theme.selected : "transparent"
+                                    radius: NexaUI.NexaTokens.radiusSm
+                                    color: today
+                                           ? NexaUI.NexaColors.primary
+                                           : (dayMouse.containsMouse && inMonth ? NexaUI.NexaColors.surfaceContainerHigh : "transparent")
+
+                                    Behavior on color {
+                                        ColorAnimation { duration: NexaUI.NexaMotion.durationInstant }
+                                    }
+
+                                    // Subtle specular line on today cell
+                                    Rectangle {
+                                        anchors.top: parent.top
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        height: 1
+                                        radius: parent.radius
+                                        color: Qt.rgba(1, 1, 1, 0.25 * NexaUI.NexaOptics.specularIntensity)
+                                        visible: dayCell.today && NexaUI.NexaOptics.specularHighlight
+                                    }
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: dayCell.cellDate.getDate()
-                                        color: dayCell.today ? Nexa.Theme.selectedText : (dayCell.inMonth ? Nexa.Theme.text : Nexa.Theme.mutedText)
-                                        opacity: dayCell.inMonth || dayCell.today ? 1.0 : Nexa.Theme.opacityDisabled
-                                        font.family: Nexa.Theme.fontFamily
-                                        font.pixelSize: Nexa.Theme.fontSizeSm
-                                        font.weight: dayCell.today ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightMedium
+                                        color: dayCell.today
+                                               ? NexaUI.NexaColors.onPrimary
+                                               : (dayCell.inMonth ? NexaUI.NexaColors.text : NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.35))
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                        font.weight: dayCell.today ? NexaUI.NexaTypography.weightSemiBold : NexaUI.NexaTypography.weightRegular
+                                    }
+
+                                    MouseArea {
+                                        id: dayMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: dayCell.inMonth
                                     }
                                 }
                             }
@@ -781,24 +820,26 @@ Item {
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: Nexa.Theme.spacingXl
+                    spacing: NexaUI.NexaTokens.spacingXl
 
                     Text {
                         Layout.alignment: Qt.AlignHCenter
                         text: root.stopwatchText(root.stopwatchElapsed)
-                        color: Nexa.Theme.text
-                        font.family: Nexa.Theme.monoFontFamily
-                        font.pixelSize: 40
-                        font.weight: Nexa.Theme.fontWeightDemiBold
+                        color: root.stopwatchRunning ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                        font.family: NexaUI.NexaTypography.familyMono
+                        font.pixelSize: 44
+                        font.weight: NexaUI.NexaTypography.weightBold
+                        font.features: NexaUI.NexaTypography.fontFeaturesTnum
                     }
 
                     RowLayout {
                         Layout.alignment: Qt.AlignHCenter
-                        spacing: Nexa.Theme.spacingSm
+                        spacing: NexaUI.NexaTokens.spacingSm
 
                         NexaUI.NexaButton {
                             implicitWidth: 120
                             implicitHeight: 38
+                            variant: root.stopwatchRunning ? "filled" : "tonal"
                             icon: root.stopwatchRunning ? "󰏤" : "󰐊"
                             text: root.stopwatchRunning ? "Pause" : (root.stopwatchElapsed > 0 ? "Resume" : "Start")
                             onClicked: root.toggleStopwatch()
@@ -807,9 +848,10 @@ Item {
                         NexaUI.NexaButton {
                             implicitWidth: 110
                             implicitHeight: 38
+                            variant: "tonal"
                             icon: "󰑐"
                             text: "Restart"
-                            interactive: root.stopwatchActive
+                            enabled: root.stopwatchActive
                             visible: root.stopwatchActive
                             onClicked: root.restartStopwatch()
                         }
@@ -817,9 +859,10 @@ Item {
                         NexaUI.NexaButton {
                             implicitWidth: 100
                             implicitHeight: 38
+                            variant: "tonal"
                             icon: "󰜉"
                             text: "Reset"
-                            interactive: root.stopwatchActive
+                            enabled: root.stopwatchActive
                             visible: root.stopwatchActive
                             onClicked: root.resetStopwatch()
                         }
@@ -836,50 +879,55 @@ Item {
 
                 ColumnLayout {
                     anchors.fill: parent
-                    spacing: Nexa.Theme.spacingMd
+                    spacing: NexaUI.NexaTokens.spacingMd
 
                     // Presets Row
                     RowLayout {
                         Layout.alignment: Qt.AlignHCenter
-                        spacing: 8
+                        spacing: NexaUI.NexaTokens.spacingSm
 
                         NexaUI.NexaButton {
-                            implicitWidth: 90
+                            implicitWidth: 96
                             implicitHeight: 30
+                            variant: "pill"
                             text: "15m Quick"
-                            selected: root.focusTotalSeconds === 900 && root.focusMode === "focus"
+                            checked: root.focusTotalSeconds === 900 && root.focusMode === "focus"
                             onClicked: root.setFocusPreset(900, "focus")
                         }
 
                         NexaUI.NexaButton {
-                            implicitWidth: 110
+                            implicitWidth: 118
                             implicitHeight: 30
+                            variant: "pill"
                             text: "25m Pomodoro"
-                            selected: root.focusTotalSeconds === 1500 && root.focusMode === "focus"
+                            checked: root.focusTotalSeconds === 1500 && root.focusMode === "focus"
                             onClicked: root.setFocusPreset(1500, "focus")
                         }
 
                         NexaUI.NexaButton {
-                            implicitWidth: 110
+                            implicitWidth: 120
                             implicitHeight: 30
+                            variant: "pill"
                             text: "45m Deep Work"
-                            selected: root.focusTotalSeconds === 2700 && root.focusMode === "focus"
+                            checked: root.focusTotalSeconds === 2700 && root.focusMode === "focus"
                             onClicked: root.setFocusPreset(2700, "focus")
                         }
 
                         NexaUI.NexaButton {
-                            implicitWidth: 80
+                            implicitWidth: 88
                             implicitHeight: 30
+                            variant: "pill"
                             text: "5m Break"
-                            selected: root.focusTotalSeconds === 300 && root.focusMode === "short_break"
+                            checked: root.focusTotalSeconds === 300 && root.focusMode === "short_break"
                             onClicked: root.setFocusPreset(300, "short_break")
                         }
 
                         NexaUI.NexaButton {
-                            implicitWidth: 90
+                            implicitWidth: 96
                             implicitHeight: 30
+                            variant: "pill"
                             text: "15m Break"
-                            selected: root.focusTotalSeconds === 900 && root.focusMode === "long_break"
+                            checked: root.focusTotalSeconds === 900 && root.focusMode === "long_break"
                             onClicked: root.setFocusPreset(900, "long_break")
                         }
                     }
@@ -892,10 +940,11 @@ Item {
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.focusText(root.focusRemaining)
-                            color: root.focusRunning ? Nexa.Theme.primary : Nexa.Theme.text
-                            font.family: Nexa.Theme.monoFontFamily
+                            color: root.focusRunning ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyMono
                             font.pixelSize: 48
-                            font.weight: Nexa.Theme.fontWeightBold
+                            font.weight: NexaUI.NexaTypography.weightBold
+                            font.features: NexaUI.NexaTypography.fontFeaturesTnum
                         }
 
                         RowLayout {
@@ -904,19 +953,19 @@ Item {
 
                             Text {
                                 text: root.focusMode === "focus" ? "󰪠" : "󰛨"
-                                color: Nexa.Theme.primary
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: Nexa.Theme.iconSm
+                                color: NexaUI.NexaColors.primary
+                                font.family: NexaUI.NexaTypography.familyIcon
+                                font.pixelSize: NexaUI.NexaTypography.sizeSm
                             }
 
                             Text {
                                 text: root.focusMode === "focus"
                                     ? "Focus Session"
                                     : (root.focusMode === "short_break" ? "Short Break" : "Long Break")
-                                color: Nexa.Theme.mutedText
-                                font.family: Nexa.Theme.fontFamily
-                                font.pixelSize: Nexa.Theme.fontSizeSm
-                                font.weight: Nexa.Theme.fontWeightMedium
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeSm
+                                font.weight: NexaUI.NexaTypography.weightMedium
                             }
                         }
                     }
@@ -926,63 +975,65 @@ Item {
                         Layout.alignment: Qt.AlignHCenter
                         Layout.preferredWidth: 320
                         Layout.preferredHeight: 6
-                        radius: 3
-                        color: Nexa.Theme.surfaceContainerHighest
+                        radius: NexaUI.NexaTokens.radiusPill
+                        color: NexaUI.NexaColors.surfaceContainerHighest
 
                         Rectangle {
                             height: parent.height
                             width: parent.width * (1.0 - root.focusProgress)
-                            radius: 3
-                            color: Nexa.Theme.primary
+                            radius: NexaUI.NexaTokens.radiusPill
+                            color: NexaUI.NexaColors.primary
 
                             Behavior on width {
-                                NumberAnimation { duration: 300 }
+                                NumberAnimation { duration: NexaUI.NexaMotion.durationNormal }
                             }
                         }
                     }
 
                     // Session Streak Dots
-                    Row {
+                    RowLayout {
                         Layout.alignment: Qt.AlignHCenter
                         spacing: 8
 
                         Text {
-                            anchors.verticalCenter: parent.verticalCenter
+                            Layout.alignment: Qt.AlignVCenter
                             text: "Cycles:"
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeXs
+                            color: NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeXs
                         }
 
                         Repeater {
                             model: 4
                             delegate: Rectangle {
+                                Layout.alignment: Qt.AlignVCenter
                                 width: 8
                                 height: 8
                                 radius: 4
                                 color: index < (root.focusSessions % 4) || (root.focusSessions > 0 && root.focusSessions % 4 === 0)
-                                    ? Nexa.Theme.primary
-                                    : Nexa.Theme.surfaceContainerHighest
+                                    ? NexaUI.NexaColors.primary
+                                    : NexaUI.NexaColors.surfaceContainerHighest
                             }
                         }
 
                         Text {
-                            anchors.verticalCenter: parent.verticalCenter
+                            Layout.alignment: Qt.AlignVCenter
                             text: "(" + root.focusSessions + " completed)"
-                            color: Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: Nexa.Theme.fontSizeXs
+                            color: NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: NexaUI.NexaTypography.sizeXs
                         }
                     }
 
                     // Focus Action Buttons
                     RowLayout {
                         Layout.alignment: Qt.AlignHCenter
-                        spacing: Nexa.Theme.spacingSm
+                        spacing: NexaUI.NexaTokens.spacingSm
 
                         NexaUI.NexaButton {
                             implicitWidth: 120
                             implicitHeight: 38
+                            variant: root.focusRunning ? "filled" : "tonal"
                             icon: root.focusRunning ? "󰏤" : "󰐊"
                             text: root.focusRunning ? "Pause" : (root.focusRemaining < root.focusTotalSeconds ? "Resume" : "Start")
                             onClicked: root.toggleFocus()
@@ -991,18 +1042,19 @@ Item {
                         NexaUI.NexaButton {
                             implicitWidth: 90
                             implicitHeight: 38
+                            variant: "tonal"
                             icon: "󰐕"
                             text: "+5m"
-                            interactive: true
                             onClicked: root.addFocusTime(300)
                         }
 
                         NexaUI.NexaButton {
                             implicitWidth: 90
                             implicitHeight: 38
+                            variant: "tonal"
                             icon: "󰜉"
                             text: "Reset"
-                            interactive: root.focusActive
+                            enabled: root.focusActive
                             visible: root.focusActive
                             onClicked: root.resetFocus()
                         }

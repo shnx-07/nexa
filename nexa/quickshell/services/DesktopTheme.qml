@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 import QtQuick
-import "../theme/colors"
+import "../NewNexaUI" as NexaUI
 
 // Desktop themes: one coordinated look across the rice, still coloured by
 // the wallpaper. A theme touches three layers:
@@ -23,6 +23,8 @@ import "../theme/colors"
 // read the choice, e.g. `lockTheme` to match the lock to the desktop.
 Singleton {
     id: root
+
+    property string currentThemeSubTab: "presets"
 
     // hypr: rounding, shadow range/render_power, `glow` (a colour role with a
     //       hex alpha) or a fixed `shadow` colour, inactive shadow colour, an
@@ -456,11 +458,11 @@ Singleton {
     // The hairline of a look; `id` is the theme it belongs to when that
     // isn't the active one (a preview).
     function borderColor(lk, id) {
-        return lk.border ? Colors.withAlpha(roleColor(lk.borderRole ?? "primary", id), lk.borderAlpha ?? 0.4) : "transparent";
+        return lk.border ? NexaUI.NexaColors.withAlpha(roleColor(lk.borderRole ?? "primary", id), lk.borderAlpha ?? 0.4) : "transparent";
     }
 
     // ── Palette ──────────────────────────────────────────────────────────────
-    // Every theme takes its accents from the wallpaper (Colors.primary and
+    // Every theme takes its accents from the wallpaper (NexaUI.NexaColors.primary and
     // .tertiary). A theme's `tone` changes how it wears them:
     //   neon:  full saturation, lit like a tube, and always a duotone: if the
     //          two hues are too close, the second swings round the wheel.
@@ -500,7 +502,7 @@ Singleton {
     property string _cachedColorKey: ""
 
     function _checkColorInvalidation() {
-        const key = "" + Colors.primary + "|" + Colors.tertiary + "|" + _dark;
+        const key = "" + NexaUI.NexaColors.primary + "|" + NexaUI.NexaColors.tertiary + "|" + _dark;
         if (key !== _cachedColorKey) {
             _cachedColorKey = key;
             _accentCache = {};
@@ -520,31 +522,31 @@ Singleton {
         let res;
         switch (toneOf(id)) {
         case "neon":
-            res = _neon(_hue(Colors.primary, 0.86));
+            res = _neon(_hue(NexaUI.NexaColors.primary, 0.86));
             break;
         case "muted":
-            res = _muted(Colors.primary);
+            res = _muted(NexaUI.NexaColors.primary);
             break;
         case "gilt":
-            res = Qt.tint(Qt.hsla(0.118, 0.62, _dark ? 0.62 : 0.4, 1), Colors.withAlpha(Colors.primary, 0.08));
+            res = Qt.tint(Qt.hsla(0.118, 0.62, _dark ? 0.62 : 0.4, 1), NexaUI.NexaColors.withAlpha(NexaUI.NexaColors.primary, 0.08));
             break;
         case "jewel":
-            res = _jewel(_hue(Colors.primary, 0.62));
+            res = _jewel(_hue(NexaUI.NexaColors.primary, 0.62));
             break;
         case "print":
-            res = Qt.hsla(_hue(Colors.primary, 0), 0.66, _dark ? 0.62 : 0.42, 1);
+            res = Qt.hsla(_hue(NexaUI.NexaColors.primary, 0), 0.66, _dark ? 0.62 : 0.42, 1);
             break;
         case "dusty":
-            res = _weathered(Colors.primary);
+            res = _weathered(NexaUI.NexaColors.primary);
             break;
         case "brass":
-            res = Qt.tint(Qt.hsla(0.108, 0.5, _dark ? 0.6 : 0.36, 1), Colors.withAlpha(Colors.primary, 0.1));
+            res = Qt.tint(Qt.hsla(0.108, 0.5, _dark ? 0.6 : 0.36, 1), NexaUI.NexaColors.withAlpha(NexaUI.NexaColors.primary, 0.1));
             break;
         case "lume":
-            res = _biolum(_toSea(_hue(Colors.primary, 0.52)));
+            res = _biolum(_toSea(_hue(NexaUI.NexaColors.primary, 0.52)));
             break;
         case "temple":
-            res = Qt.tint(Qt.hsla(0.1, 0.84, _dark ? 0.58 : 0.4, 1), Colors.withAlpha(Colors.primary, 0.08));
+            res = Qt.tint(Qt.hsla(0.1, 0.84, _dark ? 0.58 : 0.4, 1), NexaUI.NexaColors.withAlpha(NexaUI.NexaColors.primary, 0.08));
             break;
         case "heraldic": {
             const t = Heraldry.tincture;
@@ -552,7 +554,7 @@ Singleton {
             break;
         }
         default:
-            res = Qt.color(Colors.primary);
+            res = Qt.color(NexaUI.NexaColors.primary);
             break;
         }
         _accentCache[id] = res;
@@ -567,26 +569,26 @@ Singleton {
         let res;
         switch (toneOf(id)) {
         case "neon": {
-            const a = _hue(Colors.primary, 0.86);
-            const b = _hue(Colors.tertiary, 0.52);
+            const a = _hue(NexaUI.NexaColors.primary, 0.86);
+            const b = _hue(NexaUI.NexaColors.tertiary, 0.52);
             res = _neon(_hueGap(a, b) < 0.2 ? (a + 0.42) % 1 : b);
             break;
         }
         case "muted":
-            res = _muted(Colors.tertiary);
+            res = _muted(NexaUI.NexaColors.tertiary);
             break;
         case "gilt": {
             // A jewel beside the gold: never gold itself.
             const golden = h => h > 0.06 && h < 0.18;
-            const p = _hue(Colors.primary, -1);
-            const t = _hue(Colors.tertiary, -1);
+            const p = _hue(NexaUI.NexaColors.primary, -1);
+            const t = _hue(NexaUI.NexaColors.tertiary, -1);
             const h = p >= 0 && !golden(p) ? p : t >= 0 && !golden(t) ? t : 0.47;
             res = Qt.hsla(h, 0.58, _dark ? 0.5 : 0.34, 1);
             break;
         }
         case "jewel": {
-            const g = _hue(Colors.primary, 0.62);
-            const b = _hue(Colors.tertiary, 0.95);
+            const g = _hue(NexaUI.NexaColors.primary, 0.62);
+            const b = _hue(NexaUI.NexaColors.tertiary, 0.95);
             res = _jewel(_hueGap(g, b) < 0.12 ? (g + 0.36) % 1 : b);
             break;
         }
@@ -594,34 +596,34 @@ Singleton {
             res = _dark ? Qt.color("#ece6d6") : Qt.color("#1c1b19");
             break;
         case "dusty":
-            res = Qt.tint(Qt.hsla(0.118, 0.82, _dark ? 0.56 : 0.42, 1), Colors.withAlpha(Colors.tertiary, 0.1));
+            res = Qt.tint(Qt.hsla(0.118, 0.82, _dark ? 0.56 : 0.42, 1), NexaUI.NexaColors.withAlpha(NexaUI.NexaColors.tertiary, 0.1));
             break;
         case "brass": {
             // The sky's enamel beside the brass: never golden itself.
             const golden = h => h > 0.05 && h < 0.2;
-            const p = _hue(Colors.primary, -1);
-            const t = _hue(Colors.tertiary, -1);
+            const p = _hue(NexaUI.NexaColors.primary, -1);
+            const t = _hue(NexaUI.NexaColors.tertiary, -1);
             const h = p >= 0 && !golden(p) ? p : t >= 0 && !golden(t) ? t : 0.62;
             res = Qt.hsla(h, 0.46, _dark ? 0.58 : 0.34, 1);
             break;
         }
         case "lume":
-            res = Qt.tint(Qt.hsla(0.46, 0.7, _dark ? 0.7 : 0.34, 1), Colors.withAlpha(Colors.tertiary, 0.08));
+            res = Qt.tint(Qt.hsla(0.46, 0.7, _dark ? 0.7 : 0.34, 1), NexaUI.NexaColors.withAlpha(NexaUI.NexaColors.tertiary, 0.08));
             break;
         case "temple": {
             // A pigment beside the gold: never golden itself.
             const golden = h => h > 0.05 && h < 0.17;
-            const p = _hue(Colors.primary, -1);
-            const t = _hue(Colors.tertiary, -1);
+            const p = _hue(NexaUI.NexaColors.primary, -1);
+            const t = _hue(NexaUI.NexaColors.tertiary, -1);
             const h = p >= 0 && !golden(p) ? p : t >= 0 && !golden(t) ? t : 0.015;
             res = Qt.hsla(h, 0.66, _dark ? 0.56 : 0.4, 1);
             break;
         }
         case "heraldic":
-            res = Qt.tint(Qt.hsla(0.6, 0.09, _dark ? 0.8 : 0.34, 1), Colors.withAlpha(Colors.primary, 0.06));
+            res = Qt.tint(Qt.hsla(0.6, 0.09, _dark ? 0.8 : 0.34, 1), NexaUI.NexaColors.withAlpha(NexaUI.NexaColors.primary, 0.06));
             break;
         default:
-            res = Qt.color(Colors.tertiary);
+            res = Qt.color(NexaUI.NexaColors.tertiary);
             break;
         }
         _accent2Cache[id] = res;
@@ -631,10 +633,10 @@ Singleton {
     // A colour role: a Colors name, or a theme's toned "accent" / "accent2".
     function roleColor(role, id) {
         const themeId = id ?? adapter.theme;
-        return role === "accent" ? accentOf(themeId) : role === "accent2" ? accent2Of(themeId) : Qt.color(Colors[role]);
+        return role === "accent" ? accentOf(themeId) : role === "accent2" ? accent2Of(themeId) : Qt.color(NexaUI.NexaColors[role]);
     }
 
-    readonly property bool _dark: Qt.color(Colors.background).hslLightness < 0.5
+    readonly property bool _dark: Qt.color(NexaUI.NexaColors.background).hslLightness < 0.5
 
     // Hue of `c` (0..1), or `fallback` when it's a grey.
     function _hue(c, fallback) {
@@ -818,7 +820,7 @@ Singleton {
     onScreenEffectChanged: syncTimer.restart()
 
     Connections {
-        target: Colors
+        target: NexaUI.NexaColors
 
         function onPrimaryChanged() {
             root._checkColorInvalidation();

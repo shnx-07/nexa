@@ -3,8 +3,8 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import "../../theme" as Nexa
-import "../themeSettingSection" as ThemeViews
+import "../../NewNexaUI" as NexaUI
+import "themeSettingSection" as ThemeViews
 
 Item {
     id: root
@@ -16,22 +16,7 @@ Item {
     // ============================================================
     // STATE & REPOSITORIES
     // ============================================================
-    property string activeSubTab: Nexa.Theme.currentThemeSubTab
-
-    Connections {
-        target: Nexa.Theme
-        function onCurrentThemeSubTabChanged() {
-            if (root.activeSubTab !== Nexa.Theme.currentThemeSubTab) {
-                root.activeSubTab = Nexa.Theme.currentThemeSubTab
-            }
-        }
-    }
-
-    Binding {
-        target: Nexa.Theme
-        property: "currentThemeSubTab"
-        value: root.activeSubTab
-    }
+    property string activeSubTab: "presets"
 
     onActiveSubTabChanged: {
         if (activeSubTab === "presets") {
@@ -63,11 +48,11 @@ Item {
     property string searchQuery: ""
 
     // Compositor state (Hyprland window styling)
-    property int windowRounding: Nexa.Theme.windowRounding
-    property int nexaRounding: Nexa.Theme.nexaRounding
-    property int windowBorderSize: Nexa.Theme.windowBorderSize
-    property bool windowGlow: Nexa.Theme.windowGlow !== undefined ? Nexa.Theme.windowGlow : true
-    property real windowDim: Nexa.Theme.windowDim !== undefined ? Nexa.Theme.windowDim : 0.0
+    property int windowRounding: NexaUI.NexaTokens.windowRounding
+    property int nexaRounding: NexaUI.NexaTokens.nexaRounding
+    property int windowBorderSize: NexaUI.NexaTokens.windowBorderSize
+    property bool windowGlow: NexaUI.NexaTokens.windowGlow
+    property real windowDim: NexaUI.NexaTokens.windowDim
 
     readonly property string nexad: Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
 
@@ -82,19 +67,19 @@ Item {
     readonly property color stagedPrimary: {
         if (root.stagedStyle === "preset")
             return root.colorForPreset(root.stagedPreset, 0, root.stagedMode)
-        return Nexa.Theme.primary
+        return NexaUI.NexaColors.primary
     }
 
     readonly property color stagedSecondary: {
         if (root.stagedStyle === "preset")
             return root.colorForPreset(root.stagedPreset, 1, root.stagedMode)
-        return Nexa.Theme.secondary
+        return NexaUI.NexaColors.secondary
     }
 
     readonly property color stagedTertiary: {
         if (root.stagedStyle === "preset")
             return root.colorForPreset(root.stagedPreset, 2, root.stagedMode)
-        return Nexa.Theme.tertiary
+        return NexaUI.NexaColors.tertiary
     }
 
     readonly property string stagedPresetName: {
@@ -160,7 +145,7 @@ Item {
             if (colors && colors.length > slot)
                 return colors[slot]
         }
-        return slot === 0 ? Nexa.Theme.primary : slot === 1 ? Nexa.Theme.secondary : Nexa.Theme.tertiary
+        return slot === 0 ? NexaUI.NexaColors.primary : slot === 1 ? NexaUI.NexaColors.secondary : NexaUI.NexaColors.tertiary
     }
 
     function syncStagedToActive() {
@@ -232,14 +217,7 @@ Item {
     }
 
     function setGlassMode(enabled) {
-        Nexa.Theme.glassMode = enabled
-        Quickshell.execDetached([
-            "sh",
-            "-c",
-            "mkdir -p \"$HOME/.config/nexa/config\" && printf '%s\\n' \"$1\" > \"$HOME/.config/nexa/config/glass.conf\" && hyprctl reload",
-            "sh",
-            enabled ? "true" : "false"
-        ])
+        NexaUI.NexaOptics.setGlassMode(enabled)
     }
 
     function nextWallpaper() {
@@ -247,57 +225,32 @@ Item {
         refreshTimer.restart()
     }
 
-    Timer {
-        id: shapeApplyTimer
-        interval: 50
-        repeat: false
-        onTriggered: {
-            Quickshell.execDetached([
-                root.nexad, "hypr", "decorations", "set",
-                "--rounding", root.windowRounding.toString(),
-                "--border", root.windowBorderSize.toString(),
-                "--nexa-rounding", root.nexaRounding.toString()
-            ])
-        }
-    }
-
     function setRounding(r) {
         const val = parseInt(r) || 0
         root.windowRounding = val
-        Nexa.Theme.windowRounding = val
-        shapeApplyTimer.restart()
+        NexaUI.NexaTokens.saveDecorations(val, root.nexaRounding, root.windowBorderSize, root.windowGlow, root.windowDim)
     }
 
     function setNexaRounding(nr) {
         const val = parseInt(nr) || 0
         root.nexaRounding = val
-        Nexa.Theme.nexaRounding = val
-        shapeApplyTimer.restart()
+        NexaUI.NexaTokens.saveDecorations(root.windowRounding, val, root.windowBorderSize, root.windowGlow, root.windowDim)
     }
 
     function setBorderSize(b) {
         const val = parseInt(b) || 0
         root.windowBorderSize = val
-        Nexa.Theme.windowBorderSize = val
-        shapeApplyTimer.restart()
+        NexaUI.NexaTokens.saveDecorations(root.windowRounding, root.nexaRounding, val, root.windowGlow, root.windowDim)
     }
 
     function setWindowGlow(on) {
         root.windowGlow = on
-        Nexa.Theme.windowGlow = on
-        Quickshell.execDetached([
-            root.nexad, "hypr", "decorations", "set",
-            "--shadow", on ? "true" : "false"
-        ])
+        NexaUI.NexaTokens.saveDecorations(root.windowRounding, root.nexaRounding, root.windowBorderSize, on, root.windowDim)
     }
 
     function setWindowDim(dim) {
         root.windowDim = dim
-        Nexa.Theme.windowDim = dim
-        Quickshell.execDetached([
-            root.nexad, "hypr", "decorations", "set",
-            "--dim", dim.toString()
-        ])
+        NexaUI.NexaTokens.saveDecorations(root.windowRounding, root.nexaRounding, root.windowBorderSize, root.windowGlow, dim)
     }
 
     Timer {
@@ -456,10 +409,10 @@ Item {
             Rectangle {
                 Layout.preferredHeight: 38
                 Layout.preferredWidth: subTabsRow.implicitWidth + 8
-                radius: Nexa.Theme.radiusSm
-                color: Nexa.Theme.cardBackground
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                radius: NexaUI.NexaTokens.radiusSm
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 RowLayout {
                     id: subTabsRow
@@ -481,15 +434,15 @@ Item {
                             required property var modelData
                             Layout.fillHeight: true
                             Layout.preferredWidth: pillContent.implicitWidth + 24
-                            radius: Nexa.Theme.radiusXs
+                            radius: NexaUI.NexaTokens.radiusXs
 
                             readonly property bool isSelected: root.activeSubTab === modelData.id
 
-                            color: isSelected ? Nexa.Theme.primaryContainer : (tabMouse.containsMouse ? Nexa.Theme.hover : "transparent")
+                            color: isSelected ? NexaUI.NexaColors.primaryContainer : (tabMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : "transparent")
                             border.width: isSelected ? 1 : 0
-                            border.color: isSelected ? Nexa.Theme.primary : "transparent"
+                            border.color: isSelected ? NexaUI.NexaColors.primary : "transparent"
 
-                            Behavior on color { ColorAnimation { duration: Nexa.Theme.animationFast } }
+                            Behavior on color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
 
                             Row {
                                 id: pillContent
@@ -498,17 +451,17 @@ Item {
 
                                 Text {
                                     text: tabPill.modelData.icon
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 14
-                                    color: tabPill.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.mutedText
+                                    color: tabPill.isSelected ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                 }
 
                                 Text {
                                     text: tabPill.modelData.label
-                                    font.family: Nexa.Theme.fontFamily
+                                    font.family: NexaUI.NexaTypography.familyBody
                                     font.pixelSize: 12
-                                    font.weight: tabPill.isSelected ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightRegular
-                                    color: tabPill.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                    font.weight: tabPill.isSelected ? NexaUI.NexaTypography.weightSemiBold : NexaUI.NexaTypography.weightRegular
+                                    color: tabPill.isSelected ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                 }
                             }
 
@@ -530,10 +483,10 @@ Item {
             Rectangle {
                 Layout.preferredHeight: 38
                 Layout.preferredWidth: 160
-                radius: Nexa.Theme.radiusSm
-                color: Nexa.Theme.cardBackground
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                radius: NexaUI.NexaTokens.radiusSm
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 RowLayout {
                     anchors.fill: parent
@@ -545,27 +498,27 @@ Item {
                         id: topDarkPill
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        radius: Nexa.Theme.radiusXs
+                        radius: NexaUI.NexaTokens.radiusXs
                         readonly property bool isSelected: root.stagedMode === "dark"
-                        color: isSelected ? Nexa.Theme.primaryContainer : (topDarkHov.containsMouse ? Nexa.Theme.hover : "transparent")
+                        color: isSelected ? NexaUI.NexaColors.primaryContainer : (topDarkHov.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : "transparent")
                         border.width: isSelected ? 1 : 0
-                        border.color: isSelected ? Nexa.Theme.primary : "transparent"
+                        border.color: isSelected ? NexaUI.NexaColors.primary : "transparent"
 
                         Row {
                             anchors.centerIn: parent
                             spacing: 5
                             Text {
                                 text: "󰖔"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 13
-                                color: topDarkPill.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.mutedText
+                                color: topDarkPill.isSelected ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                             }
                             Text {
                                 text: "Dark"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 12
-                                font.weight: topDarkPill.isSelected ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightRegular
-                                color: topDarkPill.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                font.weight: topDarkPill.isSelected ? NexaUI.NexaTypography.weightSemiBold : NexaUI.NexaTypography.weightRegular
+                                color: topDarkPill.isSelected ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                             }
                         }
 
@@ -583,27 +536,27 @@ Item {
                         id: topLightPill
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        radius: Nexa.Theme.radiusXs
+                        radius: NexaUI.NexaTokens.radiusXs
                         readonly property bool isSelected: root.stagedMode === "light"
-                        color: isSelected ? Nexa.Theme.primaryContainer : (topLightHov.containsMouse ? Nexa.Theme.hover : "transparent")
+                        color: isSelected ? NexaUI.NexaColors.primaryContainer : (topLightHov.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : "transparent")
                         border.width: isSelected ? 1 : 0
-                        border.color: isSelected ? Nexa.Theme.primary : "transparent"
+                        border.color: isSelected ? NexaUI.NexaColors.primary : "transparent"
 
                         Row {
                             anchors.centerIn: parent
                             spacing: 5
                             Text {
                                 text: "󰖙"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 13
-                                color: topLightPill.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.mutedText
+                                color: topLightPill.isSelected ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                             }
                             Text {
                                 text: "Light"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 12
-                                font.weight: topLightPill.isSelected ? Nexa.Theme.fontWeightDemiBold : Nexa.Theme.fontWeightRegular
-                                color: topLightPill.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                font.weight: topLightPill.isSelected ? NexaUI.NexaTypography.weightSemiBold : NexaUI.NexaTypography.weightRegular
+                                color: topLightPill.isSelected ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                             }
                         }
 
@@ -669,7 +622,7 @@ Item {
                 applying: root.applying
                 isCurrentThemeActive: root.isCurrentThemeActive
                 warmthEnabled: root.warmthEnabled
-                isGlassMode: Nexa.Theme.glassMode
+                isGlassMode: NexaUI.NexaOptics.glassMode
 
                 activePrimary: root.stagedPrimary
                 activeSecondary: root.stagedSecondary
@@ -690,14 +643,14 @@ Item {
 
                 windowRounding: root.windowRounding
                 nexaRounding: root.nexaRounding
-                islandRounding: Nexa.Theme.islandRounding
+                islandRounding: NexaUI.NexaTokens.islandRounding
                 windowBorderSize: root.windowBorderSize
                 windowGlow: root.windowGlow
                 windowDim: root.windowDim
 
                 onSetRoundingRequested: r => root.setRounding(r)
                 onSetNexaRoundingRequested: nr => root.setNexaRounding(nr)
-                onSetIslandRoundingRequested: ir => Nexa.Theme.setIslandRounding(ir)
+                onSetIslandRoundingRequested: ir => NexaUI.NexaTokens.setIslandRounding(ir)
                 onSetBorderSizeRequested: b => root.setBorderSize(b)
                 onSetWindowGlowRequested: g => root.setWindowGlow(g)
                 onSetWindowDimRequested: d => root.setWindowDim(d)

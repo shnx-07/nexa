@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import "../theme" as Nexa
+import "../NewNexaUI" as NexaUI
 import "../modules/clock"
 import "../modules/media"
 import "../modules/search"
@@ -280,11 +280,11 @@ Item {
     // ============================================================
 
     readonly property int fullContentTop:
-        Nexa.Theme.spacingLg
+        NexaUI.NexaTokens.spacingLg
         + fullNavigationHeight
-        + Nexa.Theme.spacingMd
+        + NexaUI.NexaTokens.spacingMd
         + 1
-        + Nexa.Theme.spacingMd
+        + NexaUI.NexaTokens.spacingMd
 
 
     // ============================================================
@@ -544,17 +544,17 @@ Item {
         // Keep full-content breathing room.
         anchors.leftMargin:
             root.full
-            ? Nexa.Theme.spacingLg
+            ? NexaUI.NexaTokens.spacingLg
             : 0
 
         anchors.rightMargin:
             root.full
-            ? Nexa.Theme.spacingLg
+            ? NexaUI.NexaTokens.spacingLg
             : 0
 
         anchors.bottomMargin:
             root.full
-            ? Nexa.Theme.spacingLg
+            ? NexaUI.NexaTokens.spacingLg
             : 0
     }
 
@@ -594,17 +594,17 @@ Item {
 
             leftMargin:
                 root.full && root.section !== "music"
-                ? Nexa.Theme.spacingLg
+                ? NexaUI.NexaTokens.spacingLg
                 : 0
 
             rightMargin:
                 root.full && root.section !== "music"
-                ? Nexa.Theme.spacingLg
+                ? NexaUI.NexaTokens.spacingLg
                 : 0
 
             bottomMargin:
                 root.full && root.section !== "music"
-                ? Nexa.Theme.spacingLg
+                ? NexaUI.NexaTokens.spacingLg
                 : 0
         }
 
@@ -693,14 +693,14 @@ Item {
                 left: parent.left
                 right: parent.right
 
-                topMargin: Nexa.Theme.spacingLg
-                leftMargin: Nexa.Theme.spacingLg
-                rightMargin: Nexa.Theme.spacingLg
+                topMargin: NexaUI.NexaTokens.spacingLg
+                leftMargin: NexaUI.NexaTokens.spacingLg
+                rightMargin: NexaUI.NexaTokens.spacingLg
             }
 
             height: root.fullNavigationHeight
 
-            spacing: Nexa.Theme.spacingXs
+            spacing: NexaUI.NexaTokens.spacingXs
 
 
             Repeater {
@@ -736,34 +736,37 @@ Item {
 
 
                     radius:
-                        Nexa.Theme.radiusSm
+                        NexaUI.NexaTokens.radiusSm
 
 
-                    // ------------------------------------------------
-                    // Declarative color state.
-                    //
-                    // Do NOT assign color directly from MouseArea.
-                    // That would break this binding.
-                    // ------------------------------------------------
+                    // Top chamfer specular highlight when selected
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 1
+                        radius: parent.radius
+                        color: Qt.rgba(1, 1, 1, 0.25 * NexaUI.NexaOptics.specularIntensity)
+                        visible: sectionButton.selected && NexaUI.NexaOptics.specularHighlight
+                    }
 
                     color: {
                         if (sectionButton.selected)
-                            return Nexa.Theme.selected
+                            return NexaUI.NexaColors.primary
 
                         if (sectionButton.pressed)
-                            return Nexa.Theme.pressed
+                            return NexaUI.NexaColors.surfaceContainerHighest
 
                         if (sectionButton.hovered)
-                            return Nexa.Theme.hover
+                            return NexaUI.NexaColors.surfaceContainerHigh
 
-                        return "transparent"
+                        return NexaUI.NexaColors.surfaceContainer
                     }
-
 
                     Behavior on color {
                         ColorAnimation {
                             duration:
-                                Nexa.Theme.animationFast
+                                NexaUI.NexaMotion.durationFast
                         }
                     }
 
@@ -772,7 +775,7 @@ Item {
                         anchors.centerIn: parent
 
                         spacing:
-                            Nexa.Theme.spacingXs
+                            NexaUI.NexaTokens.spacingXs
 
 
                         Text {
@@ -781,15 +784,15 @@ Item {
 
                             color:
                                 sectionButton.selected
-                                ? Nexa.Theme.selectedText
-                                : Nexa.Theme.mutedText
+                                ? NexaUI.NexaColors.onPrimary
+                                : (sectionButton.hovered ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText)
 
                             font {
                                 family:
-                                    Nexa.Theme.iconFontFamily
+                                    NexaUI.NexaTypography.familyIcon
 
                                 pixelSize:
-                                    Nexa.Theme.iconXs
+                                    NexaUI.NexaTypography.sizeSm
                             }
                         }
 
@@ -800,20 +803,20 @@ Item {
 
                             color:
                                 sectionButton.selected
-                                ? Nexa.Theme.selectedText
-                                : Nexa.Theme.mutedText
+                                ? NexaUI.NexaColors.onPrimary
+                                : (sectionButton.hovered ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText)
 
                             font {
                                 family:
-                                    Nexa.Theme.fontFamily
+                                    NexaUI.NexaTypography.familyDisplay
 
                                 pixelSize:
-                                    Nexa.Theme.fontSizeSm
+                                    NexaUI.NexaTypography.sizeSm
 
                                 weight:
                                     sectionButton.selected
-                                    ? Nexa.Theme.fontWeightDemiBold
-                                    : Nexa.Theme.fontWeightMedium
+                                    ? NexaUI.NexaTypography.weightSemiBold
+                                    : NexaUI.NexaTypography.weightMedium
                             }
                         }
                     }
@@ -871,15 +874,15 @@ Item {
                 left: parent.left
                 right: parent.right
 
-                topMargin: Nexa.Theme.spacingMd
-                leftMargin: Nexa.Theme.spacingLg
-                rightMargin: Nexa.Theme.spacingLg
+                topMargin: NexaUI.NexaTokens.spacingMd
+                leftMargin: NexaUI.NexaTokens.spacingLg
+                rightMargin: NexaUI.NexaTokens.spacingLg
             }
 
-            height: 1
+            height: NexaUI.NexaTokens.borderThin
 
             color:
-                Nexa.Theme.divider
+                NexaUI.NexaColors.borderSubtle
         }
 
 

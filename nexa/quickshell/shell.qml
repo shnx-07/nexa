@@ -9,7 +9,7 @@ import "modules/lockscreen" as LockScreenModule
 import "modules/nightlight" as NightLightModule
 import "wallpaper" as WallpaperModule
 import "services" as Services
-import "theme" as NexaTheme
+import "NewNexaUI" as NexaUI
 
 ShellRoot {
     Component.onCompleted: {
@@ -65,6 +65,27 @@ ShellRoot {
         ]
 
         running: true
+    }
+
+    Process {
+        id: slideshowDaemonStartup
+
+        command: [
+            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
+            "wallpaper",
+            "slideshow",
+            "daemon"
+        ]
+
+        running: true
+        onExited: daemonRestartTimer.restart()
+    }
+
+    Timer {
+        id: daemonRestartTimer
+        interval: 2000
+        repeat: false
+        onTriggered: slideshowDaemonStartup.running = true
     }
 
     Process {
@@ -322,12 +343,12 @@ ShellRoot {
         }
 
         function openSubTab(subTab: string) {
-            NexaTheme.Theme.currentThemeSubTab = subTab
+            Services.DesktopTheme.currentThemeSubTab = subTab
             open("system")
         }
 
         function openLockSubTab(subTab: string) {
-            NexaTheme.Theme.currentLockSubTab = subTab
+            Services.LockScreen.currentLockSubTab = subTab
             open("lock")
         }
 
@@ -370,12 +391,12 @@ ShellRoot {
         }
 
         function openSubTab(subTab: string) {
-            NexaTheme.Theme.currentThemeSubTab = subTab
+            Services.DesktopTheme.currentThemeSubTab = subTab
             open("system")
         }
 
         function openLockSubTab(subTab: string) {
-            NexaTheme.Theme.currentLockSubTab = subTab
+            Services.LockScreen.currentLockSubTab = subTab
             open("lock")
         }
 
@@ -402,19 +423,19 @@ ShellRoot {
         target: "shader"
 
         function set(shaderId: string) {
-            NexaTheme.Theme.setShader(shaderId || "off")
+            NexaUI.NexaOptics.setShader(shaderId || "off")
         }
 
         function toggle() {
-            NexaTheme.Theme.toggleShader()
+            NexaUI.NexaOptics.toggleShader()
         }
 
         function get(): string {
-            return NexaTheme.Theme.activeShader
+            return NexaUI.NexaOptics.activeShader
         }
 
         function getTime(): real {
-            return NexaTheme.Theme.globalShaderTime
+            return NexaUI.NexaOptics.globalShaderTime
         }
     }
 

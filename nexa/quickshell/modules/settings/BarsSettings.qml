@@ -3,8 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 import "../../services" as Services
 
 Item {
@@ -15,8 +14,8 @@ Item {
     signal requestClose()
 
     function rad(n) {
-        if (Nexa.Theme.nexaRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
+        if (NexaUI.NexaTokens.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (NexaUI.NexaTokens.nexaRounding / 10.0)));
     }
 
     component StyledSwitch: NexaUI.NexaToggle {}
@@ -64,16 +63,16 @@ Item {
                     width: 44
                     height: 44
                     radius: root.rad(22)
-                    color: Nexa.Theme.primaryContainer
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    color: NexaUI.NexaColors.primaryContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
 
                     Text {
                         anchors.centerIn: parent
                         text: "󰈺"
-                        font.family: Nexa.Theme.iconFontFamily
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 22
-                        color: Nexa.Theme.onPrimaryContainer
+                        color: NexaUI.NexaColors.onPrimaryContainer
                     }
                 }
 
@@ -83,17 +82,17 @@ Item {
 
                     Text {
                         text: "Status Bar & Panels"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 16
                         font.weight: Font.Bold
-                        color: Nexa.Theme.text
+                        color: NexaUI.NexaColors.text
                     }
 
                     Text {
                         text: "Position the bar on any screen edge, toggle intelligent auto-hide and customize widgets"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 12
-                        color: Nexa.Theme.mutedText
+                        color: NexaUI.NexaColors.mutedText
                     }
                 }
 
@@ -101,18 +100,18 @@ Item {
                     width: resetTxt.implicitWidth + 20
                     height: 32
                     radius: root.rad(6)
-                    color: rHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    color: rHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
 
                     Text {
                         id: resetTxt
                         anchors.centerIn: parent
                         text: "Reset Defaults"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 11
                         font.weight: Font.Medium
-                        color: Nexa.Theme.text
+                        color: NexaUI.NexaColors.text
                     }
 
                     MouseArea {
@@ -135,8 +134,8 @@ Item {
                 height: 120
                 radius: root.rad(12)
                 color: "#0a0c10"
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
                 clip: true
 
                 Item {
@@ -150,10 +149,10 @@ Item {
 
                         Text {
                             text: "Bar Layout Preview (" + Services.BarConfig.position.toUpperCase() + (Services.BarConfig.autohide ? " · AUTO-HIDE ON" : "") + ")"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                         }
 
                         Item { Layout.fillWidth: true }
@@ -167,9 +166,9 @@ Item {
 
                         Text {
                             text: Services.BarConfig.autohide ? "Hidden until edge hover" : "Fixed reserve zone"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 10
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                         }
                     }
 
@@ -181,8 +180,8 @@ Item {
                         height: 52
                         radius: root.rad(8)
                         color: "#12151b"
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: NexaUI.NexaColors.border
 
                         // The Mock Bar
                         Rectangle {
@@ -205,12 +204,12 @@ Item {
                                         width: wsRow.implicitWidth + 14
                                         radius: root.rad(16)
                                         color: "#282326"
-                                        border.width: Nexa.Theme.borderThin
-                                        border.color: Nexa.Theme.border
+                                        border.width: NexaUI.NexaTokens.borderThin
+                                        border.color: NexaUI.NexaColors.border
 
                                         Row {
                                             id: wsRow
-                                            anchors.centerIn: parent
+                                             anchors.centerIn: parent
                                             spacing: 6
 
                                             Rectangle { width: 18; height: 10; radius: root.rad(5); color: "#ffb4ab" }
@@ -227,8 +226,8 @@ Item {
                                         width: titleRow.implicitWidth + 16
                                         radius: root.rad(16)
                                         color: "#282326"
-                                        border.width: Nexa.Theme.borderThin
-                                        border.color: Nexa.Theme.border
+                                        border.width: NexaUI.NexaTokens.borderThin
+                                        border.color: NexaUI.NexaColors.border
 
                                         Row {
                                             id: titleRow
@@ -238,7 +237,7 @@ Item {
                                             Text {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: "󰨞"
-                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.family: NexaUI.NexaTypography.familyIcon
                                                 font.pixelSize: 13
                                                 color: "#007acc"
                                             }
@@ -246,7 +245,7 @@ Item {
                                             Text {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: "Visual Studio Code · Welcome"
-                                                font.family: Nexa.Theme.fontFamily
+                                                font.family: NexaUI.NexaTypography.familyBody
                                                 font.pixelSize: 11
                                                 color: "#e2e2e8"
                                             }
@@ -263,8 +262,8 @@ Item {
                                     width: 110
                                     radius: root.rad(16)
                                     color: "#1c181a"
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: Nexa.Theme.border
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: NexaUI.NexaColors.border
 
                                     Row {
                                         anchors.centerIn: parent
@@ -273,7 +272,7 @@ Item {
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: "02:32 AM"
-                                            font.family: Nexa.Theme.fontFamily
+                                            font.family: NexaUI.NexaTypography.familyBody
                                             font.pixelSize: 11
                                             font.weight: Font.DemiBold
                                             color: "#e2e2e8"
@@ -294,8 +293,8 @@ Item {
                                         width: batRow.implicitWidth + 14
                                         radius: root.rad(16)
                                         color: "#282326"
-                                        border.width: Nexa.Theme.borderThin
-                                        border.color: Nexa.Theme.border
+                                        border.width: NexaUI.NexaTokens.borderThin
+                                        border.color: NexaUI.NexaColors.border
 
                                         Row {
                                             id: batRow
@@ -305,7 +304,7 @@ Item {
                                             Text {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: "󰁹"
-                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.family: NexaUI.NexaTypography.familyIcon
                                                 font.pixelSize: 12
                                                 color: "#27c93f"
                                             }
@@ -313,7 +312,7 @@ Item {
                                             Text {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: "100%"
-                                                font.family: Nexa.Theme.fontFamily
+                                                font.family: NexaUI.NexaTypography.familyBody
                                                 font.pixelSize: 11
                                                 color: "#e2e2e8"
                                             }
@@ -327,8 +326,8 @@ Item {
                                         width: netRow.implicitWidth + 16
                                         radius: root.rad(16)
                                         color: "#282326"
-                                        border.width: Nexa.Theme.borderThin
-                                        border.color: Nexa.Theme.border
+                                        border.width: NexaUI.NexaTokens.borderThin
+                                        border.color: NexaUI.NexaColors.border
 
                                         Row {
                                             id: netRow
@@ -338,7 +337,7 @@ Item {
                                             Text {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: "󰖩"
-                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.family: NexaUI.NexaTypography.familyIcon
                                                 font.pixelSize: 12
                                                 color: "#e2e2e8"
                                             }
@@ -346,7 +345,7 @@ Item {
                                             Text {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: "󰂯"
-                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.family: NexaUI.NexaTypography.familyIcon
                                                 font.pixelSize: 12
                                                 color: "#e2e2e8"
                                             }
@@ -354,7 +353,7 @@ Item {
                                             Text {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: "󰐥"
-                                                font.family: Nexa.Theme.iconFontFamily
+                                                font.family: NexaUI.NexaTypography.familyIcon
                                                 font.pixelSize: 12
                                                 color: "#ff5f56"
                                             }
@@ -374,9 +373,9 @@ Item {
                 Layout.fillWidth: true
                 height: posCol.implicitHeight + 32
                 radius: root.rad(12)
-                color: Nexa.Theme.cardBackground
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 ColumnLayout {
                     id: posCol
@@ -388,17 +387,17 @@ Item {
 
                     Text {
                         text: "Move Bar Placement"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 14
                         font.weight: Font.Bold
-                        color: Nexa.Theme.text
+                        color: NexaUI.NexaColors.text
                     }
 
                     Text {
                         text: "Choose which edge of the screen the status bar attaches to. Windows rearrange automatically."
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 12
-                        color: Nexa.Theme.mutedText
+                        color: NexaUI.NexaColors.mutedText
                     }
 
                     RowLayout {
@@ -422,10 +421,10 @@ Item {
                                 height: 72
                                 radius: root.rad(8)
                                 color: isSelected
-                                    ? Nexa.Theme.primaryContainer
-                                    : (posHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainer)
-                                border.width: isSelected ? Math.max(1.5, Nexa.Theme.borderThin * 1.5) : Nexa.Theme.borderThin
-                                border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+                                    ? NexaUI.NexaColors.primaryContainer
+                                    : (posHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainer)
+                                border.width: isSelected ? Math.max(1.5, NexaUI.NexaTokens.borderThin * 1.5) : NexaUI.NexaTokens.borderThin
+                                border.color: isSelected ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                                 Column {
                                     anchors.centerIn: parent
@@ -438,27 +437,27 @@ Item {
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: posCard.modelData.icon
-                                            font.family: Nexa.Theme.iconFontFamily
+                                            font.family: NexaUI.NexaTypography.familyIcon
                                             font.pixelSize: 16
-                                            color: posCard.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                            color: posCard.isSelected ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                         }
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: posCard.modelData.label
-                                            font.family: Nexa.Theme.fontFamily
+                                            font.family: NexaUI.NexaTypography.familyBody
                                             font.pixelSize: 13
                                             font.weight: posCard.isSelected ? Font.Bold : Font.Medium
-                                            color: posCard.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                            color: posCard.isSelected ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                         }
                                     }
 
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: posCard.modelData.desc
-                                        font.family: Nexa.Theme.fontFamily
+                                        font.family: NexaUI.NexaTypography.familyBody
                                         font.pixelSize: 10
-                                        color: posCard.isSelected ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.mutedText
+                                        color: posCard.isSelected ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                     }
                                 }
 
@@ -485,9 +484,9 @@ Item {
                 Layout.fillWidth: true
                 height: hideCol.implicitHeight + 32
                 radius: root.rad(12)
-                color: Nexa.Theme.cardBackground
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 ColumnLayout {
                     id: hideCol
@@ -507,17 +506,17 @@ Item {
 
                             Text {
                                 text: "Automatic Hide (Intelligent Auto-Hide)"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 14
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             Text {
                                 text: "Hides the bar and unreserves screen space in Hyprland, giving your windows maximum workspace. The bar reveals smoothly when moving your mouse to the screen edge."
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 12
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                                 wrapMode: Text.WordWrap
                                 Layout.fillWidth: true
                             }
@@ -541,9 +540,9 @@ Item {
                 Layout.fillWidth: true
                 height: compCol.implicitHeight + 32
                 radius: root.rad(12)
-                color: Nexa.Theme.cardBackground
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 ColumnLayout {
                     id: compCol
@@ -555,10 +554,10 @@ Item {
 
                     Text {
                         text: "Components & Widgets"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 14
                         font.weight: Font.Bold
-                        color: Nexa.Theme.text
+                        color: NexaUI.NexaColors.text
                     }
 
                     // Workspaces Pager
@@ -566,9 +565,9 @@ Item {
                         Layout.fillWidth: true
                         Text {
                             text: "Workspaces Pill"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 13
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
                         Item { Layout.fillWidth: true }
                         StyledSwitch {
@@ -577,16 +576,16 @@ Item {
                         }
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Nexa.Theme.border }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: NexaUI.NexaColors.border }
 
                     // Window Title
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
                             text: "Active Application Title"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 13
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
                         Item { Layout.fillWidth: true }
                         StyledSwitch {
@@ -595,16 +594,16 @@ Item {
                         }
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Nexa.Theme.border }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: NexaUI.NexaColors.border }
 
                     // Dynamic Island Center
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
                             text: "Dynamic Island Center Trigger"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 13
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
                         Item { Layout.fillWidth: true }
                         StyledSwitch {
@@ -613,16 +612,16 @@ Item {
                         }
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Nexa.Theme.border }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: NexaUI.NexaColors.border }
 
                     // Battery Indicator
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
                             text: "Battery Status Pill"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 13
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
                         Item { Layout.fillWidth: true }
                         StyledSwitch {
@@ -631,16 +630,16 @@ Item {
                         }
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Nexa.Theme.border }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: NexaUI.NexaColors.border }
 
                     // Connectivity (WiFi / Bluetooth / Power)
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
                             text: "Connectivity & System Controls"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 13
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
                         Item { Layout.fillWidth: true }
                         StyledSwitch {
@@ -664,9 +663,9 @@ Item {
         width: toastRow.implicitWidth + 28
         height: 38
         radius: root.rad(19)
-        color: Nexa.Theme.surfaceContainerHighest
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.primary
+        color: NexaUI.NexaColors.surfaceContainerHighest
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.primary
         visible: root.toastVisible
         opacity: root.toastVisible ? 1.0 : 0.0
 
@@ -682,18 +681,18 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "󰄬"
-                font.family: Nexa.Theme.iconFontFamily
+                font.family: NexaUI.NexaTypography.familyIcon
                 font.pixelSize: 14
-                color: Nexa.Theme.primary
+                color: NexaUI.NexaColors.primary
             }
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.toastText
-                font.family: Nexa.Theme.fontFamily
+                font.family: NexaUI.NexaTypography.familyBody
                 font.pixelSize: 12
                 font.weight: Font.Medium
-                color: Nexa.Theme.text
+                color: NexaUI.NexaColors.text
             }
         }
     }

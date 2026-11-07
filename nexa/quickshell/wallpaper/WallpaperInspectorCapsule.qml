@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import "../theme" as Nexa
+import "../NewNexaUI" as NexaUI
 
 Rectangle {
     id: root
@@ -17,21 +17,32 @@ Rectangle {
     property string copiedNotification: ""
 
     height: 38
-    radius: Nexa.Theme.radiusFull
-    color: Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.94)
-    border.width: 1
-    border.color: Nexa.Theme.outlineVariant
+    radius: NexaUI.NexaTokens.radiusPill
+    color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.surfaceContainer, 0.94)
+    border.width: NexaUI.NexaTokens.borderThin
+    border.color: NexaUI.NexaColors.outlineVariant
     implicitWidth: capsuleRow.implicitWidth + 24
 
-    // Smooth visibility & hover physics
+    // Smooth visibility & hover physics via NexaMotion
     opacity: root.wallpaperPath.length > 0 ? 1.0 : 0.0
     scale: root.wallpaperPath.length > 0 ? 1.0 : 0.95
 
     Behavior on opacity {
-        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+        NumberAnimation { duration: NexaUI.NexaMotion.durationFast; easing.type: NexaUI.NexaMotion.decelerateEasing }
     }
     Behavior on scale {
-        NumberAnimation { duration: 200; easing.type: Easing.OutBack; easing.overshoot: 1.15 }
+        NumberAnimation { duration: NexaUI.NexaMotion.durationFast; easing.type: NexaUI.NexaMotion.emphasizedEasing; easing.overshoot: 1.15 }
+    }
+
+    // Specular Chamfer Highlight
+    Rectangle {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 1
+        radius: parent.radius
+        color: Qt.rgba(1, 1, 1, 0.12 * NexaUI.NexaOptics.specularIntensity)
+        visible: NexaUI.NexaOptics.specularHighlight
     }
 
     // ---------------------------------------------------------
@@ -98,18 +109,18 @@ Rectangle {
 
             Text {
                 text: "󰋩"
-                color: Nexa.Theme.primary
-                font.family: Nexa.Theme.iconFontFamily
+                color: NexaUI.NexaColors.primary
+                font.family: NexaUI.NexaTypography.familyIcon
                 font.pixelSize: 15
                 anchors.verticalCenter: parent.verticalCenter
             }
 
             Text {
                 text: root.wallpaperTitle.length > 0 ? root.wallpaperTitle : "Wallpaper"
-                color: Nexa.Theme.text
-                font.family: Nexa.Theme.fontFamily
-                font.pixelSize: Nexa.Theme.fontSizeSm
-                font.weight: Font.DemiBold
+                color: NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: NexaUI.NexaTypography.sizeSm
+                font.weight: NexaUI.NexaTypography.weightSemiBold
                 anchors.verticalCenter: parent.verticalCenter
             }
 
@@ -117,8 +128,8 @@ Rectangle {
             Rectangle {
                 visible: root.hasInfo && (root.currentInfo.format.length > 0 || root.currentInfo.size.length > 0)
                 height: 20
-                radius: Nexa.Theme.radiusFull
-                color: Nexa.Theme.surfaceContainerHigh
+                radius: NexaUI.NexaTokens.radiusPill
+                color: NexaUI.NexaColors.surfaceContainerHigh
                 implicitWidth: metaText.implicitWidth + 12
                 anchors.verticalCenter: parent.verticalCenter
 
@@ -135,10 +146,10 @@ Rectangle {
                         if (root.currentInfo.size) parts.push(root.currentInfo.size.replace(/\s+/g, ""))
                         return parts.join(" • ")
                     }
-                    color: Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.monoFont
+                    color: NexaUI.NexaColors.mutedText
+                    font.family: NexaUI.NexaTypography.familyMono
                     font.pixelSize: 9
-                    font.weight: Font.Medium
+                    font.weight: NexaUI.NexaTypography.weightMedium
                 }
             }
         }
@@ -147,7 +158,7 @@ Rectangle {
         Rectangle {
             width: 1
             height: 16
-            color: Nexa.Theme.outlineVariant
+            color: NexaUI.NexaColors.outlineVariant
             Layout.alignment: Qt.AlignVCenter
         }
 
@@ -176,28 +187,28 @@ Rectangle {
                         return "#------"
                     }
 
-                    readonly property color colorVal: hexVal !== "#------" ? hexVal : Nexa.Theme.surfaceContainerHighest
+                    readonly property color colorVal: hexVal !== "#------" ? hexVal : NexaUI.NexaColors.surfaceContainerHighest
 
                     readonly property bool isCopied: root.copiedNotification === hexVal
 
                     height: 24
-                    radius: Nexa.Theme.radiusFull
+                    radius: NexaUI.NexaTokens.radiusPill
                     color: isCopied
-                        ? Nexa.Theme.primaryContainer
-                        : (swatchMouse.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerLow)
+                        ? NexaUI.NexaColors.primaryContainer
+                        : (swatchMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerLow)
                     border.width: 1
                     border.color: isCopied
-                        ? Nexa.Theme.primary
-                        : (swatchMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.outlineVariant)
+                        ? NexaUI.NexaColors.primary
+                        : (swatchMouse.containsMouse ? NexaUI.NexaColors.primary : NexaUI.NexaColors.outlineVariant)
                     implicitWidth: swatchRow.implicitWidth + 10
                     anchors.verticalCenter: parent.verticalCenter
 
                     scale: swatchMouse.containsMouse ? 1.05 : 1.0
                     Behavior on scale {
-                        NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+                        NumberAnimation { duration: NexaUI.NexaMotion.durationInstant; easing.type: Easing.OutQuad }
                     }
                     Behavior on color {
-                        ColorAnimation { duration: 150 }
+                        ColorAnimation { duration: NexaUI.NexaMotion.durationInstant }
                     }
 
                     Row {
@@ -219,20 +230,20 @@ Rectangle {
                         // Role Label
                         Text {
                             text: swatchPill.isCopied ? "COPIED!" : swatchPill.modelData.label
-                            color: swatchPill.isCopied ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                            font.family: Nexa.Theme.monoFont
+                            color: swatchPill.isCopied ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                            font.family: NexaUI.NexaTypography.familyMono
                             font.pixelSize: 8
-                            font.weight: Font.Bold
+                            font.weight: NexaUI.NexaTypography.weightBold
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
                         // Hex Code
                         Text {
                             text: swatchPill.hexVal
-                            color: swatchMouse.containsMouse || swatchPill.isCopied ? Nexa.Theme.primary : Nexa.Theme.text
-                            font.family: Nexa.Theme.monoFont
+                            color: swatchMouse.containsMouse || swatchPill.isCopied ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                            font.family: NexaUI.NexaTypography.familyMono
                             font.pixelSize: 9
-                            font.weight: Font.DemiBold
+                            font.weight: NexaUI.NexaTypography.weightSemiBold
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
@@ -255,4 +266,3 @@ Rectangle {
         }
     }
 }
-

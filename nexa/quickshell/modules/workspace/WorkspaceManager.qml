@@ -6,8 +6,7 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import Quickshell.Wayland
 
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 
 PanelWindow {
@@ -52,7 +51,7 @@ PanelWindow {
     property real overviewScale: 0.18
 
     property real workspaceGap:
-        Nexa.Theme.spacingMd
+        NexaUI.NexaTokens.spacingMd
 
     property int workspaceColumns: 5
     property int workspaceRows: 2
@@ -115,12 +114,27 @@ PanelWindow {
     property var workspaceState: null
 
 
-    readonly property var workspaces:
-        workspaceState
-        && workspaceState.workspaces
-        ? workspaceState.workspaces
-        : []
+    function defaultWorkspaces() {
+        const list = []
+        const focusedId = (typeof Hyprland !== "undefined" && Hyprland.focusedWorkspace) ? Hyprland.focusedWorkspace.id : 1
+        for (let i = 1; i <= 10; ++i) {
+            list.push({
+                id: i,
+                name: i.toString(),
+                active: (i === focusedId),
+                monitor: "",
+                windowCount: 0,
+                hasWindows: false
+            })
+        }
+        return list
+    }
 
+    readonly property var workspaces: {
+        if (workspaceState && workspaceState.workspaces && workspaceState.workspaces.length > 0)
+            return workspaceState.workspaces
+        return defaultWorkspaces()
+    }
 
     readonly property var specialWorkspaces:
         workspaceState
@@ -128,12 +142,11 @@ PanelWindow {
         ? workspaceState.specialWorkspaces
         : []
 
-
-    readonly property var monitors:
-        workspaceState
-        && workspaceState.monitors
-        ? workspaceState.monitors
-        : []
+    readonly property var monitors: {
+        if (workspaceState && workspaceState.monitors && workspaceState.monitors.length > 0)
+            return workspaceState.monitors
+        return [{ id: 0, name: "default", width: 1920, height: 1080 }]
+    }
 
 
     // ============================================================
@@ -578,11 +591,11 @@ PanelWindow {
 
         return (
             specialSection.x
-            + Nexa.Theme.spacingMd
+            + NexaUI.NexaTokens.spacingMd
             + index
               * (
                   manager.specialTileWidth()
-                  + Nexa.Theme.spacingMd
+                  + NexaUI.NexaTokens.spacingMd
               )
             - regularGrid.x
         )
@@ -595,7 +608,7 @@ PanelWindow {
             specialSection.y
             + specialTitle.y
             + specialTitle.height
-            + Nexa.Theme.spacingSm
+            + NexaUI.NexaTokens.spacingSm
             - regularGrid.y
         )
     }
@@ -613,8 +626,8 @@ PanelWindow {
             1,
             specialSection.height
             - specialTitle.height
-            - Nexa.Theme.spacingMd
-            - Nexa.Theme.spacingSm * 2
+            - NexaUI.NexaTokens.spacingMd
+            - NexaUI.NexaTokens.spacingSm * 2
         )
     }
 
@@ -916,33 +929,17 @@ PanelWindow {
 
 
     function toggleSpecial(name) {
-
-        if (
-            !name
-            || name === ""
-        ) {
+        if (!name || name === "") {
             return
         }
 
         const clean = cleanSpecialName(name)
-        const idx = specialWorkspaceIndex(clean)
-        const winCount = (idx >= 0 && specialWorkspaces[idx] && specialWorkspaces[idx].windows)
-            ? specialWorkspaces[idx].windows.length : 0
 
-        if (clean === "terminal" && winCount === 0) {
+        if (clean === "terminal" || clean === "files") {
             runAction([
-                "command",
-                "run",
-                "hyprctl dispatch 'hl.exec_cmd(\"[workspace special:terminal] kitty\")' && hyprctl dispatch 'hl.dsp.workspace.toggle_special(\"terminal\")'"
-            ])
-            return
-        }
-
-        if (clean === "files" && winCount === 0) {
-            runAction([
-                "command",
-                "run",
-                "hyprctl dispatch 'hl.exec_cmd(\"[workspace special:files] dolphin\")' && hyprctl dispatch 'hl.dsp.workspace.toggle_special(\"files\")'"
+                "hypr",
+                "scratchpad",
+                String(clean)
             ])
             return
         }
@@ -1107,11 +1104,13 @@ PanelWindow {
 
     Repeater {
         model: 10
-        Shortcut {
-            sequence: (index + 1) % 10 === 0 ? "0" : String(index + 1)
-            enabled: manager.visible && !manager.dragActive
-            onActivated: {
-                manager.switchWorkspace(index + 1)
+        Item {
+            Shortcut {
+                sequence: (index + 1) % 10 === 0 ? "0" : String(index + 1)
+                enabled: manager.visible && !manager.dragActive
+                onActivated: {
+                    manager.switchWorkspace(index + 1)
+                }
             }
         }
     }
@@ -1126,7 +1125,7 @@ PanelWindow {
             parent
 
         color:
-            Nexa.Theme.scrimHeavy
+            NexaUI.NexaColors.scrim
 
 
         MouseArea {
@@ -1152,13 +1151,13 @@ PanelWindow {
 
         width:
             regularContentWidth
-            + Nexa.Theme.spacingLg * 2
+            + NexaUI.NexaTokens.spacingLg * 2
 
         height:
           titleArea.height
           + regularContentHeight
           + specialSection.height
-          + Nexa.Theme.spacingLg * 4
+          + NexaUI.NexaTokens.spacingLg * 4
 
         anchors {
             horizontalCenter:
@@ -1173,16 +1172,16 @@ PanelWindow {
 
 
         radius:
-            Nexa.Theme.radiusXl
+            NexaUI.NexaTokens.radiusXl
 
         color:
-            Nexa.Theme.panelBackground
+            NexaUI.NexaColors.surface
 
         border.width:
-            Nexa.Theme.borderThin
+            NexaUI.NexaTokens.borderThin
 
         border.color:
-            Nexa.Theme.border
+            NexaUI.NexaColors.border
 
         opacity:
             manager.managerVisible
@@ -1198,14 +1197,18 @@ PanelWindow {
         Behavior on opacity {
             NumberAnimation {
                 duration:
-                    Nexa.Theme.motionPopup
+                    NexaUI.NexaMotion.durationNormal
             }
         }
 
 
         Behavior on scale {
-            enabled: !Nexa.Theme.reducedMotion
-            NexaUI.NexaSpring { section: "workspace"; customStiffness: 5.5; customDamping: 0.25 }
+            enabled: NexaUI.NexaMotion.enabled
+            SpringAnimation {
+                spring: NexaUI.NexaMotion.springStiffness
+                damping: NexaUI.NexaMotion.springDamping
+                epsilon: 0.002
+            }
         }
 
         NexaUI.NexaShaderSubstrate {
@@ -1244,21 +1247,21 @@ PanelWindow {
                         parent.verticalCenter
 
                     leftMargin:
-                        Nexa.Theme.spacingLg
+                        NexaUI.NexaTokens.spacingLg
                 }
 
                 text:
                     "Workspaces"
 
                 color:
-                    Nexa.Theme.text
+                    NexaUI.NexaColors.text
 
                 font {
                     family:
-                        Nexa.Theme.fontFamily
+                        NexaUI.NexaTypography.familyBody
 
                     pixelSize:
-                        Nexa.Theme.fontSizeXl
+                        NexaUI.NexaTypography.sizeXl
 
                     bold:
                         true
@@ -1274,7 +1277,7 @@ PanelWindow {
                         parent.verticalCenter
 
                     rightMargin:
-                        Nexa.Theme.spacingLg
+                        NexaUI.NexaTokens.spacingLg
                 }
 
                 text:
@@ -1284,15 +1287,15 @@ PanelWindow {
 
                 color:
                     manager.dragActive
-                    ? Nexa.Theme.primary
-                    : Nexa.Theme.mutedText
+                    ? NexaUI.NexaColors.primary
+                    : NexaUI.NexaColors.mutedText
 
                 font {
                     family:
-                        Nexa.Theme.fontFamily
+                        NexaUI.NexaTypography.familyBody
 
                     pixelSize:
-                        Nexa.Theme.fontSizeSm
+                        NexaUI.NexaTypography.sizeSm
                 }
             }
         }
@@ -1322,7 +1325,7 @@ PanelWindow {
                   parent.horizontalCenter
 
               topMargin:
-                  Nexa.Theme.spacingMd
+                  NexaUI.NexaTokens.spacingMd
           }
 
 
@@ -1385,7 +1388,7 @@ PanelWindow {
                       Behavior on scale {
                           NumberAnimation {
                               duration:
-                                  Nexa.Theme.motionInteraction
+                                  NexaUI.NexaMotion.durationFast
                           }
                       }
 
@@ -1400,10 +1403,10 @@ PanelWindow {
 
                       border.color:
                           workspaceDrop.containsDrag
-                          ? Nexa.Theme.primary
+                          ? NexaUI.NexaColors.primary
                           : modelData.active
-                            ? Nexa.Theme.primary
-                            : Nexa.Theme.border
+                            ? NexaUI.NexaColors.primary
+                            : NexaUI.NexaColors.border
 
 
                       Text {
@@ -1415,7 +1418,7 @@ PanelWindow {
                                   parent.top
 
                               margins:
-                                  Nexa.Theme.spacingSm
+                                  NexaUI.NexaTokens.spacingSm
                           }
 
                           text:
@@ -1423,15 +1426,15 @@ PanelWindow {
 
                           color:
                               modelData.active
-                              ? Nexa.Theme.primary
-                              : Nexa.Theme.mutedText
+                              ? NexaUI.NexaColors.primary
+                              : NexaUI.NexaColors.mutedText
 
                           font {
                               family:
-                                  Nexa.Theme.fontFamily
+                                  NexaUI.NexaTypography.familyBody
 
                               pixelSize:
-                                  Nexa.Theme.fontSizeMd
+                                  NexaUI.NexaTypography.sizeMd
 
                               bold:
                                   true
@@ -1451,14 +1454,14 @@ PanelWindow {
                               workspaceTile.workspaceId
 
                           color:
-                              Nexa.Theme.text
+                              NexaUI.NexaColors.text
 
                           opacity:
                               0.08
 
                           font {
                               family:
-                                  Nexa.Theme.fontFamily
+                                  NexaUI.NexaTypography.familyBody
 
                               pixelSize:
                                   48
@@ -1540,34 +1543,34 @@ PanelWindow {
                 left: parent.left
                 right: parent.right
 
-                topMargin: Nexa.Theme.spacingLg
-                leftMargin: Nexa.Theme.spacingLg
-                rightMargin: Nexa.Theme.spacingLg
+                topMargin: NexaUI.NexaTokens.spacingLg
+                leftMargin: NexaUI.NexaTokens.spacingLg
+                rightMargin: NexaUI.NexaTokens.spacingLg
             }
 
 
             height:
               specialTitle.implicitHeight
               + manager.workspacePreviewHeight
-              + Nexa.Theme.spacingSm
-              + Nexa.Theme.spacingMd * 2
+              + NexaUI.NexaTokens.spacingSm
+              + NexaUI.NexaTokens.spacingMd * 2
 
             visible:
                 true
 
             radius:
-                Nexa.Theme.radiusLg
+                NexaUI.NexaTokens.radiusLg
 
 
             color:
-                Nexa.Theme.cardBackgroundSubtle
+                NexaUI.NexaColors.surfaceContainerLow
 
 
             border.width:
-                Nexa.Theme.borderThin
+                NexaUI.NexaTokens.borderThin
 
             border.color:
-                Nexa.Theme.border
+                NexaUI.NexaColors.border
 
 
             Text {
@@ -1582,7 +1585,7 @@ PanelWindow {
                         parent.top
 
                     margins:
-                        Nexa.Theme.spacingMd
+                        NexaUI.NexaTokens.spacingMd
                 }
 
 
@@ -1591,15 +1594,15 @@ PanelWindow {
 
 
                 color:
-                    Nexa.Theme.mutedText
+                    NexaUI.NexaColors.mutedText
 
 
                 font {
                     family:
-                        Nexa.Theme.fontFamily
+                        NexaUI.NexaTypography.familyBody
 
                     pixelSize:
-                        Nexa.Theme.fontSizeSm
+                        NexaUI.NexaTypography.sizeSm
 
                     bold:
                         true
@@ -1622,21 +1625,21 @@ PanelWindow {
                         parent.bottom
 
                     leftMargin:
-                        Nexa.Theme.spacingMd
+                        NexaUI.NexaTokens.spacingMd
 
                     rightMargin:
-                        Nexa.Theme.spacingMd
+                        NexaUI.NexaTokens.spacingMd
 
                     topMargin:
-                        Nexa.Theme.spacingSm
+                        NexaUI.NexaTokens.spacingSm
 
                     bottomMargin:
-                        Nexa.Theme.spacingMd
+                        NexaUI.NexaTokens.spacingMd
                 }
 
 
                 spacing:
-                    Nexa.Theme.spacingMd
+                    NexaUI.NexaTokens.spacingMd
 
                 Repeater {
                     model:
@@ -1684,18 +1687,18 @@ PanelWindow {
 
                             border.width:
                                 specialDrop.containsDrag
-                                ? Nexa.Theme.borderStrongWidth
+                                ? NexaUI.NexaTokens.borderThick
                                 : modelData.active
                                   ? 2
-                                  : Nexa.Theme.borderThin
+                                  : NexaUI.NexaTokens.borderThin
 
 
                             border.color:
                                 specialDrop.containsDrag
-                                ? Nexa.Theme.primary
+                                ? NexaUI.NexaColors.primary
                                 : modelData.active
-                                  ? Nexa.Theme.primary
-                                  : Nexa.Theme.border
+                                  ? NexaUI.NexaColors.primary
+                                  : NexaUI.NexaColors.border
 
 
                             // Header with Icon, Title, and Window Count Badge
@@ -1704,22 +1707,22 @@ PanelWindow {
                                     left: parent.left
                                     top: parent.top
                                     right: parent.right
-                                    margins: Nexa.Theme.spacingSm
+                                    margins: NexaUI.NexaTokens.spacingSm
                                 }
-                                spacing: Nexa.Theme.spacingXs
+                                spacing: NexaUI.NexaTokens.spacingXs
 
                                 Text {
                                     text: specialTile.scratchIcon
-                                    color: modelData.active ? Nexa.Theme.primary : Nexa.Theme.text
-                                    font.pixelSize: Nexa.Theme.fontSizeSm
+                                    color: modelData.active ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                                    font.pixelSize: NexaUI.NexaTypography.sizeSm
                                 }
 
                                 Text {
                                     text: specialTile.friendlyTitle
-                                    color: Nexa.Theme.text
+                                    color: NexaUI.NexaColors.text
                                     font {
-                                        family: Nexa.Theme.fontFamily
-                                        pixelSize: Nexa.Theme.fontSizeSm
+                                        family: NexaUI.NexaTypography.familyBody
+                                        pixelSize: NexaUI.NexaTypography.sizeSm
                                         bold: true
                                     }
                                     Layout.fillWidth: true
@@ -1731,13 +1734,13 @@ PanelWindow {
                                     implicitWidth: countText.implicitWidth + 8
                                     implicitHeight: 16
                                     radius: 8
-                                    color: modelData.active ? Nexa.Theme.primary : Qt.rgba(255, 255, 255, 0.12)
+                                    color: modelData.active ? NexaUI.NexaColors.primary : Qt.rgba(255, 255, 255, 0.12)
 
                                     Text {
                                         id: countText
                                         anchors.centerIn: parent
                                         text: String(specialTile.windowCount)
-                                        color: modelData.active ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        color: modelData.active ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                         font {
                                             pixelSize: 10
                                             bold: true
@@ -1756,7 +1759,7 @@ PanelWindow {
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: specialTile.scratchIcon
-                                    color: Nexa.Theme.mutedText
+                                    color: NexaUI.NexaColors.mutedText
                                     font.pixelSize: 22
                                     opacity: 0.35
                                 }
@@ -1764,10 +1767,10 @@ PanelWindow {
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: "Click to launch"
-                                    color: Nexa.Theme.mutedText
+                                    color: NexaUI.NexaColors.mutedText
                                     font {
-                                        family: Nexa.Theme.fontFamily
-                                        pixelSize: Nexa.Theme.fontSizeXs
+                                        family: NexaUI.NexaTypography.familyBody
+                                        pixelSize: NexaUI.NexaTypography.sizeXs
                                     }
                                     opacity: 0.55
                                 }

@@ -3,8 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import "../../theme" as Nexa
-import "../../../theme/components" as NexaUI
+import "../../../NewNexaUI" as NexaUI
 
 Item {
     id: root
@@ -58,8 +57,8 @@ Item {
     property string pendingActionDescription: "Display settings changed"
 
     function rad(n) {
-        if (Nexa.Theme.nexaRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
+        if (NexaUI.NexaTokens.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (NexaUI.NexaTokens.nexaRounding / 10.0)));
     }
 
     function showToast(msg) {
@@ -327,18 +326,18 @@ Item {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "󰍹"
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 18
-                            color: Nexa.Theme.primary
+                            color: NexaUI.NexaColors.primary
                         }
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Displays"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 16
                             font.weight: Font.Bold
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
 
                         Rectangle {
@@ -346,18 +345,18 @@ Item {
                             width: countLabel.implicitWidth + 14
                             height: 22
                             radius: root.rad(11)
-                            color: Nexa.Theme.surfaceContainerHighest
-                            border.width: Nexa.Theme.borderThin
-                            border.color: Nexa.Theme.borderSubtle
+                            color: NexaUI.NexaColors.surfaceContainerHighest
+                            border.width: NexaUI.NexaTokens.borderThin
+                            border.color: NexaUI.NexaColors.borderSubtle
 
                             Text {
                                 id: countLabel
                                 anchors.centerIn: parent
                                 text: root.connectedCount + (root.connectedCount === 1 ? " display connected" : " displays connected")
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 11
                                 font.weight: Font.Medium
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -369,14 +368,14 @@ Item {
                             height: 22
                             radius: root.rad(11)
                             color: Qt.rgba(1, 0.6, 0.1, 0.18)
-                            border.width: Nexa.Theme.borderThin
+                            border.width: NexaUI.NexaTokens.borderThin
                             border.color: Qt.rgba(1, 0.6, 0.1, 0.4)
 
                             Text {
                                 id: clamText
                                 anchors.centerIn: parent
                                 text: "󰌢 Lid Closed (Clamshell)"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 11
                                 font.weight: Font.DemiBold
                                 color: "#ff9800"
@@ -386,9 +385,9 @@ Item {
 
                     Text {
                         text: "Manage arrangement, projection mode, resolution, orientation, and scaling"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 12
-                        color: Nexa.Theme.mutedText
+                        color: NexaUI.NexaColors.mutedText
                     }
                 }
 
@@ -402,9 +401,9 @@ Item {
                         width: refRow.implicitWidth + 16
                         height: 32
                         radius: root.rad(8)
-                        color: refHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh
-                        border.width: Nexa.Theme.borderThin
-                        border.color: Nexa.Theme.border
+                        color: refHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: NexaUI.NexaColors.border
 
                         Row {
                             id: refRow
@@ -414,18 +413,18 @@ Item {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "󰑐"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 13
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "Refresh"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 12
                                 font.weight: Font.Medium
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                         }
 
@@ -444,7 +443,7 @@ Item {
                         height: 32
                         radius: root.rad(8)
                         color: emHover.containsMouse ? Qt.rgba(0.9, 0.2, 0.2, 0.25) : Qt.rgba(0.9, 0.2, 0.2, 0.12)
-                        border.width: Nexa.Theme.borderThin
+                        border.width: NexaUI.NexaTokens.borderThin
                         border.color: Qt.rgba(0.9, 0.2, 0.2, 0.35)
 
                         Row {
@@ -455,7 +454,7 @@ Item {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "󰀦"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 13
                                 color: "#ff5252"
                             }
@@ -463,7 +462,7 @@ Item {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "Emergency Reset"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 12
                                 font.weight: Font.Medium
                                 color: "#ff5252"
@@ -488,9 +487,9 @@ Item {
                 width: parent.width
                 height: 175
                 radius: root.rad(12)
-                color: Nexa.Theme.surfaceContainerLowest || Nexa.Theme.cardBackground
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainerLowest || NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 Item {
                     anchors.fill: parent
@@ -503,19 +502,19 @@ Item {
 
                         Text {
                             text: "Display Arrangement"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 12
                             font.weight: Font.SemiBold
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
 
                         Item { Layout.fillWidth: true }
 
                         Text {
                             text: "Click a screen below to configure"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 11
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                         }
                     }
 
@@ -541,12 +540,12 @@ Item {
                                 height: 96
                                 radius: root.rad(10)
                                 color: isSelected
-                                    ? Nexa.Theme.surfaceContainerHighest
-                                    : (screenHover.containsMouse ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainer)
-                                border.width: isSelected ? Math.max(2, Nexa.Theme.borderThin) : Nexa.Theme.borderThin
+                                    ? NexaUI.NexaColors.surfaceContainerHighest
+                                    : (screenHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer)
+                                border.width: isSelected ? Math.max(2, NexaUI.NexaTokens.borderThin) : NexaUI.NexaTokens.borderThin
                                 border.color: isSelected
-                                    ? Nexa.Theme.primary
-                                    : (isPrimary ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.45) : Nexa.Theme.border)
+                                    ? NexaUI.NexaColors.primary
+                                    : (isPrimary ? Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.45) : NexaUI.NexaColors.border)
 
                                 Column {
                                     anchors.centerIn: parent
@@ -560,18 +559,18 @@ Item {
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: root.getMonitorIcon(disp)
-                                            font.family: Nexa.Theme.iconFontFamily
+                                            font.family: NexaUI.NexaTypography.familyIcon
                                             font.pixelSize: 16
-                                            color: isEnabled ? Nexa.Theme.primary : Nexa.Theme.mutedText
+                                            color: isEnabled ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
                                         }
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: disp.name
-                                            font.family: Nexa.Theme.fontFamily
+                                            font.family: NexaUI.NexaTypography.familyBody
                                             font.pixelSize: 12
                                             font.weight: Font.Bold
-                                            color: isEnabled ? Nexa.Theme.text : Nexa.Theme.mutedText
+                                            color: isEnabled ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText
                                         }
 
                                         Text {
@@ -579,16 +578,16 @@ Item {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: "★"
                                             font.pixelSize: 10
-                                            color: Nexa.Theme.primary
+                                            color: NexaUI.NexaColors.primary
                                         }
                                     }
 
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: dispW + "×" + dispH + " (" + root.getDispRefresh(disp) + "Hz)"
-                                        font.family: Nexa.Theme.fontFamily
+                                        font.family: NexaUI.NexaTypography.familyBody
                                         font.pixelSize: 10
-                                        color: Nexa.Theme.mutedText
+                                        color: NexaUI.NexaColors.mutedText
                                     }
 
                                     Rectangle {
@@ -596,20 +595,20 @@ Item {
                                         width: statusTxt.implicitWidth + 8
                                         height: 16
                                         radius: root.rad(4)
-                                        border.width: Nexa.Theme.borderThin
-                                        border.color: Nexa.Theme.borderSubtle
+                                        border.width: NexaUI.NexaTokens.borderThin
+                                        border.color: NexaUI.NexaColors.borderSubtle
                                         color: !isEnabled
                                             ? Qt.rgba(0.5, 0.5, 0.5, 0.15)
-                                            : (isPrimary ? Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.15) : Nexa.Theme.surfaceContainerHighest)
+                                            : (isPrimary ? Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.15) : NexaUI.NexaColors.surfaceContainerHighest)
 
                                         Text {
                                             id: statusTxt
                                             anchors.centerIn: parent
                                             text: !isEnabled ? "Disabled" : (isPrimary ? "Main Screen" : "Active")
-                                            font.family: Nexa.Theme.fontFamily
+                                            font.family: NexaUI.NexaTypography.familyBody
                                             font.pixelSize: 9
                                             font.weight: Font.SemiBold
-                                            color: !isEnabled ? Nexa.Theme.mutedText : (isPrimary ? Nexa.Theme.primary : Nexa.Theme.text)
+                                            color: !isEnabled ? NexaUI.NexaColors.mutedText : (isPrimary ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text)
                                         }
                                     }
                                 }
@@ -638,10 +637,10 @@ Item {
                     width: parent.width
                     Text {
                         text: "Projection Mode"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
-                        color: Nexa.Theme.text
+                        color: NexaUI.NexaColors.text
                     }
 
                     Item { Layout.fillWidth: true }
@@ -649,9 +648,9 @@ Item {
                     Text {
                         visible: root.externalCount === 0
                         text: "Connect an external display to mirror or extend"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 11
-                        color: Nexa.Theme.mutedText
+                        color: NexaUI.NexaColors.mutedText
                     }
                 }
 
@@ -681,10 +680,10 @@ Item {
                             radius: root.rad(8)
                             opacity: isAvailable ? 1.0 : 0.45
                             color: isCurrent
-                                ? Nexa.Theme.primaryContainer
-                                : (projHover.containsMouse && isAvailable ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.cardBackground)
-                            border.width: isCurrent ? Math.max(1.5, Nexa.Theme.borderThin) : Nexa.Theme.borderThin
-                            border.color: isCurrent ? Nexa.Theme.primary : Nexa.Theme.border
+                                ? NexaUI.NexaColors.primaryContainer
+                                : (projHover.containsMouse && isAvailable ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer)
+                            border.width: isCurrent ? Math.max(1.5, NexaUI.NexaTokens.borderThin) : NexaUI.NexaTokens.borderThin
+                            border.color: isCurrent ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                             RowLayout {
                                 anchors.centerIn: parent
@@ -692,17 +691,17 @@ Item {
 
                                 Text {
                                     text: item.icon
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 16
-                                    color: isCurrent ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                    color: isCurrent ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                 }
 
                                 Text {
                                     text: item.label
-                                    font.family: Nexa.Theme.fontFamily
+                                    font.family: NexaUI.NexaTypography.familyBody
                                     font.pixelSize: 12
                                     font.weight: isCurrent ? Font.Bold : Font.Medium
-                                    color: isCurrent ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                    color: isCurrent ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                 }
                             }
 
@@ -726,10 +725,10 @@ Item {
 
                     Text {
                         text: "Extend placement:"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 11
                         font.weight: Font.Medium
-                        color: Nexa.Theme.mutedText
+                        color: NexaUI.NexaColors.mutedText
                     }
 
                     Repeater {
@@ -748,18 +747,18 @@ Item {
                             width: dirTxt.implicitWidth + 16
                             height: 26
                             radius: root.rad(6)
-                            color: isSelected ? Nexa.Theme.primary : (dirHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                            border.width: Nexa.Theme.borderThin
-                            border.color: isSelected ? Nexa.Theme.primary : Nexa.Theme.border
+                            color: isSelected ? NexaUI.NexaColors.primary : (dirHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                            border.width: NexaUI.NexaTokens.borderThin
+                            border.color: isSelected ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                             Text {
                                 id: dirTxt
                                 anchors.centerIn: parent
                                 text: item.label
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 11
                                 font.weight: isSelected ? Font.Bold : Font.Normal
-                                color: isSelected ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                color: isSelected ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                             }
 
                             MouseArea {
@@ -783,9 +782,9 @@ Item {
                 width: parent.width
                 height: monitorSettingsCol.implicitHeight + 32
                 radius: root.rad(12)
-                color: Nexa.Theme.cardBackground
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 Column {
                     id: monitorSettingsCol
@@ -804,9 +803,9 @@ Item {
 
                         Text {
                             text: root.getMonitorIcon(root.selectedDisplay)
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 22
-                            color: Nexa.Theme.primary
+                            color: NexaUI.NexaColors.primary
                         }
 
                         Column {
@@ -818,10 +817,10 @@ Item {
 
                                 Text {
                                     text: root.getDispTitle(root.selectedDisplay)
-                                    font.family: Nexa.Theme.fontFamily
+                                    font.family: NexaUI.NexaTypography.familyBody
                                     font.pixelSize: 14
                                     font.weight: Font.Bold
-                                    color: Nexa.Theme.text
+                                    color: NexaUI.NexaColors.text
                                 }
 
                                 Rectangle {
@@ -829,32 +828,32 @@ Item {
                                     width: connKindText.implicitWidth + 8
                                     height: 18
                                     radius: root.rad(4)
-                                    color: Nexa.Theme.surfaceContainerHighest
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: Nexa.Theme.borderSubtle
+                                    color: NexaUI.NexaColors.surfaceContainerHighest
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: NexaUI.NexaColors.borderSubtle
 
                                     Text {
                                         id: connKindText
                                         anchors.centerIn: parent
                                         text: root.selectedDisplay ? (root.isDispInternal(root.selectedDisplay) ? "INTERNAL" : "EXTERNAL") : ""
-                                        font.family: Nexa.Theme.fontFamily
+                                        font.family: NexaUI.NexaTypography.familyBody
                                         font.pixelSize: 10
                                         font.weight: Font.SemiBold
-                                        color: Nexa.Theme.mutedText
+                                        color: NexaUI.NexaColors.mutedText
                                     }
                                 }
                             }
 
                             Text {
                                 text: root.selectedDisplay ? ("Port: " + root.selectedDisplay.name + (root.isDispInternal(root.selectedDisplay) ? " (Built-in Display)" : " (External Display)")) : ""
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
                     }
 
-                    Rectangle { width: parent.width; height: 1; color: Nexa.Theme.border }
+                    Rectangle { width: parent.width; height: 1; color: NexaUI.NexaColors.border }
 
                     // Display Scaling
                     Column {
@@ -865,20 +864,20 @@ Item {
                             width: parent.width
                             Text {
                                 text: "Display Scale"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 13
                                 font.weight: Font.Medium
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             Item { Layout.fillWidth: true }
 
                             Text {
                                 text: root.selectedDisplay ? Math.round((root.selectedDisplay.scale || 1.0) * 100) + "%" : "100%"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
-                                color: Nexa.Theme.primary
+                                color: NexaUI.NexaColors.primary
                             }
                         }
 
@@ -897,18 +896,18 @@ Item {
                                     height: 32
                                     radius: root.rad(6)
                                     color: isCurrentScale
-                                        ? Nexa.Theme.primary
-                                        : (sHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: isCurrentScale ? Nexa.Theme.primary : Nexa.Theme.border
+                                        ? NexaUI.NexaColors.primary
+                                        : (sHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: isCurrentScale ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: Math.round(sVal * 100) + "%"
-                                        font.family: Nexa.Theme.fontFamily
+                                        font.family: NexaUI.NexaTypography.familyBody
                                         font.pixelSize: 12
                                         font.weight: isCurrentScale ? Font.Bold : Font.Normal
-                                        color: isCurrentScale ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                        color: isCurrentScale ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                     }
 
                                     MouseArea {
@@ -923,7 +922,7 @@ Item {
                         }
                     }
 
-                    Rectangle { width: parent.width; height: 1; color: Nexa.Theme.border }
+                    Rectangle { width: parent.width; height: 1; color: NexaUI.NexaColors.border }
 
                     // Display Orientation / Rotation
                     Column {
@@ -932,10 +931,10 @@ Item {
 
                         Text {
                             text: "Orientation"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 13
                             font.weight: Font.Medium
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
 
                         Row {
@@ -958,10 +957,10 @@ Item {
                                     height: 32
                                     radius: root.rad(6)
                                     color: isCurrentRot
-                                        ? Nexa.Theme.primary
-                                        : (rHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: isCurrentRot ? Nexa.Theme.primary : Nexa.Theme.border
+                                        ? NexaUI.NexaColors.primary
+                                        : (rHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: isCurrentRot ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                                     Row {
                                         id: rotRow
@@ -971,18 +970,18 @@ Item {
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: item.icon
-                                            font.family: Nexa.Theme.iconFontFamily
+                                            font.family: NexaUI.NexaTypography.familyIcon
                                             font.pixelSize: 13
-                                            color: isCurrentRot ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                            color: isCurrentRot ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                         }
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: item.label
-                                            font.family: Nexa.Theme.fontFamily
+                                            font.family: NexaUI.NexaTypography.familyBody
                                             font.pixelSize: 12
                                             font.weight: isCurrentRot ? Font.Bold : Font.Normal
-                                            color: isCurrentRot ? Nexa.Theme.onPrimary : Nexa.Theme.text
+                                            color: isCurrentRot ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
                                         }
                                     }
 
@@ -998,7 +997,7 @@ Item {
                         }
                     }
 
-                    Rectangle { width: parent.width; height: 1; color: Nexa.Theme.border }
+                    Rectangle { width: parent.width; height: 1; color: NexaUI.NexaColors.border }
 
                     // Available Resolutions & Refresh Rates
                     Column {
@@ -1009,20 +1008,20 @@ Item {
                             width: parent.width
                             Text {
                                 text: "Resolution & Refresh Rate"
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 13
                                 font.weight: Font.Medium
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             Item { Layout.fillWidth: true }
 
                             Text {
                                 text: root.selectedDisplay ? (root.getDispWidth(root.selectedDisplay) + "×" + root.getDispHeight(root.selectedDisplay) + " @ " + root.getDispRefresh(root.selectedDisplay) + "Hz") : ""
-                                font.family: Nexa.Theme.fontFamily
+                                font.family: NexaUI.NexaTypography.familyBody
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
-                                color: Nexa.Theme.primary
+                                color: NexaUI.NexaColors.primary
                             }
                         }
 
@@ -1047,19 +1046,19 @@ Item {
                                     height: 30
                                     radius: root.rad(6)
                                     color: isCurrentMode
-                                        ? Nexa.Theme.primaryContainer
-                                        : (resHover.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainerHigh)
-                                    border.width: Nexa.Theme.borderThin
-                                    border.color: isCurrentMode ? Nexa.Theme.primary : Nexa.Theme.border
+                                        ? NexaUI.NexaColors.primaryContainer
+                                        : (resHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: isCurrentMode ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                                     Text {
                                         id: resTxt
                                         anchors.centerIn: parent
                                         text: mStr
-                                        font.family: Nexa.Theme.fontFamily
+                                        font.family: NexaUI.NexaTypography.familyBody
                                         font.pixelSize: 11
                                         font.weight: isCurrentMode ? Font.Bold : Font.Normal
-                                        color: isCurrentMode ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                        color: isCurrentMode ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                     }
 
                                     MouseArea {
@@ -1091,9 +1090,9 @@ Item {
         width: Math.min(parent.width - 32, 460)
         height: 72
         radius: root.rad(14)
-        color: Nexa.Theme.surfaceContainerHighest || Nexa.Theme.cardBackground
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.primary
+        color: NexaUI.NexaColors.surfaceContainerHighest || NexaUI.NexaColors.surfaceContainer
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.primary
         z: 100
 
         Behavior on opacity {
@@ -1107,14 +1106,14 @@ Item {
             anchors.right: parent.right
             height: 3
             radius: root.rad(2)
-            color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.2)
+            color: Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.2)
 
             Rectangle {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: parent.width * (root.revertCountdown / 15.0)
-                color: Nexa.Theme.primary
+                color: NexaUI.NexaColors.primary
 
                 Behavior on width {
                     NumberAnimation { duration: 950; easing.type: Easing.Linear }
@@ -1129,9 +1128,9 @@ Item {
 
             Text {
                 text: "󰀦"
-                font.family: Nexa.Theme.iconFontFamily
+                font.family: NexaUI.NexaTypography.familyIcon
                 font.pixelSize: 22
-                color: Nexa.Theme.primary
+                color: NexaUI.NexaColors.primary
             }
 
             Column {
@@ -1140,17 +1139,17 @@ Item {
 
                 Text {
                     text: "Keep these display settings?"
-                    font.family: Nexa.Theme.fontFamily
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 13
                     font.weight: Font.Bold
-                    color: Nexa.Theme.text
+                    color: NexaUI.NexaColors.text
                 }
 
                 Text {
                     text: "Reverting automatically in " + root.revertCountdown + "s..."
-                    font.family: Nexa.Theme.fontFamily
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 11
-                    color: Nexa.Theme.mutedText
+                    color: NexaUI.NexaColors.mutedText
                 }
             }
 
@@ -1159,18 +1158,18 @@ Item {
                 width: keepTxt.implicitWidth + 20
                 height: 34
                 radius: root.rad(8)
-                color: Nexa.Theme.primary
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.primary
+                color: NexaUI.NexaColors.primary
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.primary
 
                 Text {
                     id: keepTxt
                     anchors.centerIn: parent
                     text: "Keep (" + root.revertCountdown + "s)"
-                    font.family: Nexa.Theme.fontFamily
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 12
                     font.weight: Font.Bold
-                    color: Nexa.Theme.onPrimary
+                    color: NexaUI.NexaColors.onPrimary
                 }
 
                 MouseArea {
@@ -1185,18 +1184,18 @@ Item {
                 width: revTxt.implicitWidth + 20
                 height: 34
                 radius: root.rad(8)
-                color: Nexa.Theme.surfaceContainerHigh
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainerHigh
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 Text {
                     id: revTxt
                     anchors.centerIn: parent
                     text: "Revert"
-                    font.family: Nexa.Theme.fontFamily
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 12
                     font.weight: Font.Medium
-                    color: Nexa.Theme.text
+                    color: NexaUI.NexaColors.text
                 }
 
                 MouseArea {
@@ -1219,9 +1218,9 @@ Item {
         width: toastRow.implicitWidth + 28
         height: 38
         radius: root.rad(19)
-        color: Nexa.Theme.surfaceContainerHighest
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.primary
+        color: NexaUI.NexaColors.surfaceContainerHighest
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.primary
         visible: root.toastVisible
         opacity: root.toastVisible ? 1.0 : 0.0
 
@@ -1237,18 +1236,18 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "󰄬"
-                font.family: Nexa.Theme.iconFontFamily
+                font.family: NexaUI.NexaTypography.familyIcon
                 font.pixelSize: 14
-                color: Nexa.Theme.primary
+                color: NexaUI.NexaColors.primary
             }
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.toastMessage
-                font.family: Nexa.Theme.fontFamily
+                font.family: NexaUI.NexaTypography.familyBody
                 font.pixelSize: 12
                 font.weight: Font.Medium
-                color: Nexa.Theme.text
+                color: NexaUI.NexaColors.text
             }
         }
     }

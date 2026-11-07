@@ -4,9 +4,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../services" as Services
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
-import "../status" as Status
+import "../../NewNexaUI" as NexaUI
 
 
 Item {
@@ -83,7 +81,7 @@ Item {
     // SIZE & INLINE HOVER EXPANSION
     // ============================================================
 
-    readonly property real compactWidth: Nexa.Theme.controlHeightSm
+    readonly property real compactWidth: NexaUI.NexaTokens.controlHeightSm
     readonly property real maxTextWidth: 160
 
     readonly property string infoText: {
@@ -97,17 +95,22 @@ Item {
     readonly property bool isExpanded: mouse.containsMouse || popup.visible
     readonly property real contentLabelWidth: Math.min(maxTextWidth, labelText.implicitWidth)
     readonly property real targetWidth: isExpanded
-        ? (compactWidth + Nexa.Theme.spacingXs + contentLabelWidth + Nexa.Theme.spacingXs)
+        ? (compactWidth + NexaUI.NexaTokens.spacingXs + contentLabelWidth + NexaUI.NexaTokens.spacingXs)
         : compactWidth
 
     implicitWidth: targetWidth
 
     implicitHeight:
-        Nexa.Theme.controlHeightSm
+        NexaUI.NexaTokens.controlHeightSm
 
     Behavior on implicitWidth {
-        enabled: !Nexa.Theme.reducedMotion
-        NexaUI.NexaSpring { section: "popups"; customStiffness: 5.5; customDamping: 0.26 }
+        enabled: NexaUI.NexaMotion.enabled
+        SpringAnimation {
+            spring: 5.5
+            damping: 0.26
+            mass: NexaUI.NexaMotion.springMass
+            epsilon: 0.005
+        }
     }
 
 
@@ -125,23 +128,23 @@ Item {
             root.visible
 
         radius:
-            Nexa.Theme.radiusSm
+            NexaUI.NexaTokens.radiusSm
 
         color:
             (mouse.containsMouse || popup.visible)
-            ? Nexa.Theme.hover
+            ? NexaUI.NexaColors.hoverOverlay
             : "transparent"
 
         scale:
             mouse.pressed
-            ? Nexa.Theme.pressScale
-            : Nexa.Theme.normalScale
+            ? NexaUI.NexaMotion.scalePress
+            : 1.0
 
 
         Behavior on color {
             ColorAnimation {
                 duration:
-                    Nexa.Theme.animationFast
+                    NexaUI.NexaMotion.durationFast
             }
         }
 
@@ -149,17 +152,17 @@ Item {
         Behavior on scale {
             NumberAnimation {
                 duration:
-                    Nexa.Theme.animationFast
+                    NexaUI.NexaMotion.durationFast
 
                 easing.type:
-                    Nexa.Theme.easingStandard
+                    NexaUI.NexaMotion.standardEasing
             }
         }
 
 
         Row {
             anchors.centerIn: parent
-            spacing: (root.width > root.compactWidth + 2) ? Nexa.Theme.spacingXs : 0
+            spacing: (root.width > root.compactWidth + 2) ? NexaUI.NexaTokens.spacingXs : 0
 
             Text {
                 id: iconText
@@ -186,21 +189,21 @@ Item {
 
                 color:
                     root.connected
-                    ? Nexa.Theme.text
-                    : Nexa.Theme.mutedText
+                    ? NexaUI.NexaColors.text
+                    : NexaUI.NexaColors.mutedText
 
                 font {
                     family:
-                        Nexa.Theme.iconFontFamily
+                        NexaUI.NexaTypography.familyIcon
 
                     pixelSize:
-                        Nexa.Theme.iconSm
+                        NexaUI.NexaTypography.sizeSm
                 }
 
                 Behavior on color {
                     ColorAnimation {
                         duration:
-                            Nexa.Theme.animationNormal
+                            NexaUI.NexaMotion.durationNormal
                     }
                 }
             }
@@ -210,12 +213,12 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 clip: true
                 visible: width > 0.5
-                width: Math.max(0, Math.min(root.contentLabelWidth, root.width - root.compactWidth - Nexa.Theme.spacingXs))
+                width: Math.max(0, Math.min(root.contentLabelWidth, root.width - root.compactWidth - NexaUI.NexaTokens.spacingXs))
                 height: labelText.implicitHeight
                 opacity: Math.max(0.0, Math.min(1.0, (root.width - root.compactWidth) / 16.0))
 
                 Behavior on opacity {
-                    NumberAnimation { duration: Nexa.Theme.animationFast }
+                    NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
                 }
 
                 Text {
@@ -227,11 +230,11 @@ Item {
                     width: Math.min(root.maxTextWidth, implicitWidth)
                     elide: Text.ElideRight
                     text: root.infoText
-                    color: Nexa.Theme.text
+                    color: NexaUI.NexaColors.text
                     font {
-                        family: Nexa.Theme.fontFamily
-                        pixelSize: Nexa.Theme.fontSizeXs
-                        weight: Nexa.Theme.fontWeightMedium
+                        family: NexaUI.NexaTypography.familyBody
+                        pixelSize: NexaUI.NexaTypography.sizeXs
+                        weight: NexaUI.NexaTypography.weightMedium
                     }
                 }
             }

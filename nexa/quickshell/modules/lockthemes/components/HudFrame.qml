@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import "../../../theme/colors"
+import "../../../NewNexaUI" as NexaUI
 
 // Chamfered HUD background for shell pieces under the HUD desktop theme: a
 // fill and hairline with the top-left and bottom-right corners cut, and an
@@ -11,11 +11,11 @@ Shape {
     id: frame
 
     property real cut: 8
-    property color fill: Colors.surface_container
-    property color stroke: Colors.withAlpha(Colors.on_surface, 0.12)
+    property color fill: NexaUI.NexaColors.surfaceContainer
+    property color stroke: NexaUI.NexaColors.withAlpha(NexaUI.NexaColors.onSurface, 0.12)
     property real strokeWidth: 1
     property bool tick: true
-    property color tickColor: Colors.primary
+    property color tickColor: NexaUI.NexaColors.primary
 
     anchors.fill: parent
     preferredRendererType: Shape.CurveRenderer

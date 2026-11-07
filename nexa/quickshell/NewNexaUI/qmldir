@@ -1,0 +1,20 @@
+module NewNexaUI
+
+singleton MatugenColors 1.0 core/MatugenColors.qml
+singleton NexaColors 1.0 core/NexaColors.qml
+singleton NexaTypography 1.0 core/NexaTypography.qml
+singleton NexaTokens 1.0 core/NexaTokens.qml
+singleton NexaMotion 1.0 core/NexaMotion.qml
+singleton NexaOptics 1.0 core/NexaOptics.qml
+
+NexaButton 1.0 controls/NexaButton.qml
+NexaToggle 1.0 controls/NexaToggle.qml
+NexaSlider 1.0 controls/NexaSlider.qml
+NexaDropdown 1.0 controls/NexaDropdown.qml
+NexaCard 1.0 controls/NexaCard.qml
+NexaSegmentedControl 1.0 controls/NexaSegmentedControl.qml
+NexaScroll 1.0 controls/NexaScroll.qml
+NexaProgressBar 1.0 controls/NexaProgressBar.qml
+NexaShadow 1.0 controls/NexaShadow.qml
+NexaShaderSubstrate 1.0 controls/NexaShaderSubstrate.qml
+NexaSmoothScroll 1.0 controls/NexaSmoothScroll.qml

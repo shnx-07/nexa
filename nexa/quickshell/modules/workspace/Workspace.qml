@@ -4,35 +4,46 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 RowLayout {
     id: root
 
-    spacing: Nexa.Theme.spacingXs
-
-    property var hoveredWorkspace: null
-    property Item hoveredAnchorItem: null
+    spacing: NexaUI.NexaTokens.spacingSm
 
     readonly property string nexad:
         Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
 
     // ------------------------------------------------------------
-    // LIVE HYPRLAND WORKSPACES
+    // LIVE HYPRLAND WORKSPACE TRACKING (Zero-latency in-memory)
     // ------------------------------------------------------------
 
-    readonly property var workspaceList: {
-        const values = Hyprland.workspaces.values
-        const result = []
-
-        for (let i = 0; i < values.length; ++i) {
-            if (values[i].id > 0)
-                result.push(values[i])
+    readonly property int focusedWorkspaceId: {
+        if (typeof Hyprland !== "undefined" && Hyprland.focusedWorkspace) {
+            return Hyprland.focusedWorkspace.id
         }
+        return 1
+    }
 
-        result.sort((a, b) => a.id - b.id)
-        return result
+    readonly property int maxWorkspace: {
+        let maxId = 5
+        if (typeof Hyprland !== "undefined" && Hyprland.workspaces) {
+            const values = Hyprland.workspaces.values
+            for (let i = 0; i < values.length; ++i) {
+                if (values[i].id > maxId && values[i].id <= 10) {
+                    maxId = values[i].id
+                }
+            }
+        }
+        return maxId
+    }
+
+    readonly property var workspaceSlots: {
+        const slots = []
+        for (let i = 1; i <= root.maxWorkspace; ++i) {
+            slots.push(i)
+        }
+        return slots
     }
 
     // ------------------------------------------------------------
@@ -105,91 +116,147 @@ RowLayout {
         return list
     }
 
-    // ------------------------------------------------------------
-    // WORKSPACE ACTION PROCESS & CONTROLS
-    // ------------------------------------------------------------
-
-    Process {
-        id: workspaceProcess
-    }
-
-    function runWorkspaceAction(args) {
-        workspaceProcess.command = [root.nexad].concat(args)
-        workspaceProcess.running = true
-    }
-
     function toggleSpecialWorkspace(name) {
-        if (!name || name === "")
+        if (!name || name === "") return
+        if (name === "terminal" || name === "files") {
+            Quickshell.execDetached([root.nexad, "hypr", "scratchpad", name])
             return
-        runWorkspaceAction(["workspace", "special", name])
+        }
+        Quickshell.execDetached([root.nexad, "workspace", "special", name])
+    }
+
+    function hasWindows(wsId) {
+        if (typeof Hyprland === "undefined" || !Hyprland.toplevels)
+            return false
+        const toplevels = Hyprland.toplevels.values
+        for (let i = 0; i < toplevels.length; ++i) {
+            if (toplevels[i] && toplevels[i].workspace && toplevels[i].workspace.id === wsId) {
+                return true
+            }
+        }
+        return false
+    }
+
+    function switchWorkspace(wsId) {
+        if (!wsId) return
+        Quickshell.execDetached([
+            "sh", "-c",
+            "hyprctl dispatch workspace \"$1\" 2>/dev/null || \"$2\" workspace switch \"$1\" 2>/dev/null",
+            "sh", String(wsId), root.nexad
+        ])
     }
 
     function cycleWorkspace(direction) {
-        if (!root.workspaceList || root.workspaceList.length === 0)
-            return
+        let cur = root.focusedWorkspaceId
+        if (cur < 1 || cur > 10) cur = 1
+        let next = cur + direction
+        if (next < 1) next = root.maxWorkspace
+        if (next > root.maxWorkspace) next = 1
+        root.switchWorkspace(next)
+    }
 
-        const curWs = Hyprland.focusedWorkspace
-        const curId = curWs ? curWs.id : 1
-
-        if (root.workspaceList.length > 1) {
-            let currentIndex = -1
-            for (let i = 0; i < root.workspaceList.length; ++i) {
-                if (root.workspaceList[i].id === curId) {
-                    currentIndex = i
-                    break
-                }
-            }
-
-            let nextIndex = 0
-            if (currentIndex !== -1) {
-                nextIndex = (currentIndex + direction + root.workspaceList.length) % root.workspaceList.length
-            } else {
-                nextIndex = direction > 0 ? 0 : root.workspaceList.length - 1
-            }
-
-            const target = root.workspaceList[nextIndex]
-            if (target && target.activate) {
-                target.activate()
-                return
-            }
-        }
-
-        let nextId = curId + direction
-        if (nextId < 1) nextId = 10
-        if (nextId > 10) nextId = 1
-        runWorkspaceAction(["workspace", "switch", nextId.toString()])
+    function toggleOverview() {
+        Quickshell.execDetached([
+            "qs",
+            "-p",
+            Quickshell.env("HOME") + "/.config/nexa/quickshell",
+            "ipc",
+            "call",
+            "workspaceManager",
+            "toggle"
+        ])
     }
 
     // ------------------------------------------------------------
-    // WORKSPACE GROUP (Pill Container)
+    // 1. WORKSPACE GROUP (Pill Container)
     // ------------------------------------------------------------
 
     Rectangle {
         id: workspaceContainer
 
         implicitWidth: workspaceRow.implicitWidth + 16
-        implicitHeight: Nexa.Theme.controlHeightSm
+        implicitHeight: NexaUI.NexaTokens.controlHeightSm
 
-        Behavior on implicitWidth {
-            NumberAnimation {
-                duration: 280
-                easing.type: Easing.InOutCubic
+        NexaUI.NexaShadow {
+            id: wsShadow
+            targetItem: workspaceContainer
+            elevation: 0
+        }
+
+        radius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(height / 2, NexaUI.NexaTokens.radiusLg)
+        color: NexaUI.NexaColors.surfaceContainer
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.border
+
+        // Apple Tactile 4-stop Depth Micro-Gradient
+        Rectangle {
+            anchors.fill: parent
+            radius: workspaceContainer.radius
+            antialiasing: true
+            visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+            opacity: NexaUI.NexaOptics.gradientIntensity
+            gradient: Gradient {
+                GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.045) }
+                GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.010) }
+                GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.120) }
             }
         }
 
-        radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
-        color: Nexa.Theme.surfaceContainer
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.border
+        // Apple Top Chamfer Specular Highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: workspaceContainer.radius > 0 ? Math.max(0, parent.width - workspaceContainer.radius * 1.6) : parent.width
+            height: 1
+            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+            z: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.30) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // Apple Bottom Chamfer Ambient Shadow Line
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: workspaceContainer.radius > 0 ? Math.max(0, parent.width - workspaceContainer.radius * 1.6) : parent.width
+            height: 1
+            visible: NexaUI.NexaOptics.contactShadow && NexaUI.NexaOptics.shadowBlurFactor > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.shadowBlurFactor)
+            z: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(0, 0, 0, 0.45) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
 
         MouseArea {
             id: containerWheelArea
             anchors.fill: parent
-            acceptedButtons: Qt.NoButton
+            acceptedButtons: Qt.RightButton
             hoverEnabled: false
 
             onWheel: (wheel) => {
                 root.cycleWorkspace(wheel.angleDelta.y > 0 ? -1 : 1)
+            }
+
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.RightButton) {
+                    root.toggleOverview()
+                }
+            }
+
+            onDoubleClicked: {
+                root.toggleOverview()
             }
         }
 
@@ -201,58 +268,45 @@ RowLayout {
 
             Repeater {
                 id: workspaceRepeater
-                model: root.workspaceList
+                model: root.workspaceSlots
 
                 delegate: Item {
                     id: workspaceButton
 
                     required property int index
-                    required property var modelData
+                    required property int modelData
 
-                    readonly property var workspace: modelData
+                    readonly property int wsId: modelData
+                    readonly property bool active: root.focusedWorkspaceId === wsId
+                    readonly property bool occupied: root.hasWindows(wsId)
 
-                    readonly property bool active:
-                        Hyprland.focusedWorkspace
-                        && workspace
-                        && Hyprland.focusedWorkspace.id === workspace.id
-
-                    readonly property bool hasWindows: {
-                        if (typeof Hyprland === "undefined" || !Hyprland.toplevels || !workspace)
-                            return false
-                        const toplevels = Hyprland.toplevels.values
-                        for (let i = 0; i < toplevels.length; ++i) {
-                            if (toplevels[i] && toplevels[i].workspace && toplevels[i].workspace.id === workspace.id) {
-                                return true
-                            }
-                        }
-                        return false
-                    }
-
-                    // Symmetrical width: active is 28+4=32px, inactive is 10+4=14px
                     width: (active ? 28 : 10) + 4
-                    height: Nexa.Theme.controlHeightSm
+                    height: NexaUI.NexaTokens.controlHeightSm
 
                     Behavior on width {
-                        NexaUI.NexaSpring { section: "workspace"; customStiffness: 6.5; customDamping: 0.22 }
+                        enabled: NexaUI.NexaMotion.enabled
+                        SpringAnimation {
+                            spring: NexaUI.NexaMotion.springStiffness
+                            damping: NexaUI.NexaMotion.springDamping
+                            epsilon: 0.002
+                        }
                     }
 
                     Rectangle {
                         id: dotIndicator
 
                         anchors.centerIn: parent
-
-                        // Directly tracks parent width for instant single-curve synchronization
                         width: parent.width - 4
                         height: 10
-                        radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
+                        radius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(height / 2, NexaUI.NexaTokens.radiusLg)
 
                         color: {
                             if (workspaceButton.active) {
-                                return Nexa.Theme.primary
-                            } else if (workspaceButton.hasWindows) {
-                                return Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.70)
+                                return NexaUI.NexaColors.primary
+                            } else if (workspaceButton.occupied) {
+                                return Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.70)
                             } else {
-                                return Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.30)
+                                return Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.30)
                             }
                         }
 
@@ -260,14 +314,14 @@ RowLayout {
 
                         Behavior on color {
                             ColorAnimation {
-                                duration: 250
+                                duration: NexaUI.NexaMotion.durationNormal
                                 easing.type: Easing.InOutCubic
                             }
                         }
 
                         Behavior on scale {
                             NumberAnimation {
-                                duration: 150
+                                duration: NexaUI.NexaMotion.durationFast
                                 easing.type: Easing.OutCubic
                             }
                         }
@@ -279,10 +333,13 @@ RowLayout {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-                        onClicked: {
-                            if (workspaceButton.workspace && !workspaceButton.active) {
-                                workspaceButton.workspace.activate()
+                        onClicked: (mouseEv) => {
+                            if (mouseEv.button === Qt.RightButton) {
+                                root.toggleOverview()
+                            } else {
+                                root.switchWorkspace(workspaceButton.wsId)
                             }
                         }
 
@@ -296,24 +353,82 @@ RowLayout {
     }
 
     // ------------------------------------------------------------
-    // SCRATCHPAD TRAY
+    // 2. SCRATCHPAD TRAY (Dedicated pill appearing when scratchpad open)
     // ------------------------------------------------------------
 
     Rectangle {
         id: scratchpadTray
 
         visible: root.activeSpecialWorkspaces.length > 0
-        implicitHeight: Nexa.Theme.controlHeightSm
+        implicitHeight: NexaUI.NexaTokens.controlHeightSm
         implicitWidth: scratchpadRow.implicitWidth + 12
-        radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
-        color: Nexa.Theme.surfaceContainer
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.border
+
+        NexaUI.NexaShadow {
+            id: spShadow
+            targetItem: scratchpadTray
+            elevation: 0
+        }
+
+        radius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(height / 2, NexaUI.NexaTokens.radiusLg)
+        color: NexaUI.NexaColors.surfaceContainer
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.border
+
+        // Apple Tactile 4-stop Depth Micro-Gradient
+        Rectangle {
+            anchors.fill: parent
+            radius: scratchpadTray.radius
+            antialiasing: true
+            visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+            opacity: NexaUI.NexaOptics.gradientIntensity
+            gradient: Gradient {
+                GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.045) }
+                GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.010) }
+                GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.120) }
+            }
+        }
+
+        // Apple Top Chamfer Specular Highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: scratchpadTray.radius > 0 ? Math.max(0, parent.width - scratchpadTray.radius * 1.6) : parent.width
+            height: 1
+            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+            z: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.30) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // Apple Bottom Chamfer Ambient Shadow Line
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: scratchpadTray.radius > 0 ? Math.max(0, parent.width - scratchpadTray.radius * 1.6) : parent.width
+            height: 1
+            visible: NexaUI.NexaOptics.contactShadow && NexaUI.NexaOptics.shadowBlurFactor > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.shadowBlurFactor)
+            z: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(0, 0, 0, 0.45) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
 
         Behavior on implicitWidth {
             NumberAnimation {
-                duration: 280
-                easing.type: Easing.InOutCubic
+                duration: NexaUI.NexaMotion.durationNormal
+                easing.type: Easing.OutCubic
             }
         }
 
@@ -327,7 +442,6 @@ RowLayout {
 
                 delegate: Rectangle {
                     id: scratchpadBtn
-
                     required property var modelData
 
                     readonly property bool isFocused:
@@ -337,13 +451,13 @@ RowLayout {
 
                     width: 26
                     height: 22
-                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
-                    border.width: isFocused ? Nexa.Theme.borderThin : 0
-                    border.color: Nexa.Theme.primary
+                    radius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(height / 2, NexaUI.NexaTokens.radiusLg)
+                    border.width: isFocused ? NexaUI.NexaTokens.borderThin : 0
+                    border.color: NexaUI.NexaColors.primary
 
                     color: {
                         if (isFocused) {
-                            return Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.22)
+                            return Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.22)
                         } else if (spMouse.containsMouse) {
                             return Qt.rgba(1, 1, 1, 0.12)
                         } else {
@@ -353,30 +467,16 @@ RowLayout {
 
                     scale: spMouse.pressed ? 0.90 : (spMouse.containsMouse ? 1.08 : 1.0)
 
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 200
-                            easing.type: Easing.InOutCubic
-                        }
-                    }
-
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 150
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
                     Text {
                         anchors.centerIn: parent
                         text: modelData.icon
-                        font.family: Nexa.Theme.iconFontFamily
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 13
                         color: scratchpadBtn.isFocused
-                            ? Nexa.Theme.primary
+                            ? NexaUI.NexaColors.primary
                             : (spMouse.containsMouse
-                                ? Nexa.Theme.textPrimary
-                                : Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.75))
+                                ? NexaUI.NexaColors.text
+                                : Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.75))
                     }
 
                     MouseArea {
@@ -384,7 +484,6 @@ RowLayout {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-
                         onClicked: {
                             root.toggleSpecialWorkspace(modelData.name)
                         }
@@ -395,35 +494,10 @@ RowLayout {
     }
 
     // ------------------------------------------------------------
-    // SEPARATOR
+    // 3. CURRENT ACTIVE APPLICATION
     // ------------------------------------------------------------
 
-    Rectangle {
-        Layout.leftMargin:
-            Nexa.Theme.spacing2Xs
-
-        Layout.rightMargin:
-            Nexa.Theme.spacing2Xs
-
-        width:
-            Nexa.Theme.borderThin
-
-        height:
-            Nexa.Theme.controlHeightSm * 0.55
-
-        radius:
-            width / 2
-
-        color:
-            Nexa.Theme.divider
-
-        opacity:
-            Nexa.Theme.opacitySecondary
+    WorkspaceCurrentApp {
+        id: currentApp
     }
-
-    // ------------------------------------------------------------
-    // CURRENT APP
-    // ------------------------------------------------------------
-
-    WorkspaceCurrentApp {}
 }

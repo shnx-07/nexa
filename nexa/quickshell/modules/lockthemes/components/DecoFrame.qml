@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import "../../../theme/colors"
+import "../../../NewNexaUI" as NexaUI
 import "../../../services" as Services
 
 // Art Deco frame for shell pieces under the desktop theme: a fill with every
@@ -13,7 +13,7 @@ Shape {
 
     property real cut: 5
     property int steps: 1
-    property color fill: Colors.surface_container
+    property color fill: NexaUI.NexaColors.surfaceContainer
     property color stroke: Services.DesktopTheme.accentOf("artdeco")
     property real strokeWidth: 1
     // Distance of the inner line from the outer one; 0 for none.

@@ -3,8 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
-import "../../../theme" as Nexa
-import "../../../theme/components" as NexaUI
+import "../../../NewNexaUI" as NexaUI
 
 import "../../audio" as AudioModule
 import "../../brightness" as BrightnessModule
@@ -20,7 +19,6 @@ import "../../battery" as BatteryModule
 Item {
     id: root
 
-    readonly property var theme: Nexa.Theme
 
     property bool appsExpanded: false
     property bool screenFilterDropdownOpen: false
@@ -94,13 +92,13 @@ Item {
         Row {
             id: columnsRow
             width: parent.width
-            spacing: root.theme.spacingLg
+            spacing: NexaUI.NexaTokens.spacingLg
 
             // ========================================================
             // LEFT COLUMN (Audio, Display, Night Light, Screen Filter)
             // ========================================================
             Column {
-                width: (parent.width - root.theme.spacingLg) / 2
+                width: (parent.width - NexaUI.NexaTokens.spacingLg) / 2
                 spacing: 10
 
                 // ----------------------------------------------------
@@ -109,10 +107,10 @@ Item {
                 Rectangle {
                     width: parent.width
                     implicitHeight: audioCardContent.implicitHeight + 16
-                    radius: root.theme.radiusMd
-                    color: root.theme.cardBackground
-                    border.width: root.theme.borderThin
-                    border.color: root.theme.border
+                    radius: NexaUI.NexaTokens.radiusMd
+                    color: NexaUI.NexaColors.surfaceContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
 
                     Column {
                         id: audioCardContent
@@ -127,13 +125,13 @@ Item {
                         // Header row: Icon, "Output", spacer, Apps toggle, Volume %
                         RowLayout {
                             width: parent.width
-                            spacing: root.theme.spacingSm
+                            spacing: NexaUI.NexaTokens.spacingSm
 
                             Text {
                                 text: audio.muted ? "󰝟" : (audio.volume > 50 ? "󰕾" : (audio.volume > 0 ? "󰖀" : "󰕿"))
-                                font.family: root.theme.iconFontFamily
-                                font.pixelSize: root.theme.iconSm
-                                color: audio.muted ? root.theme.error : root.theme.primary
+                                font.family: NexaUI.NexaTypography.familyIcon
+                                font.pixelSize: NexaUI.NexaTokens.iconSm
+                                color: audio.muted ? NexaUI.NexaColors.error : NexaUI.NexaColors.primary
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
@@ -143,10 +141,10 @@ Item {
 
                             Text {
                                 text: "Output"
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
-                                color: root.theme.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
+                                color: NexaUI.NexaColors.text
                             }
 
                             // Audio Output Device Chip
@@ -156,10 +154,10 @@ Item {
                                 implicitWidth: Math.min(120, sinkChipRow.implicitWidth + 16)
                                 radius: 11
                                 color: root.sinkMenuOpen
-                                    ? root.theme.primaryContainer
-                                    : (sinkChipMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
-                                border.width: root.theme.borderThin
-                                border.color: root.sinkMenuOpen ? root.theme.primary : root.theme.border
+                                    ? NexaUI.NexaColors.primaryContainer
+                                    : (sinkChipMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: root.sinkMenuOpen ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                                 Row {
                                     id: sinkChipRow
@@ -173,9 +171,9 @@ Item {
                                                 if (audio.sinks[i].active) return audio.sinks[i].icon
                                             return "󰕾"
                                         }
-                                        font.family: root.theme.iconFontFamily
-                                        font.pixelSize: root.theme.iconSm
-                                        color: root.sinkMenuOpen ? root.theme.primaryContainerText : root.theme.primary
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: NexaUI.NexaTokens.iconSm
+                                        color: root.sinkMenuOpen ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.primary
                                     }
 
                                     Text {
@@ -189,17 +187,17 @@ Item {
                                             }
                                             return "Output"
                                         }
-                                        font.family: root.theme.fontFamily
-                                        font.pixelSize: root.theme.fontSize2Xs
-                                        font.weight: root.theme.fontWeightMedium
-                                        color: root.sinkMenuOpen ? root.theme.primaryContainerText : root.theme.text
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: 10
+                                        font.weight: Font.Medium
+                                        color: root.sinkMenuOpen ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                     }
 
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: root.sinkMenuOpen ? "▴" : "▾"
-                                        font.pixelSize: root.theme.fontSize2Xs
-                                        color: root.sinkMenuOpen ? root.theme.primaryContainerText : root.theme.mutedText
+                                        font.pixelSize: 10
+                                        color: root.sinkMenuOpen ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                     }
                                 }
 
@@ -222,16 +220,16 @@ Item {
                                 implicitWidth: 20
                                 implicitHeight: 20
                                 radius: 10
-                                color: root.appsExpanded ? root.theme.primaryContainer : (appsMouse.containsMouse ? root.theme.hover : "transparent")
+                                color: root.appsExpanded ? NexaUI.NexaColors.primaryContainer : (appsMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : "transparent")
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰅀"
                                     rotation: root.appsExpanded ? 180 : 0
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
-                                    color: root.appsExpanded ? root.theme.primaryContainerText : root.theme.mutedText
-                                    Behavior on rotation { NumberAnimation { duration: root.theme.animationFast } }
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
+                                    color: root.appsExpanded ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
+                                    Behavior on rotation { NumberAnimation { duration: NexaUI.NexaMotion.durationInstant } }
                                 }
 
                                 MouseArea {
@@ -247,9 +245,9 @@ Item {
 
                             Text {
                                 text: audio.volume + "%"
-                                font.family: root.theme.monoFontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                color: root.theme.text
+                                font.family: NexaUI.NexaTypography.familyMono
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                color: NexaUI.NexaColors.text
                             }
                         }
 
@@ -257,49 +255,49 @@ Item {
                         Column {
                             width: parent.width
                             visible: root.sinkMenuOpen && audio.sinks.length > 0
-                            spacing: root.theme.spacingXs
+                            spacing: NexaUI.NexaTokens.spacingXs
 
                             Repeater {
                                 model: audio.sinks
                                 delegate: Rectangle {
                                     width: parent.width
                                     height: 32
-                                    radius: root.theme.radiusMd
+                                    radius: NexaUI.NexaTokens.radiusMd
                                     color: modelData.active
-                                        ? root.theme.primaryContainer
-                                        : (sinkItemMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
-                                    border.width: root.theme.borderThin
-                                    border.color: modelData.active ? root.theme.primary : root.theme.border
+                                        ? NexaUI.NexaColors.primaryContainer
+                                        : (sinkItemMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: modelData.active ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                                     RowLayout {
                                         anchors.fill: parent
-                                        anchors.leftMargin: root.theme.spacingSm
-                                        anchors.rightMargin: root.theme.spacingSm
-                                        spacing: root.theme.spacingSm
+                                        anchors.leftMargin: NexaUI.NexaTokens.spacingSm
+                                        anchors.rightMargin: NexaUI.NexaTokens.spacingSm
+                                        spacing: NexaUI.NexaTokens.spacingSm
 
                                         Text {
                                             text: modelData.icon || "󰕾"
-                                            font.family: root.theme.iconFontFamily
-                                            font.pixelSize: root.theme.iconSm
-                                            color: modelData.active ? root.theme.primaryContainerText : root.theme.primary
+                                            font.family: NexaUI.NexaTypography.familyIcon
+                                            font.pixelSize: NexaUI.NexaTokens.iconSm
+                                            color: modelData.active ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.primary
                                         }
 
                                         Text {
                                             Layout.fillWidth: true
                                             text: modelData.description
                                             elide: Text.ElideRight
-                                            font.family: root.theme.fontFamily
-                                            font.pixelSize: root.theme.fontSizeXs
-                                            font.weight: modelData.active ? root.theme.fontWeightDemiBold : root.theme.fontWeightNormal
-                                            color: modelData.active ? root.theme.primaryContainerText : root.theme.text
+                                            font.family: NexaUI.NexaTypography.familyBody
+                                            font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                            font.weight: modelData.active ? Font.DemiBold : Font.Normal
+                                            color: modelData.active ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                         }
 
                                         Text {
                                             visible: modelData.active
                                             text: "󰄬"
-                                            font.family: root.theme.iconFontFamily
-                                            font.pixelSize: root.theme.iconSm
-                                            color: root.theme.primaryContainerText
+                                            font.family: NexaUI.NexaTypography.familyIcon
+                                            font.pixelSize: NexaUI.NexaTokens.iconSm
+                                            color: NexaUI.NexaColors.onPrimaryContainer
                                         }
                                     }
 
@@ -339,31 +337,31 @@ Item {
                                 : 0
                             visible: height > 0
                             opacity: root.appsExpanded ? 1.0 : 0.0
-                            radius: root.theme.radiusMd
-                            color: root.theme.cardBackgroundElevated
-                            border.width: root.theme.borderThin
-                            border.color: root.theme.border
+                            radius: NexaUI.NexaTokens.radiusMd
+                            color: NexaUI.NexaColors.surfaceContainerHigh
+                            border.width: NexaUI.NexaTokens.borderThin
+                            border.color: NexaUI.NexaColors.border
                             clip: true
 
-                            Behavior on height { NumberAnimation { duration: root.theme.animationNormal; easing.type: root.theme.easingStandard } }
-                            Behavior on opacity { NumberAnimation { duration: root.theme.animationFast } }
+                            Behavior on height { NumberAnimation { duration: NexaUI.NexaMotion.durationNormal; easing.type: Easing.InOutQuad } }
+                            Behavior on opacity { NumberAnimation { duration: NexaUI.NexaMotion.durationInstant } }
 
                             Text {
                                 anchors.centerIn: parent
                                 visible: !audio.appsLoading && audio.apps.length === 0
                                 text: "No active audio applications"
-                                color: root.theme.mutedText
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                             }
 
                             Text {
                                 anchors.centerIn: parent
                                 visible: audio.appsLoading
                                 text: "Loading…"
-                                color: root.theme.mutedText
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
+                                color: NexaUI.NexaColors.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
                             }
 
                             ListView {
@@ -371,46 +369,46 @@ Item {
                                 anchors { fill: parent; margins: 8 }
                                 visible: !audio.appsLoading && audio.apps.length > 0
                                 clip: true
-                                spacing: root.theme.spacingSm
+                                spacing: NexaUI.NexaTokens.spacingSm
                                 model: audio.apps
 
                                 delegate: Column {
                                     required property var modelData
                                     width: ListView.view.width
-                                    spacing: root.theme.spacing2Xs
+                                    spacing: NexaUI.NexaTokens.spacing2Xs
 
                                     RowLayout {
                                         width: parent.width
-                                        spacing: root.theme.spacingSm
+                                        spacing: NexaUI.NexaTokens.spacingSm
 
                                         Text {
                                             Layout.fillWidth: true
                                             text: modelData.name
                                             elide: Text.ElideRight
-                                            color: root.theme.text
-                                            font.family: root.theme.fontFamily
-                                            font.pixelSize: root.theme.fontSizeXs
+                                            color: NexaUI.NexaColors.text
+                                            font.family: NexaUI.NexaTypography.familyBody
+                                            font.pixelSize: NexaUI.NexaTypography.sizeXs
                                         }
 
                                         Text {
                                             text: modelData.volume + "%"
-                                            color: root.theme.mutedText
-                                            font.family: root.theme.monoFontFamily
-                                            font.pixelSize: root.theme.fontSizeXs
+                                            color: NexaUI.NexaColors.mutedText
+                                            font.family: NexaUI.NexaTypography.familyMono
+                                            font.pixelSize: NexaUI.NexaTypography.sizeXs
                                         }
 
                                         Rectangle {
                                             width: 24
                                             height: 24
-                                            radius: root.theme.radiusSm
-                                            color: appMuteMouse.containsMouse ? root.theme.hoverStrong : "transparent"
+                                            radius: NexaUI.NexaTokens.radiusSm
+                                            color: appMuteMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : "transparent"
 
-                                            Text {
+                                             Text {
                                                 anchors.centerIn: parent
                                                 text: modelData.muted ? "󰝟" : "󰕾"
-                                                color: modelData.muted ? root.theme.mutedText : root.theme.text
-                                                font.family: root.theme.iconFontFamily
-                                                font.pixelSize: root.theme.iconSm
+                                                color: modelData.muted ? NexaUI.NexaColors.mutedText : NexaUI.NexaColors.text
+                                                font.family: NexaUI.NexaTypography.familyIcon
+                                                font.pixelSize: NexaUI.NexaTokens.iconSm
                                             }
 
                                             MouseArea {
@@ -441,20 +439,20 @@ Item {
                         // Divider between Output and Microphone
                         Rectangle {
                             width: parent.width
-                            height: root.theme.borderThin
-                            color: root.theme.divider
+                            height: NexaUI.NexaTokens.borderThin
+                            color: NexaUI.NexaColors.borderSubtle
                         }
 
                         // Microphone Header: Title, Mute, Volume %
                         RowLayout {
                             width: parent.width
-                            spacing: root.theme.spacingSm
+                            spacing: NexaUI.NexaTokens.spacingSm
 
                             Text {
                                 text: audio.inputMuted ? "󰍭" : "󰍬"
-                                font.family: root.theme.iconFontFamily
-                                font.pixelSize: root.theme.iconSm
-                                color: audio.inputMuted ? root.theme.error : root.theme.primary
+                                font.family: NexaUI.NexaTypography.familyIcon
+                                font.pixelSize: NexaUI.NexaTokens.iconSm
+                                color: audio.inputMuted ? NexaUI.NexaColors.error : NexaUI.NexaColors.primary
 
                                 MouseArea {
                                     anchors.fill: parent
@@ -465,10 +463,10 @@ Item {
 
                             Text {
                                 text: "Microphone"
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
-                                color: root.theme.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
+                                color: NexaUI.NexaColors.text
 
                                 MouseArea {
                                     anchors.fill: parent
@@ -479,9 +477,9 @@ Item {
 
                             Text {
                                 text: audio.inputMuted ? "Muted" : "Active"
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
-                                color: root.theme.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
+                                color: NexaUI.NexaColors.mutedText
                                 opacity: 0.8
                             }
 
@@ -493,15 +491,15 @@ Item {
                                 implicitHeight: 20
                                 radius: 10
                                 color: audio.inputMuted
-                                    ? root.theme.errorContainer
-                                    : (micMuteHover.containsMouse ? root.theme.hoverStrong : root.theme.primaryContainer)
+                                    ? NexaUI.NexaColors.errorContainer
+                                    : (micMuteHover.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.primaryContainer)
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: audio.inputMuted ? "󰍭" : "󰍬"
-                                    font.family: root.theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 11
-                                    color: audio.inputMuted ? root.theme.error : root.theme.primaryContainerText
+                                    color: audio.inputMuted ? NexaUI.NexaColors.error : NexaUI.NexaColors.onPrimaryContainer
                                 }
 
                                 MouseArea {
@@ -515,9 +513,9 @@ Item {
 
                             Text {
                                 text: audio.inputVolume + "%"
-                                font.family: root.theme.monoFontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                color: root.theme.text
+                                font.family: NexaUI.NexaTypography.familyMono
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                color: NexaUI.NexaColors.text
                             }
                         }
 
@@ -544,10 +542,10 @@ Item {
                 Rectangle {
                     width: parent.width
                     implicitHeight: displayCardContent.implicitHeight + 16
-                    radius: root.theme.radiusMd
-                    color: root.theme.cardBackground
-                    border.width: root.theme.borderThin
-                    border.color: root.theme.border
+                    radius: NexaUI.NexaTokens.radiusMd
+                    color: NexaUI.NexaColors.surfaceContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
 
                     Column {
                         id: displayCardContent
@@ -562,28 +560,28 @@ Item {
                         // Brightness Header: Title, Backlight, %
                         RowLayout {
                             width: parent.width
-                            spacing: root.theme.spacingSm
+                            spacing: NexaUI.NexaTokens.spacingSm
 
                             Text {
                                 text: "󰃠"
-                                font.family: root.theme.iconFontFamily
-                                font.pixelSize: root.theme.iconSm
-                                color: root.theme.primary
+                                font.family: NexaUI.NexaTypography.familyIcon
+                                font.pixelSize: NexaUI.NexaTokens.iconSm
+                                color: NexaUI.NexaColors.primary
                             }
 
                             Text {
                                 text: "Brightness"
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
-                                color: root.theme.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
+                                color: NexaUI.NexaColors.text
                             }
 
                             Text {
                                 text: "Backlight"
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
-                                color: root.theme.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
+                                color: NexaUI.NexaColors.mutedText
                                 opacity: 0.8
                             }
 
@@ -591,9 +589,9 @@ Item {
 
                             Text {
                                 text: brightness.brightness + "%"
-                                font.family: root.theme.monoFontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                color: root.theme.text
+                                font.family: NexaUI.NexaTypography.familyMono
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                color: NexaUI.NexaColors.text
                             }
                         }
 
@@ -614,35 +612,35 @@ Item {
                         // Divider
                         Rectangle {
                             width: parent.width
-                            height: root.theme.borderThin
-                            color: root.theme.divider
+                            height: NexaUI.NexaTokens.borderThin
+                            color: NexaUI.NexaColors.borderSubtle
                         }
 
                         // Night Light Header: Title, Temperature, Toggle Switch
                         RowLayout {
                             width: parent.width
-                            spacing: root.theme.spacingSm
+                            spacing: NexaUI.NexaTokens.spacingSm
 
                             Text {
                                 text: "󰖔"
-                                font.family: root.theme.iconFontFamily
-                                font.pixelSize: root.theme.iconMd
-                                color: nightLight.enabled ? root.theme.primary : root.theme.mutedText
+                                font.family: NexaUI.NexaTypography.familyIcon
+                                font.pixelSize: NexaUI.NexaTokens.iconMd
+                                color: nightLight.enabled ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
                             }
 
                             Text {
                                 text: "Night Light"
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
-                                color: root.theme.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
+                                color: NexaUI.NexaColors.text
                             }
 
                             Text {
                                 text: nightLight.enabled ? (nightLight.activeTemperature + "K") : "Off"
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
-                                color: root.theme.mutedText
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
+                                color: NexaUI.NexaColors.mutedText
                                 opacity: 0.8
                             }
 
@@ -655,10 +653,10 @@ Item {
                                 implicitWidth: Math.min(140, scheduleChipRow.implicitWidth + 18)
                                 radius: 13
                                 color: root.scheduleMenuOpen
-                                    ? root.theme.primaryContainer
-                                    : (scheduleChipMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
-                                border.width: root.theme.borderThin
-                                border.color: root.scheduleMenuOpen ? root.theme.primary : (nightLight.scheduleMode !== "off" ? root.theme.primary : root.theme.border)
+                                    ? NexaUI.NexaColors.primaryContainer
+                                    : (scheduleChipMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: root.scheduleMenuOpen ? NexaUI.NexaColors.primary : (nightLight.scheduleMode !== "off" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border)
 
                                 Row {
                                     id: scheduleChipRow
@@ -672,25 +670,25 @@ Item {
                                             if (nightLight.scheduleMode === "custom") return "󰥔"
                                             return "󰔛"
                                         }
-                                        font.family: root.theme.iconFontFamily
-                                        font.pixelSize: root.theme.iconSm
-                                        color: root.scheduleMenuOpen ? root.theme.primaryContainerText : (nightLight.scheduleMode !== "off" ? root.theme.primary : root.theme.mutedText)
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: NexaUI.NexaTokens.iconSm
+                                        color: root.scheduleMenuOpen ? NexaUI.NexaColors.onPrimaryContainer : (nightLight.scheduleMode !== "off" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText)
                                     }
 
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: nightLight.scheduleMode === "off" ? "Schedule" : (nightLight.scheduleMode === "sunset" ? "Sunset" : "Custom")
-                                        font.family: root.theme.fontFamily
-                                        font.pixelSize: root.theme.fontSize2Xs
-                                        font.weight: root.theme.fontWeightMedium
-                                        color: root.scheduleMenuOpen ? root.theme.primaryContainerText : (nightLight.scheduleMode !== "off" ? root.theme.primary : root.theme.text)
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: 10
+                                        font.weight: Font.Medium
+                                        color: root.scheduleMenuOpen ? NexaUI.NexaColors.onPrimaryContainer : (nightLight.scheduleMode !== "off" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text)
                                     }
 
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: root.scheduleMenuOpen ? "▴" : "▾"
-                                        font.pixelSize: root.theme.fontSize2Xs
-                                        color: root.scheduleMenuOpen ? root.theme.primaryContainerText : root.theme.mutedText
+                                        font.pixelSize: 10
+                                        color: root.scheduleMenuOpen ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                     }
                                 }
 
@@ -709,7 +707,7 @@ Item {
                                 implicitWidth: 40
                                 implicitHeight: 22
                                 radius: 11
-                                color: nightLight.enabled ? root.theme.primary : root.theme.surfaceContainerHighest
+                                color: nightLight.enabled ? NexaUI.NexaColors.primary : NexaUI.NexaColors.surfaceContainerHighest
 
                                 Rectangle {
                                     width: 17
@@ -717,8 +715,8 @@ Item {
                                     radius: 8
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: nightLight.enabled ? parent.width - width - 2 : 2
-                                    color: nightLight.enabled ? root.theme.onPrimary : root.theme.text
-                                    Behavior on x { NumberAnimation { duration: root.theme.animationFast } }
+                                    color: nightLight.enabled ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.text
+                                    Behavior on x { NumberAnimation { duration: NexaUI.NexaMotion.durationInstant } }
                                 }
 
                                 MouseArea {
@@ -733,16 +731,16 @@ Item {
                         Column {
                             width: parent.width
                             visible: root.scheduleMenuOpen
-                            spacing: root.theme.spacingXs
+                            spacing: NexaUI.NexaTokens.spacingXs
 
                             // Option 1: Off (Manual Only)
                             Rectangle {
                                 width: parent.width
                                 height: 32
-                                radius: root.theme.radiusSm
-                                color: nightLight.scheduleMode === "off" ? root.theme.primaryContainer : (offMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
-                                border.width: root.theme.borderThin
-                                border.color: nightLight.scheduleMode === "off" ? root.theme.primary : root.theme.border
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: nightLight.scheduleMode === "off" ? NexaUI.NexaColors.primaryContainer : (offMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh)
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: nightLight.scheduleMode === "off" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                                 RowLayout {
                                     anchors.fill: parent
@@ -752,9 +750,9 @@ Item {
 
                                     Text {
                                         text: "󰔛"
-                                        font.family: root.theme.iconFontFamily
-                                        font.pixelSize: root.theme.iconSm
-                                        color: nightLight.scheduleMode === "off" ? root.theme.primaryContainerText : root.theme.mutedText
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: NexaUI.NexaTokens.iconSm
+                                        color: nightLight.scheduleMode === "off" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                     }
 
                                     Column {
@@ -763,19 +761,19 @@ Item {
 
                                         Text {
                                             text: "Manual Only (Off)"
-                                            font.family: root.theme.fontFamily
-                                            font.pixelSize: root.theme.fontSizeXs
-                                            font.weight: root.theme.fontWeightDemiBold
-                                            color: nightLight.scheduleMode === "off" ? root.theme.primaryContainerText : root.theme.text
+                                            font.family: NexaUI.NexaTypography.familyBody
+                                            font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                            font.weight: Font.DemiBold
+                                            color: nightLight.scheduleMode === "off" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                         }
                                     }
 
                                     Text {
                                         visible: nightLight.scheduleMode === "off"
                                         text: "󰄬"
-                                        font.family: root.theme.iconFontFamily
-                                        font.pixelSize: root.theme.iconSm
-                                        color: root.theme.primaryContainerText
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: NexaUI.NexaTokens.iconSm
+                                        color: NexaUI.NexaColors.onPrimaryContainer
                                     }
                                 }
 
@@ -795,10 +793,10 @@ Item {
                             Rectangle {
                                 width: parent.width
                                 height: 38
-                                radius: root.theme.radiusSm
-                                color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainer : (sunsetMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
-                                border.width: root.theme.borderThin
-                                border.color: nightLight.scheduleMode === "sunset" ? root.theme.primary : root.theme.border
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: nightLight.scheduleMode === "sunset" ? NexaUI.NexaColors.primaryContainer : (sunsetMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh)
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: nightLight.scheduleMode === "sunset" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                                 RowLayout {
                                     anchors.fill: parent
@@ -808,9 +806,9 @@ Item {
 
                                     Text {
                                         text: "󰖔"
-                                        font.family: root.theme.iconFontFamily
-                                        font.pixelSize: root.theme.iconSm
-                                        color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainerText : root.theme.mutedText
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: NexaUI.NexaTokens.iconSm
+                                        color: nightLight.scheduleMode === "sunset" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                     }
 
                                     Column {
@@ -819,17 +817,17 @@ Item {
 
                                         Text {
                                             text: "Sunset to Sunrise"
-                                            font.family: root.theme.fontFamily
-                                            font.pixelSize: root.theme.fontSizeXs
-                                            font.weight: root.theme.fontWeightDemiBold
-                                            color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainerText : root.theme.text
+                                            font.family: NexaUI.NexaTypography.familyBody
+                                            font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                            font.weight: Font.DemiBold
+                                            color: nightLight.scheduleMode === "sunset" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                         }
 
                                         Text {
                                             text: (nightLight.sunsetTime || "18:30") + " → " + (nightLight.sunriseTime || "06:00")
-                                            font.family: root.theme.monoFontFamily
-                                            font.pixelSize: root.theme.fontSize2Xs
-                                            color: nightLight.scheduleMode === "sunset" ? root.theme.primaryContainerText : root.theme.mutedText
+                                            font.family: NexaUI.NexaTypography.familyMono
+                                            font.pixelSize: 10
+                                            color: nightLight.scheduleMode === "sunset" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                             opacity: 0.85
                                         }
                                     }
@@ -837,9 +835,9 @@ Item {
                                     Text {
                                         visible: nightLight.scheduleMode === "sunset"
                                         text: "󰄬"
-                                        font.family: root.theme.iconFontFamily
-                                        font.pixelSize: root.theme.iconSm
-                                        color: root.theme.primaryContainerText
+                                        font.family: NexaUI.NexaTypography.familyIcon
+                                        font.pixelSize: NexaUI.NexaTokens.iconSm
+                                        color: NexaUI.NexaColors.onPrimaryContainer
                                     }
                                 }
 
@@ -858,10 +856,10 @@ Item {
                             Rectangle {
                                 width: parent.width
                                 height: nightLight.scheduleMode === "custom" ? 138 : 38
-                                radius: root.theme.radiusSm
-                                color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainer : (customMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
-                                border.width: root.theme.borderThin
-                                border.color: nightLight.scheduleMode === "custom" ? root.theme.primary : root.theme.border
+                                radius: NexaUI.NexaTokens.radiusSm
+                                color: nightLight.scheduleMode === "custom" ? NexaUI.NexaColors.primaryContainer : (customMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh)
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: nightLight.scheduleMode === "custom" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
                                 clip: true
 
                                 Column {
@@ -875,9 +873,9 @@ Item {
 
                                         Text {
                                             text: "󰥔"
-                                            font.family: root.theme.iconFontFamily
-                                            font.pixelSize: root.theme.iconSm
-                                            color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainerText : root.theme.mutedText
+                                            font.family: NexaUI.NexaTypography.familyIcon
+                                            font.pixelSize: NexaUI.NexaTokens.iconSm
+                                            color: nightLight.scheduleMode === "custom" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                         }
 
                                         Column {
@@ -886,17 +884,17 @@ Item {
 
                                             Text {
                                                 text: "Custom Schedule"
-                                                font.family: root.theme.fontFamily
-                                                font.pixelSize: root.theme.fontSizeXs
-                                                font.weight: root.theme.fontWeightDemiBold
-                                                color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainerText : root.theme.text
+                                                font.family: NexaUI.NexaTypography.familyBody
+                                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                                font.weight: Font.DemiBold
+                                                color: nightLight.scheduleMode === "custom" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                             }
 
                                             Text {
                                                 text: nightLight.formatTimeDisplay(nightLight.scheduleStart) + " → " + nightLight.formatTimeDisplay(nightLight.scheduleEnd)
-                                                font.family: root.theme.monoFontFamily
-                                                font.pixelSize: root.theme.fontSize2Xs
-                                                color: nightLight.scheduleMode === "custom" ? root.theme.primaryContainerText : root.theme.mutedText
+                                                font.family: NexaUI.NexaTypography.familyMono
+                                                font.pixelSize: 10
+                                                color: nightLight.scheduleMode === "custom" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                                 opacity: 0.85
                                             }
                                         }
@@ -904,9 +902,9 @@ Item {
                                         Text {
                                             visible: nightLight.scheduleMode === "custom"
                                             text: "󰄬"
-                                            font.family: root.theme.iconFontFamily
-                                            font.pixelSize: root.theme.iconSm
-                                            color: root.theme.primaryContainerText
+                                            font.family: NexaUI.NexaTypography.familyIcon
+                                            font.pixelSize: NexaUI.NexaTokens.iconSm
+                                            color: NexaUI.NexaColors.onPrimaryContainer
                                         }
                                     }
 
@@ -920,10 +918,10 @@ Item {
                                         Rectangle {
                                             Layout.fillWidth: true
                                             height: 84
-                                            radius: root.theme.radiusSm
-                                            color: root.theme.cardBackground
-                                            border.width: root.theme.borderThin
-                                            border.color: root.theme.border
+                                            radius: NexaUI.NexaTokens.radiusSm
+                                            color: NexaUI.NexaColors.surfaceContainer
+                                            border.width: NexaUI.NexaTokens.borderThin
+                                            border.color: NexaUI.NexaColors.border
 
                                             Column {
                                                 anchors.fill: parent
@@ -932,10 +930,10 @@ Item {
 
                                                 Text {
                                                     text: "Turn On"
-                                                    font.family: root.theme.fontFamily
-                                                    font.pixelSize: root.theme.fontSize2Xs
-                                                    font.weight: root.theme.fontWeightBold
-                                                    color: root.theme.mutedText
+                                                    font.family: NexaUI.NexaTypography.familyBody
+                                                    font.pixelSize: 10
+                                                    font.weight: Font.Bold
+                                                    color: NexaUI.NexaColors.mutedText
                                                 }
 
                                                 RowLayout {
@@ -945,9 +943,9 @@ Item {
                                                     // Hour −
                                                     Rectangle {
                                                         width: 16; height: 22; radius: 3
-                                                        color: subStartH2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.border
-                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: root.theme.text }
+                                                        color: subStartH2.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.border
+                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: NexaUI.NexaColors.text }
                                                         MouseArea { id: subStartH2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleHour("start", -1) }
                                                     }
 
@@ -956,34 +954,34 @@ Item {
                                                         Layout.preferredWidth: 20
                                                         horizontalAlignment: Text.AlignHCenter
                                                         text: {
-                                                            let h = parseInt((nightLight.scheduleStart || "22:00").split(":")[0], 10) || 0
+                                                             let h = parseInt((nightLight.scheduleStart || "22:00").split(":")[0], 10) || 0
                                                             let h12 = h % 12; if (h12 === 0) h12 = 12
                                                             return h12 < 10 ? "0" + h12 : "" + h12
                                                         }
-                                                        font.family: root.theme.monoFontFamily
-                                                        font.pixelSize: root.theme.fontSizeXs
-                                                        font.weight: root.theme.fontWeightDemiBold
-                                                        color: root.theme.text
+                                                        font.family: NexaUI.NexaTypography.familyMono
+                                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                                        font.weight: Font.DemiBold
+                                                        color: NexaUI.NexaColors.text
                                                         MouseArea { anchors.fill: parent; onWheel: (w) => { if (w.angleDelta.y > 0) nightLight.adjustScheduleHour("start", 1); else nightLight.adjustScheduleHour("start", -1) } }
                                                     }
 
                                                     // Hour +
                                                     Rectangle {
                                                         width: 16; height: 22; radius: 3
-                                                        color: addStartH2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.border
-                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: root.theme.text }
+                                                        color: addStartH2.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.border
+                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: NexaUI.NexaColors.text }
                                                         MouseArea { id: addStartH2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleHour("start", 1) }
                                                     }
 
-                                                    Text { text: ":"; font.family: root.theme.monoFontFamily; font.pixelSize: root.theme.fontSizeXs; font.bold: true; color: root.theme.mutedText }
+                                                    Text { text: ":"; font.family: NexaUI.NexaTypography.familyMono; font.pixelSize: NexaUI.NexaTypography.sizeXs; font.bold: true; color: NexaUI.NexaColors.mutedText }
 
                                                     // Minute −
                                                     Rectangle {
                                                         width: 16; height: 22; radius: 3
-                                                        color: subStartM2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.border
-                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: root.theme.text }
+                                                        color: subStartM2.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.border
+                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: NexaUI.NexaColors.text }
                                                         MouseArea { id: subStartM2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleMinute("start", -5) }
                                                     }
 
@@ -992,19 +990,19 @@ Item {
                                                         Layout.preferredWidth: 20
                                                         horizontalAlignment: Text.AlignHCenter
                                                         text: (nightLight.scheduleStart || "22:00").split(":")[1] || "00"
-                                                        font.family: root.theme.monoFontFamily
-                                                        font.pixelSize: root.theme.fontSizeXs
-                                                        font.weight: root.theme.fontWeightDemiBold
-                                                        color: root.theme.text
+                                                        font.family: NexaUI.NexaTypography.familyMono
+                                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                                        font.weight: Font.DemiBold
+                                                        color: NexaUI.NexaColors.text
                                                         MouseArea { anchors.fill: parent; onWheel: (w) => { if (w.angleDelta.y > 0) nightLight.adjustScheduleMinute("start", 1); else nightLight.adjustScheduleMinute("start", -1) } }
                                                     }
 
                                                     // Minute +
                                                     Rectangle {
                                                         width: 16; height: 22; radius: 3
-                                                        color: addStartM2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.border
-                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: root.theme.text }
+                                                        color: addStartM2.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.border
+                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: NexaUI.NexaColors.text }
                                                         MouseArea { id: addStartM2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleMinute("start", 5) }
                                                     }
                                                 }
@@ -1020,19 +1018,19 @@ Item {
                                                     spacing: 4
                                                     Rectangle {
                                                         width: 28; height: 16; radius: 3
-                                                        color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) < 12 ? root.theme.primary : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.primary
+                                                        color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) < 12 ? NexaUI.NexaColors.primary : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.primary
                                                         Text { anchors.centerIn: parent; text: "AM"; font.pixelSize: 9; font.weight: Font.Bold
-                                                            color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) < 12 ? root.theme.onPrimary : root.theme.primary }
+                                                            color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) < 12 ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.primary }
                                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                             onClicked: { let h=parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10)||0; if(h>=12) nightLight.adjustScheduleHour("start",-12) } }
                                                     }
                                                     Rectangle {
                                                         width: 28; height: 16; radius: 3
-                                                        color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) >= 12 ? root.theme.primary : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.primary
+                                                        color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) >= 12 ? NexaUI.NexaColors.primary : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.primary
                                                         Text { anchors.centerIn: parent; text: "PM"; font.pixelSize: 9; font.weight: Font.Bold
-                                                            color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) >= 12 ? root.theme.onPrimary : root.theme.primary }
+                                                            color: parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10) >= 12 ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.primary }
                                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                             onClicked: { let h=parseInt((nightLight.scheduleStart||"22:00").split(":")[0],10)||0; if(h<12) nightLight.adjustScheduleHour("start",12) } }
                                                     }
@@ -1044,10 +1042,10 @@ Item {
                                         Rectangle {
                                             Layout.fillWidth: true
                                             height: 84
-                                            radius: root.theme.radiusSm
-                                            color: root.theme.cardBackground
-                                            border.width: root.theme.borderThin
-                                            border.color: root.theme.border
+                                            radius: NexaUI.NexaTokens.radiusSm
+                                            color: NexaUI.NexaColors.surfaceContainer
+                                            border.width: NexaUI.NexaTokens.borderThin
+                                            border.color: NexaUI.NexaColors.border
 
                                             Column {
                                                 anchors.fill: parent
@@ -1056,10 +1054,10 @@ Item {
 
                                                 Text {
                                                     text: "Turn Off"
-                                                    font.family: root.theme.fontFamily
-                                                    font.pixelSize: root.theme.fontSize2Xs
-                                                    font.weight: root.theme.fontWeightBold
-                                                    color: root.theme.mutedText
+                                                    font.family: NexaUI.NexaTypography.familyBody
+                                                    font.pixelSize: 10
+                                                    font.weight: Font.Bold
+                                                    color: NexaUI.NexaColors.mutedText
                                                 }
 
                                                 RowLayout {
@@ -1069,9 +1067,9 @@ Item {
                                                     // Hour −
                                                     Rectangle {
                                                         width: 16; height: 22; radius: 3
-                                                        color: subEndH2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.border
-                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: root.theme.text }
+                                                        color: subEndH2.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.border
+                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: NexaUI.NexaColors.text }
                                                         MouseArea { id: subEndH2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleHour("end", -1) }
                                                     }
 
@@ -1084,30 +1082,30 @@ Item {
                                                             let h12 = h % 12; if (h12 === 0) h12 = 12
                                                             return h12 < 10 ? "0" + h12 : "" + h12
                                                         }
-                                                        font.family: root.theme.monoFontFamily
-                                                        font.pixelSize: root.theme.fontSizeXs
-                                                        font.weight: root.theme.fontWeightDemiBold
-                                                        color: root.theme.text
+                                                        font.family: NexaUI.NexaTypography.familyMono
+                                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                                        font.weight: Font.DemiBold
+                                                        color: NexaUI.NexaColors.text
                                                         MouseArea { anchors.fill: parent; onWheel: (w) => { if (w.angleDelta.y > 0) nightLight.adjustScheduleHour("end", 1); else nightLight.adjustScheduleHour("end", -1) } }
                                                     }
 
                                                     // Hour +
                                                     Rectangle {
                                                         width: 16; height: 22; radius: 3
-                                                        color: addEndH2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.border
-                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: root.theme.text }
+                                                        color: addEndH2.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.border
+                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: NexaUI.NexaColors.text }
                                                         MouseArea { id: addEndH2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleHour("end", 1) }
                                                     }
 
-                                                    Text { text: ":"; font.family: root.theme.monoFontFamily; font.pixelSize: root.theme.fontSizeXs; font.bold: true; color: root.theme.mutedText }
+                                                    Text { text: ":"; font.family: NexaUI.NexaTypography.familyMono; font.pixelSize: NexaUI.NexaTypography.sizeXs; font.bold: true; color: NexaUI.NexaColors.mutedText }
 
                                                     // Minute −
                                                     Rectangle {
                                                         width: 16; height: 22; radius: 3
-                                                        color: subEndM2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.border
-                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: root.theme.text }
+                                                        color: subEndM2.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.border
+                                                        Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 11; color: NexaUI.NexaColors.text }
                                                         MouseArea { id: subEndM2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleMinute("end", -5) }
                                                     }
 
@@ -1116,19 +1114,19 @@ Item {
                                                         Layout.preferredWidth: 18
                                                         horizontalAlignment: Text.AlignHCenter
                                                         text: (nightLight.scheduleEnd || "06:00").split(":")[1] || "00"
-                                                        font.family: root.theme.monoFontFamily
-                                                        font.pixelSize: root.theme.fontSizeXs
-                                                        font.weight: root.theme.fontWeightDemiBold
-                                                        color: root.theme.text
+                                                        font.family: NexaUI.NexaTypography.familyMono
+                                                        font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                                        font.weight: Font.DemiBold
+                                                        color: NexaUI.NexaColors.text
                                                         MouseArea { anchors.fill: parent; onWheel: (w) => { if (w.angleDelta.y > 0) nightLight.adjustScheduleMinute("end", 1); else nightLight.adjustScheduleMinute("end", -1) } }
                                                     }
 
                                                     // Minute +
                                                     Rectangle {
                                                         width: 16; height: 22; radius: 3
-                                                        color: addEndM2.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.border
-                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: root.theme.text }
+                                                        color: addEndM2.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.border
+                                                        Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 11; color: NexaUI.NexaColors.text }
                                                         MouseArea { id: addEndM2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nightLight.adjustScheduleMinute("end", 5) }
                                                     }
                                                 }
@@ -1144,19 +1142,19 @@ Item {
                                                     spacing: 4
                                                     Rectangle {
                                                         width: 28; height: 16; radius: 3
-                                                        color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) < 12 ? root.theme.primary : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.primary
+                                                        color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) < 12 ? NexaUI.NexaColors.primary : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.primary
                                                         Text { anchors.centerIn: parent; text: "AM"; font.pixelSize: 9; font.weight: Font.Bold
-                                                            color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) < 12 ? root.theme.onPrimary : root.theme.primary }
+                                                            color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) < 12 ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.primary }
                                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                             onClicked: { let h=parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10)||0; if(h>=12) nightLight.adjustScheduleHour("end",-12) } }
                                                     }
                                                     Rectangle {
                                                         width: 28; height: 16; radius: 3
-                                                        color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) >= 12 ? root.theme.primary : root.theme.cardBackgroundElevated
-                                                        border.width: root.theme.borderThin; border.color: root.theme.primary
+                                                        color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) >= 12 ? NexaUI.NexaColors.primary : NexaUI.NexaColors.surfaceContainerHigh
+                                                        border.width: NexaUI.NexaTokens.borderThin; border.color: NexaUI.NexaColors.primary
                                                         Text { anchors.centerIn: parent; text: "PM"; font.pixelSize: 9; font.weight: Font.Bold
-                                                            color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) >= 12 ? root.theme.onPrimary : root.theme.primary }
+                                                            color: parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10) >= 12 ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.primary }
                                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                             onClicked: { let h=parseInt((nightLight.scheduleEnd||"06:00").split(":")[0],10)||0; if(h<12) nightLight.adjustScheduleHour("end",12) } }
                                                     }
@@ -1211,18 +1209,18 @@ Item {
                                 delegate: Rectangle {
                                     width: (parent.width - 8) / 3
                                     height: 28
-                                    radius: root.theme.radiusSm
-                                    color: nightLight.mode === modelData.mode ? root.theme.primaryContainer : (mMouse.containsMouse ? root.theme.hover : root.theme.cardBackgroundElevated)
-                                    border.width: root.theme.borderThin
-                                    border.color: nightLight.mode === modelData.mode ? root.theme.primary : root.theme.border
+                                    radius: NexaUI.NexaTokens.radiusSm
+                                    color: nightLight.mode === modelData.mode ? NexaUI.NexaColors.primaryContainer : (mMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainerHigh)
+                                    border.width: NexaUI.NexaTokens.borderThin
+                                    border.color: nightLight.mode === modelData.mode ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData.label
-                                        font.family: root.theme.fontFamily
-                                        font.pixelSize: root.theme.fontSize2Xs
-                                        font.weight: nightLight.mode === modelData.mode ? root.theme.fontWeightDemiBold : root.theme.fontWeightNormal
-                                        color: nightLight.mode === modelData.mode ? root.theme.primaryContainerText : root.theme.text
+                                        font.family: NexaUI.NexaTypography.familyBody
+                                        font.pixelSize: 10
+                                        font.weight: nightLight.mode === modelData.mode ? Font.DemiBold : Font.Normal
+                                        color: nightLight.mode === modelData.mode ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                     }
 
                                     MouseArea {
@@ -1242,16 +1240,16 @@ Item {
             // RIGHT COLUMN (Tiles: Connectivity & Actions)
             // ========================================================
             Column {
-                width: (parent.width - root.theme.spacingLg) / 2
+                width: (parent.width - NexaUI.NexaTokens.spacingLg) / 2
                 spacing: 8
 
                 // --- CONNECTIVITY HEADER ---
                 Text {
                     text: "Connectivity"
-                    color: root.theme.text
-                    font.family: root.theme.fontFamily
-                    font.pixelSize: root.theme.fontSizeXs
-                    font.weight: root.theme.fontWeightDemiBold
+                    color: NexaUI.NexaColors.text
+                    font.family: NexaUI.NexaTypography.familyBody
+                    font.pixelSize: NexaUI.NexaTypography.sizeXs
+                    font.weight: Font.DemiBold
                     opacity: 0.9
                 }
 
@@ -1259,18 +1257,18 @@ Item {
                 Grid {
                     width: parent.width
                     columns: 2
-                    columnSpacing: root.theme.spacingSm
-                    rowSpacing: root.theme.spacingSm
+                    columnSpacing: NexaUI.NexaTokens.spacingSm
+                    rowSpacing: NexaUI.NexaTokens.spacingSm
 
                     // 1. Wi-Fi
                     Rectangle {
-                        width: (parent.width - root.theme.spacingSm) / 2
+                        width: (parent.width - NexaUI.NexaTokens.spacingSm) / 2
                         height: 58
-                        radius: root.theme.radiusMd
+                        radius: NexaUI.NexaTokens.radiusMd
                         clip: true
-                        color: wifi.enabled ? root.theme.primaryContainer : (wifiMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
-                        border.width: root.theme.borderThin
-                        border.color: wifi.enabled ? root.theme.primary : root.theme.border
+                        color: wifi.enabled ? NexaUI.NexaColors.primaryContainer : (wifiMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: wifi.enabled ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                         Column {
                             anchors {
@@ -1288,30 +1286,30 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: !wifi.enabled ? "󰤭" : (!wifi.connected ? "󰤭" : (wifi.strength >= 75 ? "󰤨" : (wifi.strength >= 50 ? "󰤥" : "󰤢")))
-                                    color: wifi.enabled ? root.theme.primaryContainerText : root.theme.mutedText
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
+                                    color: wifi.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
                                 }
                             }
 
                             Text {
                                 width: parent.width
                                 text: "Wi-Fi"
-                                color: wifi.enabled ? root.theme.primaryContainerText : root.theme.text
+                                color: wifi.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
                             }
 
                             Text {
                                 width: parent.width
                                 text: !wifi.enabled ? "Off" : (wifi.connected ? wifi.ssid : "Disconnected")
-                                color: wifi.enabled ? root.theme.primaryContainerText : root.theme.mutedText
+                                color: wifi.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                 opacity: 0.8
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
                             }
                         }
 
@@ -1326,13 +1324,13 @@ Item {
 
                     // 2. Bluetooth
                     Rectangle {
-                        width: (parent.width - root.theme.spacingSm) / 2
+                        width: (parent.width - NexaUI.NexaTokens.spacingSm) / 2
                         height: 58
-                        radius: root.theme.radiusMd
+                        radius: NexaUI.NexaTokens.radiusMd
                         clip: true
-                        color: bluetooth.enabled ? root.theme.primaryContainer : (btMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
-                        border.width: root.theme.borderThin
-                        border.color: bluetooth.enabled ? root.theme.primary : root.theme.border
+                        color: bluetooth.enabled ? NexaUI.NexaColors.primaryContainer : (btMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: bluetooth.enabled ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                         Column {
                             anchors {
@@ -1350,30 +1348,30 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: bluetooth.enabled ? (bluetooth.connected ? "󰂱" : "󰂯") : "󰂲"
-                                    color: bluetooth.enabled ? root.theme.primaryContainerText : root.theme.mutedText
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
+                                    color: bluetooth.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
                                 }
                             }
 
                             Text {
                                 width: parent.width
                                 text: "Bluetooth"
-                                color: bluetooth.enabled ? root.theme.primaryContainerText : root.theme.text
+                                color: bluetooth.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
                             }
 
                             Text {
                                 width: parent.width
                                 text: !bluetooth.enabled ? "Off" : (bluetooth.connected ? bluetooth.connectedDeviceName : "On")
-                                color: bluetooth.enabled ? root.theme.primaryContainerText : root.theme.mutedText
+                                color: bluetooth.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                 opacity: 0.8
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
                             }
                         }
 
@@ -1388,13 +1386,13 @@ Item {
 
                     // 3. Airplane
                     Rectangle {
-                        width: (parent.width - root.theme.spacingSm) / 2
+                        width: (parent.width - NexaUI.NexaTokens.spacingSm) / 2
                         height: 58
-                        radius: root.theme.radiusMd
+                        radius: NexaUI.NexaTokens.radiusMd
                         clip: true
-                        color: airplane.enabled ? root.theme.primaryContainer : (airMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
-                        border.width: root.theme.borderThin
-                        border.color: airplane.enabled ? root.theme.primary : root.theme.border
+                        color: airplane.enabled ? NexaUI.NexaColors.primaryContainer : (airMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: airplane.enabled ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                         Column {
                             anchors {
@@ -1412,30 +1410,30 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰀝"
-                                    color: airplane.enabled ? root.theme.primaryContainerText : root.theme.mutedText
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
+                                    color: airplane.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
                                 }
                             }
 
                             Text {
                                 width: parent.width
                                 text: "Airplane"
-                                color: airplane.enabled ? root.theme.primaryContainerText : root.theme.text
+                                color: airplane.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
                             }
 
                             Text {
                                 width: parent.width
                                 text: airplane.enabled ? "On" : "Off"
-                                color: airplane.enabled ? root.theme.primaryContainerText : root.theme.mutedText
+                                color: airplane.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                 opacity: 0.8
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
                             }
                         }
 
@@ -1450,13 +1448,13 @@ Item {
 
                     // 4. VPN
                     Rectangle {
-                        width: (parent.width - root.theme.spacingSm) / 2
+                        width: (parent.width - NexaUI.NexaTokens.spacingSm) / 2
                         height: 58
-                        radius: root.theme.radiusMd
+                        radius: NexaUI.NexaTokens.radiusMd
                         clip: true
-                        color: vpn.enabled ? root.theme.primaryContainer : (vpnMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
-                        border.width: root.theme.borderThin
-                        border.color: vpn.enabled ? root.theme.primary : root.theme.border
+                        color: vpn.enabled ? NexaUI.NexaColors.primaryContainer : (vpnMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: vpn.enabled ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                         Column {
                             anchors {
@@ -1474,30 +1472,30 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: vpn.enabled ? "󰦝" : "󰦞"
-                                    color: vpn.enabled ? root.theme.primaryContainerText : root.theme.mutedText
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
+                                    color: vpn.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
                                 }
                             }
 
                             Text {
                                 width: parent.width
                                 text: "VPN"
-                                color: vpn.enabled ? root.theme.primaryContainerText : root.theme.text
+                                color: vpn.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
                             }
 
                             Text {
                                 width: parent.width
                                 text: !vpn.available ? "No profile" : (vpn.enabled ? vpn.activeProfile : "Disconnected")
-                                color: vpn.enabled ? root.theme.primaryContainerText : root.theme.mutedText
+                                color: vpn.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                 opacity: 0.8
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
                             }
                         }
 
@@ -1519,10 +1517,10 @@ Item {
                 // --- ACTIONS HEADER ---
                 Text {
                     text: "Actions"
-                    color: root.theme.text
-                    font.family: root.theme.fontFamily
-                    font.pixelSize: root.theme.fontSizeXs
-                    font.weight: root.theme.fontWeightDemiBold
+                    color: NexaUI.NexaColors.text
+                    font.family: NexaUI.NexaTypography.familyBody
+                    font.pixelSize: NexaUI.NexaTypography.sizeXs
+                    font.weight: Font.DemiBold
                     opacity: 0.9
                 }
 
@@ -1530,18 +1528,18 @@ Item {
                 Grid {
                     width: parent.width
                     columns: 2
-                    columnSpacing: root.theme.spacingSm
-                    rowSpacing: root.theme.spacingSm
+                    columnSpacing: NexaUI.NexaTokens.spacingSm
+                    rowSpacing: NexaUI.NexaTokens.spacingSm
 
                     // 1. DND
                     Rectangle {
-                        width: (parent.width - root.theme.spacingSm) / 2
+                        width: (parent.width - NexaUI.NexaTokens.spacingSm) / 2
                         height: 58
-                        radius: root.theme.radiusMd
+                        radius: NexaUI.NexaTokens.radiusMd
                         clip: true
-                        color: dnd.enabled ? root.theme.primaryContainer : (dndMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
-                        border.width: root.theme.borderThin
-                        border.color: dnd.enabled ? root.theme.primary : root.theme.border
+                        color: dnd.enabled ? NexaUI.NexaColors.primaryContainer : (dndMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: dnd.enabled ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                         Column {
                             anchors {
@@ -1559,29 +1557,29 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰂛"
-                                    color: dnd.enabled ? root.theme.primaryContainerText : root.theme.mutedText
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
+                                    color: dnd.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
                                 }
                             }
 
                             Text {
                                 width: parent.width
                                 text: "DND"
-                                color: dnd.enabled ? root.theme.primaryContainerText : root.theme.text
+                                color: dnd.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
                             }
 
                             Text {
                                 width: parent.width
                                 text: dnd.enabled ? "On" : "Off"
-                                color: dnd.enabled ? root.theme.primaryContainerText : root.theme.mutedText
+                                color: dnd.enabled ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                 opacity: 0.8
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
                             }
                         }
 
@@ -1596,13 +1594,13 @@ Item {
 
                     // 2. Recorder
                     Rectangle {
-                        width: (parent.width - root.theme.spacingSm) / 2
+                        width: (parent.width - NexaUI.NexaTokens.spacingSm) / 2
                         height: 58
-                        radius: root.theme.radiusMd
+                        radius: NexaUI.NexaTokens.radiusMd
                         clip: true
-                        color: recorderControl.recording ? root.theme.primaryContainer : (recMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
-                        border.width: root.theme.borderThin
-                        border.color: recorderControl.recording ? root.theme.primary : root.theme.border
+                        color: recorderControl.recording ? NexaUI.NexaColors.primaryContainer : (recMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: recorderControl.recording ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                         Column {
                             anchors {
@@ -1620,29 +1618,29 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: recorderControl.recording ? "󰑊" : "󰻂"
-                                    color: recorderControl.recording ? root.theme.primaryContainerText : root.theme.mutedText
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
+                                    color: recorderControl.recording ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
                                 }
                             }
 
                             Text {
                                 width: parent.width
                                 text: "Recorder"
-                                color: recorderControl.recording ? root.theme.primaryContainerText : root.theme.text
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
+                                color: recorderControl.recording ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
                             }
 
                             Text {
                                 width: parent.width
                                 text: recorderControl.statusText
-                                color: recorderControl.recording ? root.theme.primaryContainerText : root.theme.mutedText
+                                color: recorderControl.recording ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                 opacity: 0.8
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
                             }
                         }
 
@@ -1657,13 +1655,13 @@ Item {
 
                     // 3. Screenshot
                     Rectangle {
-                        width: (parent.width - root.theme.spacingSm) / 2
+                        width: (parent.width - NexaUI.NexaTokens.spacingSm) / 2
                         height: 58
-                        radius: root.theme.radiusMd
+                        radius: NexaUI.NexaTokens.radiusMd
                         clip: true
-                        color: shotMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated
-                        border.width: root.theme.borderThin
-                        border.color: root.theme.border
+                        color: shotMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: NexaUI.NexaColors.border
 
                         Column {
                             anchors {
@@ -1681,28 +1679,28 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰹑"
-                                    color: root.theme.mutedText
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
                                 }
                             }
 
                             Text {
                                 width: parent.width
                                 text: "Screenshot"
-                                color: root.theme.text
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
+                                color: NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
                             }
 
                             Text {
                                 width: parent.width
                                 text: "Capture"
-                                color: root.theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                                 opacity: 0.8
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
                             }
                         }
 
@@ -1717,13 +1715,13 @@ Item {
 
                     // 4. Clipboard
                     Rectangle {
-                        width: (parent.width - root.theme.spacingSm) / 2
+                        width: (parent.width - NexaUI.NexaTokens.spacingSm) / 2
                         height: 58
-                        radius: root.theme.radiusMd
+                        radius: NexaUI.NexaTokens.radiusMd
                         clip: true
-                        color: clipMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated
-                        border.width: root.theme.borderThin
-                        border.color: root.theme.border
+                        color: clipMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: NexaUI.NexaColors.border
 
                         Column {
                             anchors {
@@ -1741,28 +1739,28 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰅇"
-                                    color: root.theme.mutedText
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
+                                    color: NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
                                 }
                             }
 
                             Text {
                                 width: parent.width
                                 text: "Clipboard"
-                                color: root.theme.text
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
+                                color: NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
                             }
 
                             Text {
                                 width: parent.width
                                 text: "Open"
-                                color: root.theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                                 opacity: 0.8
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
                             }
                         }
 
@@ -1777,13 +1775,13 @@ Item {
 
                     // 5. Reading Mode (Study Mode / Paper Texture)
                     Rectangle {
-                        width: (parent.width - root.theme.spacingSm) / 2
+                        width: (parent.width - NexaUI.NexaTokens.spacingSm) / 2
                         height: 58
-                        radius: root.theme.radiusMd
+                        radius: NexaUI.NexaTokens.radiusMd
                         clip: true
-                        color: screenFilter.filter === "paper-mode" ? root.theme.primaryContainer : (readingMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
-                        border.width: root.theme.borderThin
-                        border.color: screenFilter.filter === "paper-mode" ? root.theme.primary : root.theme.border
+                        color: screenFilter.filter === "paper-mode" ? NexaUI.NexaColors.primaryContainer : (readingMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: screenFilter.filter === "paper-mode" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                         Column {
                             anchors {
@@ -1801,29 +1799,29 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰈙"
-                                    color: screenFilter.filter === "paper-mode" ? root.theme.primaryContainerText : root.theme.mutedText
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
+                                    color: screenFilter.filter === "paper-mode" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
                                 }
                             }
 
                             Text {
                                 width: parent.width
                                 text: "Reading Mode"
-                                color: screenFilter.filter === "paper-mode" ? root.theme.primaryContainerText : root.theme.text
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
+                                color: screenFilter.filter === "paper-mode" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
                             }
 
                             Text {
                                 width: parent.width
                                 text: screenFilter.filter === "paper-mode" ? "Paper Texture" : "Off"
-                                color: screenFilter.filter === "paper-mode" ? root.theme.primaryContainerText : root.theme.mutedText
+                                color: screenFilter.filter === "paper-mode" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                 opacity: 0.8
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
                             }
                         }
 
@@ -1844,13 +1842,13 @@ Item {
 
                     // 6. Monochrome (Focus Mode / Grayscale)
                     Rectangle {
-                        width: (parent.width - root.theme.spacingSm) / 2
+                        width: (parent.width - NexaUI.NexaTokens.spacingSm) / 2
                         height: 58
-                        radius: root.theme.radiusMd
+                        radius: NexaUI.NexaTokens.radiusMd
                         clip: true
-                        color: screenFilter.filter === "grayscale" ? root.theme.primaryContainer : (focusMouse.containsMouse ? root.theme.hoverStrong : root.theme.cardBackgroundElevated)
-                        border.width: root.theme.borderThin
-                        border.color: screenFilter.filter === "grayscale" ? root.theme.primary : root.theme.border
+                        color: screenFilter.filter === "grayscale" ? NexaUI.NexaColors.primaryContainer : (focusMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainerHigh)
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: screenFilter.filter === "grayscale" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
 
                         Column {
                             anchors {
@@ -1868,29 +1866,29 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰄲"
-                                    color: screenFilter.filter === "grayscale" ? root.theme.primaryContainerText : root.theme.mutedText
-                                    font.family: root.theme.iconFontFamily
-                                    font.pixelSize: root.theme.iconSm
+                                    color: screenFilter.filter === "grayscale" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
+                                    font.family: NexaUI.NexaTypography.familyIcon
+                                    font.pixelSize: NexaUI.NexaTokens.iconSm
                                 }
                             }
 
                             Text {
                                 width: parent.width
                                 text: "Monochrome"
-                                color: screenFilter.filter === "grayscale" ? root.theme.primaryContainerText : root.theme.text
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSizeXs
-                                font.weight: root.theme.fontWeightDemiBold
+                                color: screenFilter.filter === "grayscale" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: NexaUI.NexaTypography.sizeXs
+                                font.weight: Font.DemiBold
                             }
 
                             Text {
                                 width: parent.width
                                 text: screenFilter.filter === "grayscale" ? "Grayscale" : "Off"
-                                color: screenFilter.filter === "grayscale" ? root.theme.primaryContainerText : root.theme.mutedText
+                                color: screenFilter.filter === "grayscale" ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.mutedText
                                 opacity: 0.8
                                 elide: Text.ElideRight
-                                font.family: root.theme.fontFamily
-                                font.pixelSize: root.theme.fontSize2Xs
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 10
                             }
                         }
 

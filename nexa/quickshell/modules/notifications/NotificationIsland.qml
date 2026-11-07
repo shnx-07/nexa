@@ -3,12 +3,11 @@ import QtQuick.Layouts
 
 import Quickshell
 
-import "../../theme" as Nexa
+import "../../NewNexaUI" as NexaUI
 
 
 Item {
     id: root
-
 
     // ============================================================
     // INPUT
@@ -26,57 +25,40 @@ Item {
     RowLayout {
         anchors {
             fill: parent
-
-            leftMargin:
-                Nexa.Theme.spacingLg
-
-            rightMargin:
-                Nexa.Theme.spacingLg
-
-            topMargin:
-                Nexa.Theme.spacingMd
-
-            bottomMargin:
-                Nexa.Theme.spacingMd
+            leftMargin: NexaUI.NexaTokens.spacingLg
+            rightMargin: NexaUI.NexaTokens.spacingLg
+            topMargin: NexaUI.NexaTokens.spacingSm
+            bottomMargin: NexaUI.NexaTokens.spacingSm
         }
 
-        spacing:
-            Nexa.Theme.spacingMd
+        spacing: NexaUI.NexaTokens.spacingMd
 
 
         // ========================================================
-        // APP ICON
+        // APP ICON SQUIRCLE
         // ========================================================
 
         Rectangle {
-            Layout.preferredWidth:
-                Nexa.Theme.controlHeightLg
+            Layout.preferredWidth: 36
+            Layout.preferredHeight: 36
+            Layout.alignment: Qt.AlignVCenter
 
-            Layout.preferredHeight:
-                Nexa.Theme.controlHeightLg
-
-            Layout.alignment:
-                Qt.AlignVCenter
-
-            radius:
-                Nexa.Theme.radiusMd
-
-            color:
-                Nexa.Theme.surfaceContainerHighest
-
+            radius: NexaUI.NexaTokens.radiusSm
+            color: NexaUI.NexaColors.surfaceContainerHigh
+            border.width: NexaUI.NexaTokens.borderThin
+            border.color: NexaUI.NexaColors.borderSubtle
 
             Image {
                 id: notificationIcon
 
                 anchors {
                     fill: parent
-                    margins:
-                        Nexa.Theme.spacingXs
+                    margins: NexaUI.NexaTokens.spacingXs
                 }
 
                 source:
                     root.notification
-                        ? root.notification.appIcon || ""
+                        ? (root.notification.appIcon || "")
                         : ""
 
                 visible:
@@ -92,7 +74,6 @@ Item {
                     true
             }
 
-
             Text {
                 anchors.centerIn:
                     parent
@@ -104,14 +85,14 @@ Item {
                     "󰂚"
 
                 color:
-                    Nexa.Theme.primary
+                    NexaUI.NexaColors.primary
 
                 font {
                     family:
-                        Nexa.Theme.iconFontFamily
+                        NexaUI.NexaTypography.familyIcon
 
                     pixelSize:
-                        Nexa.Theme.iconMd
+                        NexaUI.NexaTypography.sizeLg
                 }
             }
         }
@@ -129,7 +110,7 @@ Item {
                 Qt.AlignVCenter
 
             spacing:
-                Nexa.Theme.spacing2Xs
+                NexaUI.NexaTokens.spacing2Xs
 
 
             RowLayout {
@@ -137,8 +118,7 @@ Item {
                     true
 
                 spacing:
-                    Nexa.Theme.spacingSm
-
+                    NexaUI.NexaTokens.spacingSm
 
                 Text {
                     Layout.fillWidth:
@@ -146,41 +126,40 @@ Item {
 
                     text:
                         root.notification
-                            ? root.notification.appName || "Application"
+                            ? (root.notification.appName || "Notification")
                             : ""
 
                     color:
-                        Nexa.Theme.mutedText
+                        NexaUI.NexaColors.mutedText
 
                     elide:
                         Text.ElideRight
 
                     font {
                         family:
-                            Nexa.Theme.fontFamily
+                            NexaUI.NexaTypography.familyBody
 
                         pixelSize:
-                            Nexa.Theme.fontSizeXs
+                            NexaUI.NexaTypography.sizeXs
 
                         weight:
-                            Nexa.Theme.fontWeightMedium
+                            NexaUI.NexaTypography.weightMedium
                     }
                 }
-
 
                 Text {
                     text:
                         "now"
 
                     color:
-                        Nexa.Theme.mutedText
+                        NexaUI.NexaColors.mutedText
 
                     font {
                         family:
-                            Nexa.Theme.fontFamily
+                            NexaUI.NexaTypography.familyBody
 
                         pixelSize:
-                            Nexa.Theme.fontSize2Xs
+                            NexaUI.NexaTypography.size2Xs
                     }
                 }
             }
@@ -194,11 +173,11 @@ Item {
 
                 text:
                     root.notification
-                        ? root.notification.summary || ""
+                        ? (root.notification.summary || "")
                         : ""
 
                 color:
-                    Nexa.Theme.text
+                    NexaUI.NexaColors.text
 
                 elide:
                     Text.ElideRight
@@ -208,13 +187,13 @@ Item {
 
                 font {
                     family:
-                        Nexa.Theme.fontFamily
+                        NexaUI.NexaTypography.familyBody
 
                     pixelSize:
-                        Nexa.Theme.fontSizeSm
+                        NexaUI.NexaTypography.sizeSm
 
                     weight:
-                        Nexa.Theme.fontWeightDemiBold
+                        NexaUI.NexaTypography.weightSemiBold
                 }
             }
 
@@ -230,11 +209,11 @@ Item {
 
                 text:
                     root.notification
-                        ? root.notification.body || ""
+                        ? (root.notification.body || "")
                         : ""
 
                 color:
-                    Nexa.Theme.mutedText
+                    NexaUI.NexaColors.mutedText
 
                 elide:
                     Text.ElideRight
@@ -244,10 +223,10 @@ Item {
 
                 font {
                     family:
-                        Nexa.Theme.fontFamily
+                        NexaUI.NexaTypography.familyBody
 
                     pixelSize:
-                        Nexa.Theme.fontSizeXs
+                        NexaUI.NexaTypography.sizeXs
                 }
             }
         }
@@ -256,9 +235,6 @@ Item {
 
     // ============================================================
     // WHOLE PREVIEW IS CLICKABLE
-    //
-    // No actions here.
-    // Actions belong to Side Panel notifications.
     // ============================================================
 
     MouseArea {

@@ -3,9 +3,9 @@ import QtQuick.Layouts
 import QtQuick.Effects
 import QtMultimedia
 import Qt5Compat.GraphicalEffects
-import Qt.labs.folderlistmodel
 import Quickshell
-import "../theme" as Nexa
+import Quickshell.Io
+import "../NewNexaUI" as NexaUI
 
 Item {
     id: root
@@ -16,1108 +16,473 @@ Item {
     property string lastWallpaper: ""
     property string searchQuery: ""
 
-    readonly property string homeDir:
-        Quickshell.env("HOME")
+    readonly property string homeDir: Quickshell.env("HOME")
+    readonly property string nexad: homeDir + "/.config/nexa/rust/target/release/nexad"
+    readonly property string thumbDir: "file://" + homeDir + "/.cache/nexa/wallpapers/slideshow_thumbs/"
 
-    readonly property string thumbDir:
-        "file://" + homeDir + "/.cache/nexa/wallpapers/slideshow_thumbs/"
-
-    Component.onCompleted: {
-        Quickshell.execDetached([homeDir + "/.config/nexa/rust/target/release/nexad", "wallpaper", "slideshow-thumbs"])
-        grid.forceActiveFocus()
-    }
-
-    onVisibleChanged: {
-        if (visible) {
-            grid.forceActiveFocus()
-            root.syncCurrentSelection()
-        }
+    function fileUrl(path) {
+        if (!path || path.length === 0) return "";
+        if (path.startsWith("file://")) return path;
+        return "file://" + encodeURI(path);
     }
 
     signal applyWallpaper(string filePath)
+    signal closeRequested()
 
-    // ---------------------------------------------------------
-    // Selection Synchronization & Apply Action
-    // ---------------------------------------------------------
-    function applySelected() {
-        if (folderModel.count <= 0 || grid.currentIndex < 0 || grid.currentIndex >= folderModel.count)
-            return
-        const path = folderModel.get(grid.currentIndex, "filePath")
-        if (path) {
-            root.applyWallpaper(path)
+    // =========================================================================
+    // [EXTENSION POINT]: ADD NEW WALLPAPER VIEW SHAPES & LAYOUTS HERE
+    // =========================================================================
+    property var gridMetrics: ({ columns: 5, cell_height_ratio: 0.5625, corner_radius: 14 })
+
+    Process {
+        id: layoutProcess
+        command: [nexad, "wallpaper", "layout", "--width", String(root.width || 1920), "--height", String(root.height || 1080), "--mode", "grid"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!this.text || this.text.trim() === "") return;
+                try {
+                    const p = JSON.parse(this.text.trim());
+                    if (p.grid) root.gridMetrics = p.grid;
+                } catch (e) {}
+            }
         }
+    }
+
+    onWidthChanged: if (root.visible && !layoutProcess.running) layoutProcess.running = true
+
+    // Rust-driven Wallpaper Scanner & In-Memory Model
+    property var allSlideshowItems: []
+
+    Process {
+        id: slideshowListProcess
+        command: [nexad, "wallpaper", "list", root.slideshowFolder, "--json"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!this.text || this.text.trim() === "") return;
+                try {
+                    const data = JSON.parse(this.text.trim());
+                    root.allSlideshowItems = data.wallpapers || [];
+                    root.filterAndPopulateModel();
+                } catch (e) {
+                    console.warn("[SlideshowWallpaperView] Error parsing slideshow JSON:", e);
+                }
+            }
+        }
+    }
+
+    function reload() {
+        if (!slideshowListProcess.running) slideshowListProcess.running = true;
+        if (!layoutProcess.running) layoutProcess.running = true;
+    }
+
+    function filterAndPopulateModel() {
+        const q = root.searchQuery.trim().toLowerCase();
+        const t = root.slideshowType.toLowerCase();
+        folderModel.clear();
+        for (let i = 0; i < root.allSlideshowItems.length; ++i) {
+            const it = root.allSlideshowItems[i];
+            const kind = (it.kind || "").toLowerCase();
+            if (t !== "all" && kind !== t) continue;
+            if (q.length > 0 && !it.name.toLowerCase().includes(q)) continue;
+            folderModel.append({
+                fileName: it.name, filePath: it.path, fileURL: "file://" + it.path,
+                wallType: it.kind, wallThumb: it.thumb, wallProxy: it.proxy, formattedSize: it.formatted_size
+            });
+        }
+        root.syncCurrentSelection();
+    }
+
+    onSearchQueryChanged: filterAndPopulateModel()
+    onSlideshowTypeChanged: filterAndPopulateModel()
+    onLastWallpaperChanged: syncCurrentSelection()
+
+    Component.onCompleted: { root.reload(); grid.forceActiveFocus(); }
+    onVisibleChanged: if (visible) { root.reload(); grid.forceActiveFocus(); root.syncCurrentSelection(); }
+
+    function applySelected() {
+        if (folderModel.count <= 0 || grid.currentIndex < 0 || grid.currentIndex >= folderModel.count) return;
+        const it = folderModel.get(grid.currentIndex);
+        if (it && it.filePath) root.applyWallpaper(it.filePath);
     }
 
     function syncCurrentSelection() {
-        if (!root.lastWallpaper || folderModel.count <= 0) return
+        if (!root.lastWallpaper || folderModel.count <= 0) return;
         for (let i = 0; i < folderModel.count; ++i) {
-            const p = folderModel.get(i, "filePath")
-            if (p === root.lastWallpaper || (p && root.lastWallpaper.endsWith("/" + folderModel.get(i, "fileName")))) {
-                grid.currentIndex = i
-                root.smoothScrollToCurrent()
-                return
+            const it = folderModel.get(i);
+            if (!it) continue;
+            const p = it.filePath;
+            if (p === root.lastWallpaper || (p && root.lastWallpaper.endsWith("/" + it.fileName))) {
+                grid.currentIndex = i;
+                grid.positionViewAtIndex(i, GridView.Contain);
+                return;
             }
         }
-    }
-
-    Connections {
-        target: folderModel
-        function onCountChanged() {
-            root.syncCurrentSelection()
-        }
-    }
-
-    onLastWallpaperChanged: {
-        root.syncCurrentSelection()
-    }
-
-    // ---------------------------------------------------------
-    // 60fps Smooth Animated Scrolling & Navigation Engine
-    // ---------------------------------------------------------
-    property real targetContentY: 0
-
-    NumberAnimation {
-        id: scrollAnim
-        target: grid
-        property: "contentY"
-        duration: 220
-        easing.type: Easing.OutCubic
-    }
-
-    Connections {
-        target: grid
-        function onMovingChanged() {
-            if (grid.moving && scrollAnim.running) {
-                scrollAnim.stop()
-                root.targetContentY = grid.contentY
-            }
-        }
-    }
-
-    function smoothScrollToCurrent() {
-        if (grid.height <= 0 || grid.cellHeight <= 0 || grid.cols <= 0 || folderModel.count <= 0)
-            return
-
-        const c = grid.cols
-        const row = Math.floor(grid.currentIndex / c)
-        const rowTop = row * grid.cellHeight
-        const rowBottom = rowTop + grid.cellHeight
-
-        const totalRows = Math.ceil(folderModel.count / c)
-        const totalHeight = totalRows * grid.cellHeight
-        const maxContentY = Math.max(0, totalHeight - grid.height)
-
-        let currY = scrollAnim.running ? targetContentY : grid.contentY
-        currY = Math.max(0, Math.min(maxContentY, currY))
-
-        const pad = 24
-        let newTarget = currY
-
-        if (rowTop < currY + pad) {
-            newTarget = Math.max(0, rowTop - pad)
-        } else if (rowBottom > currY + grid.height - pad) {
-            newTarget = Math.min(maxContentY, rowBottom - grid.height + pad)
-        }
-
-        targetContentY = newTarget
-
-        if (Math.abs(newTarget - grid.contentY) > 2) {
-            scrollAnim.stop()
-            scrollAnim.from = grid.contentY
-            scrollAnim.to = newTarget
-            scrollAnim.restart()
-        }
-    }
-
-    function selectPrev() {
-        if (folderModel.count <= 0) return
-        if (grid.currentIndex < 0) {
-            grid.currentIndex = 0
-        } else if (grid.currentIndex > 0) {
-            grid.currentIndex -= 1
-        }
-        root.smoothScrollToCurrent()
-    }
-
-    function selectNext() {
-        if (folderModel.count <= 0) return
-        if (grid.currentIndex < 0) {
-            grid.currentIndex = 0
-        } else if (grid.currentIndex < folderModel.count - 1) {
-            grid.currentIndex += 1
-        }
-        root.smoothScrollToCurrent()
-    }
-
-    function selectUp() {
-        if (folderModel.count <= 0) return
-        if (grid.currentIndex < 0) {
-            grid.currentIndex = 0
-            root.smoothScrollToCurrent()
-            return
-        }
-        const c = grid.cols
-        if (grid.currentIndex - c >= 0) {
-            grid.currentIndex -= c
-            root.smoothScrollToCurrent()
-        }
-    }
-
-    function selectDown() {
-        if (folderModel.count <= 0) return
-        if (grid.currentIndex < 0) {
-            grid.currentIndex = 0
-            root.smoothScrollToCurrent()
-            return
-        }
-        const c = grid.cols
-        const total = folderModel.count
-        const currentRow = Math.floor(grid.currentIndex / c)
-        const totalRows = Math.ceil(total / c)
-
-        if (currentRow >= totalRows - 1) return
-
-        if (grid.currentIndex + c < total) {
-            grid.currentIndex += c
-        } else {
-            grid.currentIndex = total - 1
-        }
-        root.smoothScrollToCurrent()
-    }
-
-    function selectHome() {
-        if (folderModel.count <= 0) return
-        grid.currentIndex = 0
-        root.targetContentY = 0
-        scrollAnim.stop()
-        scrollAnim.from = grid.contentY
-        scrollAnim.to = 0
-        scrollAnim.restart()
-    }
-
-    function selectEnd() {
-        if (folderModel.count <= 0) return
-        grid.currentIndex = folderModel.count - 1
-        const totalRows = Math.ceil(folderModel.count / grid.cols)
-        const totalHeight = totalRows * grid.cellHeight
-        const maxContentY = Math.max(0, totalHeight - grid.height)
-        root.targetContentY = maxContentY
-        scrollAnim.stop()
-        scrollAnim.from = grid.contentY
-        scrollAnim.to = maxContentY
-        scrollAnim.restart()
-    }
-
-    function selectPageUp() {
-        if (folderModel.count <= 0) return
-        const step = grid.cols * 2
-        grid.currentIndex = Math.max(0, grid.currentIndex - step)
-        root.smoothScrollToCurrent()
-    }
-
-    function selectPageDown() {
-        if (folderModel.count <= 0) return
-        const step = grid.cols * 2
-        grid.currentIndex = Math.min(folderModel.count - 1, grid.currentIndex + step)
-        root.smoothScrollToCurrent()
-    }
-
-    // ---------------------------------------------------------
-    // Keyboard Shortcuts (Arrow control & Apply)
-    // ---------------------------------------------------------
-    Shortcut {
-        sequence: "Left"
-        enabled: root.visible && folderModel.count > 0
-        onActivated: root.selectPrev()
-    }
-
-    Shortcut {
-        sequence: "Right"
-        enabled: root.visible && folderModel.count > 0
-        onActivated: root.selectNext()
-    }
-
-    Shortcut {
-        sequence: "Up"
-        enabled: root.visible && folderModel.count > 0
-        onActivated: root.selectUp()
-    }
-
-    Shortcut {
-        sequence: "Down"
-        enabled: root.visible && folderModel.count > 0
-        onActivated: root.selectDown()
-    }
-
-    Shortcut {
-        sequence: "Home"
-        enabled: root.visible && folderModel.count > 0
-        onActivated: root.selectHome()
-    }
-
-    Shortcut {
-        sequence: "End"
-        enabled: root.visible && folderModel.count > 0
-        onActivated: root.selectEnd()
-    }
-
-    Shortcut {
-        sequence: "PageUp"
-        enabled: root.visible && folderModel.count > 0
-        onActivated: root.selectPageUp()
-    }
-
-    Shortcut {
-        sequence: "PageDown"
-        enabled: root.visible && folderModel.count > 0
-        onActivated: root.selectPageDown()
-    }
-
-    // Apply Shortcuts
-    Shortcut {
-        sequence: "Return"
-        enabled: root.visible && folderModel.count > 0 && !searchInput.activeFocus
-        onActivated: root.applySelected()
-    }
-
-    Shortcut {
-        sequence: "Enter"
-        enabled: root.visible && folderModel.count > 0 && !searchInput.activeFocus
-        onActivated: root.applySelected()
-    }
-
-    Shortcut {
-        sequence: "Space"
-        enabled: root.visible && folderModel.count > 0 && !searchInput.activeFocus
-        onActivated: root.applySelected()
     }
 
     Shortcut {
         sequence: "/"
         enabled: root.visible && !searchInput.activeFocus
-        onActivated: {
-            searchInput.forceActiveFocus()
-            searchInput.selectAll()
-        }
+        onActivated: { searchInput.forceActiveFocus(); searchInput.selectAll(); }
     }
 
-    Shortcut {
-        sequence: "Ctrl+F"
-        enabled: root.visible
-        onActivated: {
-            searchInput.forceActiveFocus()
-            searchInput.selectAll()
-        }
-    }
-
-    // ---------------------------------------------------------
-    // Top Info Header
-    // ---------------------------------------------------------
+    // Top Header Row (100% Sourced from NewNexaUI Tokens)
     RowLayout {
         id: headerRow
-        anchors {
-            top: parent.top
-            left: parent.left
-            right: parent.right
-        }
+        anchors { top: parent.top; topMargin: 16; left: parent.left; leftMargin: 16; right: parent.right; rightMargin: 16 }
         height: 38
 
+        // Left Capsule: Info & Count
         Rectangle {
             height: 38
-            radius: Nexa.Theme.radiusFull
-            color: Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.88)
-            border.width: 1
-            border.color: Nexa.Theme.outlineVariant
-            implicitWidth: headerContent.implicitWidth + 24
+            radius: NexaUI.NexaTokens.radiusPill
+            color: NexaUI.NexaColors.surfaceContainer
+            border.width: NexaUI.NexaTokens.borderThin
+            border.color: NexaUI.NexaColors.border
+            implicitWidth: headerContent.implicitWidth + 28
+
+            // Apple Tactile 4-stop Depth Micro-Gradient
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                antialiasing: true
+                visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+                opacity: NexaUI.NexaOptics.gradientIntensity
+                gradient: Gradient {
+                    GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.045) }
+                    GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.010) }
+                    GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                    GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.120) }
+                }
+            }
+
+            // Top Chamfer Specular Highlight
+            Rectangle {
+                anchors.top: parent.top
+                anchors.topMargin: 1
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Math.max(0, parent.width - parent.radius * 1.6)
+                height: 1
+                visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+                opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.30) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
 
             Row {
                 id: headerContent
                 anchors.centerIn: parent
                 spacing: 10
-
-                Text {
-                    text: "󰋩"
-                    color: Nexa.Theme.primary
-                    font.family: Nexa.Theme.iconFontFamily
-                    font.pixelSize: 15
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Text {
-                    text: "Slideshow Gallery"
-                    color: Nexa.Theme.text
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeSm
-                    font.weight: Font.DemiBold
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Rectangle {
-                    width: 1
-                    height: 14
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: Nexa.Theme.outlineVariant
-                }
-
-                Text {
-                    text: root.searchQuery.length > 0 ? (folderModel.count + " Found") : (folderModel.count + " Wallpapers")
-                    color: root.searchQuery.length > 0 ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeXs
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Rectangle {
-                    width: 1
-                    height: 14
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: Nexa.Theme.outlineVariant
-                    visible: root.searchQuery.length === 0
-                }
-
-                Text {
-                    visible: root.searchQuery.length === 0
-                    text: "Arrows • Enter to apply • / to search"
-                    color: Nexa.Theme.primary
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeXs
-                    font.weight: Font.Medium
-                    anchors.verticalCenter: parent.verticalCenter
-                }
+                Text { text: "󰋩"; color: NexaUI.NexaColors.primary; font.family: NexaUI.NexaTypography.familyIcon; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: "Slideshow Gallery"; color: NexaUI.NexaColors.text; font.family: NexaUI.NexaTypography.familyBody; font.pixelSize: NexaUI.NexaTypography.sizeSm; font.weight: NexaUI.NexaTypography.weightSemiBold; anchors.verticalCenter: parent.verticalCenter }
+                Rectangle { width: 1; height: 14; anchors.verticalCenter: parent.verticalCenter; color: NexaUI.NexaColors.border }
+                Text { text: root.searchQuery.length > 0 ? (folderModel.count + " Found") : (folderModel.count + " Wallpapers"); color: root.searchQuery.length > 0 ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText; font.family: NexaUI.NexaTypography.familyBody; font.pixelSize: NexaUI.NexaTypography.sizeXs; anchors.verticalCenter: parent.verticalCenter }
+                Rectangle { width: 1; height: 14; anchors.verticalCenter: parent.verticalCenter; color: NexaUI.NexaColors.border; visible: root.searchQuery.length === 0 }
+                Text { visible: root.searchQuery.length === 0; text: "Arrows • Enter to apply • / to search"; color: NexaUI.NexaColors.primary; font.family: NexaUI.NexaTypography.familyBody; font.pixelSize: NexaUI.NexaTypography.sizeXs; font.weight: NexaUI.NexaTypography.weightMedium; anchors.verticalCenter: parent.verticalCenter }
             }
         }
 
         Item { Layout.fillWidth: true }
 
-        // Top Search Capsule
+        // Right Capsule: Search Field
         Rectangle {
             id: searchCapsule
             height: 38
-            radius: Nexa.Theme.radiusFull
-            color: searchInput.activeFocus
-                ? Qt.rgba(Nexa.Theme.surfaceContainerHighest.r, Nexa.Theme.surfaceContainerHighest.g, Nexa.Theme.surfaceContainerHighest.b, 0.96)
-                : Qt.rgba(Nexa.Theme.surfaceContainer.r, Nexa.Theme.surfaceContainer.g, Nexa.Theme.surfaceContainer.b, 0.88)
-            border.width: searchInput.activeFocus ? 2 : 1
-            border.color: searchInput.activeFocus ? Nexa.Theme.primary : (root.searchQuery.length > 0 ? Nexa.Theme.primary : Nexa.Theme.outlineVariant)
+            radius: NexaUI.NexaTokens.radiusPill
+            color: searchInput.activeFocus ? NexaUI.NexaColors.surfaceContainerHighest : NexaUI.NexaColors.surfaceContainer
+            border.width: searchInput.activeFocus ? NexaUI.NexaTokens.borderMedium : NexaUI.NexaTokens.borderThin
+            border.color: searchInput.activeFocus ? NexaUI.NexaColors.primary : (root.searchQuery.length > 0 ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border)
             implicitWidth: searchInput.activeFocus || root.searchQuery.length > 0 ? 280 : 210
+            Behavior on implicitWidth { NumberAnimation { duration: NexaUI.NexaMotion.durationFast; easing.type: NexaUI.NexaMotion.decelerateEasing } }
 
-            Behavior on implicitWidth {
-                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+            // Apple Tactile 4-stop Depth Micro-Gradient
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                antialiasing: true
+                visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+                opacity: NexaUI.NexaOptics.gradientIntensity
+                gradient: Gradient {
+                    GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.045) }
+                    GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.010) }
+                    GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                    GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.120) }
+                }
             }
-            Behavior on border.color {
-                ColorAnimation { duration: 150 }
-            }
-            Behavior on color {
-                ColorAnimation { duration: 150 }
+
+            // Top Chamfer Specular Highlight
+            Rectangle {
+                anchors.top: parent.top
+                anchors.topMargin: 1
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Math.max(0, parent.width - parent.radius * 1.6)
+                height: 1
+                visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+                opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.30) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
             }
 
             RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 10
-                spacing: 8
-
-                Text {
-                    text: "󰍉"
-                    color: searchInput.activeFocus || root.searchQuery.length > 0 ? Nexa.Theme.primary : Nexa.Theme.mutedText
-                    font.family: Nexa.Theme.iconFontFamily
-                    font.pixelSize: 15
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
+                anchors.fill: parent; anchors.leftMargin: 14; anchors.rightMargin: 12; spacing: 8
+                Text { text: "󰍉"; color: searchInput.activeFocus || root.searchQuery.length > 0 ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText; font.family: NexaUI.NexaTypography.familyIcon; font.pixelSize: 15; Layout.alignment: Qt.AlignVCenter }
                 Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: searchInput.text.length === 0
-                        text: "Search wallpapers... (/)"
-                        color: Nexa.Theme.mutedText
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeXs
-                        font.weight: Font.Normal
-                    }
-
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                    Text { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; visible: searchInput.text.length === 0; text: "Search wallpapers... (/)"; color: NexaUI.NexaColors.mutedText; font.family: NexaUI.NexaTypography.familyBody; font.pixelSize: NexaUI.NexaTypography.sizeXs }
                     TextInput {
                         id: searchInput
-                        anchors.fill: parent
-                        verticalAlignment: TextInput.AlignVCenter
-                        color: Nexa.Theme.text
-                        selectionColor: Nexa.Theme.primary
-                        selectedTextColor: Nexa.Theme.onPrimary
-                        font.family: Nexa.Theme.fontFamily
-                        font.pixelSize: Nexa.Theme.fontSizeXs
-                        font.weight: Font.Medium
-                        clip: true
-
-                        onTextChanged: {
-                            root.searchQuery = text
-                        }
-
+                        anchors.fill: parent; verticalAlignment: TextInput.AlignVCenter; color: NexaUI.NexaColors.text
+                        selectionColor: NexaUI.NexaColors.primary; font.family: NexaUI.NexaTypography.familyBody; font.pixelSize: NexaUI.NexaTypography.sizeXs; font.weight: NexaUI.NexaTypography.weightMedium; clip: true
+                        onTextChanged: root.searchQuery = text
                         Keys.onPressed: event => {
                             if (event.key === Qt.Key_Escape) {
-                                if (text.length > 0) {
-                                    text = ""
-                                } else {
-                                    grid.forceActiveFocus()
-                                }
-                                event.accepted = true
-                                return
-                            }
-                            if (event.key === Qt.Key_Down) {
-                                grid.forceActiveFocus()
-                                event.accepted = true
-                                return
-                            }
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                                if (folderModel.count > 0) {
-                                    root.applySelected()
-                                }
-                                grid.forceActiveFocus()
-                                event.accepted = true
-                                return
+                                if (text.length > 0) text = "";
+                                else root.closeRequested();
+                                event.accepted = true;
+                            } else if (event.key === Qt.Key_Down) {
+                                grid.forceActiveFocus();
+                                event.accepted = true;
+                            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                if (folderModel.count > 0) root.applySelected();
+                                grid.forceActiveFocus();
+                                event.accepted = true;
                             }
                         }
                     }
                 }
-
-                // Clear button
-                Rectangle {
-                    visible: searchInput.text.length > 0
-                    width: 18
-                    height: 18
-                    radius: 9
-                    color: clearMouse.containsMouse ? Nexa.Theme.surfaceContainerHighest : "transparent"
-                    Layout.alignment: Qt.AlignVCenter
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "󰅖"
-                        font.family: Nexa.Theme.iconFontFamily
-                        font.pixelSize: 12
-                        color: clearMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
-                    }
-
-                    MouseArea {
-                        id: clearMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            searchInput.text = ""
-                            searchInput.forceActiveFocus()
-                        }
-                    }
+                Text {
+                    visible: searchInput.text.length > 0; text: "󰅖"; font.family: NexaUI.NexaTypography.familyIcon; font.pixelSize: 13; color: NexaUI.NexaColors.mutedText; Layout.alignment: Qt.AlignVCenter
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { searchInput.text = ""; searchInput.forceActiveFocus(); } }
                 }
             }
         }
     }
 
-    // ---------------------------------------------------------
-    // Top Floating Glass Inspector Capsule (Matugen Palette & Metadata)
-    // ---------------------------------------------------------
+    // Top Center Floating Inspector Capsule
     WallpaperInspectorCapsule {
         id: inspectorCapsule
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            top: parent.top
-        }
-        height: 38
-        z: 60
-        visible: folderModel.count > 0 && parent.width >= 1150
-
+        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 16 }
+        height: 38; z: 60; visible: folderModel.count > 0 && parent.width >= 1150
         wallpaperPath: {
             if (grid.currentIndex >= 0 && grid.currentIndex < folderModel.count) {
-                const p = folderModel.get(grid.currentIndex, "filePath")
-                return p ? String(p) : ""
+                const it = folderModel.get(grid.currentIndex);
+                return it && it.filePath ? String(it.filePath) : "";
             }
-            return ""
+            return "";
         }
-
         wallpaperTitle: {
             if (grid.currentIndex >= 0 && grid.currentIndex < folderModel.count) {
-                const n = folderModel.get(grid.currentIndex, "fileName")
-                if (!n) return ""
-                let s = String(n)
-                const dot = s.lastIndexOf(".")
-                if (dot > 0) s = s.substring(0, dot)
-                s = s.replace(/[-_][a-z0-9]{8,}$/i, "")
-                s = s.replace(/[-_]/g, " ").trim()
-                return s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : String(n)
+                const it = folderModel.get(grid.currentIndex);
+                const n = it ? it.fileName : "";
+                if (!n) return "";
+                let s = String(n);
+                const dot = s.lastIndexOf(".");
+                return (dot > 0 ? s.substring(0, dot) : s).replace(/[-_]/g, " ").trim();
             }
-            return ""
+            return "";
         }
     }
 
-    // ---------------------------------------------------------
-    // Folder Model (Background Thread C++ Scanner)
-    // ---------------------------------------------------------
-    FolderListModel {
-        id: folderModel
-        folder: "file://" + root.slideshowFolder
-        nameFilters: {
-            const q = root.searchQuery.trim().replace(/\s+/g, "*")
-            const wildcard = q.length > 0 ? ("*" + q + "*") : "*"
-            const t = root.slideshowType.toLowerCase()
-            if (t === "image")
-                return [wildcard + ".jpg", wildcard + ".jpeg", wildcard + ".png", wildcard + ".webp"]
-            if (t === "gif")
-                return [wildcard + ".gif"]
-            if (t === "video")
-                return [wildcard + ".mp4", wildcard + ".mkv", wildcard + ".webm"]
-            return [
-                wildcard + ".jpg", wildcard + ".jpeg", wildcard + ".png", wildcard + ".webp",
-                wildcard + ".gif", wildcard + ".mp4", wildcard + ".mkv", wildcard + ".webm"
-            ]
-        }
-        caseSensitive: false
-        showDirs: false
-        showFiles: true
-        sortField: FolderListModel.Name
-    }
+    ListModel { id: folderModel }
 
-    // ---------------------------------------------------------
-    // High-Performance Gallery Grid View (Native 60fps C++ Navigation)
-    // ---------------------------------------------------------
+    // High-Performance Grid View
     GridView {
         id: grid
-        anchors {
-            top: headerRow.bottom
-            topMargin: 14
-            left: parent.left
-            right: parent.right
-            bottom: parent.bottom
-            bottomMargin: 6
-        }
-
-        clip: true
-        cacheBuffer: 1200
-        currentIndex: 0
-        focus: true
-        keyNavigationEnabled: false
-        highlightFollowsCurrentItem: false
-        highlightRangeMode: GridView.NoHighlightRange
-        boundsBehavior: Flickable.StopAtBounds
-
-        readonly property int cols: Math.max(3, Math.min(5, Math.floor(Math.max(width, 700) / 320)))
+        anchors { top: headerRow.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 6 }
+        clip: true; cacheBuffer: 1200; currentIndex: 0; focus: true; boundsBehavior: Flickable.StopAtBounds
+        readonly property int cols: root.gridMetrics.columns || 5
         cellWidth: width / cols
-        cellHeight: Math.round(cellWidth * 9 / 16) + 12
-
+        cellHeight: Math.round(cellWidth * (root.gridMetrics.cell_height_ratio || 0.5625)) + 12
         model: folderModel
+
+        NexaUI.NexaScroll {}
 
         delegate: Item {
             id: delegateRoot
-            width: grid.cellWidth
-            height: grid.cellHeight
-
+            width: grid.cellWidth; height: grid.cellHeight
             readonly property bool isSelected: grid.currentIndex === index
             readonly property bool isHovered: itemMouse.containsMouse
             readonly property bool isHighlighted: isSelected || isHovered
+            z: isHighlighted ? 10 : 1
 
-            z: (isHighlighted || delegateRoot.isCurrent) ? 10 : 1
-
-            readonly property string itemFileName: (model.fileName !== undefined && model.fileName !== null) ? String(model.fileName) : ""
-            readonly property string itemFilePath: (model.filePath !== undefined && model.filePath !== null) ? String(model.filePath) : ""
-            readonly property var itemFileURL: (model.fileURL !== undefined && model.fileURL !== null) ? model.fileURL : ((model.fileUrl !== undefined && model.fileUrl !== null) ? model.fileUrl : ("file://" + itemFilePath))
-
+            readonly property string itemFileName: model.fileName || ""
+            readonly property string itemFilePath: model.filePath || ""
             readonly property string fileBaseName: {
-                const idx = itemFileName.lastIndexOf(".")
-                return idx > 0 ? itemFileName.substring(0, idx) : itemFileName
+                const idx = itemFileName.lastIndexOf(".");
+                return idx > 0 ? itemFileName.substring(0, idx) : itemFileName;
             }
+            readonly property string cachedThumb: root.thumbDir + fileBaseName + ".jpg"
+            readonly property bool isCurrent: root.lastWallpaper.length > 0 && (root.lastWallpaper === itemFilePath || root.lastWallpaper.endsWith("/" + itemFileName))
+            readonly property bool isVideoFile: (model.wallType || "").toLowerCase() === "video"
+            readonly property bool isGifFile: (model.wallType || "").toLowerCase() === "gif"
 
-            readonly property string fileSuffix: {
-                const idx = itemFileName.lastIndexOf(".")
-                return idx > 0 ? itemFileName.substring(idx + 1) : ""
-            }
-
-            readonly property string cleanedTitle: {
-                let s = fileBaseName
-                s = s.replace(/[-_][a-z0-9]{8,}$/i, "")
-                s = s.replace(/[-_]/g, " ").trim()
-                if (s.length === 0) s = fileBaseName
-                return s.charAt(0).toUpperCase() + s.slice(1)
-            }
-
-            readonly property string cachedThumb:
-                root.thumbDir + fileBaseName + ".jpg"
-
-            readonly property bool isCurrent:
-                root.lastWallpaper.length > 0 &&
-                (root.lastWallpaper === itemFilePath || root.lastWallpaper.endsWith("/" + itemFileName))
-
-            readonly property bool isVideoFile: {
-                const s = fileSuffix.toLowerCase()
-                return s === "mp4" || s === "mkv" || s === "webm"
-            }
-
-            readonly property bool isGifFile:
-                fileSuffix.toLowerCase() === "gif"
-
-            // -------------------------------------------------
-            // Ambient Wallpaper Color Aura (Rounded contour halo)
-            // -------------------------------------------------
+            // Ambient Halo Aura
             Item {
-                id: auraLayer
-                anchors.fill: cardFrame
-                anchors.margins: -14
-                z: -1
-                opacity: delegateRoot.isHighlighted ? 0.60 : (delegateRoot.isCurrent ? 0.40 : 0.0)
-                scale: delegateRoot.isHighlighted ? 1.03 : 0.98
-
-                Behavior on opacity {
-                    NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
-                }
-                Behavior on scale {
-                    NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
-                }
-
+                anchors.fill: cardFrame; anchors.margins: -12; z: -1
+                opacity: delegateRoot.isHighlighted ? 0.65 : (delegateRoot.isCurrent ? 0.40 : 0.0)
+                Behavior on opacity { NumberAnimation { duration: 200 } }
                 layer.enabled: true
                 layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: auraLayer.width
-                        height: auraLayer.height
-                        radius: 22
-                    }
+                    maskSource: Rectangle { width: cardFrame.width + 24; height: cardFrame.height + 24; radius: (root.gridMetrics.corner_radius || NexaUI.NexaTokens.radiusLg) + 6 }
                 }
-
                 Image {
-                    id: auraSourceImg
-                    anchors.fill: parent
-                    source: delegateRoot.cachedThumb
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: true
-                    sourceSize.width: 48
-                    sourceSize.height: 36
-                    visible: false
-
-                    onStatusChanged: {
-                        if (status === Image.Error && !delegateRoot.isVideoFile && String(source) !== String(delegateRoot.itemFileURL)) {
-                            source = delegateRoot.itemFileURL
-                        }
-                    }
+                    id: auraImg; anchors.fill: parent; source: delegateRoot.cachedThumb; fillMode: Image.PreserveAspectCrop; asynchronous: true; visible: false
+                    onStatusChanged: if (status === Image.Error) source = model.fileURL || ""
                 }
-
-                MultiEffect {
-                    anchors.fill: parent
-                    source: auraSourceImg
-                    blurEnabled: true
-                    blur: 1.0
-                    blurMax: 32
-                    saturation: 0.70
-                    brightness: 0.08
-                }
+                MultiEffect { anchors.fill: parent; source: auraImg; blurEnabled: true; blur: 1.0; blurMax: 32; saturation: 0.75 }
             }
 
-            // -------------------------------------------------
-            // Interactive Card Frame (Pop spring physics)
-            // -------------------------------------------------
+            // Card Frame with Nexa Motion Spring Physics
             Item {
                 id: cardFrame
-                anchors {
-                    fill: parent
-                    margins: 8
-                }
-
-                scale: itemMouse.pressed ? 0.96 : (delegateRoot.isHighlighted ? 1.045 : 1.0)
-
+                anchors.fill: parent; anchors.margins: 8
+                scale: itemMouse.pressed ? 0.96 : (delegateRoot.isHighlighted ? 1.035 : 1.0)
                 Behavior on scale {
-                    NumberAnimation {
-                        duration: 220
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 1.35
+                    SpringAnimation {
+                        spring: NexaUI.NexaMotion.effectiveSpring
+                        damping: NexaUI.NexaMotion.effectiveDamping
+                        mass: NexaUI.NexaMotion.effectiveMass
+                        epsilon: 0.05
                     }
                 }
 
-                // -------------------------------------------------
-                // Masked Content (Clipped with 14px rounded corners)
-                // -------------------------------------------------
                 Item {
                     id: maskedContent
                     anchors.fill: parent
-
                     layer.enabled: true
                     layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: maskedContent.width
-                            height: maskedContent.height
-                            radius: 14
-                        }
+                        maskSource: Rectangle { width: maskedContent.width; height: maskedContent.height; radius: root.gridMetrics.corner_radius || NexaUI.NexaTokens.radiusLg }
                     }
+                    Rectangle { anchors.fill: parent; color: NexaUI.NexaColors.surfaceContainerLow }
 
-                    // Background placeholder
-                    Rectangle {
-                        anchors.fill: parent
-                        color: Qt.rgba(Nexa.Theme.surfaceContainerLow.r, Nexa.Theme.surfaceContainerLow.g, Nexa.Theme.surfaceContainerLow.b, 0.92)
-
-                        Text {
-                            anchors.centerIn: parent
-                            visible: thumb.status !== Image.Ready
-                            text: delegateRoot.isVideoFile ? "󰕧" : (delegateRoot.isGifFile ? "󰵸" : "󰋩")
-                            font.family: Nexa.Theme.iconFontFamily
-                            font.pixelSize: 36
-                            color: Qt.rgba(1, 1, 1, 0.25)
-                        }
-                    }
-
-                    // Thumbnail Image (Full-bleed 16:9 wallpaper)
+                    // Static Thumbnail (Always loaded first by Rust)
                     Image {
-                        id: thumb
-                        anchors.fill: parent
-                        source: delegateRoot.cachedThumb
-                        asynchronous: true
-                        cache: true
-                        sourceSize.width: 480
-                        sourceSize.height: 270
-                        fillMode: Image.PreserveAspectCrop
-
-                        onStatusChanged: {
-                            if (status === Image.Error) {
-                                if (!delegateRoot.isVideoFile && String(source) !== String(delegateRoot.itemFileURL)) {
-                                    source = delegateRoot.itemFileURL
-                                } else if (delegateRoot.isVideoFile) {
-                                    const alt = root.homeDir + "/.cache/nexa/wallpapers/video/" + delegateRoot.fileBaseName + ".jpg"
-                                    if (String(source) !== "file://" + alt) {
-                                        source = "file://" + alt
-                                    }
-                                }
-                            }
-                        }
+                        id: thumb; anchors.fill: parent; source: delegateRoot.cachedThumb; asynchronous: true; cache: true
+                        sourceSize.width: 480; sourceSize.height: 270; fillMode: Image.PreserveAspectCrop
+                        onStatusChanged: if (status === Image.Error) source = model.fileURL || ""
                     }
 
-                    // Animated GIF Live Preview (Plays when highlighted/selected)
+                    // GIF playback on hover/selection
                     AnimatedImage {
-                        id: gifPlayer
                         anchors.fill: parent
-                        source: delegateRoot.isGifFile ? delegateRoot.itemFileURL : ""
+                        source: (delegateRoot.isGifFile && delegateRoot.isHighlighted) ? (model.fileURL || "") : ""
                         fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                        cache: true
                         playing: delegateRoot.isGifFile && delegateRoot.isHighlighted
-                        visible: delegateRoot.isGifFile && delegateRoot.isHighlighted && status === AnimatedImage.Ready
+                        visible: delegateRoot.isGifFile && delegateRoot.isHighlighted
                     }
 
-                    // Live Video Preview (On-demand MediaPlayer when highlighted/selected)
+                    // Video playback on hover/selection (plays fast proxy generated by Rust)
                     Loader {
                         id: videoPlayerLoader
                         anchors.fill: parent
-                        active: delegateRoot.isVideoFile && delegateRoot.isHighlighted
+                        active: delegateRoot.isVideoFile && delegateRoot.isHighlighted && root.visible
                         visible: active
                         sourceComponent: Component {
                             Item {
                                 anchors.fill: parent
-
                                 MediaPlayer {
-                                    id: previewPlayer
-                                    source: delegateRoot.itemFileURL
+                                    id: gridPlayer
+                                    source: root.fileUrl(model.wallProxy && model.wallProxy.length > 0 ? model.wallProxy : model.filePath)
                                     loops: MediaPlayer.Infinite
                                     audioOutput: AudioOutput { muted: true }
-                                    videoOutput: previewOutput
+                                    videoOutput: gridVideoOut
                                     autoPlay: true
+                                    Component.onCompleted: play()
                                 }
 
                                 VideoOutput {
-                                    id: previewOutput
+                                    id: gridVideoOut
                                     anchors.fill: parent
                                     fillMode: VideoOutput.PreserveAspectCrop
-                                    visible: previewPlayer.playbackState === MediaPlayer.PlayingState
+                                    visible: gridPlayer.playbackState === MediaPlayer.PlayingState
                                 }
                             }
                         }
                     }
 
-                    // Cinematic Dark Scrim Gradient
+                    // Bottom Gradient Scrim
                     Rectangle {
-                        anchors {
-                            left: parent.left
-                            right: parent.right
-                            bottom: parent.bottom
-                        }
-                        height: 58
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: "transparent" }
-                            GradientStop { position: 0.45; color: Qt.rgba(0, 0, 0, 0.45) }
-                            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.88) }
-                        }
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                        height: 54
+                        gradient: Gradient { GradientStop { position: 0.0; color: "transparent" } GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.85) } }
                     }
 
-                    // Bottom Metadata & Hover Action Row
-                    RowLayout {
-                        anchors {
-                            left: parent.left
-                            right: parent.right
-                            bottom: parent.bottom
-                            leftMargin: 12
-                            rightMargin: 12
-                            bottomMargin: 9
-                        }
-                        spacing: 8
-
-                        Text {
-                            text: delegateRoot.cleanedTitle
-                            color: delegateRoot.isHighlighted ? Nexa.Theme.primary : "#ffffff"
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 12
-                            font.weight: delegateRoot.isCurrent ? Font.DemiBold : Font.Medium
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-
-                            Behavior on color {
-                                ColorAnimation { duration: 150 }
-                            }
-                        }
-
-                        // Floating Apply Pill on Hover / Selection
-                        Rectangle {
-                            visible: delegateRoot.isHighlighted && !delegateRoot.isCurrent
-                            height: 22
-                            radius: Nexa.Theme.radiusFull
-                            color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.90)
-                            implicitWidth: actionLabel.implicitWidth + 14
-
-                            Row {
-                                id: actionLabel
-                                anchors.centerIn: parent
-                                spacing: 4
-
-                                Text {
-                                    text: "󰄲"
-                                    color: Nexa.Theme.onPrimary
-                                    font.family: Nexa.Theme.iconFontFamily
-                                    font.pixelSize: 11
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-
-                                Text {
-                                    text: "Apply"
-                                    color: Nexa.Theme.onPrimary
-                                    font.family: Nexa.Theme.fontFamily
-                                    font.pixelSize: 10
-                                    font.weight: Font.Bold
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                            }
-                        }
+                    Text {
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 10 }
+                        text: delegateRoot.fileBaseName; color: delegateRoot.isHighlighted ? NexaUI.NexaColors.primary : NexaUI.NexaColors.text
+                        font.family: NexaUI.NexaTypography.familyBody; font.pixelSize: 12; font.weight: delegateRoot.isCurrent ? NexaUI.NexaTypography.weightSemiBold : NexaUI.NexaTypography.weightMedium; elide: Text.ElideRight
                     }
                 }
 
-                // -------------------------------------------------
-                // Crisp Rounded Border Stroke
-                // -------------------------------------------------
-                Rectangle {
-                    anchors.fill: parent
-                    radius: 14
-                    color: "transparent"
-                    border.width: delegateRoot.isCurrent ? 2 : (delegateRoot.isHighlighted ? 2 : 1)
-                    border.color: delegateRoot.isCurrent
-                        ? Nexa.Theme.primary
-                        : (delegateRoot.isHighlighted ? Nexa.Theme.primary : Qt.rgba(255, 255, 255, 0.12))
-
-                    Behavior on border.color {
-                        ColorAnimation { duration: 160 }
-                    }
-                }
-
-                // Video / GIF Badge (Top Right)
+                // Tag Badge: VIDEO (Red) / GIF (Orange)
                 Rectangle {
                     visible: delegateRoot.isVideoFile || delegateRoot.isGifFile
-                    anchors {
-                        top: parent.top
-                        right: parent.right
-                        margins: 10
-                    }
-                    height: 22
-                    radius: Nexa.Theme.radiusFull
-                    color: delegateRoot.isVideoFile
-                        ? Qt.rgba(0.85, 0.15, 0.15, 0.88)
-                        : Qt.rgba(0.95, 0.55, 0.10, 0.88)
-                    border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.25)
-                    implicitWidth: typeContent.implicitWidth + 12
-
+                    anchors { top: parent.top; right: parent.right; margins: 8 }
+                    height: 20; radius: 10
+                    color: delegateRoot.isVideoFile ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.error, 0.90) : NexaUI.NexaColors.alpha(NexaUI.NexaColors.warning, 0.90)
+                    implicitWidth: tagRow.implicitWidth + 10
                     Row {
-                        id: typeContent
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        Text {
-                            text: delegateRoot.isVideoFile ? "󰕧" : "󰵸"
-                            color: "#ffffff"
-                            font.family: Nexa.Theme.iconFontFamily
-                            font.pixelSize: 11
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        Text {
-                            text: delegateRoot.isVideoFile ? "VIDEO" : "GIF"
-                            color: "#ffffff"
-                            font.family: Nexa.Theme.monoFont
-                            font.pixelSize: 9
-                            font.weight: Font.Bold
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
+                        id: tagRow; anchors.centerIn: parent; spacing: 4
+                        Text { text: delegateRoot.isVideoFile ? "󰕧" : "󰵸"; color: "#ffffff"; font.family: NexaUI.NexaTypography.familyIcon; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter }
+                        Text { text: delegateRoot.isVideoFile ? "VIDEO" : "GIF"; color: "#ffffff"; font.family: NexaUI.NexaTypography.familyMono; font.pixelSize: 9; font.weight: NexaUI.NexaTypography.weightBold; anchors.verticalCenter: parent.verticalCenter }
                     }
                 }
 
-                // Active Wallpaper Pill (Top Left)
+                // Active Wallpaper Tag (Top Left)
                 Rectangle {
                     visible: delegateRoot.isCurrent
-                    anchors {
-                        top: parent.top
-                        left: parent.left
-                        margins: 10
-                    }
-                    height: 24
-                    radius: Nexa.Theme.radiusFull
-                    color: Nexa.Theme.primary
-                    implicitWidth: activeContent.implicitWidth + 16
-
+                    anchors { top: parent.top; left: parent.left; margins: 8 }
+                    height: 20; radius: 10
+                    color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.90)
+                    implicitWidth: activeRow.implicitWidth + 10
                     Row {
-                        id: activeContent
-                        anchors.centerIn: parent
-                        spacing: 5
-
-                        Text {
-                            text: "󰄬"
-                            color: Nexa.Theme.onPrimary
-                            font.family: Nexa.Theme.iconFontFamily
-                            font.pixelSize: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        Text {
-                            text: "ACTIVE"
-                            color: Nexa.Theme.onPrimary
-                            font.family: Nexa.Theme.fontFamily
-                            font.pixelSize: 10
-                            font.weight: Font.Bold
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
+                        id: activeRow; anchors.centerIn: parent; spacing: 4
+                        Text { text: "✓"; color: NexaUI.NexaColors.onPrimary; font.family: NexaUI.NexaTypography.familyBody; font.pixelSize: 10; font.weight: NexaUI.NexaTypography.weightBold; anchors.verticalCenter: parent.verticalCenter }
+                        Text { text: "ACTIVE"; color: NexaUI.NexaColors.onPrimary; font.family: NexaUI.NexaTypography.familyMono; font.pixelSize: 8; font.weight: NexaUI.NexaTypography.weightBold; anchors.verticalCenter: parent.verticalCenter }
                     }
                 }
 
-                // Interactive Mouse Area
+                Rectangle {
+                    anchors.fill: parent; radius: root.gridMetrics.corner_radius || NexaUI.NexaTokens.radiusLg; color: "transparent"
+                    border.width: delegateRoot.isCurrent || delegateRoot.isHighlighted ? 2 : 1
+                    border.color: delegateRoot.isCurrent || delegateRoot.isHighlighted ? NexaUI.NexaColors.primary : NexaUI.NexaColors.alpha(NexaUI.NexaColors.onSurface, 0.12)
+                }
+
                 MouseArea {
-                    id: itemMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-
+                    id: itemMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        grid.currentIndex = index
-                        root.smoothScrollToCurrent()
+                        if (grid.currentIndex === index) {
+                            root.applySelected();
+                        } else {
+                            grid.currentIndex = index;
+                            grid.forceActiveFocus();
+                        }
                     }
-
                     onDoubleClicked: {
-                        root.applyWallpaper(delegateRoot.itemFilePath)
+                        grid.currentIndex = index;
+                        root.applySelected();
                     }
                 }
             }
         }
-    }
 
-    // ---------------------------------------------------------
-    // Subtle Scroll Indicator
-    // ---------------------------------------------------------
-    Rectangle {
-        anchors {
-            right: parent.right
-            rightMargin: -10
-            top: grid.top
-            bottom: grid.bottom
-        }
-        width: 4
-        radius: 2
-        color: Nexa.Theme.outlineVariant
-        opacity: grid.moving ? 0.75 : 0.2
-        visible: folderModel.count > 0
-
-        Behavior on opacity {
-            NumberAnimation { duration: 200 }
-        }
-
-        Rectangle {
-            id: scrollThumb
-            width: parent.width
-            radius: 2
-            color: Nexa.Theme.primary
-            height: Math.max(30, grid.visibleArea.heightRatio * parent.height)
-            y: grid.visibleArea.yPosition * parent.height
-        }
-    }
-
-    // ---------------------------------------------------------
-    // Empty State
-    // ---------------------------------------------------------
-    Column {
-        anchors.centerIn: parent
-        visible: folderModel.count === 0
-        spacing: 12
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.searchQuery.length > 0 ? "󰍉" : "󰋩"
-            font.family: Nexa.Theme.iconFontFamily
-            font.pixelSize: 48
-            color: Nexa.Theme.mutedText
-        }
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.searchQuery.length > 0
-                ? ("No wallpapers match \"" + root.searchQuery + "\"")
-                : ("No wallpapers found matching \"" + root.slideshowType + "\" in ~/Pictures/Wallpapers/Slideshow")
-            font.family: Nexa.Theme.fontFamily
-            font.pixelSize: Nexa.Theme.fontSizeMd
-            color: Nexa.Theme.mutedText
-        }
-
-        Rectangle {
-            visible: root.searchQuery.length > 0
-            anchors.horizontalCenter: parent.horizontalCenter
-            height: 32
-            radius: Nexa.Theme.radiusFull
-            color: clearEmptyMouse.containsMouse ? Nexa.Theme.surfaceContainerHighest : Nexa.Theme.surfaceContainer
-            border.width: 1
-            border.color: Nexa.Theme.outlineVariant
-            implicitWidth: clearEmptyRow.implicitWidth + 24
-
-            Row {
-                id: clearEmptyRow
-                anchors.centerIn: parent
-                spacing: 6
-
-                Text {
-                    text: "󰅖"
-                    font.family: Nexa.Theme.iconFontFamily
-                    font.pixelSize: 13
-                    color: Nexa.Theme.primary
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Text {
-                    text: "Clear search"
-                    font.family: Nexa.Theme.fontFamily
-                    font.pixelSize: Nexa.Theme.fontSizeSm
-                    font.weight: Font.Medium
-                    color: Nexa.Theme.primary
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            MouseArea {
-                id: clearEmptyMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    root.searchQuery = ""
-                    searchInput.text = ""
-                    grid.forceActiveFocus()
-                }
-            }
+        Keys.onPressed: event => {
+            const cols = grid.cols;
+            if (event.key === Qt.Key_Left) { if (grid.currentIndex > 0) grid.currentIndex--; event.accepted = true; }
+            else if (event.key === Qt.Key_Right) { if (grid.currentIndex < folderModel.count - 1) grid.currentIndex++; event.accepted = true; }
+            else if (event.key === Qt.Key_Up) { if (grid.currentIndex - cols >= 0) grid.currentIndex -= cols; event.accepted = true; }
+            else if (event.key === Qt.Key_Down) { if (grid.currentIndex + cols < folderModel.count) grid.currentIndex += cols; event.accepted = true; }
+            else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) { root.applySelected(); event.accepted = true; }
+            else if (event.key === Qt.Key_Escape) { root.closeRequested(); event.accepted = true; }
         }
     }
 }

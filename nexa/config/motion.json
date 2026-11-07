@@ -1,9 +1,13 @@
 {
   "enabled": true,
-  "preset": "fluid",
+  "physicsEngine": "fluid",
+  "physicsResponse": 0.71,
+  "physicsDamping": 0.95,
+  "animationSpeed": 1.4,
+  "preset": "gentle",
   "hyprAnimationProfile": "slidefade",
-  "stiffness": 3.8,
-  "damping": 0.28,
+  "stiffness": 1.5,
+  "damping": 0.31,
   "mass": 1,
   "sections": {
     "island": true,

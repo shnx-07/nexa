@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import QtMultimedia
-import "../quickshell/modules/sddm/shim"
+import "./shim"
 
 ShellRoot {
     id: shellRoot

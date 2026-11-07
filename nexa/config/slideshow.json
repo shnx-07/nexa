@@ -1,9 +1,9 @@
 {
   "enabled": false,
   "paused": false,
-  "interval": "30m",
-  "type_filter": "All",
+  "interval": "15m",
+  "type_filter": "all",
   "apply_target": "Background",
-  "last_wallpaper": "/home/shnx/Pictures/Wallpapers/Slideshow/SBKjnxm.jpeg",
-  "last_changed": 1793804257
+  "last_wallpaper": "/home/shnx/Pictures/Wallpapers/Slideshow/black_hole_by_kurzgesagt.png",
+  "last_changed": 1794043470
 }

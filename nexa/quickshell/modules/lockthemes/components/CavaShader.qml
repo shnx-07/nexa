@@ -12,7 +12,7 @@
 
 import QtQuick
 import "../../../services" as Services
-import "../../../theme/colors"
+import "../../../NewNexaUI" as NexaUI
 import "."
 
 // GPU cava visualizer. The CPU only fills a tiny 1xN texture with bar heights;
@@ -24,7 +24,7 @@ Item {
     id: root
 
     property var bars: Services.AudioVisualizer ? Services.AudioVisualizer.bars : []
-    property color accentColor: Colors.primary
+    property color accentColor: NexaUI.NexaColors.primary
     property int orientation: 0   // 0 bottom, 1 top, 2 left, 3 right
     property int style: 0         // 0 bars, 1 area
     property real gapPx: 2
@@ -123,7 +123,7 @@ Item {
         height: errText.implicitHeight + 16
         radius: 6
         color: Qt.rgba(1, 0, 0, 0.12)
-        border.color: Colors.error
+        border.color: NexaUI.NexaColors.error
         border.width: 1
 
         StyledText {
@@ -131,7 +131,7 @@ Item {
             anchors.centerIn: parent
             width: parent.width - 16
             text: "cava shader failed to load\n" + shaderItem.log
-            color: Colors.error
+            color: NexaUI.NexaColors.error
             font.pixelSize: 11
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap

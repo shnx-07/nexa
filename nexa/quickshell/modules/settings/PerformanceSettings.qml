@@ -3,9 +3,8 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import "../../theme" as Nexa
 import "../lockthemes/components"
-import "../../theme/components" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 Item {
     id: root
@@ -15,8 +14,8 @@ Item {
     signal requestClose()
 
     function rad(n) {
-        if (Nexa.Theme.nexaRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
+        if (NexaUI.NexaTokens.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (NexaUI.NexaTokens.nexaRounding / 10.0)));
     }
 
     // ────────────────────────────────────────────────────────────
@@ -221,9 +220,9 @@ Item {
                     Layout.fillWidth: true
                     height: 104
                     radius: root.rad(14)
-                    color: Nexa.Theme.cardBackground
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    color: NexaUI.NexaColors.surfaceContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -238,14 +237,14 @@ Item {
                                 width: 28
                                 height: 28
                                 radius: root.rad(8)
-                                color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.15)
+                                color: Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.15)
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰍛"
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 16
-                                    color: Nexa.Theme.primary
+                                    color: NexaUI.NexaColors.primary
                                 }
                             }
 
@@ -253,7 +252,7 @@ Item {
                                 text: "CPU Load"
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
 
                             Item { Layout.fillWidth: true }
@@ -262,7 +261,7 @@ Item {
                                 text: root.currentCpuTemp > 0 ? (root.currentCpuTemp.toFixed(1) + " °C") : "--"
                                 font.pixelSize: 11
                                 font.weight: Font.Medium
-                                color: root.currentCpuTemp > 75 ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                color: root.currentCpuTemp > 75 ? NexaUI.NexaColors.error : NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -276,7 +275,7 @@ Item {
                                 text: root.currentCpuPct.toFixed(1) + "%"
                                 font.pixelSize: 22
                                 font.weight: Font.Bold
-                                color: root.currentCpuPct > 80 ? Nexa.Theme.error : Nexa.Theme.text
+                                color: root.currentCpuPct > 80 ? NexaUI.NexaColors.error : NexaUI.NexaColors.text
                             }
 
                             Item { Layout.fillWidth: true }
@@ -284,7 +283,7 @@ Item {
                             StyledText {
                                 text: root.currentCpuFreq > 0 ? ((root.currentCpuFreq / 1000.0).toFixed(2) + " GHz") : ""
                                 font.pixelSize: 12
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
                     }
@@ -295,9 +294,9 @@ Item {
                     Layout.fillWidth: true
                     height: 104
                     radius: root.rad(14)
-                    color: Nexa.Theme.cardBackground
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    color: NexaUI.NexaColors.surfaceContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -312,14 +311,14 @@ Item {
                                 width: 28
                                 height: 28
                                 radius: root.rad(8)
-                                color: Qt.rgba(Nexa.Theme.secondary.r, Nexa.Theme.secondary.g, Nexa.Theme.secondary.b, 0.15)
+                                color: Qt.rgba(NexaUI.NexaColors.secondary.r, NexaUI.NexaColors.secondary.g, NexaUI.NexaColors.secondary.b, 0.15)
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰘚"
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 16
-                                    color: Nexa.Theme.secondary
+                                    color: NexaUI.NexaColors.secondary
                                 }
                             }
 
@@ -327,7 +326,7 @@ Item {
                                 text: "Memory"
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
 
                             Item { Layout.fillWidth: true }
@@ -336,7 +335,7 @@ Item {
                                 text: root.currentRamPct.toFixed(0) + "%"
                                 font.pixelSize: 11
                                 font.weight: Font.DemiBold
-                                color: root.currentRamPct > 85 ? Nexa.Theme.error : Nexa.Theme.secondary
+                                color: root.currentRamPct > 85 ? NexaUI.NexaColors.error : NexaUI.NexaColors.secondary
                             }
                         }
 
@@ -350,13 +349,13 @@ Item {
                                 text: root.formatRam(root.currentRamUsedMb)
                                 font.pixelSize: 22
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             StyledText {
                                 text: "/ " + root.formatRam(root.currentRamTotalMb)
                                 font.pixelSize: 12
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
                     }
@@ -367,9 +366,9 @@ Item {
                     Layout.fillWidth: true
                     height: 104
                     radius: root.rad(14)
-                    color: Nexa.Theme.cardBackground
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    color: NexaUI.NexaColors.surfaceContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -384,14 +383,14 @@ Item {
                                 width: 28
                                 height: 28
                                 radius: root.rad(8)
-                                color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.15)
+                                color: Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.15)
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰋊"
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 16
-                                    color: Nexa.Theme.primary
+                                    color: NexaUI.NexaColors.primary
                                 }
                             }
 
@@ -399,7 +398,7 @@ Item {
                                 text: "System Disk"
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
 
                             Item { Layout.fillWidth: true }
@@ -408,7 +407,7 @@ Item {
                                 text: root.currentDiskPct.toFixed(0) + "%"
                                 font.pixelSize: 11
                                 font.weight: Font.DemiBold
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -422,13 +421,13 @@ Item {
                                 text: root.currentDiskUsedGb.toFixed(0) + " GB"
                                 font.pixelSize: 22
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             StyledText {
                                 text: "/ " + root.currentDiskTotalGb.toFixed(0) + " GB"
                                 font.pixelSize: 12
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
                     }
@@ -439,9 +438,9 @@ Item {
                     Layout.fillWidth: true
                     height: 104
                     radius: root.rad(14)
-                    color: Nexa.Theme.cardBackground
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    color: NexaUI.NexaColors.surfaceContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -456,16 +455,16 @@ Item {
                                 width: 28
                                 height: 28
                                 radius: root.rad(8)
-                                color: Qt.rgba(Nexa.Theme.tertiary ? Nexa.Theme.tertiary.r : Nexa.Theme.primary.r,
-                                               Nexa.Theme.tertiary ? Nexa.Theme.tertiary.g : Nexa.Theme.primary.g,
-                                               Nexa.Theme.tertiary ? Nexa.Theme.tertiary.b : Nexa.Theme.primary.b, 0.15)
+                                color: Qt.rgba(NexaUI.NexaColors.tertiary ? NexaUI.NexaColors.tertiary.r : NexaUI.NexaColors.primary.r,
+                                               NexaUI.NexaColors.tertiary ? NexaUI.NexaColors.tertiary.g : NexaUI.NexaColors.primary.g,
+                                               NexaUI.NexaColors.tertiary ? NexaUI.NexaColors.tertiary.b : NexaUI.NexaColors.primary.b, 0.15)
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "󰖩"
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 16
-                                    color: Nexa.Theme.tertiary || Nexa.Theme.primary
+                                    color: NexaUI.NexaColors.tertiary || NexaUI.NexaColors.primary
                                 }
                             }
 
@@ -473,7 +472,7 @@ Item {
                                 text: "Throughput"
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -485,32 +484,32 @@ Item {
 
                             Text {
                                 text: "󰕒"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 13
-                                color: Nexa.Theme.primary
+                                color: NexaUI.NexaColors.primary
                             }
 
                             StyledText {
                                 text: root.formatNet(root.currentNetTxKbps)
                                 font.pixelSize: 13
                                 font.weight: Font.DemiBold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             Item { Layout.fillWidth: true }
 
                             Text {
                                 text: "󰇚"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 13
-                                color: Nexa.Theme.secondary
+                                color: NexaUI.NexaColors.secondary
                             }
 
                             StyledText {
                                 text: root.formatNet(root.currentNetRxKbps)
                                 font.pixelSize: 13
                                 font.weight: Font.DemiBold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
                         }
                     }
@@ -529,9 +528,9 @@ Item {
                     Layout.fillWidth: true
                     height: 230
                     radius: root.rad(16)
-                    color: Nexa.Theme.cardBackground
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    color: NexaUI.NexaColors.surfaceContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
                     clip: true
 
                     ColumnLayout {
@@ -545,16 +544,16 @@ Item {
 
                             Text {
                                 text: "󰍛"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 17
-                                color: Nexa.Theme.primary
+                                color: NexaUI.NexaColors.primary
                             }
 
                             StyledText {
                                 text: "CPU Utilization History"
                                 font.pixelSize: 14
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             Item { Layout.fillWidth: true }
@@ -562,7 +561,7 @@ Item {
                             StyledText {
                                 text: "Past 60 Seconds"
                                 font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -572,13 +571,13 @@ Item {
                             Layout.fillHeight: true
 
                             // Gridlines (25%, 50%, 75%)
-                            Rectangle { y: parent.height * 0.25; width: parent.width; height: 1; color: Nexa.Theme.divider; opacity: 0.3 }
-                            Rectangle { y: parent.height * 0.50; width: parent.width; height: 1; color: Nexa.Theme.divider; opacity: 0.3 }
-                            Rectangle { y: parent.height * 0.75; width: parent.width; height: 1; color: Nexa.Theme.divider; opacity: 0.3 }
+                            Rectangle { y: parent.height * 0.25; width: parent.width; height: 1; color: NexaUI.NexaColors.borderSubtle; opacity: 0.3 }
+                            Rectangle { y: parent.height * 0.50; width: parent.width; height: 1; color: NexaUI.NexaColors.borderSubtle; opacity: 0.3 }
+                            Rectangle { y: parent.height * 0.75; width: parent.width; height: 1; color: NexaUI.NexaColors.borderSubtle; opacity: 0.3 }
 
-                            Text { y: parent.height * 0.25 - 12; anchors.right: parent.right; text: "75%"; font.pixelSize: 9; color: Nexa.Theme.mutedText; opacity: 0.6 }
-                            Text { y: parent.height * 0.50 - 12; anchors.right: parent.right; text: "50%"; font.pixelSize: 9; color: Nexa.Theme.mutedText; opacity: 0.6 }
-                            Text { y: parent.height * 0.75 - 12; anchors.right: parent.right; text: "25%"; font.pixelSize: 9; color: Nexa.Theme.mutedText; opacity: 0.6 }
+                            Text { y: parent.height * 0.25 - 12; anchors.right: parent.right; text: "75%"; font.pixelSize: 9; color: NexaUI.NexaColors.mutedText; opacity: 0.6 }
+                            Text { y: parent.height * 0.50 - 12; anchors.right: parent.right; text: "50%"; font.pixelSize: 9; color: NexaUI.NexaColors.mutedText; opacity: 0.6 }
+                            Text { y: parent.height * 0.75 - 12; anchors.right: parent.right; text: "25%"; font.pixelSize: 9; color: NexaUI.NexaColors.mutedText; opacity: 0.6 }
 
                             Canvas {
                                 id: cpuChartCanvas
@@ -615,8 +614,8 @@ Item {
                                     ctx.closePath();
 
                                     const fillGrad = ctx.createLinearGradient(0, 0, 0, h);
-                                    fillGrad.addColorStop(0, Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.35));
-                                    fillGrad.addColorStop(1, Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.02));
+                                    fillGrad.addColorStop(0, Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.35));
+                                    fillGrad.addColorStop(1, Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.02));
                                     ctx.fillStyle = fillGrad;
                                     ctx.fill();
 
@@ -634,7 +633,7 @@ Item {
                                     }
                                     ctx.lineTo(lastX, lastY);
                                     ctx.lineWidth = 2.0;
-                                    ctx.strokeStyle = Nexa.Theme.primary;
+                                    ctx.strokeStyle = NexaUI.NexaColors.primary;
                                     ctx.stroke();
                                 }
                             }
@@ -647,9 +646,9 @@ Item {
                     Layout.fillWidth: true
                     height: 230
                     radius: root.rad(16)
-                    color: Nexa.Theme.cardBackground
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    color: NexaUI.NexaColors.surfaceContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
                     clip: true
 
                     ColumnLayout {
@@ -663,16 +662,16 @@ Item {
 
                             Text {
                                 text: "󰘚"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 17
-                                color: Nexa.Theme.secondary
+                                color: NexaUI.NexaColors.secondary
                             }
 
                             StyledText {
                                 text: "Memory History"
                                 font.pixelSize: 14
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             Item { Layout.fillWidth: true }
@@ -680,7 +679,7 @@ Item {
                             StyledText {
                                 text: "Past 60 Seconds"
                                 font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
 
@@ -690,13 +689,13 @@ Item {
                             Layout.fillHeight: true
 
                             // Gridlines (25%, 50%, 75%)
-                            Rectangle { y: parent.height * 0.25; width: parent.width; height: 1; color: Nexa.Theme.divider; opacity: 0.3 }
-                            Rectangle { y: parent.height * 0.50; width: parent.width; height: 1; color: Nexa.Theme.divider; opacity: 0.3 }
-                            Rectangle { y: parent.height * 0.75; width: parent.width; height: 1; color: Nexa.Theme.divider; opacity: 0.3 }
+                            Rectangle { y: parent.height * 0.25; width: parent.width; height: 1; color: NexaUI.NexaColors.borderSubtle; opacity: 0.3 }
+                            Rectangle { y: parent.height * 0.50; width: parent.width; height: 1; color: NexaUI.NexaColors.borderSubtle; opacity: 0.3 }
+                            Rectangle { y: parent.height * 0.75; width: parent.width; height: 1; color: NexaUI.NexaColors.borderSubtle; opacity: 0.3 }
 
-                            Text { y: parent.height * 0.25 - 12; anchors.right: parent.right; text: "75%"; font.pixelSize: 9; color: Nexa.Theme.mutedText; opacity: 0.6 }
-                            Text { y: parent.height * 0.50 - 12; anchors.right: parent.right; text: "50%"; font.pixelSize: 9; color: Nexa.Theme.mutedText; opacity: 0.6 }
-                            Text { y: parent.height * 0.75 - 12; anchors.right: parent.right; text: "25%"; font.pixelSize: 9; color: Nexa.Theme.mutedText; opacity: 0.6 }
+                            Text { y: parent.height * 0.25 - 12; anchors.right: parent.right; text: "75%"; font.pixelSize: 9; color: NexaUI.NexaColors.mutedText; opacity: 0.6 }
+                            Text { y: parent.height * 0.50 - 12; anchors.right: parent.right; text: "50%"; font.pixelSize: 9; color: NexaUI.NexaColors.mutedText; opacity: 0.6 }
+                            Text { y: parent.height * 0.75 - 12; anchors.right: parent.right; text: "25%"; font.pixelSize: 9; color: NexaUI.NexaColors.mutedText; opacity: 0.6 }
 
                             Canvas {
                                 id: ramChartCanvas
@@ -733,8 +732,8 @@ Item {
                                     ctx.closePath();
 
                                     const fillGrad = ctx.createLinearGradient(0, 0, 0, h);
-                                    fillGrad.addColorStop(0, Qt.rgba(Nexa.Theme.secondary.r, Nexa.Theme.secondary.g, Nexa.Theme.secondary.b, 0.35));
-                                    fillGrad.addColorStop(1, Qt.rgba(Nexa.Theme.secondary.r, Nexa.Theme.secondary.g, Nexa.Theme.secondary.b, 0.02));
+                                    fillGrad.addColorStop(0, Qt.rgba(NexaUI.NexaColors.secondary.r, NexaUI.NexaColors.secondary.g, NexaUI.NexaColors.secondary.b, 0.35));
+                                    fillGrad.addColorStop(1, Qt.rgba(NexaUI.NexaColors.secondary.r, NexaUI.NexaColors.secondary.g, NexaUI.NexaColors.secondary.b, 0.02));
                                     ctx.fillStyle = fillGrad;
                                     ctx.fill();
 
@@ -752,7 +751,7 @@ Item {
                                     }
                                     ctx.lineTo(lastX, lastY);
                                     ctx.lineWidth = 2.0;
-                                    ctx.strokeStyle = Nexa.Theme.secondary;
+                                    ctx.strokeStyle = NexaUI.NexaColors.secondary;
                                     ctx.stroke();
                                 }
                             }
@@ -768,9 +767,9 @@ Item {
                 width: parent.width
                 implicitHeight: procCol.implicitHeight + 32
                 radius: root.rad(16)
-                color: Nexa.Theme.cardBackground
-                border.width: Nexa.Theme.borderThin
-                border.color: Nexa.Theme.border
+                color: NexaUI.NexaColors.surfaceContainer
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
                 Column {
                     id: procCol
@@ -789,16 +788,16 @@ Item {
 
                         Text {
                             text: "󰆍"
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 18
-                            color: Nexa.Theme.primary
+                            color: NexaUI.NexaColors.primary
                         }
 
                         StyledText {
                             text: "Active Top Processes"
                             font.pixelSize: 15
                             font.weight: Font.Bold
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
 
                         Item { Layout.fillWidth: true }
@@ -808,9 +807,9 @@ Item {
                             width: trimRow.implicitWidth + 24
                             height: 32
                             radius: root.rad(8)
-                            color: root.isTrimSuccess ? Nexa.Theme.primaryContainer : Nexa.Theme.surfaceContainerHigh
+                            color: root.isTrimSuccess ? NexaUI.NexaColors.primaryContainer : NexaUI.NexaColors.surfaceContainerHigh
                             border.width: 1
-                            border.color: root.isTrimSuccess ? Nexa.Theme.primary : Nexa.Theme.border
+                            border.color: root.isTrimSuccess ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.trimMemory()
 
@@ -822,9 +821,9 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.isTrimSuccess ? "󰄬" : "󰃢"
-                                    font.family: Nexa.Theme.iconFontFamily
+                                    font.family: NexaUI.NexaTypography.familyIcon
                                     font.pixelSize: 13
-                                    color: root.isTrimSuccess ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                    color: root.isTrimSuccess ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                 }
 
                                 StyledText {
@@ -832,7 +831,7 @@ Item {
                                     text: root.isTrimSuccess ? "Trimmed!" : "Trim Cache"
                                     font.pixelSize: 11
                                     font.weight: Font.DemiBold
-                                    color: root.isTrimSuccess ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
+                                    color: root.isTrimSuccess ? NexaUI.NexaColors.onPrimaryContainer : NexaUI.NexaColors.text
                                 }
                             }
                         }
@@ -857,7 +856,7 @@ Item {
                                     text: "PID"
                                     font.pixelSize: 11
                                     font.weight: Font.Bold
-                                    color: Nexa.Theme.mutedText
+                                    color: NexaUI.NexaColors.mutedText
                                 }
                             }
 
@@ -872,7 +871,7 @@ Item {
                                     text: "Process Name"
                                     font.pixelSize: 11
                                     font.weight: Font.Bold
-                                    color: Nexa.Theme.mutedText
+                                    color: NexaUI.NexaColors.mutedText
                                 }
                             }
 
@@ -887,7 +886,7 @@ Item {
                                     text: "CPU %"
                                     font.pixelSize: 11
                                     font.weight: Font.Bold
-                                    color: Nexa.Theme.mutedText
+                                    color: NexaUI.NexaColors.mutedText
                                 }
                             }
 
@@ -902,7 +901,7 @@ Item {
                                     text: "RAM %"
                                     font.pixelSize: 11
                                     font.weight: Font.Bold
-                                    color: Nexa.Theme.mutedText
+                                    color: NexaUI.NexaColors.mutedText
                                 }
                             }
 
@@ -917,7 +916,7 @@ Item {
                     Rectangle {
                         width: parent.width
                         height: 1
-                        color: Nexa.Theme.divider
+                        color: NexaUI.NexaColors.borderSubtle
                         opacity: 0.5
                     }
 
@@ -930,7 +929,7 @@ Item {
                             width: parent.width
                             height: 38
                             radius: root.rad(6)
-                            color: pMouse.containsMouse ? Nexa.Theme.surfaceContainerHighest : "transparent"
+                            color: pMouse.containsMouse ? NexaUI.NexaColors.surfaceContainerHighest : "transparent"
 
                             Row {
                                 anchors.fill: parent
@@ -944,9 +943,9 @@ Item {
                                         anchors.left: parent.left
                                         anchors.leftMargin: 8
                                         text: String(modelData.pid)
-                                        font.family: Nexa.Theme.monoFontFamily
+                                        font.family: NexaUI.NexaTypography.familyMono
                                         font.pixelSize: 11
-                                        color: Nexa.Theme.mutedText
+                                        color: NexaUI.NexaColors.mutedText
                                     }
                                 }
 
@@ -966,9 +965,9 @@ Item {
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: root.appIcon(modelData.name)
-                                            font.family: Nexa.Theme.iconFontFamily
+                                            font.family: NexaUI.NexaTypography.familyIcon
                                             font.pixelSize: 15
-                                            color: Nexa.Theme.primary
+                                            color: NexaUI.NexaColors.primary
                                         }
 
                                         StyledText {
@@ -977,7 +976,7 @@ Item {
                                             text: String(modelData.name)
                                             font.pixelSize: 12
                                             font.weight: Font.Medium
-                                            color: Nexa.Theme.text
+                                            color: NexaUI.NexaColors.text
                                             elide: Text.ElideRight
                                         }
                                     }
@@ -992,10 +991,10 @@ Item {
                                         anchors.right: parent.right
                                         anchors.rightMargin: 12
                                         text: Number(modelData.cpu_pct).toFixed(1) + "%"
-                                        font.family: Nexa.Theme.monoFontFamily
+                                        font.family: NexaUI.NexaTypography.familyMono
                                         font.pixelSize: 11
                                         font.weight: Font.DemiBold
-                                        color: Number(modelData.cpu_pct) > 20 ? Nexa.Theme.error : Nexa.Theme.text
+                                        color: Number(modelData.cpu_pct) > 20 ? NexaUI.NexaColors.error : NexaUI.NexaColors.text
                                     }
                                 }
 
@@ -1008,9 +1007,9 @@ Item {
                                         anchors.right: parent.right
                                         anchors.rightMargin: 12
                                         text: Number(modelData.mem_pct).toFixed(1) + "%"
-                                        font.family: Nexa.Theme.monoFontFamily
+                                        font.family: NexaUI.NexaTypography.familyMono
                                         font.pixelSize: 11
-                                        color: Nexa.Theme.mutedText
+                                        color: NexaUI.NexaColors.mutedText
                                     }
                                 }
 
@@ -1033,9 +1032,9 @@ Item {
                                             property bool hovered: false
                                             anchors.centerIn: parent
                                             text: "󰅙"
-                                            font.family: Nexa.Theme.iconFontFamily
+                                            font.family: NexaUI.NexaTypography.familyIcon
                                             font.pixelSize: 15
-                                            color: killMouse.hovered ? Nexa.Theme.error : Nexa.Theme.mutedText
+                                            color: killMouse.hovered ? NexaUI.NexaColors.error : NexaUI.NexaColors.mutedText
                                         }
 
                                         MouseArea {
@@ -1062,4 +1061,3 @@ Item {
         }
     }
 }
-

@@ -1,7 +1,7 @@
 // pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Shapes
-import "../../../theme/colors"
+import "../../../NewNexaUI" as NexaUI
 import "../../../services" as Services
 
 // The desktop theme's frame on a panel's outer surface. Put it last inside
@@ -39,7 +39,7 @@ Item {
     property string seal: "印"
 
     readonly property string shape: Services.DesktopTheme.look.shape
-    readonly property color accent: shape === "seal" ? Colors.tertiary : Services.DesktopTheme.accent
+    readonly property color accent: shape === "seal" ? NexaUI.NexaColors.tertiary : Services.DesktopTheme.accent
     readonly property color accent2: Services.DesktopTheme.accent2
     readonly property color gold: "#c29a48"
 
@@ -57,9 +57,9 @@ Item {
         bottomLeftRadius: decor.bottomLeftRadius
         color: "transparent"
         border.width: 1
-        border.color: decor.shape === "print" ? Colors.withAlpha(decor.accent2, 0.45)
-            : decor.shape === "lume" ? Colors.withAlpha(decor.accent2, 0.4)
-            : Colors.withAlpha(decor.accent, decor.shape === "square" ? 0.5 : decor.shape === "seal" ? 0.55 : decor.shape === "neon" ? 0.6 : decor.shape === "pebble" ? 0.28 : decor.shape === "plate" ? 0.45 : decor.shape === "scale" || decor.shape === "zari" || decor.shape === "crenel" ? 0.6 : 0.32)
+        border.color: decor.shape === "print" ? NexaUI.NexaColors.withAlpha(decor.accent2, 0.45)
+            : decor.shape === "lume" ? NexaUI.NexaColors.withAlpha(decor.accent2, 0.4)
+            : NexaUI.NexaColors.withAlpha(decor.accent, decor.shape === "square" ? 0.5 : decor.shape === "seal" ? 0.55 : decor.shape === "neon" ? 0.6 : decor.shape === "pebble" ? 0.28 : decor.shape === "plate" ? 0.45 : decor.shape === "scale" || decor.shape === "zari" || decor.shape === "crenel" ? 0.6 : 0.32)
     }
 
     // Only the theme's own decoration is built (one Loader): every theme's,
@@ -86,7 +86,7 @@ Item {
 
     component Seam: ShapePath {
         fillColor: "transparent"
-        strokeColor: Colors.withAlpha(decor.gold, 0.9)
+        strokeColor: NexaUI.NexaColors.withAlpha(decor.gold, 0.9)
         strokeWidth: 1.5
         capStyle: ShapePath.RoundCap
         joinStyle: ShapePath.RoundJoin
@@ -179,7 +179,7 @@ Item {
                     font.family: "Iosevka Nerd Font"
                     font.pixelSize: 11
                     font.weight: Font.Bold
-                    color: Colors.on_primary
+                    color: NexaUI.NexaColors.on_primary
                 }
             }
         }
@@ -197,7 +197,7 @@ Item {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0; color: "transparent" }
-                    GradientStop { position: 0.5; color: Colors.withAlpha(decor.accent, 0.9) }
+                    GradientStop { position: 0.5; color: NexaUI.NexaColors.withAlpha(decor.accent, 0.9) }
                     GradientStop { position: 1; color: "transparent" }
                 }
             }
@@ -215,7 +215,7 @@ Item {
                 radius: Math.max(0, decor.radius - 3)
                 color: "transparent"
                 border.width: 1
-                border.color: Colors.withAlpha(decor.accent, 0.22)
+                border.color: NexaUI.NexaColors.withAlpha(decor.accent, 0.22)
             }
 
             Rectangle {
@@ -234,7 +234,7 @@ Item {
                     font.family: "Noto Serif CJK SC"
                     font.pixelSize: 11
                     font.weight: Font.Bold
-                    color: Colors.on_tertiary
+                    color: NexaUI.NexaColors.on_tertiary
                 }
             }
         }
@@ -252,7 +252,7 @@ Item {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0; color: decor.accent }
-                    GradientStop { position: 0.55; color: Colors.withAlpha(decor.accent, 0.25) }
+                    GradientStop { position: 0.55; color: NexaUI.NexaColors.withAlpha(decor.accent, 0.25) }
                     GradientStop { position: 1; color: decor.accent2 }
                 }
             }
@@ -341,9 +341,9 @@ Item {
                 cut: 6
                 steps: 2
                 fill: "transparent"
-                stroke: Colors.withAlpha(decor.accent, 0.75)
+                stroke: NexaUI.NexaColors.withAlpha(decor.accent, 0.75)
                 gap: 5
-                innerStroke: Colors.withAlpha(decor.accent, 0.3)
+                innerStroke: NexaUI.NexaColors.withAlpha(decor.accent, 0.3)
             }
 
             Shape {
@@ -355,7 +355,7 @@ Item {
 
                 ShapePath {
                     fillColor: "transparent"
-                    strokeColor: Colors.withAlpha(decor.accent, 0.75)
+                    strokeColor: NexaUI.NexaColors.withAlpha(decor.accent, 0.75)
                     strokeWidth: 1
                     capStyle: ShapePath.FlatCap
 
@@ -398,9 +398,9 @@ Item {
             CuspFrame {
                 cut: 12
                 fill: "transparent"
-                stroke: Colors.withAlpha(decor.accent, 0.6)
+                stroke: NexaUI.NexaColors.withAlpha(decor.accent, 0.6)
                 gap: 4
-                innerStroke: Colors.withAlpha(decor.accent2, 0.35)
+                innerStroke: NexaUI.NexaColors.withAlpha(decor.accent2, 0.35)
             }
 
             Shape {
@@ -411,8 +411,8 @@ Item {
                 preferredRendererType: Shape.CurveRenderer
 
                 ShapePath {
-                    fillColor: Colors.withAlpha(decor.accent2, 0.25)
-                    strokeColor: Colors.withAlpha(decor.accent, 0.85)
+                    fillColor: NexaUI.NexaColors.withAlpha(decor.accent2, 0.25)
+                    strokeColor: NexaUI.NexaColors.withAlpha(decor.accent, 0.85)
                     strokeWidth: 1
 
                     PathMove { x: 11.6; y: 4 }
@@ -439,7 +439,7 @@ Item {
                 y: 8
                 width: parent.width - 24
                 height: 3
-                color: Colors.withAlpha(decor.accent2, 0.8)
+                color: NexaUI.NexaColors.withAlpha(decor.accent2, 0.8)
             }
 
             Rectangle {
@@ -447,7 +447,7 @@ Item {
                 y: 13
                 width: parent.width - 24
                 height: 1
-                color: Colors.withAlpha(decor.accent2, 0.6)
+                color: NexaUI.NexaColors.withAlpha(decor.accent2, 0.6)
             }
 
             Rectangle {
@@ -455,7 +455,7 @@ Item {
                 y: parent.height - 9
                 width: parent.width - 24
                 height: 1
-                color: Colors.withAlpha(decor.accent2, 0.45)
+                color: NexaUI.NexaColors.withAlpha(decor.accent2, 0.45)
             }
 
             Rectangle {
@@ -475,7 +475,7 @@ Item {
                     font.weight: Font.Bold
                     font.capitalization: Font.SmallCaps
                     font.letterSpacing: 1
-                    color: Colors.surface_container_lowest
+                    color: NexaUI.NexaColors.surface_container_lowest
                 }
             }
         }
@@ -542,7 +542,7 @@ Item {
                 radius: Math.max(0, decor.radius - 4)
                 color: "transparent"
                 border.width: 1
-                border.color: Colors.withAlpha(decor.accent, 0.25)
+                border.color: NexaUI.NexaColors.withAlpha(decor.accent, 0.25)
             }
 
             Repeater {
@@ -558,7 +558,7 @@ Item {
                     major: 5
                     minorLength: 2
                     majorLength: 4
-                    color: Colors.withAlpha(decor.accent, 0.5)
+                    color: NexaUI.NexaColors.withAlpha(decor.accent, 0.5)
                 }
             }
 
@@ -570,8 +570,8 @@ Item {
                 preferredRendererType: Shape.CurveRenderer
 
                 ShapePath {
-                    fillColor: Colors.withAlpha(decor.accent, 0.12)
-                    strokeColor: Colors.withAlpha(decor.accent, 0.75)
+                    fillColor: NexaUI.NexaColors.withAlpha(decor.accent, 0.12)
+                    strokeColor: NexaUI.NexaColors.withAlpha(decor.accent, 0.75)
                     strokeWidth: 1
 
                     PathAngleArc {
@@ -586,7 +586,7 @@ Item {
 
                 ShapePath {
                     fillColor: "transparent"
-                    strokeColor: Colors.withAlpha(decor.accent, 0.75)
+                    strokeColor: NexaUI.NexaColors.withAlpha(decor.accent, 0.75)
                     strokeWidth: 1
                     capStyle: ShapePath.FlatCap
 
@@ -628,7 +628,7 @@ Item {
                 width: 38
                 height: 5
                 radius: 2.5
-                color: Colors.withAlpha(decor.accent2, 0.18)
+                color: NexaUI.NexaColors.withAlpha(decor.accent2, 0.18)
             }
 
             PingArcs {
@@ -636,7 +636,7 @@ Item {
                 cx: width - Math.max(14, decor.radius)
                 cy: Math.max(14, decor.radius)
                 gap: 6
-                color: Colors.withAlpha(decor.accent2, 0.45)
+                color: NexaUI.NexaColors.withAlpha(decor.accent2, 0.45)
             }
 
             Rectangle {
@@ -646,9 +646,9 @@ Item {
                 width: labelText.implicitWidth + 16
                 height: 16
                 radius: 8
-                color: Colors.withAlpha(decor.accent2, 0.1)
+                color: NexaUI.NexaColors.withAlpha(decor.accent2, 0.1)
                 border.width: 1
-                border.color: Colors.withAlpha(decor.accent2, 0.5)
+                border.color: NexaUI.NexaColors.withAlpha(decor.accent2, 0.5)
 
                 Text {
                     id: labelText
@@ -681,7 +681,7 @@ Item {
                 radius: Math.max(0, decor.radius - 4)
                 color: "transparent"
                 border.width: 1
-                border.color: Colors.withAlpha(decor.accent, 0.25)
+                border.color: NexaUI.NexaColors.withAlpha(decor.accent, 0.25)
             }
 
             Repeater {
@@ -696,7 +696,7 @@ Item {
                     step: 6
                     down: true
                     rule: 0
-                    color: Colors.withAlpha(decor.accent, 0.5)
+                    color: NexaUI.NexaColors.withAlpha(decor.accent, 0.5)
                 }
             }
 
@@ -707,7 +707,7 @@ Item {
                 height: 3
                 step: 6
                 rule: 0
-                color: Colors.withAlpha(decor.accent, 0.35)
+                color: NexaUI.NexaColors.withAlpha(decor.accent, 0.35)
             }
 
             Lotus {
@@ -715,8 +715,8 @@ Item {
                 y: 1
                 width: 22
                 height: 14
-                stroke: Colors.withAlpha(decor.accent, 0.85)
-                fill: Colors.withAlpha(decor.accent2, 0.3)
+                stroke: NexaUI.NexaColors.withAlpha(decor.accent, 0.85)
+                fill: NexaUI.NexaColors.withAlpha(decor.accent2, 0.3)
             }
         }
     }
@@ -737,7 +737,7 @@ Item {
                 anchors.margins: 5
                 color: "transparent"
                 border.width: 1
-                border.color: Colors.withAlpha(decor.accent2, 0.18)
+                border.color: NexaUI.NexaColors.withAlpha(decor.accent2, 0.18)
             }
 
             Repeater {
@@ -752,8 +752,8 @@ Item {
                     preferredRendererType: Shape.CurveRenderer
 
                     ShapePath {
-                        fillColor: Colors.withAlpha(decor.accent, 0.16)
-                        strokeColor: Colors.withAlpha(decor.accent, 0.5)
+                        fillColor: NexaUI.NexaColors.withAlpha(decor.accent, 0.16)
+                        strokeColor: NexaUI.NexaColors.withAlpha(decor.accent, 0.5)
                         strokeWidth: 1
                         joinStyle: ShapePath.MiterJoin
 

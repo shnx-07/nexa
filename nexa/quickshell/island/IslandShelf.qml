@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import "../theme" as Nexa
+import "../NewNexaUI" as NexaUI
 
 Item {
     id: root
@@ -144,10 +144,10 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             height: 22
             width: tabContent.implicitWidth + 16
-            radius: 11
-            color: Nexa.Theme.primarySurface
-            border.color: Nexa.Theme.border
-            border.width: 1
+            radius: NexaUI.NexaTokens.radiusPill
+            color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.16)
+            border.color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.35)
+            border.width: NexaUI.NexaTokens.borderThin
 
             RowLayout {
                 id: tabContent
@@ -156,27 +156,27 @@ Item {
 
                 Text {
                     text: "󰉋"
-                    font.family: Nexa.Theme.iconFontFamily
+                    font.family: NexaUI.NexaTypography.familyIcon
                     font.pixelSize: 12
-                    color: Nexa.Theme.primary
+                    color: NexaUI.NexaColors.primary
                     verticalAlignment: Text.AlignVCenter
                 }
 
                 Text {
                     text: "Tray"
-                    font.family: Nexa.Theme.fontFamily
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 11
-                    font.weight: Font.DemiBold
-                    color: Nexa.Theme.text
+                    font.weight: NexaUI.NexaTypography.weightSemiBold
+                    color: NexaUI.NexaColors.text
                     verticalAlignment: Text.AlignVCenter
                 }
 
                 Text {
                     text: (root.shelfItems ? root.shelfItems.length : 0) + ""
-                    font.family: Nexa.Theme.fontFamily
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 10
-                    font.weight: Font.Bold
-                    color: Nexa.Theme.mutedText
+                    font.weight: NexaUI.NexaTypography.weightBold
+                    color: NexaUI.NexaColors.mutedText
                     verticalAlignment: Text.AlignVCenter
                 }
             }
@@ -188,25 +188,25 @@ Item {
             anchors.centerIn: parent
             height: 24
             width: toastText.implicitWidth + 24
-            radius: 12
-            color: Nexa.Theme.surfaceContainerHighest
-            border.color: Nexa.Theme.border
-            border.width: 1
+            radius: NexaUI.NexaTokens.radiusPill
+            color: NexaUI.NexaColors.surfaceContainerHighest
+            border.color: NexaUI.NexaColors.border
+            border.width: NexaUI.NexaTokens.borderThin
             visible: opacity > 0
             opacity: root.toastActive ? 1.0 : 0.0
 
             Behavior on opacity {
-                NumberAnimation { duration: 150 }
+                NumberAnimation { duration: NexaUI.NexaMotion.durationFast }
             }
 
             Text {
                 id: toastText
                 anchors.centerIn: parent
                 text: root.toastMessage
-                font.family: Nexa.Theme.fontFamily
+                font.family: NexaUI.NexaTypography.familyBody
                 font.pixelSize: 11
-                font.weight: Font.Medium
-                color: Nexa.Theme.text
+                font.weight: NexaUI.NexaTypography.weightMedium
+                color: NexaUI.NexaColors.text
             }
         }
 
@@ -221,15 +221,15 @@ Item {
                 id: copyAllBtn
                 height: 22
                 width: copyLayout.implicitWidth + 14
-                radius: 11
-                color: copyHover.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
-                border.color: copyHover.containsMouse ? Nexa.Theme.primary : Nexa.Theme.border
-                border.width: 1
+                radius: NexaUI.NexaTokens.radiusPill
+                color: copyHover.containsMouse ? NexaUI.NexaColors.hoverStrong : NexaUI.NexaColors.surfaceContainerHigh
+                border.color: copyHover.containsMouse ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
+                border.width: NexaUI.NexaTokens.borderThin
                 opacity: (root.shelfItems && root.shelfItems.length > 0) ? 1.0 : 0.4
                 enabled: root.shelfItems && root.shelfItems.length > 0
 
-                Behavior on color { ColorAnimation { duration: 120 } }
-                Behavior on border.color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
+                Behavior on border.color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
 
                 RowLayout {
                     id: copyLayout
@@ -238,17 +238,17 @@ Item {
 
                     Text {
                         text: "󰆏"
-                        font.family: Nexa.Theme.iconFontFamily
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 11
-                        color: Nexa.Theme.primary
+                        color: NexaUI.NexaColors.primary
                     }
 
                     Text {
                         text: "Copy All"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 10
-                        font.weight: Font.Medium
-                        color: Nexa.Theme.text
+                        font.weight: NexaUI.NexaTypography.weightMedium
+                        color: NexaUI.NexaColors.text
                     }
                 }
 
@@ -266,15 +266,15 @@ Item {
                 id: clearBtn
                 height: 22
                 width: clearLayout.implicitWidth + 14
-                radius: 11
-                color: clearHover.containsMouse ? Qt.rgba(Nexa.Theme.error.r, Nexa.Theme.error.g, Nexa.Theme.error.b, 0.22) : Nexa.Theme.surfaceContainerHigh
-                border.color: clearHover.containsMouse ? Nexa.Theme.error : Nexa.Theme.border
-                border.width: 1
+                radius: NexaUI.NexaTokens.radiusPill
+                color: clearHover.containsMouse ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.error, 0.22) : NexaUI.NexaColors.surfaceContainerHigh
+                border.color: clearHover.containsMouse ? NexaUI.NexaColors.error : NexaUI.NexaColors.border
+                border.width: NexaUI.NexaTokens.borderThin
                 opacity: (root.shelfItems && root.shelfItems.length > 0) ? 1.0 : 0.4
                 enabled: root.shelfItems && root.shelfItems.length > 0
 
-                Behavior on color { ColorAnimation { duration: 120 } }
-                Behavior on border.color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
+                Behavior on border.color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
 
                 RowLayout {
                     id: clearLayout
@@ -283,17 +283,17 @@ Item {
 
                     Text {
                         text: "󰆴"
-                        font.family: Nexa.Theme.iconFontFamily
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 11
-                        color: clearHover.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
+                        color: clearHover.containsMouse ? NexaUI.NexaColors.error : NexaUI.NexaColors.mutedText
                     }
 
                     Text {
                         text: "Clear"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 10
-                        font.weight: Font.Medium
-                        color: clearHover.containsMouse ? Nexa.Theme.error : Nexa.Theme.mutedText
+                        font.weight: NexaUI.NexaTypography.weightMedium
+                        color: clearHover.containsMouse ? NexaUI.NexaColors.error : NexaUI.NexaColors.mutedText
                     }
                 }
 
@@ -311,21 +311,21 @@ Item {
                 id: closeBtn
                 height: 22
                 width: 22
-                radius: 11
-                color: closeHover.containsMouse ? Nexa.Theme.hoverStrong : Nexa.Theme.surfaceContainerHigh
-                border.color: closeHover.containsMouse ? Nexa.Theme.borderStrong : Nexa.Theme.border
-                border.width: 1
+                radius: NexaUI.NexaTokens.radiusPill
+                color: closeHover.containsMouse ? NexaUI.NexaColors.hoverStrong : NexaUI.NexaColors.surfaceContainerHigh
+                border.color: closeHover.containsMouse ? NexaUI.NexaColors.borderStrong : NexaUI.NexaColors.border
+                border.width: NexaUI.NexaTokens.borderThin
 
-                Behavior on color { ColorAnimation { duration: 120 } }
-                Behavior on border.color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
+                Behavior on border.color { ColorAnimation { duration: NexaUI.NexaMotion.durationFast } }
 
                 Text {
                     anchors.centerIn: parent
                     text: "✕"
-                    font.family: Nexa.Theme.fontFamily
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 10
-                    font.weight: Font.Bold
-                    color: closeHover.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
+                    font.weight: NexaUI.NexaTypography.weightBold
+                    color: closeHover.containsMouse ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText
                 }
 
                 MouseArea {
@@ -382,10 +382,10 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                radius: 12
-                color: Nexa.Theme.surfaceContainerLow
-                border.color: Nexa.Theme.borderSubtle
-                border.width: 1
+                radius: NexaUI.NexaTokens.radiusMd
+                color: NexaUI.NexaColors.surfaceContainerLow
+                border.color: NexaUI.NexaColors.borderSubtle
+                border.width: NexaUI.NexaTokens.borderThin
 
                 Row {
                     anchors.centerIn: parent
@@ -394,17 +394,17 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "󰇚"
-                        font.family: Nexa.Theme.iconFontFamily
+                        font.family: NexaUI.NexaTypography.familyIcon
                         font.pixelSize: 22
-                        color: Nexa.Theme.mutedText
+                        color: NexaUI.NexaColors.mutedText
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Drag & drop files here to stash"
-                        font.family: Nexa.Theme.fontFamily
+                        font.family: NexaUI.NexaTypography.familyBody
                         font.pixelSize: 12
-                        color: Nexa.Theme.mutedText
+                        color: NexaUI.NexaColors.mutedText
                     }
                 }
             }
@@ -425,18 +425,6 @@ Item {
                 width: 88
                 height: bodyArea.height
 
-                // --------------------------------------------------------
-                // WAYLAND DRAG-OUT CONFIGURATION
-                //
-                // dragType: Drag.Automatic means Qt drives the OS-level
-                // Wayland DnD session when Drag.start() is called.
-                //
-                // We do NOT set drag.target on the MouseArea — that only
-                // moves an item inside the QML scene.  Instead we call
-                // cardItem.Drag.start(Qt.CopyAction) manually once the
-                // pointer has moved far enough.
-                // --------------------------------------------------------
-
                 Drag.dragType: Drag.Automatic
                 Drag.supportedActions: Qt.CopyAction | Qt.MoveAction
                 Drag.proposedAction: Qt.CopyAction
@@ -448,7 +436,6 @@ Item {
                 Drag.hotSpot.y: 32
 
                 // When the drag session begins with the compositor, close the shelf
-                // so the user can see and drop onto windows underneath.
                 Drag.onDragStarted: {
                     root.requestClose()
                 }
@@ -470,10 +457,21 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 64
                     height: 64
-                    radius: 8
-                    color: Nexa.Theme.surfaceContainerHigh
-                    border.color: cardMouse.containsMouse ? Nexa.Theme.primary : Nexa.Theme.border
-                    border.width: cardMouse.containsMouse ? 2 : 1.5
+                    radius: NexaUI.NexaTokens.radiusSm
+                    color: NexaUI.NexaColors.surfaceContainerHigh
+                    border.color: cardMouse.containsMouse ? NexaUI.NexaColors.primary : NexaUI.NexaColors.border
+                    border.width: cardMouse.containsMouse ? NexaUI.NexaTokens.borderMedium : NexaUI.NexaTokens.borderThin
+
+                    // Top specular highlight
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 1
+                        radius: parent.radius
+                        color: Qt.rgba(1, 1, 1, 0.15 * NexaUI.NexaOptics.specularIntensity)
+                        visible: NexaUI.NexaOptics.specularHighlight
+                    }
 
                     // Drop shadow
                     Rectangle {
@@ -481,22 +479,18 @@ Item {
                         anchors.topMargin: 2
                         anchors.leftMargin: 1
                         z: -1
-                        radius: 8
-                        color: Nexa.Theme.shadow
+                        radius: NexaUI.NexaTokens.radiusSm
+                        color: NexaUI.NexaColors.shadow
                     }
 
                     // Inner content
                     Rectangle {
                         anchors.fill: parent
                         anchors.margins: 2
-                        radius: 6
-                        color: Nexa.Theme.surfaceContainer
+                        radius: NexaUI.NexaTokens.radiusXs
+                        color: NexaUI.NexaColors.surfaceContainer
                         clip: true
 
-                        // Image thumbnail — ONLY loaded for actual image files.
-                        // Never set source for non-image URIs: Qt tries to decode
-                        // them even when visible:false and throws errors that break
-                        // the entire delegate.
                         Image {
                             anchors.fill: parent
                             visible: modelData.category === "image" && modelData.exists
@@ -510,16 +504,12 @@ Item {
                             mipmap: true
                         }
 
-                        // System theme icon for non-image files.
-                        // Use a safe category-level icon name (never the full MIME
-                        // type string which may not exist in the current theme).
                         Image {
                             anchors.fill: parent
                             anchors.margins: 8
                             visible: modelData.category !== "image" || !modelData.exists
                             source: {
                                 if (!modelData.exists) return ""
-                                // Map category → reliable theme icon name
                                 const catIcons = {
                                     "video":    "video-x-generic",
                                     "audio":    "audio-x-generic",
@@ -529,8 +519,6 @@ Item {
                                     "image":    "image-x-generic",
                                 }
                                 const catIcon = catIcons[modelData.category] || "text-x-generic"
-                                // Prefer the specific icon_name if it's short (likely valid);
-                                // fall back to category icon for long MIME-style names.
                                 const specific = modelData.icon_name || ""
                                 const iconName = (specific.length > 0 && specific.length < 40 && !specific.includes("."))
                                     ? specific
@@ -548,9 +536,9 @@ Item {
                             anchors.centerIn: parent
                             visible: !modelData.exists
                             text: "󰀪"
-                            font.family: Nexa.Theme.iconFontFamily
+                            font.family: NexaUI.NexaTypography.familyIcon
                             font.pixelSize: 28
-                            color: Nexa.Theme.error
+                            color: NexaUI.NexaColors.error
                         }
                     }
 
@@ -562,20 +550,20 @@ Item {
                         anchors.rightMargin: -6
                         width: 18
                         height: 18
-                        radius: 9
-                        color: Nexa.Theme.surfaceContainerHighest
-                        border.color: Nexa.Theme.border
-                        border.width: 1
+                        radius: NexaUI.NexaTokens.radiusPill
+                        color: NexaUI.NexaColors.surfaceContainerHighest
+                        border.color: NexaUI.NexaColors.border
+                        border.width: NexaUI.NexaTokens.borderThin
                         visible: cardMouse.containsMouse && !root.dragInProgress
                         z: 20
 
                         Text {
                             anchors.centerIn: parent
                             text: "×"
-                            font.family: Nexa.Theme.fontFamily
+                            font.family: NexaUI.NexaTypography.familyBody
                             font.pixelSize: 12
-                            font.weight: Font.Bold
-                            color: Nexa.Theme.text
+                            font.weight: NexaUI.NexaTypography.weightBold
+                            color: NexaUI.NexaColors.text
                         }
 
                         MouseArea {
@@ -594,29 +582,21 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     text: modelData.name || "file"
-                    font.family: Nexa.Theme.fontFamily
+                    font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 11
-                    font.weight: Font.Medium
-                    color: cardMouse.containsMouse ? Nexa.Theme.text : Nexa.Theme.mutedText
+                    font.weight: NexaUI.NexaTypography.weightMedium
+                    color: cardMouse.containsMouse ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText
                     elide: Text.ElideMiddle
                     horizontalAlignment: Text.AlignHCenter
                     maximumLineCount: 1
                 }
 
-                // --------------------------------------------------------
-                // MOUSE INTERACTION
-                //
-                // Click    → copy file to clipboard
-                // Drag     → start OS Wayland DnD (closes tray when done)
-                // DblClick → open file with xdg-open
-                // --------------------------------------------------------
                 MouseArea {
                     id: cardMouse
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: root.dragInProgress ? Qt.ClosedHandCursor : Qt.OpenHandCursor
 
-                    // No drag.target — we start the drag manually via Drag.start()
                     property real pressX: 0
                     property real pressY: 0
                     property bool dragStarted: false
@@ -628,9 +608,6 @@ Item {
                     }
 
                     onPositionChanged: mouse => {
-                        // CRITICAL: Must check cardMouse.pressed AND LeftButton!
-                        // Otherwise hover events trigger onPositionChanged and cause
-                        // dragInProgress to be permanently true!
                         if (!cardMouse.pressed || !(mouse.buttons & Qt.LeftButton) || dragStarted)
                             return
 
@@ -640,7 +617,6 @@ Item {
                         if (dist > 10) {
                             dragStarted = true
                             root.dragInProgress = true
-                            // Start the real OS-level Wayland drag session
                             cardItem.Drag.start(Qt.CopyAction)
                         }
                     }

@@ -3,8 +3,7 @@ import QtQuick.Layouts
 
 import Quickshell
 
-import "../theme" as Nexa
-import "../theme/components" as NexaUI
+import "../NewNexaUI" as NexaUI
 import "../services" as Services
 import "../modules/workspace" as WorkspaceModule
 import "../modules/battery" as BatteryModule
@@ -22,7 +21,7 @@ PanelWindow {
     readonly property string barPosition: Services.BarConfig.position || "top"
     readonly property bool isVertical: barPosition === "left" || barPosition === "right"
     readonly property bool isAutohide: Services.BarConfig.autohide || false
-    readonly property int effectiveSize: Services.BarConfig.height || Nexa.Theme.barHeight
+    readonly property int effectiveSize: Services.BarConfig.height || NexaUI.NexaTokens.barHeight
 
     property bool isHovered: false
     property bool isRevealed: !isAutohide || isHovered
@@ -131,10 +130,10 @@ PanelWindow {
                 id: leftSection
                 anchors {
                     left: parent.left
-                    leftMargin: Nexa.Theme.spacingMd
+                    leftMargin: NexaUI.NexaTokens.spacingMd
                     verticalCenter: parent.verticalCenter
                 }
-                spacing: Nexa.Theme.spacingSm
+                spacing: NexaUI.NexaTokens.spacingSm
                 visible: Services.BarConfig.showWorkspaces
 
                 WorkspaceModule.Workspace {
@@ -146,8 +145,8 @@ PanelWindow {
             ConstellationRailModule.ConstellationRail {
                 id: constellationRail
                 anchors.fill: parent
-                leftMargin: Math.max(150, leftSection.width + Nexa.Theme.spacingLg)
-                rightMargin: Math.max(150, rightSection.width + Nexa.Theme.spacingLg)
+                leftMargin: Math.max(150, leftSection.width + NexaUI.NexaTokens.spacingLg)
+                rightMargin: Math.max(150, rightSection.width + NexaUI.NexaTokens.spacingLg)
             }
 
             // RIGHT SECTION: Music, Battery, Network, Power
@@ -155,31 +154,96 @@ PanelWindow {
                 id: rightSection
                 anchors {
                     right: parent.right
-                    rightMargin: Nexa.Theme.spacingMd
+                    rightMargin: NexaUI.NexaTokens.spacingMd
                     verticalCenter: parent.verticalCenter
                 }
-                spacing: Nexa.Theme.spacingXs
+                spacing: NexaUI.NexaTokens.spacingXs
 
-                component BarPill: Rectangle {
+                component BarPill: Item {
+                    id: pillRoot
                     default property alias content: pillRow.data
                     property int contentSpacing: 0
-                    property int extraWidth: Nexa.Theme.spacingMd
+                    property int extraWidth: NexaUI.NexaTokens.spacingMd
 
-                    implicitHeight: Nexa.Theme.controlHeightSm
+                    implicitHeight: NexaUI.NexaTokens.controlHeightSm
                     implicitWidth: pillRow.implicitWidth + extraWidth
-                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(height / 2, Nexa.Theme.nexaRounding)
-                    color: Nexa.Theme.surfaceContainer
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
 
-                    Behavior on color {
-                        ColorAnimation { duration: Nexa.Theme.animationFast }
+                    // GPU-Accelerated Nexa Drop Shadow for Top Bar Pills
+                    NexaUI.NexaShadow {
+                        id: pillShadow
+                        targetItem: pillBody
+                        elevation: 0
                     }
 
-                    Row {
-                        id: pillRow
-                        anchors.centerIn: parent
-                        spacing: contentSpacing
+                    Rectangle {
+                        id: pillBody
+                        anchors.fill: parent
+                        radius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(height / 2, NexaUI.NexaTokens.radiusLg)
+                        color: NexaUI.NexaColors.surfaceContainer
+                        border.width: NexaUI.NexaTokens.borderThin
+                        border.color: NexaUI.NexaColors.border
+
+                        Behavior on color {
+                            ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
+                        }
+
+                        // Apple Tactile 4-stop Depth Micro-Gradient
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: pillBody.radius
+                            antialiasing: true
+                            visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+                            opacity: NexaUI.NexaOptics.gradientIntensity
+                            gradient: Gradient {
+                                GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.045) }
+                                GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.010) }
+                                GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                                GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.120) }
+                            }
+                        }
+
+                        // Apple Top Chamfer Specular Highlight
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.topMargin: 1
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: pillBody.radius > 0 ? Math.max(0, parent.width - pillBody.radius * 1.6) : parent.width
+                            height: 1
+                            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+                            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+                            z: 1
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.30) }
+                                GradientStop { position: 1.0; color: "transparent" }
+                            }
+                        }
+
+                        // Apple Bottom Chamfer Ambient Shadow Line
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 1
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: pillBody.radius > 0 ? Math.max(0, parent.width - pillBody.radius * 1.6) : parent.width
+                            height: 1
+                            visible: NexaUI.NexaOptics.contactShadow && NexaUI.NexaOptics.shadowBlurFactor > 0.01
+                            opacity: Math.min(1.0, NexaUI.NexaOptics.shadowBlurFactor)
+                            z: 1
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 0.5; color: Qt.rgba(0, 0, 0, 0.45) }
+                                GradientStop { position: 1.0; color: "transparent" }
+                            }
+                        }
+
+                        Row {
+                            id: pillRow
+                            anchors.centerIn: parent
+                            spacing: contentSpacing
+                            z: 2
+                        }
                     }
                 }
 
@@ -207,17 +271,17 @@ PanelWindow {
                     id: settingsPill
                     visible: Services.BarConfig.showSettings
                     extraWidth: 0
-                    implicitWidth: Nexa.Theme.controlHeightSm
+                    implicitWidth: NexaUI.NexaTokens.controlHeightSm
 
                     Item {
-                        implicitWidth: Nexa.Theme.controlHeightSm
-                        implicitHeight: Nexa.Theme.controlHeightSm
+                        implicitWidth: NexaUI.NexaTokens.controlHeightSm
+                        implicitHeight: NexaUI.NexaTokens.controlHeightSm
 
-                        NexaUI.NexaIconButton {
+                        NexaUI.NexaButton {
                             anchors.fill: parent
-                            radius: height / 2
+                            variant: "icon"
                             icon: "󰒓"
-                            iconColor: Nexa.Theme.text
+                            iconColor: NexaUI.NexaColors.text
                             onClicked: {
                                 Quickshell.execDetached([
                                     "qs",
@@ -237,7 +301,7 @@ PanelWindow {
                     id: powerPill
                     visible: Services.BarConfig.showPower
                     extraWidth: 0
-                    implicitWidth: Nexa.Theme.controlHeightSm
+                    implicitWidth: NexaUI.NexaTokens.controlHeightSm
                     PowerModule.Power {}
                 }
             }
@@ -254,10 +318,10 @@ PanelWindow {
             ColumnLayout {
                 anchors {
                     top: parent.top
-                    topMargin: Nexa.Theme.spacingMd
+                    topMargin: NexaUI.NexaTokens.spacingMd
                     horizontalCenter: parent.horizontalCenter
                 }
-                spacing: Nexa.Theme.spacingSm
+                spacing: NexaUI.NexaTokens.spacingSm
                 visible: Services.BarConfig.showWorkspaces
 
                 WorkspaceModule.Workspace {
@@ -268,18 +332,18 @@ PanelWindow {
             ColumnLayout {
                 anchors {
                     bottom: parent.bottom
-                    bottomMargin: Nexa.Theme.spacingMd
+                    bottomMargin: NexaUI.NexaTokens.spacingMd
                     horizontalCenter: parent.horizontalCenter
                 }
-                spacing: Nexa.Theme.spacingXs
+                spacing: NexaUI.NexaTokens.spacingXs
 
                 component VerticalBarPill: Rectangle {
-                    width: Nexa.Theme.controlHeightSm
-                    height: Nexa.Theme.controlHeightSm
-                    radius: Nexa.Theme.nexaRounding === 0 ? 0 : Math.min(width / 2, Nexa.Theme.nexaRounding)
-                    color: Nexa.Theme.surfaceContainer
-                    border.width: Nexa.Theme.borderThin
-                    border.color: Nexa.Theme.border
+                    width: NexaUI.NexaTokens.controlHeightSm
+                    height: NexaUI.NexaTokens.controlHeightSm
+                    radius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(width / 2, NexaUI.NexaTokens.radiusLg)
+                    color: NexaUI.NexaColors.surfaceContainer
+                    border.width: NexaUI.NexaTokens.borderThin
+                    border.color: NexaUI.NexaColors.border
                 }
 
                 VerticalBarPill {
@@ -309,11 +373,11 @@ PanelWindow {
                 VerticalBarPill {
                     visible: Services.BarConfig.showSettings
 
-                    NexaUI.NexaIconButton {
+                    NexaUI.NexaButton {
                         anchors.fill: parent
-                        radius: height / 2
+                        variant: "icon"
                         icon: "󰒓"
-                        iconColor: Nexa.Theme.text
+                        iconColor: NexaUI.NexaColors.text
                         onClicked: {
                             Quickshell.execDetached([
                                 "qs",

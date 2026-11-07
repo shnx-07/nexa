@@ -1,9 +1,9 @@
 {
-  "rounding": 0,
+  "rounding": 6,
   "nexa_rounding": 0,
   "border_size": 1,
   "style": "standard",
-  "shadow_enabled": false,
+  "shadow_enabled": true,
   "shadow_range": 30,
   "dim_inactive": false,
   "dim_strength": 0.0

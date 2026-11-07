@@ -6,8 +6,7 @@ import Quickshell.Hyprland
 import Quickshell.Bluetooth
 import Quickshell.Networking
 
-import "../theme" as Nexa
-import "../theme/components" as NexaUI
+import "../NewNexaUI" as NexaUI
 import "../services" as Services
 
 
@@ -18,6 +17,11 @@ PanelWindow {
     readonly property bool notificationActive:
         islandContent.notificationActive
     property bool notificationEventInitialized: false
+    property real squashVal: 0
+
+    Behavior on squashVal {
+        NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+    }
 
     // ============================================================
     // RESPONSIBILITY
@@ -59,7 +63,7 @@ PanelWindow {
     // Synchronize vertical position with the TopBar pills and rail for pixel-perfect symmetry
     readonly property int effectiveBarHeight: (Services.BarConfig.position === "top" && Services.BarConfig.height > 0)
         ? Services.BarConfig.height
-        : Nexa.Theme.barHeight
+        : NexaUI.NexaTokens.barHeight
     readonly property int compactTopMargin: Math.max(4, Math.round((effectiveBarHeight - root.compactHeight) / 2))
 
     margins {
@@ -99,10 +103,10 @@ PanelWindow {
     // ============================================================
 
     readonly property int compactWidth:
-        Nexa.Theme.islandCompactWidth
+        NexaUI.NexaTokens.islandCompactWidth
 
     readonly property int compactHeight:
-        Nexa.Theme.islandCompactHeight
+        NexaUI.NexaTokens.islandCompactHeight
 
 
     // ============================================================
@@ -1122,6 +1126,12 @@ PanelWindow {
     // VISIBLE ISLAND SURFACE
     // ============================================================
 
+    // GPU-Accelerated Nexa Shadow (Elevation 0 when resting on top bar, Elevation 2 when expanded modal)
+    NexaUI.NexaShadow {
+        targetItem: island
+        elevation: (root.full || root.hovered || root.specialModeActive) ? 2 : 0
+    }
+
     Rectangle {
         id: island
 
@@ -1146,14 +1156,14 @@ PanelWindow {
         // --------------------------------------------------------
 
         radius: {
-            if (Nexa.Theme.islandRounding === 0) return 0;
+            if (NexaUI.NexaTokens.islandRounding === 0) return 0;
             if (root.full || root.specialModeActive || root.hovered || root.notificationActive) {
-                return (Nexa.Theme.islandRounding >= 999) ? 24 : Math.min(24, Nexa.Theme.islandRounding);
+                return (NexaUI.NexaTokens.islandRounding >= 999) ? 24 : Math.min(24, NexaUI.NexaTokens.islandRounding);
             }
             if (root.osdActive) {
                 return Math.round(targetHeight / 2);
             }
-            return (Nexa.Theme.islandRounding >= 999) ? Math.round(targetHeight / 2) : Nexa.Theme.islandRounding;
+            return (NexaUI.NexaTokens.islandRounding >= 999) ? Math.round(targetHeight / 2) : NexaUI.NexaTokens.islandRounding;
         }
 
 
@@ -1167,58 +1177,127 @@ PanelWindow {
           || root.hovered
           || root.notificationActive
           || root.osdActive
-          ? Nexa.Theme.islandBackgroundExpanded
-          : Nexa.Theme.islandBackground
+          ? NexaUI.NexaColors.islandBackgroundExpanded
+          : NexaUI.NexaColors.islandBackground
 
 
-        border.width: (root.full || root.hovered || Nexa.Theme.windowBorderSize > 0) ? Nexa.Theme.borderThin : 0
+        border.width: NexaUI.NexaTokens.borderThin
 
-        border.color:
-          (Nexa.Theme.windowBorderSize > 0)
-            ? Nexa.Theme.borderStrong
-            : (root.full
-                || root.hovered
-                || root.notificationActive
-                || root.osdActive
-                ? Nexa.Theme.borderStrong
-                : Nexa.Theme.border)
+        border.color: (root.full || root.hovered || root.specialModeActive || root.notificationActive || root.osdActive)
+            ? NexaUI.NexaColors.borderStrong
+            : NexaUI.NexaColors.border
 
 
         // ========================================================
         // VISUAL ANIMATION
         //
         // Width, height, and corner radius animate together using
-        // identical timings and OutQuint easing for maximum fluidity.
+        // spring physics driven by NexaMotion tokens.
         // ========================================================
 
         Behavior on width {
-            enabled: !Nexa.Theme.reducedMotion
-            NexaUI.NexaSpring { section: "island" }
+            enabled: NexaUI.NexaMotion.enabled
+            SpringAnimation {
+                spring: NexaUI.NexaMotion.springStiffness
+                damping: NexaUI.NexaMotion.springDamping
+                mass: NexaUI.NexaMotion.springMass
+                epsilon: 0.25
+            }
         }
 
         Behavior on height {
-            enabled: !Nexa.Theme.reducedMotion
-            NexaUI.NexaSpring { section: "island" }
+            enabled: NexaUI.NexaMotion.enabled
+            SpringAnimation {
+                spring: NexaUI.NexaMotion.springStiffness
+                damping: NexaUI.NexaMotion.springDamping
+                mass: NexaUI.NexaMotion.springMass
+                epsilon: 0.25
+            }
         }
 
         Behavior on radius {
-            enabled: !Nexa.Theme.reducedMotion
-            NexaUI.NexaSpring { section: "island" }
+            enabled: NexaUI.NexaMotion.enabled
+            SpringAnimation {
+                spring: NexaUI.NexaMotion.springStiffness
+                damping: NexaUI.NexaMotion.springDamping
+                mass: NexaUI.NexaMotion.springMass
+                epsilon: 0.25
+            }
         }
 
 
         Behavior on color {
             ColorAnimation {
-                duration: Nexa.Theme.animationFast
-                easing.type: Easing.OutCubic
+                duration: NexaUI.NexaMotion.durationFast
+                easing.type: NexaUI.NexaMotion.standardEasing
             }
         }
 
 
         Behavior on border.color {
             ColorAnimation {
-                duration: Nexa.Theme.animationFast
+                duration: NexaUI.NexaMotion.durationFast
+                easing.type: NexaUI.NexaMotion.standardEasing
+            }
+        }
+
+        scale: 1 - 0.025 * root.squashVal
+        Behavior on scale {
+            NumberAnimation {
+                duration: 140
                 easing.type: Easing.OutCubic
+            }
+        }
+
+        // Apple / Tactile 4-stop OLED Depth Micro-Gradient (3D Surface Convexity)
+        Rectangle {
+            anchors.fill: parent
+            radius: island.radius
+            antialiasing: island.radius > 0
+            visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+            opacity: NexaUI.NexaOptics.gradientIntensity
+            z: 0
+            gradient: Gradient {
+                GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.060) }
+                GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.014) }
+                GradientStop { position: 0.72; color: Qt.rgba(0, 0, 0, 0.000) }
+                GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.150) }
+            }
+        }
+
+        // Apple Top Chamfer Specular Highlight (Physical Overhead Light Reflection)
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: island.radius > 0 ? Math.max(0, parent.width - island.radius * 1.6) : parent.width
+            height: 1
+            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+            z: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.32) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // Apple Bottom Chamfer Ambient Shadow Line (Crisp Grounding Line)
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: island.radius > 0 ? Math.max(0, parent.width - island.radius * 1.6) : parent.width
+            height: 1
+            visible: NexaUI.NexaOptics.specularHighlight
+            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+            z: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(0, 0, 0, 0.45) }
+                GradientStop { position: 1.0; color: "transparent" }
             }
         }
 
@@ -1293,6 +1372,10 @@ PanelWindow {
               && !root.osdActive
 
             cursorShape: Qt.PointingHandCursor
+
+            onPressed: root.squashVal = 1.0
+            onReleased: root.squashVal = 0.0
+            onCanceled: root.squashVal = 0.0
 
             onClicked: {
                 root.openFull()
@@ -1472,23 +1555,22 @@ PanelWindow {
           }
 
         }
+    }
 
-        // ========================================================
-        // TOP-LEVEL BORDER RIM OVERLAY
-        // ========================================================
-        // Guarantees border is ALWAYS drawn cleanly above all content layers
-        // (including full-bleed album art in Media view) and respects
-        // Nexa.Theme.windowBorderSize and Nexa.Theme.borderStrong.
-        Rectangle {
-            id: islandBorderOverlay
-            anchors.fill: parent
-            radius: island.radius
-            color: "transparent"
-            border.width: island.border.width
-            border.color: island.border.color
-            enabled: false
-            z: 100
-        }
+    // ========================================================
+    // TOP-LEVEL BORDER RIM OVERLAY
+    // ========================================================
+    // Guarantees border is ALWAYS drawn cleanly above all content layers
+    // and is never clipped by island.clip: true.
+    Rectangle {
+        id: islandBorderOverlay
+        anchors.fill: island
+        radius: island.radius
+        color: "transparent"
+        border.width: island.border.width
+        border.color: island.border.color
+        enabled: false
+        z: 100
     }
 
     IslandClockButton {

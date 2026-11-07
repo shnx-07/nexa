@@ -4,10 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import "../../services" as Services
-
-import "../../theme" as Nexa
-import "../../theme/components" as NexaUI
-
+import "../../NewNexaUI" as NexaUI
 
 PopupWindow {
     id: root
@@ -26,20 +23,14 @@ PopupWindow {
     readonly property int timeToFull: Services.SystemState.batteryTimeToFull
     readonly property int timeToEmpty: Services.SystemState.batteryTimeToEmpty
 
-
-
-
-    implicitWidth: 380
-    implicitHeight: 410
+    implicitWidth: 412
+    implicitHeight: 442
 
     color: "transparent"
     grabFocus: true
 
     // ============================================================
     // ANIMATED ARC PERCENT
-    //
-    // When the popup opens, animatedPercent sweeps from 0 → percent
-    // giving a satisfying arc fill animation.
     // ============================================================
 
     property real animatedPercent: 0
@@ -51,8 +42,6 @@ PopupWindow {
         }
     }
 
-    // Short delay before starting the sweep so the popup
-    // entrance animation (scale/opacity) completes first.
     Timer {
         id: arcSweepTimer
         interval: 80
@@ -72,11 +61,8 @@ PopupWindow {
             root.animatedPercent = root.percent
     }
 
-
     // ============================================================
     // POSITION
-    //
-    // Opens below the battery and expands toward the left.
     // ============================================================
 
     anchor {
@@ -84,13 +70,13 @@ PopupWindow {
 
         rect.x:
             root.anchorItem
-            ? root.anchorItem.width
+            ? root.anchorItem.width + 16
             : 0
 
         rect.y:
             root.anchorItem
             ? root.anchorItem.height
-              + Nexa.Theme.spacingSm
+              + NexaUI.NexaTokens.spacingSm - 16
             : 0
 
         rect.width: 1
@@ -103,7 +89,6 @@ PopupWindow {
             Edges.Bottom | Edges.Left
     }
 
-
     // ============================================================
     // HELPERS
     // ============================================================
@@ -112,17 +97,13 @@ PopupWindow {
         if (!seconds || seconds <= 0)
             return "Calculating…"
 
-        const hours =
-            Math.floor(seconds / 3600)
-
-        const minutes =
-            Math.floor((seconds % 3600) / 60)
+        const hours = Math.floor(seconds / 3600)
+        const minutes = Math.floor((seconds % 3600) / 60)
 
         return hours > 0
             ? hours + "h " + minutes + "m"
             : minutes + "m"
     }
-
 
     function setProfile(profile) {
         profileProcess.exec([
@@ -135,33 +116,33 @@ PopupWindow {
         currentProfile = profile
     }
 
-
     Process {
         id: profileProcess
     }
-
 
     // ============================================================
     // MAIN PANEL
     // ============================================================
 
+    NexaUI.NexaShadow {
+        id: panelShadow
+        targetItem: panel
+        elevation: 1
+        spread: 0.08
+    }
+
     Rectangle {
         id: panel
 
         anchors.fill: parent
+        anchors.margins: 16
 
-        radius:
-            Nexa.Theme.radiusLg
-
-        color:
-            Nexa.Theme.panelBackground
+        radius: NexaUI.NexaTokens.radiusLg
+        color: NexaUI.NexaColors.surfaceContainer
 
         border {
-            width:
-                Nexa.Theme.borderThin
-
-            color:
-                Nexa.Theme.border
+            width: NexaUI.NexaTokens.borderThin
+            color: NexaUI.NexaColors.borderStrong
         }
 
         NexaUI.NexaShaderSubstrate {
@@ -169,46 +150,66 @@ PopupWindow {
             radius: panel.radius
         }
 
+        // Apple / Tactile 4-stop Depth Micro-Gradient
+        Rectangle {
+            anchors.fill: parent
+            radius: panel.radius
+            antialiasing: panel.radius > 0
+            visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+            opacity: NexaUI.NexaOptics.gradientIntensity
+            gradient: Gradient {
+                GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.055) }
+                GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.012) }
+                GradientStop { position: 0.70; color: Qt.rgba(0, 0, 0, 0.000) }
+                GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.140) }
+            }
+        }
 
-        scale:
-            root.visible
-            ? Nexa.Theme.normalScale
-            : 0.97
+        // Top Chamfer Specular Highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: panel.radius > 0 ? Math.max(0, parent.width - panel.radius * 1.6) : parent.width
+            height: 1
+            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.32) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
 
-        opacity:
-            root.visible
-            ? Nexa.Theme.opacityFull
-            : Nexa.Theme.opacityHidden
-
-        transformOrigin:
-            Item.TopRight
-
+        scale: root.visible ? 1.0 : 0.97
+        opacity: root.visible ? 1.0 : 0.0
+        transformOrigin: Item.TopRight
 
         Behavior on scale {
-            enabled: !Nexa.Theme.reducedMotion
-            NexaUI.NexaSpring { section: "popups"; customStiffness: 6.0; customDamping: 0.22 }
+            enabled: NexaUI.NexaMotion.enabled
+            SpringAnimation {
+                spring: NexaUI.NexaMotion.useSpring("popups") ? NexaUI.NexaMotion.springStiffness : 8.0
+                damping: NexaUI.NexaMotion.useSpring("popups") ? NexaUI.NexaMotion.springDamping : 1.0
+                mass: NexaUI.NexaMotion.springMass
+                epsilon: 0.002
+            }
         }
 
         Behavior on opacity {
             NumberAnimation {
-                duration:
-                    Nexa.Theme.animationFast
-
-                easing.type:
-                    Nexa.Theme.easingEnter
+                duration: NexaUI.NexaMotion.durationFast
+                easing.type: NexaUI.NexaMotion.easingStandard
             }
         }
-
 
         ColumnLayout {
             anchors {
                 fill: parent
-                margins: Nexa.Theme.spacingMd
+                margins: NexaUI.NexaTokens.spacingMd
             }
 
-            spacing:
-                Nexa.Theme.spacingSm
-
+            spacing: NexaUI.NexaTokens.spacingSm
 
             // ====================================================
             // SECTION 1 — BATTERY STATUS
@@ -217,359 +218,202 @@ PopupWindow {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 190
-
-                radius:
-                    Nexa.Theme.radiusMd
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
+                radius: NexaUI.NexaTokens.radiusMd
+                color: NexaUI.NexaColors.surfaceContainerHigh
 
                 border {
-                    width:
-                        Nexa.Theme.borderThin
-
-                    color:
-                        Nexa.Theme.border
+                    width: NexaUI.NexaTokens.borderThin
+                    color: NexaUI.NexaColors.border
                 }
-
 
                 ColumnLayout {
                     anchors {
                         fill: parent
-                        margins: Nexa.Theme.spacingMd
+                        margins: NexaUI.NexaTokens.spacingMd
                     }
 
-                    spacing:
-                        Nexa.Theme.spacingXs
-
+                    spacing: NexaUI.NexaTokens.spacingXs
 
                     // ------------------------------------------------
                     // HALF ARC
                     // ------------------------------------------------
-
                     Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 112
 
-
                         Canvas {
                             id: arc
-
                             anchors.centerIn: parent
-
                             width: 210
                             height: 105
 
-
                             onPaint: {
-                                const ctx =
-                                    getContext("2d")
-
-                                ctx.clearRect(
-                                    0,
-                                    0,
-                                    width,
-                                    height
-                                )
+                                const ctx = getContext("2d")
+                                ctx.clearRect(0, 0, width, height)
 
                                 const x = width / 2
                                 const y = height - 5
                                 const r = 78
 
-
                                 // Background arc
                                 ctx.beginPath()
-
-                                ctx.arc(
-                                    x,
-                                    y,
-                                    r,
-                                    Math.PI,
-                                    Math.PI * 2
-                                )
-
+                                ctx.arc(x, y, r, Math.PI, Math.PI * 2)
                                 ctx.lineWidth = 10
                                 ctx.lineCap = "round"
-
-                                ctx.strokeStyle =
-                                    Nexa.Theme.surfaceContainerHighest
-
+                                ctx.strokeStyle = NexaUI.NexaColors.surfaceContainerHighest
                                 ctx.stroke()
-
 
                                 // Active arc
                                 ctx.beginPath()
-
                                 ctx.arc(
                                     x,
                                     y,
                                     r,
                                     Math.PI,
-                                    Math.PI
-                                    + Math.PI
-                                    * root.animatedPercent / 100
+                                    Math.PI + Math.PI * root.animatedPercent / 100
                                 )
-
                                 ctx.lineWidth = 10
                                 ctx.lineCap = "round"
-
                                 ctx.strokeStyle =
                                     root.charging
-                                    ? Nexa.Theme.success
+                                    ? NexaUI.NexaColors.success
                                     : root.percent <= 15
-                                        ? Nexa.Theme.error
+                                        ? NexaUI.NexaColors.error
                                         : root.percent <= 30
-                                            ? Nexa.Theme.warning
-                                            : Nexa.Theme.primary
-
+                                            ? NexaUI.NexaColors.warning
+                                            : NexaUI.NexaColors.primary
                                 ctx.stroke()
                             }
 
-
                             Connections {
                                 target: root
-
-                                function onAnimatedPercentChanged() {
-                                    arc.requestPaint()
-                                }
-
-                                function onPercentChanged() {
-                                    arc.requestPaint()
-                                }
-
-                                function onChargingChanged() {
-                                    arc.requestPaint()
-                                }
+                                function onAnimatedPercentChanged() { arc.requestPaint() }
+                                function onPercentChanged() { arc.requestPaint() }
+                                function onChargingChanged() { arc.requestPaint() }
                             }
                         }
 
-
                         Column {
                             anchors {
-                                horizontalCenter:
-                                    parent.horizontalCenter
-
-                                top:
-                                    parent.top
-
-                                topMargin:
-                                    38
+                                horizontalCenter: parent.horizontalCenter
+                                top: parent.top
+                                topMargin: 38
                             }
 
                             spacing: 1
 
-
                             Text {
-                                anchors.horizontalCenter:
-                                    parent.horizontalCenter
-
-                                text:
-                                    root.percent + "%"
-
-                                color:
-                                    Nexa.Theme.text
-
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: root.percent + "%"
+                                color: NexaUI.NexaColors.text
                                 font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        28
-
-                                    weight:
-                                        Nexa.Theme.fontWeightBold
+                                    family: NexaUI.NexaTypography.familyDisplay
+                                    pixelSize: 28
+                                    weight: NexaUI.NexaTypography.weightBold
                                 }
                             }
 
-
                             Text {
-                                anchors.horizontalCenter:
-                                    parent.horizontalCenter
-
-                                text:
-                                    root.charging
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: root.charging
                                     ? (root.percent >= 100 ? "Fully Charged" : "Charging")
                                     : "On battery"
-
-                                color:
-                                    root.charging
-                                    ? Nexa.Theme.success
-                                    : Nexa.Theme.mutedText
-
+                                color: root.charging
+                                    ? NexaUI.NexaColors.success
+                                    : NexaUI.NexaColors.mutedText
                                 font {
-                                    family:
-                                        Nexa.Theme.fontFamily
-
-                                    pixelSize:
-                                        Nexa.Theme.fontSizeXs
-
-                                    weight:
-                                        Nexa.Theme.fontWeightMedium
+                                    family: NexaUI.NexaTypography.familyBody
+                                    pixelSize: NexaUI.NexaTypography.sizeXs
+                                    weight: NexaUI.NexaTypography.weightMedium
                                 }
                             }
                         }
                     }
 
-
                     // ------------------------------------------------
                     // LIVE INFORMATION
                     // ------------------------------------------------
-
                     RowLayout {
                         Layout.fillWidth: true
-
-                        spacing:
-                            Nexa.Theme.spacingSm
-
+                        spacing: NexaUI.NexaTokens.spacingSm
 
                         // Time
                         Rectangle {
                             Layout.fillWidth: true
-
                             implicitHeight: 48
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-                            color:
-                                Nexa.Theme.surfaceContainerHighest
-
-                            border.width:
-                                Nexa.Theme.borderThin
-
-                            border.color:
-                                Nexa.Theme.border
-
+                            radius: NexaUI.NexaTokens.radiusSm
+                            color: NexaUI.NexaColors.surfaceContainerHighest
+                            border.width: NexaUI.NexaTokens.borderThin
+                            border.color: NexaUI.NexaColors.border
 
                             Column {
                                 anchors {
                                     left: parent.left
-                                    verticalCenter:
-                                        parent.verticalCenter
-
-                                    leftMargin:
-                                        Nexa.Theme.spacingSm
+                                    verticalCenter: parent.verticalCenter
+                                    leftMargin: NexaUI.NexaTokens.spacingSm
                                 }
 
                                 spacing: 1
 
-
                                 Text {
-                                    text:
-                                        root.charging
-                                        ? "Until full"
-                                        : "Remaining"
-
-                                    color:
-                                        Nexa.Theme.mutedText
-
+                                    text: root.charging ? "Until full" : "Remaining"
+                                    color: NexaUI.NexaColors.mutedText
                                     font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSize2Xs
+                                        family: NexaUI.NexaTypography.familyBody
+                                        pixelSize: NexaUI.NexaTypography.size2Xs
                                     }
                                 }
 
-
                                 Text {
-                                    text:
-                                        root.charging
-                                        ? root.formatTime(
-                                            root.timeToFull
-                                          )
-                                        : root.formatTime(
-                                            root.timeToEmpty
-                                          )
-
-                                    color:
-                                        Nexa.Theme.text
-
+                                    text: root.charging
+                                        ? root.formatTime(root.timeToFull)
+                                        : root.formatTime(root.timeToEmpty)
+                                    color: NexaUI.NexaColors.text
                                     font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSizeSm
-
-                                        weight:
-                                            Nexa.Theme.fontWeightDemiBold
+                                        family: NexaUI.NexaTypography.familyBody
+                                        pixelSize: NexaUI.NexaTypography.sizeSm
+                                        weight: NexaUI.NexaTypography.weightSemiBold
                                     }
                                 }
                             }
                         }
 
-
                         // Wattage
                         Rectangle {
                             Layout.fillWidth: true
-
                             implicitHeight: 48
-
-                            radius:
-                                Nexa.Theme.radiusSm
-
-                            color:
-                                Nexa.Theme.surfaceContainerHighest
-
-                            border.width:
-                                Nexa.Theme.borderThin
-
-                            border.color:
-                                Nexa.Theme.border
-
+                            radius: NexaUI.NexaTokens.radiusSm
+                            color: NexaUI.NexaColors.surfaceContainerHighest
+                            border.width: NexaUI.NexaTokens.borderThin
+                            border.color: NexaUI.NexaColors.border
 
                             Column {
                                 anchors {
                                     left: parent.left
-                                    verticalCenter:
-                                        parent.verticalCenter
-
-                                    leftMargin:
-                                        Nexa.Theme.spacingSm
+                                    verticalCenter: parent.verticalCenter
+                                    leftMargin: NexaUI.NexaTokens.spacingSm
                                 }
 
                                 spacing: 1
 
-
                                 Text {
-                                    text:
-                                        root.charging
-                                        ? "Charge rate"
-                                        : "Power draw"
-
-                                    color:
-                                        Nexa.Theme.mutedText
-
+                                    text: root.charging ? "Charge rate" : "Power draw"
+                                    color: NexaUI.NexaColors.mutedText
                                     font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSize2Xs
+                                        family: NexaUI.NexaTypography.familyBody
+                                        pixelSize: NexaUI.NexaTypography.size2Xs
                                     }
                                 }
 
-
                                 Text {
-                                    text:
-                                        root.watts > 0
+                                    text: root.watts > 0
                                         ? root.watts.toFixed(1) + " W"
                                         : "—"
-
-                                    color:
-                                        Nexa.Theme.text
-
+                                    color: NexaUI.NexaColors.text
                                     font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSizeSm
-
-                                        weight:
-                                            Nexa.Theme.fontWeightDemiBold
+                                        family: NexaUI.NexaTypography.familyBody
+                                        pixelSize: NexaUI.NexaTypography.sizeSm
+                                        weight: NexaUI.NexaTypography.weightSemiBold
                                     }
                                 }
                             }
@@ -578,66 +422,41 @@ PopupWindow {
                 }
             }
 
-
             // ====================================================
             // SECTION 2 — POWER PROFILE
             // ====================================================
-
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 94
-
-                radius:
-                    Nexa.Theme.radiusMd
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
+                radius: NexaUI.NexaTokens.radiusMd
+                color: NexaUI.NexaColors.surfaceContainerHigh
 
                 border {
-                    width:
-                        Nexa.Theme.borderThin
-
-                    color:
-                        Nexa.Theme.border
+                    width: NexaUI.NexaTokens.borderThin
+                    color: NexaUI.NexaColors.border
                 }
-
 
                 ColumnLayout {
                     anchors {
                         fill: parent
-                        margins: Nexa.Theme.spacingMd
+                        margins: NexaUI.NexaTokens.spacingMd
                     }
 
-                    spacing:
-                        Nexa.Theme.spacingSm
-
+                    spacing: NexaUI.NexaTokens.spacingSm
 
                     Text {
-                        text:
-                            "Power Profile"
-
-                        color:
-                            Nexa.Theme.text
-
+                        text: "Power Profile"
+                        color: NexaUI.NexaColors.text
                         font {
-                            family:
-                                Nexa.Theme.fontFamily
-
-                            pixelSize:
-                                Nexa.Theme.fontSizeSm
-
-                            weight:
-                                Nexa.Theme.fontWeightDemiBold
+                            family: NexaUI.NexaTypography.familyBody
+                            pixelSize: NexaUI.NexaTypography.sizeSm
+                            weight: NexaUI.NexaTypography.weightSemiBold
                         }
                     }
 
-
                     RowLayout {
                         Layout.fillWidth: true
-
-                        spacing:
-                            Nexa.Theme.spacingXs
-
+                        spacing: NexaUI.NexaTokens.spacingXs
 
                         Repeater {
                             model: [
@@ -646,106 +465,65 @@ PopupWindow {
                                 ["Performance", "performance"]
                             ]
 
-
                             delegate: Rectangle {
                                 id: profileButton
-
                                 required property var modelData
 
                                 readonly property bool selected:
-                                    root.currentProfile
-                                    === modelData[1]
+                                    root.currentProfile === modelData[1]
 
                                 Layout.fillWidth: true
+                                implicitHeight: NexaUI.NexaTokens.controlHeightMd
+                                radius: NexaUI.NexaTokens.radiusSm
 
-                                implicitHeight:
-                                    Nexa.Theme.controlHeightMd
-
-                                radius:
-                                    Nexa.Theme.radiusSm
-
-
-                                color:
-                                    selected
-                                    ? Nexa.Theme.selected
+                                color: selected
+                                    ? NexaUI.NexaColors.primary
                                     : profileMouse.containsMouse
-                                        ? Nexa.Theme.hoverStrong
-                                        : Nexa.Theme.surfaceContainerHighest
+                                        ? NexaUI.NexaColors.surfaceContainerHigh
+                                        : NexaUI.NexaColors.surfaceContainerHighest
 
-                                border.width:
-                                    Nexa.Theme.borderThin
+                                border.width: NexaUI.NexaTokens.borderThin
+                                border.color: selected
+                                    ? NexaUI.NexaColors.primary
+                                    : NexaUI.NexaColors.border
 
-                                border.color:
-                                    selected
-                                    ? Nexa.Theme.primary
-                                    : Nexa.Theme.border
-
-
-                                scale:
-                                    profileMouse.pressed
-                                    ? Nexa.Theme.pressScale
-                                    : Nexa.Theme.normalScale
-
+                                scale: profileMouse.pressed
+                                    ? NexaUI.NexaMotion.scalePress
+                                    : 1.0
 
                                 Behavior on color {
                                     ColorAnimation {
-                                        duration:
-                                            Nexa.Theme.animationFast
+                                        duration: NexaUI.NexaMotion.durationFast
                                     }
                                 }
 
                                 Behavior on scale {
                                     NumberAnimation {
-                                        duration:
-                                            Nexa.Theme.animationFast
-
-                                        easing.type:
-                                            Nexa.Theme.easingStandard
+                                        duration: NexaUI.NexaMotion.durationFast
+                                        easing.type: NexaUI.NexaMotion.easingStandard
                                     }
                                 }
-
 
                                 Text {
-                                    anchors.centerIn:
-                                        parent
-
-                                    text:
-                                        profileButton.modelData[0]
-
-                                    color:
-                                        profileButton.selected
-                                        ? Nexa.Theme.selectedText
-                                        : Nexa.Theme.text
-
+                                    anchors.centerIn: parent
+                                    text: profileButton.modelData[0]
+                                    color: profileButton.selected
+                                        ? NexaUI.NexaColors.onPrimary
+                                        : NexaUI.NexaColors.text
                                     font {
-                                        family:
-                                            Nexa.Theme.fontFamily
-
-                                        pixelSize:
-                                            Nexa.Theme.fontSizeXs
-
-                                        weight:
-                                            Nexa.Theme.fontWeightMedium
+                                        family: NexaUI.NexaTypography.familyBody
+                                        pixelSize: NexaUI.NexaTypography.sizeXs
+                                        weight: NexaUI.NexaTypography.weightMedium
                                     }
                                 }
-
 
                                 MouseArea {
                                     id: profileMouse
-
-                                    anchors.fill:
-                                        parent
-
-                                    hoverEnabled:
-                                        true
-
-                                    cursorShape:
-                                        Qt.PointingHandCursor
-
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
                                     onClicked:
-                                        root.setProfile(
-                                            profileButton.modelData[1]
-                                        )
+                                        root.setProfile(profileButton.modelData[1])
                                 }
                             }
                         }
@@ -753,143 +531,83 @@ PopupWindow {
                 }
             }
 
-
             // ====================================================
             // SECTION 3 — BATTERY HEALTH
             // ====================================================
-
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-
-                radius:
-                    Nexa.Theme.radiusMd
-
-                color:
-                    Nexa.Theme.surfaceContainerHigh
+                radius: NexaUI.NexaTokens.radiusMd
+                color: NexaUI.NexaColors.surfaceContainerHigh
 
                 border {
-                    width:
-                        Nexa.Theme.borderThin
-
-                    color:
-                        Nexa.Theme.border
+                    width: NexaUI.NexaTokens.borderThin
+                    color: NexaUI.NexaColors.border
                 }
-
 
                 ColumnLayout {
                     anchors {
                         fill: parent
-                        margins: Nexa.Theme.spacingMd
+                        margins: NexaUI.NexaTokens.spacingMd
                     }
 
-                    spacing:
-                        Nexa.Theme.spacingSm
-
+                    spacing: NexaUI.NexaTokens.spacingSm
 
                     RowLayout {
                         Layout.fillWidth: true
 
-
                         Text {
-                            text:
-                                "Battery Health"
-
-                            color:
-                                Nexa.Theme.text
-
+                            text: "Battery Health"
+                            color: NexaUI.NexaColors.text
                             font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeSm
-
-                                weight:
-                                    Nexa.Theme.fontWeightDemiBold
+                                family: NexaUI.NexaTypography.familyBody
+                                pixelSize: NexaUI.NexaTypography.sizeSm
+                                weight: NexaUI.NexaTypography.weightSemiBold
                             }
                         }
-
 
                         Item {
                             Layout.fillWidth: true
                         }
 
-
                         Text {
-                            text:
-                                root.health > 0
+                            text: root.health > 0
                                 ? Math.round(root.health) + "%"
                                 : "Unavailable"
-
-                            color:
-                                Nexa.Theme.mutedText
-
+                            color: NexaUI.NexaColors.mutedText
                             font {
-                                family:
-                                    Nexa.Theme.fontFamily
-
-                                pixelSize:
-                                    Nexa.Theme.fontSizeSm
-
-                                weight:
-                                    Nexa.Theme.fontWeightDemiBold
+                                family: NexaUI.NexaTypography.familyBody
+                                pixelSize: NexaUI.NexaTypography.sizeSm
+                                weight: NexaUI.NexaTypography.weightSemiBold
                             }
                         }
                     }
 
-
                     // ------------------------------------------------
                     // HEALTH BAR
                     // ------------------------------------------------
-
                     Rectangle {
                         Layout.fillWidth: true
-
                         implicitHeight: 10
-
-                        radius:
-                            Nexa.Theme.radiusPill
-
-                        color:
-                            Nexa.Theme.surfaceContainerHighest
-
+                        radius: NexaUI.NexaTokens.radiusPill
+                        color: NexaUI.NexaColors.surfaceContainerHighest
 
                         Rectangle {
-                            height:
-                                parent.height
-
-                            width:
-                                root.health > 0
-                                ? parent.width
-                                  * Math.min(
-                                        1,
-                                        Math.max(
-                                            0,
-                                            root.health / 100
-                                        )
-                                    )
+                            height: parent.height
+                            width: root.health > 0
+                                ? parent.width * Math.min(1, Math.max(0, root.health / 100))
                                 : 0
-
-                            radius:
-                                parent.radius
-
-
-                            color:
-                                root.health >= 80
-                                ? Nexa.Theme.success
+                            radius: parent.radius
+                            color: root.health >= 80
+                                ? NexaUI.NexaColors.success
                                 : root.health >= 60
-                                    ? Nexa.Theme.warning
-                                    : Nexa.Theme.error
-
+                                    ? NexaUI.NexaColors.warning
+                                    : NexaUI.NexaColors.error
 
                             Behavior on width {
                                 NumberAnimation {
-                                    duration:
-                                        Nexa.Theme.animationSlow
-
-                                    easing.type:
-                                        Nexa.Theme.easingStandard
+                                    duration: NexaUI.NexaMotion.durationSlow
+                                    easing.type: NexaUI.NexaMotion.easingStandard
                                 }
                             }
                         }

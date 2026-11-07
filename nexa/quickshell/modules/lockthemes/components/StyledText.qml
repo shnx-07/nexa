@@ -1,7 +1,7 @@
 import QtQuick
-import "../../../theme" as Nexa
+import "../../../NewNexaUI" as NexaUI
 
 Text {
-    color: Nexa.Theme.text
-    font.family: Nexa.Theme.fontFamily
+    color: NexaUI.NexaColors.text
+    font.family: NexaUI.NexaTypography.familyBody
 }

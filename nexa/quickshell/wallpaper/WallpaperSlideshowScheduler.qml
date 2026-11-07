@@ -78,35 +78,20 @@ Item {
         }
     }
 
-    // Wall-clock time ticker: runs constantly every 5 seconds without relying on dynamic running bindings
+    // Wall-clock time ticker: retired in favor of native Rust daemon (nexad wallpaper slideshow daemon)
     Timer {
         id: tickerTimer
-        interval: 5000 // 5 seconds
+        interval: 5000
         repeat: true
-        running: true
-        onTriggered: {
-            if (!root.enabled || root.paused || Boolean(root.isLocked)) return
-
-            const now = Date.now()
-            const intervalMs = root.intervalToMs(root.intervalStr)
-            const elapsed = now - root.lastChangedTime
-
-            if (elapsed >= intervalMs) {
-                console.log("[WallpaperSlideshow] Time elapsed (" + Math.round(elapsed / 1000) + "s >= " + Math.round(intervalMs / 1000) + "s), changing wallpaper")
-                root.triggerNext()
-            }
-        }
+        running: false
     }
 
-    // When screen unlocks, immediately check if elapsed time passed during lock
+    // Sync screen lock state to /tmp/nexa-locked for Rust slideshow daemon
     onIsLockedChanged: {
-        if (!isLocked && root.enabled && !root.paused) {
-            const now = Date.now()
-            const intervalMs = root.intervalToMs(root.intervalStr)
-            if (now - root.lastChangedTime >= intervalMs) {
-                console.log("[WallpaperSlideshow] Screen unlocked and interval elapsed, changing wallpaper immediately")
-                root.triggerNext()
-            }
+        if (isLocked) {
+            Quickshell.execDetached(["touch", "/tmp/nexa-locked"])
+        } else {
+            Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
         }
     }
 

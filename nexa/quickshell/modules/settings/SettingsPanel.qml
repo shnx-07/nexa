@@ -2,16 +2,14 @@
 import QtQuick
 import QtQuick.Effects
 import Quickshell
-import "../../theme/colors"
-import "../../theme" as Nexa
+import "../../NewNexaUI" as NexaUI
 import "../lockthemes/components"
 import "../lockthemes"
 import "../../services" as Services
-import "../profile" as ProfileModule
-import "../display" as DisplayModule
+import "profile" as ProfileModule
+import "display" as DisplayModule
 import "power" as PowerModule
 import "sound" as SoundModule
-import "../../theme/components" as NexaUI
 
 // SettingsPanel: Unified settings modal with left sidebar navigation.
 Item {
@@ -26,8 +24,8 @@ Item {
     property string tab: "profile"
     readonly property var tabs: ["profile", "performance", "sound", "display", "power", "bars", "decorations", "motion", "lock", "system"]
     function rad(n) {
-        if (Nexa.Theme.nexaRounding === 0) return 0;
-        return Math.max(0, Math.round(n * (Nexa.Theme.nexaRounding / 10.0)));
+        if (NexaUI.NexaTokens.nexaRounding === 0) return 0;
+        return Math.max(0, Math.round(n * (NexaUI.NexaTokens.nexaRounding / 10.0)));
     }
 
     readonly property bool shuffle: Services.LockScreen.shuffle
@@ -70,7 +68,7 @@ Item {
     Rectangle {
         id: scrim
         anchors.fill: parent
-        color: Nexa.Theme.glassMode ? Qt.rgba(0, 0, 0, 0.22) : Nexa.Theme.scrim
+        color: NexaUI.NexaOptics.glassMode ? Qt.rgba(0, 0, 0, 0.22) : NexaUI.NexaColors.scrim
         opacity: 0
         enabled: opacity > 0.01
 
@@ -83,17 +81,25 @@ Item {
 
     ParallelAnimation {
         id: openAnim
-        NumberAnimation { target: scrim; property: "opacity"; to: Nexa.Theme.glassMode ? 0.35 : 0.55; duration: 240; easing.type: Easing.OutCubic }
-        NumberAnimation { target: panel; property: "opacity"; to: 1; duration: 240; easing.type: Easing.OutCubic }
-        NumberAnimation { target: panel; property: "scale"; to: 1; duration: 320; easing.type: Easing.OutBack }
+        NumberAnimation { target: scrim; property: "opacity"; to: NexaUI.NexaOptics.glassMode ? 0.35 : 0.55; duration: NexaUI.NexaMotion.durationNormal; easing.type: NexaUI.NexaMotion.decelerateEasing }
+        NumberAnimation { target: panel; property: "opacity"; to: 1; duration: NexaUI.NexaMotion.durationNormal; easing.type: NexaUI.NexaMotion.decelerateEasing }
+        NumberAnimation { target: panel; property: "scale"; to: 1; duration: NexaUI.NexaMotion.durationNormal; easing.type: NexaUI.NexaMotion.emphasizedEasing }
     }
 
     ParallelAnimation {
         id: closeAnim
-        NumberAnimation { target: scrim; property: "opacity"; to: 0; duration: 200; easing.type: Easing.InCubic }
-        NumberAnimation { target: panel; property: "opacity"; to: 0; duration: 200; easing.type: Easing.InCubic }
-        NumberAnimation { target: panel; property: "scale"; to: 0.94; duration: 200; easing.type: Easing.InCubic }
+        NumberAnimation { target: scrim; property: "opacity"; to: 0; duration: NexaUI.NexaMotion.durationFast; easing.type: NexaUI.NexaMotion.accelerationEasing }
+        NumberAnimation { target: panel; property: "opacity"; to: 0; duration: NexaUI.NexaMotion.durationFast; easing.type: NexaUI.NexaMotion.accelerationEasing }
+        NumberAnimation { target: panel; property: "scale"; to: 0.94; duration: NexaUI.NexaMotion.durationFast; easing.type: NexaUI.NexaMotion.accelerationEasing }
         onFinished: root.visible = false
+    }
+
+    // ── Panel Shadow ──────────────────────────────────────────────────────────
+    NexaUI.NexaShadow {
+        id: panelShadow
+        targetItem: panel
+        elevation: 2
+        spread: 0.12
     }
 
     // ── Panel ─────────────────────────────────────────────────────────────────
@@ -103,10 +109,10 @@ Item {
         anchors.centerIn: parent
         width: Math.min(1240, (root.width > 0 ? root.width : 1920) * 0.88)
         height: Math.min(900, (root.height > 0 ? root.height : 1080) * 0.9)
-        radius: Nexa.Theme.nexaRounding
-        color: Nexa.Theme.panelBackground
-        border.width: Nexa.Theme.borderThin
-        border.color: Nexa.Theme.border
+        radius: NexaUI.NexaTokens.nexaRounding
+        color: NexaUI.NexaColors.surfaceContainerLow
+        border.width: NexaUI.NexaTokens.borderThin
+        border.color: NexaUI.NexaColors.border
         clip: true
         opacity: 0
         scale: 0.94
@@ -114,6 +120,40 @@ Item {
         NexaUI.NexaShaderSubstrate {
             anchors.fill: parent
             radius: panel.radius
+        }
+
+        // Apple / Tactile 4-stop OLED Depth Micro-Gradient
+        Rectangle {
+            anchors.fill: parent
+            radius: panel.radius
+            antialiasing: panel.radius > 0
+            visible: NexaUI.NexaOptics.surface3DGradient && NexaUI.NexaOptics.gradientIntensity > 0.01
+            opacity: NexaUI.NexaOptics.gradientIntensity
+            z: 0
+            gradient: Gradient {
+                GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.055) }
+                GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.012) }
+                GradientStop { position: 0.75; color: Qt.rgba(0, 0, 0, 0.000) }
+                GradientStop { position: 1.00; color: Qt.rgba(0, 0, 0, 0.120) }
+            }
+        }
+
+        // Apple Top Chamfer Specular Highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: panel.radius > 0 ? Math.max(0, parent.width - panel.radius * 1.6) : parent.width
+            height: 1
+            visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
+            opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
+            z: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.30) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
         }
 
         MouseArea {
@@ -172,37 +212,6 @@ Item {
             }
         }
 
-        // Top glass specular edge highlight
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            height: 1
-            color: Nexa.Theme.edgeHighlightStrong
-            z: 10
-        }
-
-        // Static continuous-corner glass gradient highlight
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: parent.border.width
-            radius: Math.max(0, parent.radius - parent.border.width)
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Nexa.Theme.edgeHighlight }
-                GradientStop { position: 0.35; color: "transparent" }
-            }
-        }
-
-        // Background subtle gradient glow
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(Nexa.Theme.primary.r, Nexa.Theme.primary.g, Nexa.Theme.primary.b, 0.08) }
-                GradientStop { position: 0.35; color: "transparent" }
-            }
-        }
-
         Row {
             anchors.fill: parent
             anchors.margins: 24
@@ -213,7 +222,51 @@ Item {
                 width: 230
                 height: parent.height
 
+                // Fluid Selection Indicator Pill (Slides across tabs with harmonic spring)
+                Rectangle {
+                    id: activeNavPill
+                    anchors.left: parent.left
+                    anchors.leftMargin: 6
+                    width: parent.width - 26
+                    height: 42
+                    radius: root.rad(10)
+                    color: NexaUI.NexaColors.primaryContainer
+                    border.width: 1.5
+                    border.color: NexaUI.NexaColors.primary
+                    z: 0
+
+                    readonly property Item activeBtn: {
+                        switch (root.tab) {
+                            case "profile": return profileNavBtn;
+                            case "performance": return perfNavBtn;
+                            case "sound": return soundNavBtn;
+                            case "display": return displayNavBtn;
+                            case "power": return powerNavBtn;
+                            case "bars": return barsNavBtn;
+                            case "decorations": return decorNavBtn;
+                            case "motion": return motionNavBtn;
+                            case "lock": return lockNavBtn;
+                            case "system": return systemNavBtn;
+                            default: return profileNavBtn;
+                        }
+                    }
+
+                    y: activeBtn ? (navCol.y + activeBtn.y) : 0
+                    visible: activeBtn !== null
+
+                    Behavior on y {
+                        enabled: NexaUI.NexaMotion.enabled
+                        SpringAnimation {
+                            spring: NexaUI.NexaMotion.navSpringStiffness * 3.5
+                            damping: NexaUI.NexaMotion.navSpringDamping
+                            mass: NexaUI.NexaMotion.springMass
+                            epsilon: 0.25
+                        }
+                    }
+                }
+
                 Column {
+                    id: navCol
                     anchors.fill: parent
                     spacing: 8
 
@@ -229,14 +282,14 @@ Item {
                             width: 36
                             height: 36
                             radius: root.rad(10)
-                            color: Nexa.Theme.primaryContainer
+                            color: NexaUI.NexaColors.primaryContainer
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "󰒓"
-                                font.family: Nexa.Theme.iconFontFamily
+                                font.family: NexaUI.NexaTypography.familyIcon
                                 font.pixelSize: 20
-                                color: Nexa.Theme.onPrimaryContainer
+                                color: NexaUI.NexaColors.onPrimaryContainer
                             }
                         }
 
@@ -248,13 +301,13 @@ Item {
                                 text: "Settings"
                                 font.pixelSize: 18
                                 font.weight: Font.Bold
-                                color: Nexa.Theme.text
+                                color: NexaUI.NexaColors.text
                             }
 
                             StyledText {
                                 text: "Nexa Desktop"
                                 font.pixelSize: 11
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
                     }
@@ -266,7 +319,7 @@ Item {
                         font.pixelSize: 11
                         font.weight: Font.DemiBold
                         font.letterSpacing: 1.0
-                        color: Nexa.Theme.mutedText
+                        color: NexaUI.NexaColors.mutedText
                         anchors.left: parent.left
                         anchors.leftMargin: 12
                     }
@@ -274,243 +327,105 @@ Item {
                     Item { width: 1; height: 4 }
 
                     // Nav Option 1: Profile
-                    ClickableRect {
+                    NexaUI.NexaButton {
                         id: profileNavBtn
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         width: parent.width - 26
-                        height: 42
-                        radius: root.rad(10)
-                        color: root.tab === "profile"
-                            ? Nexa.Theme.primaryContainer
-                            : (profileNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
-                        border.width: root.tab === "profile" ? 1.5 : 1
-                        border.color: root.tab === "profile" ? Nexa.Theme.primary : (profileNavBtn.hovered ? Nexa.Theme.border : "transparent")
-                        cursorShape: Qt.PointingHandCursor
+                        customHeight: 42
+                        customRadius: root.rad(10)
+                        variant: "ghost"
+                        alignment: "left"
+                        selected: root.tab === "profile"
+                        icon: ""
+                        text: "Profile"
                         onClicked: root.tab = "profile"
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: ""
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                                color: root.tab === "profile" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Profile"
-                                font.pixelSize: 14
-                                font.weight: root.tab === "profile" ? Font.Bold : Font.Medium
-                                color: root.tab === "profile" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-                        }
+                        z: 1
                     }
 
                     // Nav Option 1.2: Performance
-                    ClickableRect {
+                    NexaUI.NexaButton {
                         id: perfNavBtn
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         width: parent.width - 26
-                        height: 42
-                        radius: root.rad(10)
-                        color: root.tab === "performance"
-                            ? Nexa.Theme.primaryContainer
-                            : (perfNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
-                        border.width: root.tab === "performance" ? 1.5 : 1
-                        border.color: root.tab === "performance" ? Nexa.Theme.primary : (perfNavBtn.hovered ? Nexa.Theme.border : "transparent")
-                        cursorShape: Qt.PointingHandCursor
+                        customHeight: 42
+                        customRadius: root.rad(10)
+                        variant: "ghost"
+                        alignment: "left"
+                        selected: root.tab === "performance"
+                        icon: "󰍛"
+                        text: "Performance"
                         onClicked: root.tab = "performance"
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "󰍛"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                                color: root.tab === "performance" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Performance"
-                                font.pixelSize: 14
-                                font.weight: root.tab === "performance" ? Font.Bold : Font.Medium
-                                color: root.tab === "performance" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-                        }
+                        z: 1
                     }
 
                     // Nav Option 1.5: Sound & Audio
-                    ClickableRect {
+                    NexaUI.NexaButton {
                         id: soundNavBtn
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         width: parent.width - 26
-                        height: 42
-                        radius: root.rad(10)
-                        color: root.tab === "sound"
-                            ? Nexa.Theme.primaryContainer
-                            : (soundNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
-                        border.width: root.tab === "sound" ? 1.5 : 1
-                        border.color: root.tab === "sound" ? Nexa.Theme.primary : (soundNavBtn.hovered ? Nexa.Theme.border : "transparent")
-                        cursorShape: Qt.PointingHandCursor
+                        customHeight: 42
+                        customRadius: root.rad(10)
+                        variant: "ghost"
+                        alignment: "left"
+                        selected: root.tab === "sound"
+                        icon: "󰕾"
+                        text: "Sound & Audio"
                         onClicked: root.tab = "sound"
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "󰕾"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                                color: root.tab === "sound" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Sound & Audio"
-                                font.pixelSize: 14
-                                font.weight: root.tab === "sound" ? Font.Bold : Font.Medium
-                                color: root.tab === "sound" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-                        }
+                        z: 1
                     }
 
                     // Nav Option 2: Display
-                    ClickableRect {
+                    NexaUI.NexaButton {
                         id: displayNavBtn
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         width: parent.width - 26
-                        height: 42
-                        radius: root.rad(10)
-                        color: root.tab === "display"
-                            ? Nexa.Theme.primaryContainer
-                            : (displayNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
-                        border.width: root.tab === "display" ? 1.5 : 1
-                        border.color: root.tab === "display" ? Nexa.Theme.primary : (displayNavBtn.hovered ? Nexa.Theme.border : "transparent")
-                        cursorShape: Qt.PointingHandCursor
+                        customHeight: 42
+                        customRadius: root.rad(10)
+                        variant: "ghost"
+                        alignment: "left"
+                        selected: root.tab === "display"
+                        icon: "󰍹"
+                        text: "Display"
                         onClicked: root.tab = "display"
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "󰍹"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                                color: root.tab === "display" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Display"
-                                font.pixelSize: 14
-                                font.weight: root.tab === "display" ? Font.Bold : Font.Medium
-                                color: root.tab === "display" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-                        }
+                        z: 1
                     }
 
                     // Nav Option 2.5: Power & Sleep
-                    ClickableRect {
+                    NexaUI.NexaButton {
                         id: powerNavBtn
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         width: parent.width - 26
-                        height: 42
-                        radius: root.rad(10)
-                        color: root.tab === "power"
-                            ? Nexa.Theme.primaryContainer
-                            : (powerNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
-                        border.width: root.tab === "power" ? 1.5 : 1
-                        border.color: root.tab === "power" ? Nexa.Theme.primary : (powerNavBtn.hovered ? Nexa.Theme.border : "transparent")
-                        cursorShape: Qt.PointingHandCursor
+                        customHeight: 42
+                        customRadius: root.rad(10)
+                        variant: "ghost"
+                        alignment: "left"
+                        selected: root.tab === "power"
+                        icon: "󱐋"
+                        text: "Power & Sleep"
                         onClicked: root.tab = "power"
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "󱐋"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                                color: root.tab === "power" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Power & Sleep"
-                                font.pixelSize: 14
-                                font.weight: root.tab === "power" ? Font.Bold : Font.Medium
-                                color: root.tab === "power" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-                        }
+                        z: 1
                     }
 
                     // Nav Option 3: Bars
-                    ClickableRect {
+                    NexaUI.NexaButton {
                         id: barsNavBtn
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         width: parent.width - 26
-                        height: 42
-                        radius: root.rad(10)
-                        color: root.tab === "bars"
-                            ? Nexa.Theme.primaryContainer
-                            : (barsNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
-                        border.width: root.tab === "bars" ? 1.5 : 1
-                        border.color: root.tab === "bars" ? Nexa.Theme.primary : (barsNavBtn.hovered ? Nexa.Theme.border : "transparent")
-                        cursorShape: Qt.PointingHandCursor
+                        customHeight: 42
+                        customRadius: root.rad(10)
+                        variant: "ghost"
+                        alignment: "left"
+                        selected: root.tab === "bars"
+                        icon: "󰈺"
+                        text: "Bars"
                         onClicked: root.tab = "bars"
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "󰈺"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                                color: root.tab === "bars" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Bars"
-                                font.pixelSize: 14
-                                font.weight: root.tab === "bars" ? Font.Bold : Font.Medium
-                                color: root.tab === "bars" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-                        }
+                        z: 1
                     }
 
                     Item { width: 1; height: 10 }
@@ -520,7 +435,7 @@ Item {
                         font.pixelSize: 11
                         font.weight: Font.DemiBold
                         font.letterSpacing: 1.0
-                        color: Nexa.Theme.mutedText
+                        color: NexaUI.NexaColors.mutedText
                         anchors.left: parent.left
                         anchors.leftMargin: 12
                     }
@@ -528,163 +443,71 @@ Item {
                     Item { width: 1; height: 4 }
 
                     // Nav Option: Decorations
-                    ClickableRect {
+                    NexaUI.NexaButton {
                         id: decorNavBtn
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         width: parent.width - 26
-                        height: 42
-                        radius: root.rad(10)
-                        color: root.tab === "decorations"
-                            ? Nexa.Theme.primaryContainer
-                            : (decorNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
-                        border.width: root.tab === "decorations" ? 1.5 : 1
-                        border.color: root.tab === "decorations" ? Nexa.Theme.primary : (decorNavBtn.hovered ? Nexa.Theme.border : "transparent")
-                        cursorShape: Qt.PointingHandCursor
+                        customHeight: 42
+                        customRadius: root.rad(10)
+                        variant: "ghost"
+                        alignment: "left"
+                        selected: root.tab === "decorations"
+                        icon: ""
+                        text: "Decorations"
                         onClicked: root.tab = "decorations"
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: ""
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                                color: root.tab === "decorations" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Decorations"
-                                font.pixelSize: 14
-                                font.weight: root.tab === "decorations" ? Font.Bold : Font.Medium
-                                color: root.tab === "decorations" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-                        }
+                        z: 1
                     }
 
                     // Nav Option: Motion & Physics
-                    ClickableRect {
+                    NexaUI.NexaButton {
                         id: motionNavBtn
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         width: parent.width - 26
-                        height: 42
-                        radius: root.rad(10)
-                        color: root.tab === "motion"
-                            ? Nexa.Theme.primaryContainer
-                            : (motionNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
-                        border.width: root.tab === "motion" ? 1.5 : 1
-                        border.color: root.tab === "motion" ? Nexa.Theme.primary : (motionNavBtn.hovered ? Nexa.Theme.border : "transparent")
-                        cursorShape: Qt.PointingHandCursor
+                        customHeight: 42
+                        customRadius: root.rad(10)
+                        variant: "ghost"
+                        alignment: "left"
+                        selected: root.tab === "motion"
+                        icon: "󰏢"
+                        text: "Motion & Physics"
                         onClicked: root.tab = "motion"
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "󰏢"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                                color: root.tab === "motion" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Motion & Physics"
-                                font.pixelSize: 14
-                                font.weight: root.tab === "motion" ? Font.Bold : Font.Medium
-                                color: root.tab === "motion" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-                        }
+                        z: 1
                     }
 
-                    // Nav Option 1: Lock Screen Themes
-                    ClickableRect {
+                    // Nav Option: Lock Screen Themes
+                    NexaUI.NexaButton {
                         id: lockNavBtn
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         width: parent.width - 26
-                        height: 42
-                        radius: root.rad(10)
-                        color: root.tab === "lock"
-                            ? Nexa.Theme.primaryContainer
-                            : (lockNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
-                        border.width: root.tab === "lock" ? 1.5 : 1
-                        border.color: root.tab === "lock" ? Nexa.Theme.primary : (lockNavBtn.hovered ? Nexa.Theme.border : "transparent")
-                        cursorShape: Qt.PointingHandCursor
+                        customHeight: 42
+                        customRadius: root.rad(10)
+                        variant: "ghost"
+                        alignment: "left"
+                        selected: root.tab === "lock"
+                        icon: "󰌾"
+                        text: "Lock Screen"
                         onClicked: root.tab = "lock"
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
-
-                            Glyph {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "lock"
-                                filled: root.tab === "lock"
-                                font.pixelSize: 19
-                                color: root.tab === "lock" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Lock Screen"
-                                font.pixelSize: 14
-                                font.weight: root.tab === "lock" ? Font.Bold : Font.Medium
-                                color: root.tab === "lock" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-                        }
+                        z: 1
                     }
 
-                    // Nav Option 2: System Themes
-                    ClickableRect {
+                    // Nav Option: System Themes
+                    NexaUI.NexaButton {
                         id: systemNavBtn
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         width: parent.width - 26
-                        height: 42
-                        radius: root.rad(10)
-                        color: root.tab === "system"
-                            ? Nexa.Theme.primaryContainer
-                            : (systemNavBtn.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent")
-                        border.width: root.tab === "system" ? 1.5 : 1
-                        border.color: root.tab === "system" ? Nexa.Theme.primary : (systemNavBtn.hovered ? Nexa.Theme.border : "transparent")
-                        cursorShape: Qt.PointingHandCursor
+                        customHeight: 42
+                        customRadius: root.rad(10)
+                        variant: "ghost"
+                        alignment: "left"
+                        selected: root.tab === "system"
+                        icon: "󰏘"
+                        text: "System Themes"
                         onClicked: root.tab = "system"
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "󰏘"
-                                font.family: Nexa.Theme.iconFontFamily
-                                font.pixelSize: 18
-                                color: root.tab === "system" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "System Themes"
-                                font.pixelSize: 14
-                                font.weight: root.tab === "system" ? Font.Bold : Font.Medium
-                                color: root.tab === "system" ? Nexa.Theme.onPrimaryContainer : Nexa.Theme.text
-                            }
-                        }
+                        z: 1
                     }
                 }
 
@@ -694,7 +517,7 @@ Item {
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     width: 1
-                    color: Nexa.Theme.border
+                    color: NexaUI.NexaColors.border
                     opacity: 0.6
                 }
             }
@@ -731,7 +554,7 @@ Item {
                             }
                             font.pixelSize: 20
                             font.weight: Font.Bold
-                            color: Nexa.Theme.text
+                            color: NexaUI.NexaColors.text
                         }
 
                         StyledText {
@@ -748,7 +571,7 @@ Item {
                                 return (root.shuffle ? "Shuffle: each lock picks one of the selected themes" : "Pick the design used when you lock");
                             }
                             font.pixelSize: 12
-                            color: Nexa.Theme.mutedText
+                            color: NexaUI.NexaColors.mutedText
                         }
                     }
 
@@ -766,8 +589,8 @@ Item {
                             width: shuffleRow.implicitWidth + 28
                             height: 38
                             radius: root.rad(19)
-                            color: root.shuffle ? Nexa.Theme.secondaryContainer
-                                : shuffleChip.hovered ? Nexa.Theme.surfaceContainerHigh : Nexa.Theme.surfaceContainer
+                            color: root.shuffle ? NexaUI.NexaColors.secondaryContainer
+                                : shuffleChip.hovered ? NexaUI.NexaColors.surfaceContainerHigh : NexaUI.NexaColors.surfaceContainer
                             cursorShape: Qt.PointingHandCursor
                             onClicked: Services.LockScreen.setShuffle(!root.shuffle)
 
@@ -780,7 +603,7 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "shuffle"
                                     font.pixelSize: 17
-                                    color: root.shuffle ? Nexa.Theme.onSecondaryContainer : Nexa.Theme.mutedText
+                                    color: root.shuffle ? NexaUI.NexaColors.onSecondaryContainer : NexaUI.NexaColors.mutedText
                                 }
 
                                 StyledText {
@@ -788,7 +611,7 @@ Item {
                                     text: "Shuffle"
                                     font.pixelSize: 13
                                     font.weight: Font.Medium
-                                    color: root.shuffle ? Nexa.Theme.onSecondaryContainer : Nexa.Theme.text
+                                    color: root.shuffle ? NexaUI.NexaColors.onSecondaryContainer : NexaUI.NexaColors.text
                                 }
 
                                 Rectangle {
@@ -796,7 +619,7 @@ Item {
                                     width: 30
                                     height: 18
                                     radius: root.rad(9)
-                                    color: root.shuffle ? Nexa.Theme.primary : Nexa.Theme.surfaceContainerHighest
+                                    color: root.shuffle ? NexaUI.NexaColors.primary : NexaUI.NexaColors.surfaceContainerHighest
 
                                     Rectangle {
                                         width: 12
@@ -804,7 +627,7 @@ Item {
                                         radius: root.rad(6)
                                         y: 3
                                         x: root.shuffle ? 15 : 3
-                                        color: root.shuffle ? Nexa.Theme.onPrimary : Nexa.Theme.outline
+                                        color: root.shuffle ? NexaUI.NexaColors.onPrimary : NexaUI.NexaColors.outline
 
                                         Behavior on x {
                                             NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
@@ -822,7 +645,7 @@ Item {
                             width: lockRow.implicitWidth + 28
                             height: 38
                             radius: root.rad(19)
-                            color: lockNowChip.hovered ? Qt.lighter(Nexa.Theme.primary, 1.08) : Nexa.Theme.primary
+                            color: lockNowChip.hovered ? Qt.lighter(NexaUI.NexaColors.primary, 1.08) : NexaUI.NexaColors.primary
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.lockNow()
 
@@ -836,7 +659,7 @@ Item {
                                     text: "lock"
                                     filled: true
                                     font.pixelSize: 17
-                                    color: Nexa.Theme.onPrimary
+                                    color: NexaUI.NexaColors.onPrimary
                                 }
 
                                 StyledText {
@@ -844,7 +667,7 @@ Item {
                                     text: "Lock now"
                                     font.pixelSize: 13
                                     font.weight: Font.DemiBold
-                                    color: Nexa.Theme.onPrimary
+                                    color: NexaUI.NexaColors.onPrimary
                                 }
                             }
                         }
@@ -856,7 +679,7 @@ Item {
                             width: 38
                             height: 38
                             radius: root.rad(19)
-                            color: closeChip.hovered ? Nexa.Theme.surfaceContainerHigh : "transparent"
+                            color: closeChip.hovered ? NexaUI.NexaColors.surfaceContainerHigh : "transparent"
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.close()
 
@@ -864,7 +687,7 @@ Item {
                                 anchors.centerIn: parent
                                 text: "close"
                                 font.pixelSize: 20
-                                color: Nexa.Theme.mutedText
+                                color: NexaUI.NexaColors.mutedText
                             }
                         }
                     }
