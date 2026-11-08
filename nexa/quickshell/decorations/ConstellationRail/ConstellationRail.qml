@@ -1,6 +1,9 @@
 import QtQuick
+import QtQuick.Effects
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import "../../services" as Services
 import "../../NewNexaUI" as NexaUI
 
@@ -30,8 +33,21 @@ Item {
     // Native Nexa Media Service connection
     readonly property bool isMusicPlaying: Services.Media.isPlaying
 
-    property int activeWorkspaceId: 1
-    property var occupiedWorkspaces: [1]
+    // Dynamic Rail Color: Live music album art when playing, falling back to NewNexaUI
+    readonly property bool hasMediaActive: root.isMusicPlaying && NexaUI.NexaColors.hasMediaColors
+    readonly property color railColor: root.hasMediaActive
+        ? NexaUI.NexaColors.mediaPrimary
+        : NexaUI.NexaColors.primary
+
+    // ---------------------------------------------------------
+    // Live Hyprland Workspaces (Zero-Latency In-Memory Tracking)
+    // ---------------------------------------------------------
+    readonly property int activeWorkspaceId: (typeof Hyprland !== "undefined" && Hyprland.focusedWorkspace)
+        ? Hyprland.focusedWorkspace.id
+        : 1
+    readonly property var occupiedWorkspaces: (typeof Hyprland !== "undefined" && Hyprland.workspaces)
+        ? Hyprland.workspaces.values.map(w => w.id)
+        : [1]
 
     // Visible only if enabled and style is not "none"
     visible: railEnabled && railStyle !== "none"
@@ -66,53 +82,28 @@ Item {
     }
 
     // ---------------------------------------------------------
-    // Rust State Sync (Workspaces & backend state)
+    // Dynamic Center Gap: hugs the Island precisely in all modes
+    // (Compact resting, compact media playing, OSD, or expanded card)
     // ---------------------------------------------------------
-    Process {
-        id: stateProcess
-        command: [root.nexadBin, "decoration", "constellation", "state"]
-        running: false
-        stdout: SplitParser {
-            onRead: data => {
-                if (!data || data.trim() === "") return;
-                try {
-                    const st = JSON.parse(data);
-                    if (st.nodes && Array.isArray(st.nodes)) {
-                        const occupied = [];
-                        for (let i = 0; i < st.nodes.length; ++i) {
-                            if (st.nodes[i].active) root.activeWorkspaceId = st.nodes[i].id;
-                            if (st.nodes[i].occupied) occupied.push(st.nodes[i].id);
-                        }
-                        root.occupiedWorkspaces = occupied;
-                    }
-                } catch (_) {}
-            }
-        }
+    readonly property real effectiveIslandWidth: {
+        if (NexaUI.NexaTokens.islandTargetWidth && NexaUI.NexaTokens.islandTargetWidth > 0)
+            return NexaUI.NexaTokens.islandTargetWidth;
+        return root.isMusicPlaying ? 175 : 170;
     }
-
-    Timer {
-        id: syncTimer
-        interval: 800
-        repeat: true
-        running: root.visible
-        triggeredOnStart: true
-        onTriggered: {
-            if (!stateProcess.running) {
-                stateProcess.running = true;
-            }
-        }
-    }
-
-    // ---------------------------------------------------------
-    // Dynamic Center Gap: expands smoothly when Island has song info!
-    // ---------------------------------------------------------
-    property real centerGapHalfWidth: root.isMusicPlaying ? 220 : 95
+    property real centerGapHalfWidth: Math.round(root.effectiveIslandWidth / 2) + 12
     Behavior on centerGapHalfWidth {
         NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
     }
 
     property real leftMargin: 160
     property real rightMargin: 160
+
+    Behavior on leftMargin {
+        NumberAnimation {
+            duration: NexaUI.NexaMotion.durationNormal
+            easing.type: NexaUI.NexaMotion.standardEasing
+        }
+    }
 
     readonly property real leftWingStartX: root.leftMargin
     readonly property real leftWingWidth: Math.max(0, (root.width / 2) - centerGapHalfWidth - leftWingStartX)
@@ -174,6 +165,24 @@ Item {
         running: root.visible && (root.waveAmplitude > 0.01)
     }
 
+    // Centralized pulsating scale drivers (replaces 10+ independent bead animations)
+    property real fastBeadPulseScale: 1.0
+    property real slowBeadPulseScale: 1.0
+
+    SequentialAnimation on fastBeadPulseScale {
+        running: root.visible && (root.isMusicPlaying || root.particleCount > 0) && root.railStyle === "constellation"
+        loops: Animation.Infinite
+        NumberAnimation { from: 0.90; to: 1.15; duration: 750; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 1.15; to: 0.90; duration: 750; easing.type: Easing.InOutSine }
+    }
+
+    SequentialAnimation on slowBeadPulseScale {
+        running: root.visible && (root.isMusicPlaying || root.particleCount > 0) && root.railStyle === "constellation"
+        loops: Animation.Infinite
+        NumberAnimation { from: 0.92; to: 1.20; duration: 950; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 1.20; to: 0.92; duration: 950; easing.type: Easing.InOutSine }
+    }
+
     // =========================================================
     // WING RAIL COMPONENT
     // =========================================================
@@ -189,25 +198,44 @@ Item {
 
         clip: false
 
+        // Laser glow shadow halo (Just like progress bar of music section)
+        RectangularShadow {
+            id: railLaserGlow
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            height: 4
+            radius: 2
+            blur: root.isMusicPlaying ? (12 + 8 * Math.min(1.0, Services.AudioVisualizer.bass * 2.0)) : 12
+            color: Qt.rgba(root.railColor.r, root.railColor.g, root.railColor.b, 0.75)
+            opacity: root.isMusicPlaying ? 1.0 : 0.0
+            visible: opacity > 0.001
+
+            Behavior on opacity {
+                NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
+            }
+        }
+
         // Continuous line / wave renderer
         Canvas {
             id: waveCanvas
             anchors.fill: parent
+            renderTarget: Canvas.FramebufferObject
 
             property real currentAmp: root.waveAmplitude
             property real currentWPhase: root.wavePhase
             property var currentBars: Services.AudioVisualizer.bars
-            property color lineColor: NexaUI.NexaColors.primary
-            property real lineAlpha: root.lineOpacity
+            property color lineColor: root.railColor
+            property real lineAlpha: root.isMusicPlaying ? Math.min(0.85, root.lineOpacity * 1.5) : root.lineOpacity
 
-            // Immediate repaint when theme color or opacity changes (e.g. wallpaper change)
+            // Immediate repaint when theme color or opacity changes (e.g. wallpaper change or track change)
             onLineColorChanged: waveCanvas.requestPaint()
             onLineAlphaChanged: waveCanvas.requestPaint()
 
-            // Single unified paint trigger: active ONLY when audio is actively playing with energy
+            // Single unified paint trigger: active when music is playing or wave is animating
             Connections {
                 target: Services.AudioVisualizer
-                enabled: root.visible && waveCanvas.currentAmp > 0.05 && Services.Media.isPlaying
+                enabled: root.visible && (root.isMusicPlaying || waveCanvas.currentAmp > 0.01)
                 function onFrameTick() {
                     waveCanvas.requestPaint();
                 }
@@ -225,7 +253,7 @@ Item {
                 ctx.clearRect(0, 0, width, height);
 
                 ctx.strokeStyle = Qt.rgba(lineColor.r, lineColor.g, lineColor.b, lineAlpha);
-                ctx.lineWidth = 1.6;
+                ctx.lineWidth = root.isMusicPlaying ? 2.0 : 1.6;
                 ctx.lineCap = "round";
                 ctx.beginPath();
 
@@ -236,8 +264,8 @@ Item {
                     ctx.lineTo(width, midY);
                 } else {
                     ctx.moveTo(0, midY);
-                    // Optimized step resolution: 35-48 steps is visually identical to 200 steps on a 5px wave
-                    const steps = Math.min(48, Math.max(28, Math.floor(width / 14)));
+                    // Optimized step resolution: 18-32 steps is visually identical to 200 steps on a 5px wave
+                    const steps = Math.min(32, Math.max(18, Math.floor(width / 22)));
                     const dx = width / steps;
                     const sidePhase = wingRoot.isRightSide ? 1.5 : 0.0;
                     const phase1 = currentWPhase + sidePhase;
@@ -325,20 +353,14 @@ Item {
                     height: width
                     radius: width / 2
                     color: Qt.rgba(
-                        NexaUI.NexaColors.primary.r,
-                        NexaUI.NexaColors.primary.g,
-                        NexaUI.NexaColors.primary.b,
-                        isActiveWs ? (0.35 * root.glowIntensity) : ((0.18 + Services.AudioVisualizer.bass * 0.15) * root.glowIntensity)
+                        root.railColor.r,
+                        root.railColor.g,
+                        root.railColor.b,
+                        isActiveWs ? (0.35 * root.glowIntensity) : ((0.28 + Services.AudioVisualizer.bass * 0.25) * root.glowIntensity)
                     )
 
                     Behavior on width { NumberAnimation { duration: 200 } }
-
-                    SequentialAnimation on scale {
-                        running: isActiveWs || root.isMusicPlaying
-                        loops: Animation.Infinite
-                        NumberAnimation { from: 0.90; to: 1.15; duration: 750; easing.type: Easing.InOutSine }
-                        NumberAnimation { from: 1.15; to: 0.90; duration: 750; easing.type: Easing.InOutSine }
-                    }
+                    scale: (isActiveWs || root.isMusicPlaying) ? root.fastBeadPulseScale : 1.0
                 }
 
                 // Standard core dot
@@ -349,7 +371,7 @@ Item {
                     radius: width / 2
                     color: {
                         if (isActiveWs) return NexaUI.NexaColors.text;
-                        if (isOccupiedWs) return NexaUI.NexaColors.primary;
+                        if (isOccupiedWs) return root.railColor;
                         return Qt.rgba(NexaUI.NexaColors.text.r, NexaUI.NexaColors.text.g, NexaUI.NexaColors.text.b, 0.70);
                     }
                 }
@@ -405,20 +427,14 @@ Item {
                     height: width
                     radius: width / 2
                     color: Qt.rgba(
-                        NexaUI.NexaColors.primary.r,
-                        NexaUI.NexaColors.primary.g,
-                        NexaUI.NexaColors.primary.b,
-                        isActiveWs ? (0.55 * root.glowIntensity) : ((0.32 + Services.AudioVisualizer.energy * 0.20) * root.glowIntensity)
+                        root.railColor.r,
+                        root.railColor.g,
+                        root.railColor.b,
+                        isActiveWs ? (0.55 * root.glowIntensity) : ((0.42 + Services.AudioVisualizer.energy * 0.30) * root.glowIntensity)
                     )
 
                     Behavior on width { NumberAnimation { duration: 220 } }
-
-                    SequentialAnimation on scale {
-                        running: (isActiveWs || root.isMusicPlaying) && root.visible
-                        loops: Animation.Infinite
-                        NumberAnimation { from: 0.92; to: 1.20; duration: 950; easing.type: Easing.InOutSine }
-                        NumberAnimation { from: 1.20; to: 0.92; duration: 950; easing.type: Easing.InOutSine }
-                    }
+                    scale: (isActiveWs || root.isMusicPlaying) ? root.slowBeadPulseScale : 1.0
                 }
 
                 // Brighter, slightly larger core bead

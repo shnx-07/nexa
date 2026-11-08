@@ -110,7 +110,6 @@ pub fn trigger_bluetooth_osd(name: &str, icon: &str) -> Result<(), String> {
 pub fn call_action(action: &str) {
     let method = match action {
         "search" => "openSearch",
-        "command" => "openCommand",
         "volume-up" | "volumeUp" => "volumeUp",
         "volume-down" | "volumeDown" => "volumeDown",
         "toggle-mute" | "toggleMute" => "toggleMute",
@@ -131,9 +130,5 @@ pub fn call_action(action: &str) {
 
 pub fn open_search() {
     call_action("search");
-}
-
-pub fn open_command() {
-    call_action("command");
 }
 

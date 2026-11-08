@@ -70,9 +70,11 @@ struct HyprWorkspaceRef {
 }
 
 /// Raw JSON schema returned by `hyprctl workspaces -j`.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 struct HyprWorkspaceRaw {
+    #[serde(default)]
     pub id: i32,
+    #[serde(default)]
     pub name: String,
     #[serde(default)]
     pub monitor: String,

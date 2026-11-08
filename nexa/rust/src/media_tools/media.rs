@@ -460,3 +460,8 @@ pub fn run_next() {
 pub fn run_prev() {
     let _ = Command::new("playerctl").arg("previous").status();
 }
+
+pub fn run_matugen(art_source: &str) {
+    crate::palette::matugen::run_media_matugen(art_source);
+}
+

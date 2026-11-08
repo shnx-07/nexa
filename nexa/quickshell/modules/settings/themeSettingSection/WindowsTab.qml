@@ -623,6 +623,101 @@ RowLayout {
                                 onMoved: root.setIslandRoundingRequested(value >= 28 ? 999 : Math.round(value))
                             }
                         }
+
+                        // 3.2 Dynamic Island Event Triggers
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Text {
+                                    text: "Island Event Triggers"
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: 12
+                                    font.weight: NexaUI.NexaTypography.weightSemiBold
+                                    color: NexaUI.NexaColors.text
+                                }
+                                Item { Layout.fillWidth: true }
+                                Text {
+                                    text: "Toggle which events expand the Island"
+                                    font.family: NexaUI.NexaTypography.familyBody
+                                    font.pixelSize: 11
+                                    color: NexaUI.NexaColors.mutedText
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Repeater {
+                                    model: [
+                                        { key: "media", label: "Media Player", icon: "󰝚", desc: "Show player notch & hover deck when music plays", checked: NexaUI.NexaTokens.islandSourceMedia },
+                                        { key: "osd", label: "Volume & Brightness OSD", icon: "󰕾", desc: "Pop island on volume/brightness changes with fluid physics", checked: NexaUI.NexaTokens.islandSourceOsd },
+                                        { key: "notifications", label: "Notifications", icon: "󰂚", desc: "Display incoming desktop alerts inside island", checked: NexaUI.NexaTokens.islandSourceNotifications },
+                                        { key: "screenshots", label: "Screenshots", icon: "󰄄", desc: "Show screenshot preview and quick actions", checked: NexaUI.NexaTokens.islandSourceScreenshots },
+                                        { key: "bluetooth", label: "Bluetooth", icon: "󰂯", desc: "Show peripheral connection and battery status", checked: NexaUI.NexaTokens.islandSourceBluetooth },
+                                        { key: "power", label: "Power & Battery", icon: "󰂄", desc: "Alert on AC plugged, unplugged, and low battery", checked: NexaUI.NexaTokens.islandSourcePower },
+                                        { key: "timers", label: "Timers & Stopwatch", icon: "󰔛", desc: "Show active countdowns and stopwatch counters", checked: NexaUI.NexaTokens.islandSourceTimers }
+                                    ]
+
+                                    Rectangle {
+                                        id: triggerRow
+                                        required property var modelData
+                                        Layout.fillWidth: true
+                                        height: 40
+                                        radius: NexaUI.NexaTokens.radiusSm
+                                        color: NexaUI.NexaColors.surfaceContainerHigh
+                                        border.width: NexaUI.NexaTokens.borderThin
+                                        border.color: NexaUI.NexaColors.border
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            anchors.rightMargin: 12
+                                            spacing: 10
+
+                                            Text {
+                                                text: triggerRow.modelData.icon
+                                                font.family: NexaUI.NexaTypography.familyIcon
+                                                font.pixelSize: 15
+                                                color: triggerRow.modelData.checked ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
+                                            }
+
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 0
+
+                                                Text {
+                                                    text: triggerRow.modelData.label
+                                                    font.family: NexaUI.NexaTypography.familyBody
+                                                    font.pixelSize: 11
+                                                    font.weight: NexaUI.NexaTypography.weightMedium
+                                                    color: NexaUI.NexaColors.text
+                                                }
+
+                                                Text {
+                                                    text: triggerRow.modelData.desc
+                                                    font.family: NexaUI.NexaTypography.familyBody
+                                                    font.pixelSize: 9
+                                                    color: NexaUI.NexaColors.mutedText
+                                                    elide: Text.ElideRight
+                                                    Layout.fillWidth: true
+                                                }
+                                            }
+
+                                            NexaUI.NexaToggle {
+                                                checked: triggerRow.modelData.checked
+                                                onToggled: newState => {
+                                                    NexaUI.NexaTokens.setIslandSource(triggerRow.modelData.key, newState)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

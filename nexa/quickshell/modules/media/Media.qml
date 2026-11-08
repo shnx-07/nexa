@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import QtQml.Models
 import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 
 import Quickshell.Services.Mpris
 import Quickshell.Io
@@ -26,12 +27,12 @@ Item {
     // - Zero duplicate waveforms (handled by dedicated TopBar WaveformPill)
     // ============================================================
 
-    property string presentation: "full"
+    property string presentation: "compact"
 
     readonly property string nexadBin: Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
 
     // ============================================================
-    // COMPACT CLOCK
+    // COMPACT CLOCK & AUDIO REACTIVITY
     // ============================================================
 
     property date currentTime: new Date()
@@ -42,6 +43,36 @@ Item {
         running: root.presentation === "compact" && root.visible
         repeat: true
         onTriggered: root.currentTime = new Date()
+    }
+
+    // Audio reactivity levels from live CAVA stream (native Rust bass calculation)
+    readonly property real bassLevel: root.playing ? Services.AudioVisualizer.bass : 0.0
+
+    // Symmetrical 44-ray bottom spectrum mapping (bass in center, rolling off toward edges)
+    function rayLevel(i) {
+        if (!root.playing || !Services.AudioVisualizer.bars || Services.AudioVisualizer.bars.length === 0)
+            return 0.0;
+        const bars = Services.AudioVisualizer.bars;
+        const n = bars.length;
+        const half = 22;
+        const pos = (i < half) ? (half - 1 - i) / half : (i - half) / half;
+        const f = pos * (n - 1);
+        const a = Math.floor(f);
+        const b = Math.min(n - 1, a + 1);
+        const frac = f - a;
+        const raw = Number(bars[a] || 0) + (Number(bars[b] || 0) - Number(bars[a] || 0)) * frac;
+        return Math.max(0.0, Math.min(1.0, raw));
+    }
+
+    // Dynamic corner radius following NexaUI tokens and user settings
+    readonly property real effectiveRadius: {
+        if (NexaUI.NexaTokens.islandRounding === 0) return 0;
+        if (root.presentation === "compact") {
+            return (NexaUI.NexaTokens.islandRounding >= 999)
+                ? Math.round(root.height / 2)
+                : Math.min(Math.round(root.height / 2), NexaUI.NexaTokens.islandRounding);
+        }
+        return (NexaUI.NexaTokens.islandRounding >= 999) ? 26 : NexaUI.NexaTokens.islandRounding;
     }
 
     // ============================================================
@@ -138,6 +169,7 @@ Item {
     }
 
     function evaluateBestPlayer() {
+        root._stateTrigger++
         const list = getPlayerList()
         if (list.length === 0) {
             root.activePlayerObj = null
@@ -255,15 +287,19 @@ Item {
         delegate: Connections {
             target: modelData
             function onPlaybackStateChanged() {
+                root._stateTrigger++
                 root.handlePlayerStateChanged(modelData)
             }
             function onTrackTitleChanged() {
+                root._stateTrigger++
                 root.handlePlayerMetadataChanged(modelData)
             }
             function onTrackArtistChanged() {
+                root._stateTrigger++
                 root.handlePlayerMetadataChanged(modelData)
             }
             function onTrackArtUrlChanged() {
+                root._stateTrigger++
                 root.handlePlayerMetadataChanged(modelData)
             }
         }
@@ -299,74 +335,89 @@ Item {
         }
     }
 
-    readonly property bool available:
-        player !== null
+    property int _stateTrigger: 0
 
-    readonly property bool playing:
-        available
-        && player.playbackState === MprisPlaybackState.Playing
-
-    readonly property bool paused:
-        available
-        && player.playbackState === MprisPlaybackState.Paused
-
-    // ------------------------------------------------------------
-    // 1-MINUTE PAUSE / IDLE TIMEOUT (Wall-clock absolute timer)
-    // ------------------------------------------------------------
-
-    property real pausedTimestamp: 0
-    property bool pauseTimeoutExpired: false
-
-    onPlayingChanged: {
-        if (root.playing) {
-            root.pauseTimeoutExpired = false
-            root.pausedTimestamp = 0
-        } else if (root.paused) {
-            root.pausedTimestamp = Date.now()
-            root.pauseTimeoutExpired = false
-        }
+    readonly property bool available: {
+        root._stateTrigger;
+        return root.player !== null;
     }
 
-    onPausedChanged: {
-        if (root.paused && !root.playing) {
-            if (root.pausedTimestamp === 0) {
-                root.pausedTimestamp = Date.now()
-            }
-            root.pauseTimeoutExpired = false
-        } else if (!root.paused && !root.playing) {
-            // Player stopped or closed
+    readonly property bool playing: {
+        root._stateTrigger;
+        return root.available && root.player && root.player.playbackState === MprisPlaybackState.Playing;
+    }
+
+    readonly property bool paused: {
+        root._stateTrigger;
+        return root.available && root.player && root.player.playbackState === MprisPlaybackState.Paused;
+    }
+
+    // ------------------------------------------------------------
+    // 1-MINUTE PAUSE / IDLE TIMEOUT
+    // If music is paused for 1 minute (60,000 ms), the music
+    // section is cleared from the Dynamic Island pill, returning it
+    // to the normal clock notch.
+    // ------------------------------------------------------------
+
+    property bool pauseTimeoutExpired: false
+
+    Timer {
+        id: pauseExpiryTimer
+        interval: 60000 // 1 minute
+        repeat: false
+        running: false
+        onTriggered: {
             root.pauseTimeoutExpired = true
         }
     }
 
+    function checkPauseTimeoutState() {
+        if (!root.available || !root.hasTrack) {
+            pauseExpiryTimer.stop()
+            root.pauseTimeoutExpired = false
+            return
+        }
+
+        if (root.playing) {
+            pauseExpiryTimer.stop()
+            root.pauseTimeoutExpired = false
+        } else if (root.paused) {
+            if (!root.pauseTimeoutExpired && !pauseExpiryTimer.running) {
+                pauseExpiryTimer.restart()
+            }
+        } else {
+            // Player stopped
+            pauseExpiryTimer.stop()
+            root.pauseTimeoutExpired = true
+        }
+    }
+
+    onPlayingChanged: {
+        if (root.playing) {
+            triggerMatugenExtract()
+        }
+        checkPauseTimeoutState()
+    }
+
+    onPausedChanged: {
+        checkPauseTimeoutState()
+    }
+
     onAvailableChanged: {
         if (!root.available) {
-            root.pauseTimeoutExpired = false
-            root.pausedTimestamp = 0
             root.activePlayerObj = null
         }
+        checkPauseTimeoutState()
     }
 
     onHasTrackChanged: {
         if (!root.hasTrack) {
-            root.pauseTimeoutExpired = false
-            root.pausedTimestamp = 0
+            NexaUI.NexaColors.resetMediaColors()
+            root.lastExtractedKey = ""
+        } else {
+            triggerMatugenExtract()
         }
-    }
-
-    Timer {
-        id: pauseWatchdogTimer
-        interval: 1000
-        running: root.available && root.hasTrack && !root.playing && !root.pauseTimeoutExpired
-        repeat: true
-        onTriggered: {
-            if (root.pausedTimestamp > 0 && !root.playing) {
-                const elapsed = Date.now() - root.pausedTimestamp
-                if (elapsed >= 60000) {
-                    root.pauseTimeoutExpired = true
-                }
-            }
-        }
+        checkPauseTimeoutState()
     }
 
     readonly property bool contextActive:
@@ -450,29 +501,96 @@ Item {
 
     onTitleChanged: {
         root.fetchedCoverUrl = ""
+        root.lastExtractedKey = ""
         triggerCoverFetch()
+        triggerMatugenExtract()
     }
 
     onArtistChanged: {
+        root.lastExtractedKey = ""
         triggerCoverFetch()
+        triggerMatugenExtract()
     }
 
     onArtworkChanged: {
+        root.lastExtractedKey = ""
         triggerCoverFetch()
+        triggerMatugenExtract()
+    }
+
+    onFetchedCoverUrlChanged: {
+        triggerMatugenExtract()
     }
 
     onPlayerChanged: {
+        checkPauseTimeoutState()
         root.fetchedCoverUrl = ""
+        root.lastExtractedKey = ""
         triggerCoverFetch()
+        triggerMatugenExtract()
     }
 
     Component.onCompleted: {
         root.evaluateBestPlayer()
-        if (root.paused && !root.playing) {
-            root.pausedTimestamp = Date.now()
-        }
+        root.checkPauseTimeoutState()
         if (initialPlayerctlProbe) initialPlayerctlProbe.running = true
         triggerCoverFetch()
+        triggerMatugenExtract()
+    }
+
+    // ============================================================
+    // NON-DESTRUCTIVE LOCAL MATUGEN ALBUM ART THEMING (via Rust nexad)
+    // ============================================================
+
+    readonly property bool hasAlbumColors: NexaUI.NexaColors.hasMediaColors
+    readonly property color albumAccentColor: NexaUI.NexaColors.hasMediaColors ? NexaUI.NexaColors.mediaPrimary : NexaUI.NexaColors.primary
+    readonly property color albumSurfaceColor: NexaUI.NexaColors.hasMediaColors ? NexaUI.NexaColors.mediaSurface : NexaUI.NexaColors.islandBackground
+    readonly property color albumBorderColor: NexaUI.NexaColors.hasMediaColors ? NexaUI.NexaColors.mediaBorder : NexaUI.NexaColors.border
+    property string lastExtractedKey: ""
+
+    Timer {
+        id: matugenDebounceTimer
+        interval: 150
+        repeat: false
+        onTriggered: {
+            const artSource = (root.highResArtwork && root.highResArtwork !== "") ? root.highResArtwork : root.artwork
+            const trackKey = (root.title || "") + "|" + (root.artist || "") + "|" + artSource
+            if (!artSource || artSource === "" || trackKey === root.lastExtractedKey) return
+            root.lastExtractedKey = trackKey
+            matugenProcess.running = false
+            matugenProcess.command = [
+                root.nexadBin,
+                "media",
+                "matugen",
+                artSource
+            ]
+            matugenProcess.running = true
+        }
+    }
+
+    Process {
+        id: matugenProcess
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const res = text.trim()
+                    if (res !== "" && res.startsWith("{")) {
+                        const data = JSON.parse(res)
+                        if (data && data.primary) {
+                            NexaUI.NexaColors.setMediaColors(data)
+                            return
+                        }
+                    }
+                } catch (e) {
+                }
+                NexaUI.NexaColors.resetMediaColors()
+            }
+        }
+    }
+
+    function triggerMatugenExtract() {
+        matugenDebounceTimer.restart()
     }
 
     // High-Resolution Artwork URL Pipeline
@@ -591,38 +709,8 @@ Item {
         }
     }
 
-    // ============================================================
-    // LIVE CAVA AUDIO SPECTRUM (SYNCED TO MUSIC)
-    // Only runs when full island is open, visible, and playing
-    // ============================================================
-    property var spectrumBins: {
-        const arr = []
-        for (let i = 0; i < 40; ++i) arr.push(0)
-        return arr
-    }
-    property real audioEnergy: 0.12
-    property real audioBass: 0.12
-    property real audioPhase: 0.0
-
-    signal audioTick()
     signal requestBack()
     signal requestOpenClock()
-
-    Connections {
-        target: Services.AudioVisualizer
-        function onFrameTick() {
-            if (root.presentation === "full" && root.playing && root.visible) {
-                const b = Services.AudioVisualizer.bars;
-                for (let i = 0; i < Math.min(b.length, 40); ++i) {
-                    root.spectrumBins[i] = b[i];
-                }
-                root.audioEnergy = Math.max(0.08, Services.AudioVisualizer.energy);
-                root.audioBass = Math.max(0.08, Services.AudioVisualizer.bass);
-                root.audioPhase += 0.07 + root.audioEnergy * 0.14;
-                root.audioTick();
-            }
-        }
-    }
 
     function refreshPlayerStatus() {
         if (!mprisStatusProcess.running) {
@@ -746,1134 +834,703 @@ Item {
     }
 
     // ============================================================
-    // 1. COMPACT PRESENTATION (Dynamic Island Notch)
+    // 1. COMPACT PRESENTATION (Dynamic Island Notch - Phase 1)
     // ============================================================
 
     Item {
         anchors.fill: parent
         visible: root.presentation === "compact"
 
-        RowLayout {
-            anchors.fill: parent
+        // --------------------------------------------------------
+        // LEFT: Album Art Rounded Square Avatar
+        // --------------------------------------------------------
+        Item {
+            id: compactAvatarBox
+            width: 20
+            height: 20
+            anchors.left: parent.left
             anchors.leftMargin: 8
-            anchors.rightMargin: 12
-            spacing: 8
+            anchors.verticalCenter: parent.verticalCenter
+            scale: (root.playing ? 1.0 : 0.94) * (1.0 + 0.05 * root.bassLevel)
+            Behavior on scale { NumberAnimation { duration: 70; easing.type: Easing.OutQuad } }
 
-            // True Circular Cropped Album Art Avatar (Pin-Sharp)
-            Item {
-                Layout.preferredWidth: 22
-                Layout.preferredHeight: 22
-                Layout.alignment: Qt.AlignVCenter
+            Rectangle {
+                id: compactMask
+                anchors.fill: parent
+                radius: 5
+                visible: false
+            }
 
-                Rectangle {
-                    id: compactMask
-                    anchors.fill: parent
-                    radius: width / 2
-                    visible: false
-                }
+            Image {
+                id: compactImg
+                anchors.fill: parent
+                source: (root.highResArtwork !== "") ? root.highResArtwork : root.artwork
+                fillMode: Image.PreserveAspectCrop
+                visible: false
+                asynchronous: true
+                mipmap: true
+                sourceSize: Qt.size(64, 64)
+                smooth: true
+            }
 
-                Image {
-                    id: compactImg
-                    anchors.fill: parent
-                    source: root.artwork
-                    fillMode: Image.PreserveAspectCrop
-                    visible: false
-                    asynchronous: true
-                    mipmap: true
-                    sourceSize: Qt.size(64, 64)
-                    smooth: true
-                }
+            OpacityMask {
+                anchors.fill: parent
+                source: compactImg
+                maskSource: compactMask
+                visible: (root.artwork !== "" || root.highResArtwork !== "")
+            }
 
-                OpacityMask {
-                    anchors.fill: parent
-                    source: compactImg
-                    maskSource: compactMask
-                    visible: root.artwork !== ""
-                }
+            // Fallback square badge
+            Rectangle {
+                anchors.fill: parent
+                radius: 5
+                visible: (root.artwork === "" && root.highResArtwork === "")
+                color: NexaUI.NexaColors.surfaceContainerHigh
+                border.width: NexaUI.NexaTokens.borderThin
+                border.color: NexaUI.NexaColors.border
 
-                // Fallback circular badge
-                Rectangle {
-                    anchors.fill: parent
-                    radius: width / 2
-                    visible: root.artwork === ""
-                    color: NexaUI.NexaColors.surfaceContainerHigh
-                    border.width: NexaUI.NexaTokens.borderThin
-                    border.color: NexaUI.NexaColors.border
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: root.playerIcon(root.identity)
-                        color: NexaUI.NexaColors.primary
-                        font.family: NexaUI.NexaTypography.familyIcon
-                        font.pixelSize: 11
-                    }
-                }
-
-                // Clean circular border ring
-                Rectangle {
-                    anchors.fill: parent
-                    radius: width / 2
-                    color: "transparent"
-                    border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.20)
+                Text {
+                    anchors.centerIn: parent
+                    text: root.playerIcon(root.identity)
+                    color: root.albumAccentColor
+                    font.family: NexaUI.NexaTypography.familyIcon
+                    font.pixelSize: 10
                 }
             }
 
-            // Marquee Track & Artist Ticker
-            Item {
-                id: compactMarqueeBox
-                Layout.fillWidth: true
-                implicitHeight: 20
-                clip: true
+            // Subtle border ring
+            Rectangle {
+                anchors.fill: parent
+                radius: 5
+                color: "transparent"
+                border.width: 1
+                border.color: Qt.rgba(255, 255, 255, 0.18)
+            }
+        }
 
-                readonly property string labelText: root.hasTrack
-                    ? root.title + "  •  " + root.artist
-                    : "Nothing playing"
+        // --------------------------------------------------------
+        // CENTER: Clock Time (hh:mm)
+        // --------------------------------------------------------
+        Text {
+            id: compactClockText
+            anchors.centerIn: parent
+            text: Qt.formatDateTime(root.currentTime, "hh:mm")
+            color: NexaUI.NexaColors.text
+            font.family: NexaUI.NexaTypography.familyBody
+            font.pixelSize: 13
+            font.weight: NexaUI.NexaTypography.weightSemiBold
+        }
 
-                readonly property real overflowDist: Math.max(0, compactTickerText.implicitWidth - width)
-                readonly property bool needsScroll: overflowDist > 4
+        // --------------------------------------------------------
+        // RIGHT: Real-time Audio Visualizer Waveform Bars (CAVA IslandBars)
+        // --------------------------------------------------------
+        Row {
+            id: compactEq
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2.5
+            height: 16
 
-                Text {
-                    id: compactTickerText
-                    x: 0
+            Repeater {
+                model: (root.presentation === "compact" && root.playing) ? 5 : 0
+
+                Rectangle {
+                    required property int index
+                    width: 3
+                    radius: 1.5
                     anchors.verticalCenter: parent.verticalCenter
-                    text: compactMarqueeBox.labelText
-                    color: root.hasTrack ? NexaUI.NexaColors.text : NexaUI.NexaColors.mutedText
-                    font.family: NexaUI.NexaTypography.familyBody
-                    font.pixelSize: NexaUI.NexaTypography.sizeSm
-                    font.weight: NexaUI.NexaTypography.weightMedium
-                }
 
-                SequentialAnimation {
-                    id: compactTickerAnim
-                    running: compactMarqueeBox.needsScroll && root.presentation === "compact" && root.visible
-                    loops: Animation.Infinite
+                    readonly property real t: index / 4.0
+                    readonly property int bin: Math.round(1 + 8 * t)
+                    readonly property real rawVal: (root.playing && Services.AudioVisualizer.bars && Services.AudioVisualizer.bars.length > bin)
+                        ? Number(Services.AudioVisualizer.bars[bin])
+                        : 0.0
+                    readonly property real shape: 0.65 + 0.35 * Math.sin(Math.PI * (0.15 + 0.7 * t))
+                    readonly property real v: Math.min(1.0, rawVal * 1.35 * shape)
 
-                    PauseAnimation { duration: 1800 }
-                    NumberAnimation {
-                        target: compactTickerText
-                        property: "x"
-                        from: 0
-                        to: -compactMarqueeBox.overflowDist - 16
-                        duration: Math.max(1400, (compactMarqueeBox.overflowDist + 16) * 35)
-                        easing.type: Easing.InOutQuad
+                    height: Math.max(3, Math.round(3 + v * 13))
+
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.lighter(root.albumAccentColor, 1.25) }
+                        GradientStop { position: 1.0; color: Qt.darker(root.albumAccentColor, 1.15) }
                     }
-                    PauseAnimation { duration: 1500 }
-                    NumberAnimation {
-                        target: compactTickerText
-                        property: "x"
-                        to: 0
-                        duration: Math.max(1000, (compactMarqueeBox.overflowDist + 16) * 25)
-                        easing.type: Easing.InOutQuad
+
+                    Behavior on height {
+                        NumberAnimation {
+                            duration: 65
+                            easing.type: Easing.OutQuad
+                        }
                     }
-                }
-
-                onWidthChanged: {
-                    compactTickerText.x = 0
-                    if (needsScroll) compactTickerAnim.restart()
-                    else compactTickerAnim.stop()
-                }
-
-                onLabelTextChanged: {
-                    compactTickerText.x = 0
-                    if (needsScroll) compactTickerAnim.restart()
-                    else compactTickerAnim.stop()
                 }
             }
         }
     }
 
     // ============================================================
-    // 2. HOVER PRESENTATION (Dynamic Island Expansion)
+    // 2. HOVER PRESENTATION (Dynamic Island Expansion - Phase 2)
     // ============================================================
 
     Item {
         anchors.fill: parent
         visible: root.presentation === "hover"
 
-        RowLayout {
+        // --------------------------------------------------------
+        // ATMOSPHERIC AMBIENT GLOW & FOG BACKDROP
+        // --------------------------------------------------------
+
+        // Blurred Artwork Fog Backdrop
+        Image {
+            id: hoverFogArt
             anchors.fill: parent
-            anchors.leftMargin: NexaUI.NexaTokens.spacingMd
-            anchors.rightMargin: NexaUI.NexaTokens.spacingMd
-            anchors.topMargin: NexaUI.NexaTokens.spacingSm
-            anchors.bottomMargin: NexaUI.NexaTokens.spacingSm
-            spacing: NexaUI.NexaTokens.spacingMd
+            source: root.highResArtwork !== "" ? root.highResArtwork : root.artwork
+            fillMode: Image.PreserveAspectCrop
+            visible: false
+            asynchronous: true
+        }
 
-            // Artwork Card
-            Rectangle {
-                Layout.preferredWidth: 44
-                Layout.preferredHeight: 44
-                radius: NexaUI.NexaTokens.radiusSm
-                color: NexaUI.NexaColors.surfaceContainerHigh
-                border.width: NexaUI.NexaTokens.borderThin
-                border.color: NexaUI.NexaColors.border
-                clip: true
+        Rectangle {
+            id: hoverFogMask
+            anchors.fill: parent
+            radius: root.effectiveRadius
+            antialiasing: root.effectiveRadius > 0
+            visible: false
+        }
 
-                Image {
-                    anchors.fill: parent
-                    source: root.artwork
-                    fillMode: Image.PreserveAspectCrop
-                    mipmap: true
-                    sourceSize: Qt.size(128, 128)
-                    smooth: true
-                    visible: root.artwork !== ""
+        MultiEffect {
+            anchors.fill: parent
+            source: hoverFogArt
+            maskEnabled: true
+            maskSource: hoverFogMask
+            autoPaddingEnabled: false
+            visible: (root.artwork !== "" || root.highResArtwork !== "") && root.playing
+            opacity: 0.32 + 0.14 * root.bassLevel
+            blurEnabled: true
+            blurMax: 32
+            blur: 1.0
+            saturation: 0.55
+            layer.enabled: true
+            Behavior on opacity { NumberAnimation { duration: 300 } }
+        }
+
+        // Dark Horizontal Vignette Gradient
+        Rectangle {
+            anchors.fill: parent
+            radius: root.effectiveRadius
+            antialiasing: root.effectiveRadius > 0
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.20) }
+                GradientStop { position: 0.45; color: Qt.rgba(0, 0, 0, 0.65) }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.88) }
+            }
+        }
+
+        // Top edge specular accent highlight line
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.leftMargin: Math.max(12, root.effectiveRadius)
+            anchors.rightMargin: Math.max(12, root.effectiveRadius)
+            height: 1
+            opacity: root.hasAlbumColors ? 0.45 : 0.20
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.2; color: Qt.lighter(root.albumAccentColor, 1.3) }
+                GradientStop { position: 0.8; color: Qt.rgba(root.albumAccentColor.r, root.albumAccentColor.g, root.albumAccentColor.b, 0.3) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // --------------------------------------------------------
+        // FULL-WIDTH BOTTOM AUDIO SPECTRUM (44-Ray Ambient Floor Wave)
+        // --------------------------------------------------------
+        Row {
+            visible: root.presentation === "hover"
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 0
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 5
+            opacity: root.playing ? 0.28 : 0.08
+            Behavior on opacity { NumberAnimation { duration: 300 } }
+            z: 1
+
+            Repeater {
+                model: (root.presentation === "hover" && root.playing) ? 44 : 0
+
+                Rectangle {
+                    required property int index
+                    readonly property real v: root.rayLevel(index)
+                    anchors.bottom: parent.bottom
+                    width: 5
+                    height: Math.max(3, Math.round(3 + v * 36))
+                    radius: 2.5
+                    antialiasing: true
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.lighter(root.albumAccentColor, 1.45) }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                    Behavior on height {
+                        NumberAnimation { duration: 65; easing.type: Easing.OutQuad }
+                    }
                 }
+            }
+        }
+
+        // --------------------------------------------------------
+        // TOP ROW: Sculpted Artwork Pedestal + Metadata + Visualizer
+        // --------------------------------------------------------
+
+        // Sculpted Artwork Deck Pedestal (Outer Beveled Frame)
+        Item {
+            id: hoverArtDeck
+            anchors.left: parent.left
+            anchors.leftMargin: 18
+            anchors.top: parent.top
+            anchors.topMargin: 12
+            width: 72
+            height: 72
+            z: 2
+
+            // Ambient glow shadow beneath artwork pedestal
+            RectangularShadow {
+                anchors.centerIn: parent
+                width: parent.width
+                height: parent.height
+                radius: 16
+                blur: 20
+                color: Qt.rgba(root.albumAccentColor.r, root.albumAccentColor.g, root.albumAccentColor.b, 0.45)
+            }
+
+            // Concentric beat pulse ring
+            Rectangle {
+                anchors.centerIn: parent
+                width: parent.width + 8 + root.bassLevel * 8
+                height: width
+                radius: 20
+                color: "transparent"
+                border.width: 1.5
+                border.color: Qt.lighter(root.albumAccentColor, 1.3)
+                opacity: (0.12 + 0.45 * root.bassLevel) * (root.playing ? 1.0 : 0.0)
+                Behavior on width { NumberAnimation { duration: 65; easing.type: Easing.OutQuad } }
+            }
+
+            // Outer soft ambient glow rim
+            Rectangle {
+                anchors.fill: parent
+                radius: 16
+                color: Qt.rgba(root.albumAccentColor.r, root.albumAccentColor.g, root.albumAccentColor.b, 0.18)
+                border.width: 1.5
+                border.color: Qt.rgba(root.albumAccentColor.r, root.albumAccentColor.g, root.albumAccentColor.b, 0.45)
+            }
+
+            // Inner artwork mask
+            Rectangle {
+                id: hoverArtMask
+                anchors.fill: parent
+                anchors.margins: 4
+                radius: 12
+                visible: false
+            }
+
+            Image {
+                id: hoverArtImg
+                anchors.fill: parent
+                anchors.margins: 4
+                source: root.highResArtwork !== "" ? root.highResArtwork : root.artwork
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                mipmap: true
+                sourceSize: Qt.size(160, 160)
+                smooth: true
+                visible: false
+                scale: (root.playing ? 1.0 : 0.94) * (1.0 + 0.035 * root.bassLevel)
+                Behavior on scale { NumberAnimation { duration: 70; easing.type: Easing.OutQuad } }
+            }
+
+            OpacityMask {
+                anchors.fill: parent
+                anchors.margins: 4
+                source: hoverArtImg
+                maskSource: hoverArtMask
+                visible: root.artwork !== "" || root.highResArtwork !== ""
+            }
+
+            // Fallback badge if no artwork
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 4
+                radius: 12
+                visible: root.artwork === "" && root.highResArtwork === ""
+                color: NexaUI.NexaColors.surfaceContainerHigh
 
                 Text {
                     anchors.centerIn: parent
-                    visible: root.artwork === ""
                     text: root.playerIcon(root.identity)
-                    color: NexaUI.NexaColors.mutedText
+                    color: root.albumAccentColor
                     font.family: NexaUI.NexaTypography.familyIcon
-                    font.pixelSize: NexaUI.NexaTypography.sizeMd
+                    font.pixelSize: NexaUI.NexaTypography.sizeXl
                 }
             }
+        }
 
-            // Info, Sliding Marquee & Progress
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 3
+        // Top-Right: 6-Bar Symmetrical Audio Visualizer Waveform (IslandBars style)
+        Row {
+            id: hoverTopEq
+            anchors.right: parent.right
+            anchors.rightMargin: 18
+            anchors.verticalCenter: hoverArtDeck.verticalCenter
+            spacing: 3.5
+            height: 36
+            z: 2
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
+            Repeater {
+                model: (root.presentation === "hover" && root.playing) ? 6 : 0
 
-                    // Title Marquee Box
-                    Item {
-                        id: hoverTitleBox
-                        Layout.fillWidth: true
-                        implicitHeight: hoverTitleText.implicitHeight
-                        clip: true
+                Item {
+                    required property int index
+                    width: 4
+                    height: parent.height
+                    anchors.verticalCenter: parent.verticalCenter
 
-                        readonly property real overflowDist: Math.max(0, hoverTitleText.implicitWidth - width)
-                        readonly property bool needsScroll: overflowDist > 4
+                    readonly property real t: index / 5.0
+                    readonly property int bin: Math.round(1 + 14 * t)
+                    readonly property real rawVal: (root.playing && Services.AudioVisualizer.bars && Services.AudioVisualizer.bars.length > bin)
+                        ? Number(Services.AudioVisualizer.bars[bin])
+                        : 0.0
+                    readonly property real shape: 0.62 + 0.38 * Math.sin(Math.PI * (0.15 + 0.7 * t))
+                    readonly property real v: Math.min(1.0, rawVal * 1.35 * shape)
+                    readonly property real barH: Math.max(6, Math.round(6 + v * 26))
 
-                        Text {
-                            id: hoverTitleText
-                            x: 0
-                            text: root.title
-                            color: NexaUI.NexaColors.text
-                            font.family: NexaUI.NexaTypography.familyBody
-                            font.pixelSize: NexaUI.NexaTypography.sizeSm
-                            font.weight: NexaUI.NexaTypography.weightSemiBold
-                        }
+                    // Neon glow halo underlay
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 6
+                        height: parent.barH + 4
+                        radius: NexaUI.NexaTokens.radiusPill
+                        color: root.albumAccentColor
+                        opacity: root.playing ? 0.35 : 0.0
 
-                        SequentialAnimation {
-                            id: hoverTitleAnim
-                            running: hoverTitleBox.needsScroll && root.presentation === "hover" && root.visible
-                            loops: Animation.Infinite
-
-                            PauseAnimation { duration: 1800 }
-                            NumberAnimation {
-                                target: hoverTitleText
-                                property: "x"
-                                from: 0
-                                to: -hoverTitleBox.overflowDist - 16
-                                duration: Math.max(1400, (hoverTitleBox.overflowDist + 16) * 35)
-                                easing.type: Easing.InOutQuad
-                            }
-                            PauseAnimation { duration: 1500 }
-                            NumberAnimation {
-                                target: hoverTitleText
-                                property: "x"
-                                to: 0
-                                duration: Math.max(1000, (hoverTitleBox.overflowDist + 16) * 25)
-                                easing.type: Easing.InOutQuad
-                            }
-                        }
-
-                        onWidthChanged: {
-                            hoverTitleText.x = 0
-                            if (needsScroll) hoverTitleAnim.restart()
-                            else hoverTitleAnim.stop()
-                        }
-
-                        Connections {
-                            target: root
-                            function onTitleChanged() {
-                                hoverTitleText.x = 0
-                                if (hoverTitleBox.needsScroll) hoverTitleAnim.restart()
-                                else hoverTitleAnim.stop()
-                            }
+                        Behavior on height {
+                            NumberAnimation { duration: 65; easing.type: Easing.OutQuad }
                         }
                     }
 
-                    Text {
-                        text: root.formatTime(root.position) + " / " + root.formatTime(root.duration)
-                        color: NexaUI.NexaColors.mutedText
-                        font.family: NexaUI.NexaTypography.familyMono
-                        font.pixelSize: NexaUI.NexaTypography.size2Xs
-                        font.features: NexaUI.NexaTypography.fontFeaturesTnum
-                        visible: root.duration > 0
+                    // Solid 3D gradient bar
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 4
+                        height: parent.barH
+                        radius: NexaUI.NexaTokens.radiusPill
+                        antialiasing: true
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: Qt.lighter(root.albumAccentColor, 1.25) }
+                            GradientStop { position: 1.0; color: Qt.darker(root.albumAccentColor, 1.15) }
+                        }
+
+                        Behavior on height {
+                            NumberAnimation { duration: 65; easing.type: Easing.OutQuad }
+                        }
                     }
                 }
+            }
+        }
+
+        // Center: Metadata Stack (Player Tag, Title, Artist)
+        Column {
+            anchors.left: hoverArtDeck.right
+            anchors.leftMargin: 16
+            anchors.right: hoverTopEq.left
+            anchors.rightMargin: 16
+            anchors.verticalCenter: hoverArtDeck.verticalCenter
+            spacing: 3
+            z: 2
+
+            // 1. Service / Player Tag (e.g. "SPOTIFY")
+            Text {
+                text: root.cleanIdentity.toUpperCase()
+                color: Qt.rgba(255, 255, 255, 0.45)
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: 10
+                font.weight: NexaUI.NexaTypography.weightBold
+                font.letterSpacing: 1.6
+            }
+
+            // 2. Track Title (with Marquee if overflowing)
+            Item {
+                id: hoverTitleBox
+                width: parent.width
+                implicitHeight: hoverTitleText.implicitHeight
+                clip: true
+
+                readonly property real overflowDist: Math.max(0, hoverTitleText.implicitWidth - width)
+                readonly property bool needsScroll: overflowDist > 4
 
                 Text {
-                    Layout.fillWidth: true
-                    text: root.artist
-                    color: NexaUI.NexaColors.mutedText
+                    id: hoverTitleText
+                    x: 0
+                    text: root.title
+                    color: NexaUI.NexaColors.text
                     font.family: NexaUI.NexaTypography.familyBody
-                    font.pixelSize: NexaUI.NexaTypography.sizeXs
-                    elide: Text.ElideRight
+                    font.pixelSize: 18
+                    font.weight: NexaUI.NexaTypography.weightBold
                 }
 
-                // Mini Progress Bar
-                NexaUI.NexaProgressBar {
-                    Layout.fillWidth: true
-                    implicitHeight: 3
-                    from: 0.0
-                    to: 1.0
-                    value: root.progress
-                    barColor: NexaUI.NexaColors.primary
-                    trackColor: NexaUI.NexaColors.surfaceContainerHighest
-                    visible: root.duration > 0
-                }
-            }
+                SequentialAnimation {
+                    id: hoverTitleAnim
+                    running: hoverTitleBox.needsScroll && root.presentation === "hover" && root.visible
+                    loops: Animation.Infinite
 
-            // Minimal Playback Controls
-            RowLayout {
-                spacing: NexaUI.NexaTokens.spacingXs
-
-                NexaUI.NexaButton {
-                    variant: "icon"
-                    icon: "󰒮"
-                    implicitWidth: NexaUI.NexaTokens.controlHeightSm
-                    implicitHeight: NexaUI.NexaTokens.controlHeightSm
-                    interactive: root.available && root.player.canGoPrevious
-                    onClicked: root.previous()
+                    PauseAnimation { duration: 2000 }
+                    NumberAnimation {
+                        target: hoverTitleText
+                        property: "x"
+                        from: 0
+                        to: -hoverTitleBox.overflowDist - 16
+                        duration: Math.max(1400, (hoverTitleBox.overflowDist + 16) * 35)
+                        easing.type: Easing.InOutQuad
+                    }
+                    PauseAnimation { duration: 1500 }
+                    NumberAnimation {
+                        target: hoverTitleText
+                        property: "x"
+                        to: 0
+                        duration: Math.max(1000, (hoverTitleBox.overflowDist + 16) * 25)
+                        easing.type: Easing.InOutQuad
+                    }
                 }
 
-                NexaUI.NexaButton {
-                    variant: "icon"
-                    icon: root.playing ? "󰏤" : "󰐊"
-                    checked: true
-                    implicitWidth: NexaUI.NexaTokens.controlHeightSm
-                    implicitHeight: NexaUI.NexaTokens.controlHeightSm
-                    interactive: root.available && root.player.canTogglePlaying
-                    onClicked: root.togglePlaying()
+                onWidthChanged: {
+                    hoverTitleText.x = 0
+                    if (needsScroll) hoverTitleAnim.restart()
+                    else hoverTitleAnim.stop()
                 }
 
-                NexaUI.NexaButton {
-                    variant: "icon"
-                    icon: "󰒭"
-                    implicitWidth: NexaUI.NexaTokens.controlHeightSm
-                    implicitHeight: NexaUI.NexaTokens.controlHeightSm
-                    interactive: root.available && root.player.canGoNext
-                    onClicked: root.next()
+                Connections {
+                    target: root
+                    function onTitleChanged() {
+                        hoverTitleText.x = 0
+                        if (hoverTitleBox.needsScroll) hoverTitleAnim.restart()
+                        else hoverTitleAnim.stop()
+                    }
                 }
             }
-        }
-    }
 
-    // ============================================================
-    // 3. FULL MUSIC VIEW (APPLE-MINIMAL CARD)
-    // ============================================================
-
-    Item {
-        id: fullMusicContainer
-        anchors.fill: parent
-        visible: root.presentation === "full"
-
-        // Smooth opacity fade on appearance
-        opacity: visible ? 1.0 : 0.0
-        Behavior on opacity {
-            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-        }
-
-        onVisibleChanged: {
-            if (visible) root.refreshPlayerStatus()
+            // 3. Artist Name in album accent color
+            Text {
+                width: parent.width
+                text: root.artist
+                color: Qt.lighter(root.albumAccentColor, 1.35)
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: 13
+                font.weight: NexaUI.NexaTypography.weightMedium
+                elide: Text.ElideRight
+            }
         }
 
         // --------------------------------------------------------
-        // Ambient Backdrop & Specular Rim (Hardware-Optimized)
+        // MIDDLE ROW: Full-Width Glowing Laser Seekbar
         // --------------------------------------------------------
-        Item {
-            id: cardBackdropContainer
-            anchors.fill: parent
-            z: -1
+        RowLayout {
+            id: hoverSeekRow
+            anchors.left: parent.left
+            anchors.leftMargin: 18
+            anchors.right: parent.right
+            anchors.rightMargin: 18
+            anchors.top: hoverArtDeck.bottom
+            anchors.topMargin: 8
+            spacing: 10
+            z: 2
 
-            Rectangle {
-                id: cardShapeMask
-                anchors.fill: parent
-                radius: NexaUI.NexaTokens.radius2Xl
-                visible: false
+            // Left Elapsed Timestamp
+            Text {
+                text: root.formatTime(root.displayedPosition)
+                color: Qt.rgba(255, 255, 255, 0.5)
+                font.family: NexaUI.NexaTypography.familyMono
+                font.pixelSize: 10
+                font.features: NexaUI.NexaTypography.fontFeaturesTnum
             }
 
+            // Interactive Progress Bar with Neon Laser Bloom
             Item {
-                id: cardContentToMask
-                anchors.fill: parent
-                visible: false
+                id: hoverProgressBar
+                Layout.fillWidth: true
+                implicitHeight: 14
 
-                // 1. Base card fill
+                // Rail (unfilled track)
                 Rectangle {
-                    anchors.fill: parent
-                    color: NexaUI.NexaColors.surfaceContainerLow
+                    id: hoverRail
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 3.5
+                    radius: NexaUI.NexaTokens.radiusPill
+                    color: Qt.rgba(255, 255, 255, 0.15)
                 }
 
-                // 2. Ambient Artwork Backdrop (Vibrant & Clearly Visible)
-                Image {
-                    id: bgAmbientArt
-                    anchors.fill: parent
-                    anchors.margins: -10
-                    source: root.highResArtwork !== "" ? root.highResArtwork : root.artwork
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: true
-                    sourceSize: Qt.size(360, 360)
-                    smooth: true
-                    opacity: (root.hasTrack && (root.artwork !== "" || root.highResArtwork !== "")) ? 0.45 : 0.0
-
-                    Behavior on opacity {
-                        NumberAnimation { duration: 400; easing.type: Easing.OutCubic }
-                    }
+                // Laser glow shadow halo
+                RectangularShadow {
+                    anchors.left: hoverRail.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.max(hoverRail.height, hoverRail.width * root.displayedProgress)
+                    height: hoverRail.height
+                    radius: hoverRail.height / 2
+                    blur: 10 + 6 * root.bassLevel
+                    color: Qt.rgba(root.albumAccentColor.r, root.albumAccentColor.g, root.albumAccentColor.b, 0.65)
                 }
 
-                // 3. Frosted Glass Tint
+                // Solid laser core fill with horizontal gradient
                 Rectangle {
-                    anchors.fill: parent
+                    anchors.left: hoverRail.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.max(hoverRail.height, hoverRail.width * root.displayedProgress)
+                    height: hoverRail.height
+                    radius: hoverRail.height / 2
+                    antialiasing: true
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.surfaceContainerLow, 0.72) }
-                        GradientStop { position: 0.5; color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.surfaceContainerLow, 0.65) }
-                        GradientStop { position: 1.0; color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.surfaceContainerLow, 0.80) }
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: root.albumAccentColor }
+                        GradientStop { position: 1.0; color: Qt.lighter(root.albumAccentColor, 1.5) }
                     }
                 }
-            }
 
-            // True rounded corner mask - zero bleed into square edges
-            OpacityMask {
-                anchors.fill: parent
-                source: cardContentToMask
-                maskSource: cardShapeMask
-            }
-
-            // Crisp rounded border matching environment
-            Rectangle {
-                anchors.fill: parent
-                radius: NexaUI.NexaTokens.radius2Xl
-                color: "transparent"
-                border.width: NexaUI.NexaTokens.borderThin
-                border.color: NexaUI.NexaColors.borderStrong
-            }
-
-            // Top Chamfer Specular Highlight (Layer 2)
-            Rectangle {
-                anchors.top: parent.top
-                anchors.topMargin: 1
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: NexaUI.NexaTokens.radius2Xl > 0 ? Math.max(0, parent.width - NexaUI.NexaTokens.radius2Xl * 1.6) : parent.width
-                height: 1
-                visible: NexaUI.NexaOptics.specularHighlight && NexaUI.NexaOptics.specularIntensity > 0.01
-                opacity: Math.min(1.0, NexaUI.NexaOptics.specularIntensity / 0.28)
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.25) }
-                    GradientStop { position: 1.0; color: "transparent" }
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onPressed: mouse => { root.seeking = true; root.updateSeekFromX(mouse.x, width) }
+                    onPositionChanged: mouse => { if (pressed) root.updateSeekFromX(mouse.x, width) }
+                    onReleased: root.commitSeek()
                 }
+            }
+
+            // Right Remaining Timestamp
+            Text {
+                text: (root.duration > 0 && root.duration >= root.displayedPosition)
+                    ? ("-" + root.formatTime(root.duration - root.displayedPosition))
+                    : "--:--"
+                color: Qt.rgba(255, 255, 255, 0.5)
+                font.family: NexaUI.NexaTypography.familyMono
+                font.pixelSize: 10
+                font.features: NexaUI.NexaTypography.fontFeaturesTnum
             }
         }
 
         // --------------------------------------------------------
-        // Idle State: When No Active Media is Playing
+        // BOTTOM ROW: Floating Transport Controls (Above Floor Wave)
         // --------------------------------------------------------
         Item {
-            anchors.fill: parent
-            visible: !root.hasTrack || (!root.playing && !root.paused)
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: hoverSeekRow.bottom
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 8
+            z: 2
 
-            RowLayout {
+            // Transport Controls: Previous | Circular Play/Pause | Next
+            Row {
                 anchors.centerIn: parent
-                spacing: 36
+                spacing: 42
 
+                // Previous Track
                 Item {
-                    width: 140
-                    height: 140
-                    Layout.alignment: Qt.AlignVCenter
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 70
-                        color: NexaUI.NexaColors.surfaceContainerHigh
-                        border.width: 1
-                        border.color: NexaUI.NexaColors.border
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "󰎆"
-                            color: NexaUI.NexaColors.primary
-                            font.family: NexaUI.NexaTypography.familyIcon
-                            font.pixelSize: 42
-                        }
-                    }
-
-                    SequentialAnimation on scale {
-                        loops: Animation.Infinite
-                        running: fullMusicContainer.visible && (!root.hasTrack || (!root.playing && !root.paused))
-                        NumberAnimation { from: 0.98; to: 1.02; duration: 2400; easing.type: Easing.InOutSine }
-                        NumberAnimation { from: 1.02; to: 0.98; duration: 2400; easing.type: Easing.InOutSine }
-                    }
-                }
-
-                ColumnLayout {
-                    spacing: 8
-                    Layout.alignment: Qt.AlignVCenter
-
-                    Rectangle {
-                        implicitWidth: idleStatusRow.implicitWidth + 18
-                        implicitHeight: 24
-                        radius: 12
-                        color: NexaUI.NexaColors.surfaceContainerLow
-                        border.width: 1
-                        border.color: NexaUI.NexaColors.border
-
-                        Row {
-                            id: idleStatusRow
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Rectangle {
-                                width: 6; height: 6; radius: 3
-                                color: NexaUI.NexaColors.primary
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            Text {
-                                text: "READY FOR AUDIO"
-                                color: NexaUI.NexaColors.mutedText
-                                font.family: NexaUI.NexaTypography.familyBody
-                                font.pixelSize: 10
-                                font.weight: NexaUI.NexaTypography.weightBold
-                                font.letterSpacing: 1.2
-                            }
-                        }
-                    }
+                    width: 32
+                    height: 32
+                    anchors.verticalCenter: parent.verticalCenter
 
                     Text {
-                        text: "No Media Playing"
+                        anchors.centerIn: parent
+                        text: "󰒮"
+                        font.family: NexaUI.NexaTypography.familyIcon
+                        font.pixelSize: 20
                         color: NexaUI.NexaColors.text
-                        font.family: NexaUI.NexaTypography.familyBody
-                        font.pixelSize: 22
-                        font.weight: NexaUI.NexaTypography.weightBold
+                        opacity: hoverPrevMouse.pressed ? 0.4 : (hoverPrevMouse.containsMouse ? 1.0 : 0.85)
+                        Behavior on opacity { NumberAnimation { duration: 100 } }
                     }
 
-                    Text {
-                        text: "Play music or video on Spotify, YouTube, or MPV\nto unlock live controls in the Dynamic Island."
-                        color: NexaUI.NexaColors.mutedText
-                        font.family: NexaUI.NexaTypography.familyBody
-                        font.pixelSize: 13
-                        lineHeight: 1.3
+                    MouseArea {
+                        id: hoverPrevMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        enabled: root.available && root.player.canGoPrevious
+                        onClicked: root.previous()
                     }
                 }
-            }
-        }
 
-        // --------------------------------------------------------
-        // --------------------------------------------------------
-        // Active State: Next-Gen Split Studio Media Deck
-        // --------------------------------------------------------
-        Item {
-            anchors.fill: parent
-            visible: root.hasTrack && (root.playing || root.paused)
-
-            // Soft Ambient Color Glow on Top-Right Corner (Tied to Matugen primary)
-            Rectangle {
-                width: 440
-                height: 320
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.margins: -40
-                radius: 220
-                color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.12)
-                opacity: root.playing ? 0.95 : 0.35
-                Behavior on opacity { NumberAnimation { duration: 400 } }
-            }
-
-            // ========================================================
-            // TWO-COLUMN SPLIT STUDIO LAYOUT
-            // ========================================================
-            RowLayout {
-                anchors.fill: parent
-                spacing: 0
-
-                // ----------------------------------------------------
-                // LEFT COLUMN: FULL-BLEED HERO ARTWORK (~40% Width)
-                // ----------------------------------------------------
+                // Circular Play / Pause Lens Button
                 Item {
-                    id: leftCoverCol
-                    Layout.preferredWidth: 260
-                    Layout.fillHeight: true
-                    clip: true
+                    width: 40
+                    height: 40
+                    anchors.verticalCenter: parent.verticalCenter
 
-                    // Album Artwork Image (High-Res from pipeline)
-                    Image {
-                        id: coverImage
-                        anchors.fill: parent
-                        source: root.highResArtwork !== "" ? root.highResArtwork : (root.artwork !== "" ? root.artwork : "")
-                        fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                        cache: true
-                        mipmap: true
-                        smooth: true
+                    // Reactive bass ring around play button
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width * (0.95 + 0.22 * root.bassLevel)
+                        height: width
+                        radius: width / 2
+                        color: Qt.rgba(root.albumAccentColor.r, root.albumAccentColor.g, root.albumAccentColor.b, 0.08)
+                        border.width: 1.5
+                        border.color: Qt.rgba(root.albumAccentColor.r, root.albumAccentColor.g, root.albumAccentColor.b, 0.35)
+                        antialiasing: true
                     }
 
-                    // Fallback Gradient if image is loading or empty
                     Rectangle {
+                        id: hoverPlayBtnBg
                         anchors.fill: parent
-                        visible: coverImage.status !== Image.Ready || (root.highResArtwork === "" && root.artwork === "")
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: "#23212b" }
-                            GradientStop { position: 1.0; color: "#14131a" }
-                        }
+                        radius: width / 2
+                        color: Qt.rgba(255, 255, 255, hoverPlayMouse.pressed ? 0.24 : (hoverPlayMouse.containsMouse ? 0.18 : 0.12))
+                        border.width: 1.5
+                        border.color: Qt.rgba(255, 255, 255, 0.28)
+                        scale: hoverPlayMouse.pressed ? 0.93 : (hoverPlayMouse.containsMouse ? 1.05 : 1.0)
+                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
                         Text {
                             anchors.centerIn: parent
-                            text: root.playerIcon(root.cleanIdentity)
+                            text: root.playing ? "󰏤" : "󰐊"
                             font.family: NexaUI.NexaTypography.familyIcon
-                            font.pixelSize: 68
-                            color: Qt.rgba(255, 255, 255, 0.15)
+                            font.pixelSize: 18
+                            color: NexaUI.NexaColors.text
                         }
                     }
 
-                    // Top-Left Glass Pill Badge: // NOW PLAYING / PAUSED
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.margins: 18
-                        height: 28
-                        radius: 14
-                        color: Qt.rgba(12 / 255, 12 / 255, 16 / 255, 0.75)
-                        border.width: 1
-                        border.color: Qt.rgba(255, 255, 255, 0.14)
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 12
-                            spacing: 6
-
-                            // Pulsing Matugen Status Beacon
-                            Rectangle {
-                                width: 7
-                                height: 7
-                                radius: 3.5
-                                color: root.playing ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
-
-                                SequentialAnimation on opacity {
-                                    running: root.playing
-                                    loops: Animation.Infinite
-                                    NumberAnimation { from: 1.0; to: 0.35; duration: 900; easing.type: Easing.InOutQuad }
-                                    NumberAnimation { from: 0.35; to: 1.0; duration: 900; easing.type: Easing.InOutQuad }
-                                }
-                            }
-
-                            Text {
-                                text: root.playing ? "// NOW PLAYING" : "// PAUSED"
-                                color: NexaUI.NexaColors.text
-                                font.family: NexaUI.NexaTypography.familyMono
-                                font.pixelSize: 10
-                                font.weight: NexaUI.NexaTypography.weightSemiBold
-                                font.letterSpacing: 0.8
-                            }
-                        }
-                    }
-
-                    // Bottom Gradient Scrim & Mini Track Preview
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-                        height: 94
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: "transparent" }
-                            GradientStop { position: 0.35; color: Qt.rgba(10 / 255, 10 / 255, 14 / 255, 0.65) }
-                            GradientStop { position: 1.0; color: Qt.rgba(8 / 255, 8 / 255, 12 / 255, 0.95) }
-                        }
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 16
-                            anchors.bottomMargin: 18
-                            spacing: 3
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: root.title
-                                color: NexaUI.NexaColors.text
-                                font.family: NexaUI.NexaTypography.familyBody
-                                font.pixelSize: 13
-                                font.weight: NexaUI.NexaTypography.weightSemiBold
-                                elide: Text.ElideRight
-                            }
-
-                            RowLayout {
-                                spacing: 5
-                                Text {
-                                    text: "◉"
-                                    color: NexaUI.NexaColors.primary
-                                    font.pixelSize: 9
-                                }
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: root.artist
-                                    color: NexaUI.NexaColors.mutedText
-                                    font.family: NexaUI.NexaTypography.familyBody
-                                    font.pixelSize: 11
-                                    elide: Text.ElideRight
-                                }
-                            }
-                        }
-                    }
-
-                    // Separator hairline between left and right column
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
-                        anchors.right: parent.right
-                        width: 1
-                        color: Qt.rgba(255, 255, 255, 0.08)
+                    MouseArea {
+                        id: hoverPlayMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        enabled: root.available && root.player.canTogglePlaying
+                        onClicked: root.togglePlaying()
                     }
                 }
 
-                // ----------------------------------------------------
-                // RIGHT COLUMN: STUDIO CONTROL DECK (~60% Width)
-                // ----------------------------------------------------
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.margins: 18
-                    Layout.leftMargin: 20
-                    Layout.rightMargin: 20
-                    spacing: 8
+                // Next Track
+                Item {
+                    width: 32
+                    height: 32
+                    anchors.verticalCenter: parent.verticalCenter
 
-                    // ================================================
-                    // 1. HEADER: SOURCE INDICATOR
-                    // ================================================
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        RowLayout {
-                            spacing: 7
-                            Text {
-                                text: "— " + root.playerIcon(root.cleanIdentity)
-                                color: NexaUI.NexaColors.primary
-                                font.family: NexaUI.NexaTypography.familyIcon
-                                font.pixelSize: 14
-                                font.weight: NexaUI.NexaTypography.weightBold
-                            }
-                            Text {
-                                text: root.cleanIdentity.toUpperCase()
-                                color: NexaUI.NexaColors.mutedText
-                                font.family: NexaUI.NexaTypography.familyMono
-                                font.pixelSize: 11
-                                font.weight: NexaUI.NexaTypography.weightSemiBold
-                                font.letterSpacing: 1.2
-                            }
-                        }
-
-                        Item { Layout.fillWidth: true }
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰒭"
+                        font.family: NexaUI.NexaTypography.familyIcon
+                        font.pixelSize: 20
+                        color: NexaUI.NexaColors.text
+                        opacity: hoverNextMouse.pressed ? 0.4 : (hoverNextMouse.containsMouse ? 1.0 : 0.85)
+                        Behavior on opacity { NumberAnimation { duration: 100 } }
                     }
 
-                    Item { height: 2 }
-
-                    // ================================================
-                    // 2. HERO TRACK TYPOGRAPHY
-                    // ================================================
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 4
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: root.title
-                            color: NexaUI.NexaColors.text
-                            font.family: NexaUI.NexaTypography.familyDisplay
-                            font.pixelSize: 18
-                            font.weight: NexaUI.NexaTypography.weightBold
-                            font.letterSpacing: -0.3
-                            elide: Text.ElideRight
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 7
-
-                            Text {
-                                text: "◉"
-                                color: NexaUI.NexaColors.primary
-                                font.pixelSize: 10
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: root.artist + (root.album !== "" ? ("  •  " + root.album) : "")
-                                color: NexaUI.NexaColors.mutedText
-                                font.family: NexaUI.NexaTypography.familyBody
-                                font.pixelSize: 12
-                                font.weight: NexaUI.NexaTypography.weightMedium
-                                elide: Text.ElideRight
-                            }
-                        }
-                    }
-
-                    // Flexible Spacer: Pushes Progress Bar & Controls to Bottom
-                    Item { Layout.fillHeight: true }
-
-                    // ================================================
-                    // 3. PROGRESS BAR (Lowered right above controls)
-                    // ================================================
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 12
-
-                            // Elapsed Monospace Timestamp
-                            Text {
-                                text: root.formatTime(root.displayedPosition)
-                                color: NexaUI.NexaColors.mutedText
-                                font.family: NexaUI.NexaTypography.familyMono
-                                font.pixelSize: 12
-                                font.weight: NexaUI.NexaTypography.weightMedium
-                                font.features: NexaUI.NexaTypography.fontFeaturesTnum
-                            }
-
-                            // Interactive Straight Rail Progress Bar
-                            Item {
-                                id: scrubberTrack
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 20
-
-                                // Background Rail
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: parent.width
-                                    height: 4
-                                    radius: 2
-                                    color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.18)
-
-                                    // Active Elapsed Progress Fill
-                                    Rectangle {
-                                        anchors.left: parent.left
-                                        anchors.top: parent.top
-                                        anchors.bottom: parent.bottom
-                                        width: parent.width * root.displayedProgress
-                                        radius: 2
-                                        color: NexaUI.NexaColors.primary
-                                    }
-
-                                    // Precision Scrubber Thumb Handle
-                                    Rectangle {
-                                        width: 12
-                                        height: 12
-                                        radius: 6
-                                        x: (parent.width * root.displayedProgress) - (width / 2)
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: NexaUI.NexaColors.primary
-                                        border.width: 2
-                                        border.color: "#ffffff"
-                                        scale: scrubMouse.containsMouse || scrubMouse.pressed ? 1.3 : 1.0
-                                        Behavior on scale { NumberAnimation { duration: 150 } }
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: scrubMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onPressed: mouse => {
-                                        root.scrubbing = true
-                                        const frac = Math.max(0, Math.min(1, mouse.x / width))
-                                        root.scrubPosition = frac * root.duration
-                                    }
-                                    onPositionChanged: mouse => {
-                                        if (pressed) {
-                                            const frac = Math.max(0, Math.min(1, mouse.x / width))
-                                            root.scrubPosition = frac * root.duration
-                                        }
-                                    }
-                                    onReleased: mouse => {
-                                        const frac = Math.max(0, Math.min(1, mouse.x / width))
-                                        root.seek(frac * root.duration)
-                                        root.scrubbing = false
-                                    }
-                                }
-                            }
-
-                            // Total Duration Monospace Timestamp
-                            Text {
-                                text: root.formatTime(root.duration)
-                                color: NexaUI.NexaColors.mutedText
-                                font.family: NexaUI.NexaTypography.familyMono
-                                font.pixelSize: 12
-                                font.weight: NexaUI.NexaTypography.weightMedium
-                                font.features: NexaUI.NexaTypography.fontFeaturesTnum
-                            }
-                        }
-
-                        // Context Row: Album / Next Track Hint
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 6
-                            opacity: 0.55
-
-                            Text {
-                                text: "󰒝"
-                                color: NexaUI.NexaColors.mutedText
-                                font.family: NexaUI.NexaTypography.familyIcon
-                                font.pixelSize: 11
-                            }
-                            Text {
-                                text: root.album !== "" ? ("ALBUM: " + root.album) : "LOSSLESS HIGH-FIDELITY"
-                                color: NexaUI.NexaColors.mutedText
-                                font.family: NexaUI.NexaTypography.familyBody
-                                font.pixelSize: 11
-                                font.weight: NexaUI.NexaTypography.weightMedium
-                                font.letterSpacing: 0.5
-                                elide: Text.ElideRight
-                            }
-                        }
-                    }
-
-                    Item { height: 2 }
-
-                    // ================================================
-                    // 4. TACTILE CONTROLS DECK & INLINE VOLUME
-                    // ================================================
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 16
-
-                        // Left: Playback Control Cluster
-                        RowLayout {
-                            spacing: 12
-
-                            // Shuffle Button
-                            Rectangle {
-                                width: 36
-                                height: 36
-                                radius: 18
-                                color: root.shuffle 
-                                    ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.22) 
-                                    : (shuffHover.hovered ? NexaUI.NexaColors.surfaceContainerHigh : "transparent")
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "󰒝"
-                                    font.family: NexaUI.NexaTypography.familyIcon
-                                    font.pixelSize: 16
-                                    color: root.shuffle ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
-                                }
-
-                                MouseArea {
-                                    id: shuffHover
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.toggleShuffle()
-                                }
-                            }
-
-                            // Previous Track
-                            Rectangle {
-                                width: 38
-                                height: 38
-                                radius: 19
-                                color: prevHover.hovered ? NexaUI.NexaColors.surfaceContainerHigh : "transparent"
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "󰒮"
-                                    font.family: NexaUI.NexaTypography.familyIcon
-                                    font.pixelSize: 20
-                                    color: NexaUI.NexaColors.text
-                                }
-
-                                MouseArea {
-                                    id: prevHover
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.previous()
-                                }
-                            }
-
-                            // HERO PLAY / PAUSE PILL BUTTON
-                            Rectangle {
-                                id: heroPlayPill
-                                width: 62
-                                height: 40
-                                radius: 20
-                                color: NexaUI.NexaColors.primary
-                                scale: playMouse.pressed ? 0.94 : (playMouse.hovered ? 1.04 : 1.0)
-                                Behavior on scale { NumberAnimation { duration: 120 } }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.playing ? "󰏤" : "󰐊"
-                                    font.family: NexaUI.NexaTypography.familyIcon
-                                    font.pixelSize: 20
-                                    color: NexaUI.NexaColors.onPrimary
-                                }
-
-                                MouseArea {
-                                    id: playMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.togglePlaying()
-                                }
-                            }
-
-                            // Next Track
-                            Rectangle {
-                                width: 38
-                                height: 38
-                                radius: 19
-                                color: nextHover.hovered ? NexaUI.NexaColors.surfaceContainerHigh : "transparent"
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "󰒭"
-                                    font.family: NexaUI.NexaTypography.familyIcon
-                                    font.pixelSize: 20
-                                    color: NexaUI.NexaColors.text
-                                }
-
-                                MouseArea {
-                                    id: nextHover
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.next()
-                                }
-                            }
-
-                            // Repeat / Loop Button
-                            Rectangle {
-                                width: 36
-                                height: 36
-                                radius: 18
-                                color: root.loopStatus !== "None" 
-                                    ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.22) 
-                                    : (repHover.hovered ? NexaUI.NexaColors.surfaceContainerHigh : "transparent")
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.loopStatus === "Track" ? "󰑘" : "󰑖"
-                                    font.family: NexaUI.NexaTypography.familyIcon
-                                    font.pixelSize: 16
-                                    color: root.loopStatus !== "None" ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
-                                }
-
-                                MouseArea {
-                                    id: repHover
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        root.cycleLoop()
-                                    }
-                                }
-                            }
-                        }
-
-                        Item { Layout.fillWidth: true }
-
-                        // Right: Inline Volume Scrubber
-                        RowLayout {
-                            id: volDeck
-                            spacing: 8
-
-                            readonly property real masterVol: {
-                                if (typeof Services !== "undefined" && Services.SystemState && Services.SystemState.volume >= 0) {
-                                    return Services.SystemState.volume / 100.0
-                                }
-                                if (root.available && root.player && root.player.volumeSupported) return root.player.volume
-                                return 0.8
-                            }
-
-                            function applyVol(posX, trackW) {
-                                const frac = Math.max(0.0, Math.min(1.0, posX / trackW))
-                                const pct = Math.round(frac * 100)
-                                if (typeof Services !== "undefined" && Services.SystemState) {
-                                    Services.SystemState.volume = pct
-                                }
-                                Quickshell.execDetached([root.nexadBin, "audio", "set", pct.toString()])
-                                if (root.available && root.player && root.player.volumeSupported) {
-                                    root.player.volume = frac
-                                }
-                            }
-
-                            Item {
-                                width: 20
-                                height: 20
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: volDeck.masterVol <= 0.01 ? "󰝟" : (volDeck.masterVol < 0.5 ? "󰕿" : "󰕾")
-                                    font.family: NexaUI.NexaTypography.familyIcon
-                                    color: volIconMouse.containsMouse ? NexaUI.NexaColors.primary : NexaUI.NexaColors.mutedText
-                                    font.pixelSize: 16
-                                }
-
-                                MouseArea {
-                                    id: volIconMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        Quickshell.execDetached([root.nexadBin, "audio", "toggle-mute"])
-                                    }
-                                }
-                            }
-
-                            Item {
-                                id: volTrack
-                                width: 78
-                                height: 20
-
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: parent.width
-                                    height: 4
-                                    radius: 2
-                                    color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.18)
-
-                                    Rectangle {
-                                        anchors.left: parent.left
-                                        anchors.top: parent.top
-                                        anchors.bottom: parent.bottom
-                                        width: parent.width * volDeck.masterVol
-                                        radius: 2
-                                        color: NexaUI.NexaColors.primary
-                                    }
-
-                                    Rectangle {
-                                        width: 10
-                                        height: 10
-                                        radius: 5
-                                        x: (parent.width * volDeck.masterVol) - (width / 2)
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: "#ffffff"
-                                        scale: volMouse.containsMouse || volMouse.pressed ? 1.25 : 1.0
-                                        Behavior on scale { NumberAnimation { duration: 150 } }
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: volMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: mouse => volDeck.applyVol(mouse.x, width)
-                                    onPositionChanged: mouse => {
-                                        if (pressed) volDeck.applyVol(mouse.x, width)
-                                    }
-                                }
-                            }
-                        }
+                    MouseArea {
+                        id: hoverNextMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        enabled: root.available && root.player.canGoNext
+                        onClicked: root.next()
                     }
                 }
             }

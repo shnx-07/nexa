@@ -37,44 +37,16 @@ Singleton {
     // Signal emitted on every audio frame tick
     signal frameTick()
 
-    // Active state: stream runs when media is playing or active
-    readonly property bool isMediaPlaying: Services.Media.isPlaying
+    // Active state: stream runs continuously with 0% CPU idle management handled in visualizer.rs
+    property bool activeRequest: false
+    readonly property bool isMediaPlaying: Services.Media.isPlaying || activeRequest
 
-    // 0% CPU Idle Management: Only run CAVA worker when audio is playing,
-    // plus a 3-second grace period after pausing
-    property bool shouldRun: isMediaPlaying
-
-    Timer {
-        id: shutdownTimer
-        interval: 3000
-        repeat: false
-        onTriggered: {
-            if (!root.isMediaPlaying) {
-                root.shouldRun = false;
-                root.energy = 0.0;
-                root.bass = 0.0;
-                root.mid = 0.0;
-                root.treble = 0.0;
-                root.isBeat = false;
-                root.waveAmplitude = 0.0;
-                root.speedMultiplier = 1.0;
-            }
-        }
-    }
-
-    onIsMediaPlayingChanged: {
-        if (isMediaPlaying) {
-            shutdownTimer.stop();
-            shouldRun = true;
-        } else {
-            shutdownTimer.restart();
-        }
-    }
+    property bool shouldRun: true
 
     Process {
         id: streamProcess
         command: [root.nexadBin, "visualizer", "stream"]
-        running: root.shouldRun
+        running: true
 
         stdout: SplitParser {
             splitMarker: "\n"

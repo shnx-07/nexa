@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../NewNexaUI" as NexaUI
+import "../appLauncher" as AppLauncher
 
 
 Item {
@@ -23,9 +24,64 @@ Item {
     property bool queryQueued: false
     property bool searching: false
 
-    // iconS
-    
+    // Initial desktop applications cache for zero-query state
+    property var initialApps: []
 
+    // ============================================================
+    // FLUID DYNAMIC HEIGHT (Based on query and result count)
+    // ============================================================
+
+    readonly property real preferredHeight: {
+        const queryText = searchInput.text.trim()
+        if (queryText.length === 0) {
+            // Initial full state: Search Bar (52) + Quick-Launch Row (48) + Apps List
+            return 420
+        }
+
+        // Active search state
+        if (root.results.length === 0) {
+            // Compact pill: Search Bar + "No results" message
+            return 116
+        }
+
+        if (root.results.length === 1) {
+            // Snug single-card result (like Postman / Quick action)
+            return 140
+        }
+
+        if (root.results.length === 2) {
+            return 196
+        }
+
+        if (root.results.length === 3) {
+            return 252
+        }
+
+        // 4 or more results: expand up to max 420px
+        return Math.min(420, 80 + root.results.length * 56)
+    }
+
+    readonly property var currentList: {
+        if (searchInput.text.trim().length > 0) {
+            return root.results
+        }
+        return root.initialApps
+    }
+
+    // ============================================================
+    // RECENT / PINNED APPS FOR QUICK-LAUNCH ROW
+    // ============================================================
+
+    readonly property var pinnedApps: [
+        { id: "google-chrome", name: "Google Chrome", icon: "google-chrome" },
+        { id: "code", name: "VS Code", icon: "/usr/share/pixmaps/vscode.png" },
+        { id: "spotify", name: "Spotify", icon: "spotify-client" },
+        { id: "discord", name: "Discord", icon: "discord" }
+    ]
+
+    // ============================================================
+    // ICON RESOLUTION HELPERS
+    // ============================================================
 
     function fileIconName(path) {
         const lower = String(path || "").toLowerCase()
@@ -34,67 +90,26 @@ Item {
         const lastDot = fileName.lastIndexOf(".")
         const ext = lastDot >= 0 ? fileName.substring(lastDot + 1) : ""
 
-        // Folders / Directories (no extension)
-        if (ext === "")
-            return "folder"
-
-        // Images
-        if (/^(png|jpe?g|webp|gif|svg|bmp|ico|tiff?|avif|heic)$/.test(ext))
-            return "image-x-generic"
-
-        // Audio
-        if (/^(mp3|flac|wav|ogg|m4a|aac|opus|wma|mid|midi)$/.test(ext))
-            return "audio-x-generic"
-
-        // Video
-        if (/^(mp4|mkv|webm|mov|avi|flv|wmv|m4v|3gp)$/.test(ext))
-            return "video-x-generic"
-
-        // PDF & Office Documents
-        if (ext === "pdf")
-            return "application-pdf"
-        if (/^(docx?|odt|rtf|epub)$/.test(ext))
-            return "x-office-document"
-        if (/^(xlsx?|ods|csv|tsv)$/.test(ext))
-            return "x-office-spreadsheet"
-        if (/^(pptx?|odp)$/.test(ext))
-            return "x-office-presentation"
-
-        // Archives & Disks
-        if (/^(zip|tar|gz|bz2|xz|zst|7z|rar|iso|img|dmg)$/.test(ext))
-            return "package-x-generic"
-
-        // Code & Scripts
-        if (/^(qml|rs|py|js|mjs|cjs|ts|tsx|jsx|cpp|c|h|hpp|sh|bash|zsh|fish|lua|go|java|kt|php|rb|swift|sql)$/.test(ext))
-            return "text-x-script"
-
-        // Web & Markup
-        if (/^(html?|css|scss|sass|xml)$/.test(ext))
-            return "text-html"
-
-        // Config & Data
-        if (/^(json|toml|ya?ml|ini|conf|cfg)$/.test(ext))
-            return "text-x-script"
-
-        // Fonts
-        if (/^(ttf|otf|woff2?)$/.test(ext))
-            return "font-ttf"
-
-        // Text & Plain Documents
-        if (/^(txt|md|markdown|log|rst|tex)$/.test(ext))
-            return "text-x-generic"
-
+        if (ext === "") return "folder"
+        if (/^(png|jpe?g|webp|gif|svg|bmp|ico|tiff?|avif|heic)$/.test(ext)) return "image-x-generic"
+        if (/^(mp3|flac|wav|ogg|m4a|aac|opus|wma|mid|midi)$/.test(ext)) return "audio-x-generic"
+        if (/^(mp4|mkv|webm|mov|avi|flv|wmv|m4v|3gp)$/.test(ext)) return "video-x-generic"
+        if (ext === "pdf") return "application-pdf"
+        if (/^(docx?|odt|rtf|epub)$/.test(ext)) return "x-office-document"
+        if (/^(xlsx?|ods|csv|tsv)$/.test(ext)) return "x-office-spreadsheet"
+        if (/^(pptx?|odp)$/.test(ext)) return "x-office-presentation"
+        if (/^(zip|tar|gz|bz2|xz|zst|7z|rar|iso|img|dmg)$/.test(ext)) return "package-x-generic"
+        if (/^(qml|rs|py|js|mjs|cjs|ts|tsx|jsx|cpp|c|h|hpp|sh|bash|zsh|fish|lua|go|java|kt|php|rb|swift|sql)$/.test(ext)) return "text-x-script"
+        if (/^(html?|css|scss|sass|xml)$/.test(ext)) return "text-html"
+        if (/^(json|toml|ya?ml|ini|conf|cfg)$/.test(ext)) return "text-x-script"
+        if (/^(ttf|otf|woff2?)$/.test(ext)) return "font-ttf"
         return "text-x-generic"
     }
 
     function fileIconSource(path) {
         const iconName = fileIconName(path)
-        if (Quickshell.hasThemeIcon(iconName)) {
-            return Quickshell.iconPath(iconName)
-        }
-        if (Quickshell.hasThemeIcon("text-x-generic")) {
-            return Quickshell.iconPath("text-x-generic")
-        }
+        if (Quickshell.hasThemeIcon(iconName)) return Quickshell.iconPath(iconName)
+        if (Quickshell.hasThemeIcon("text-x-generic")) return Quickshell.iconPath("text-x-generic")
         return "file:///usr/share/icons/breeze/mimetypes/64/text-x-generic.svg"
     }
 
@@ -105,6 +120,10 @@ Item {
         if (iconName.startsWith("/") || iconName.startsWith("file://")) {
             return iconName.startsWith("file://") ? iconName : ("file://" + iconName)
         }
+        const appResolved = AppLauncher.AppRegistry.resolveAppIcon(iconName)
+        if (appResolved && appResolved.length > 0) {
+            return appResolved
+        }
         if (Quickshell.hasThemeIcon(iconName)) {
             return Quickshell.iconPath(iconName)
         }
@@ -112,62 +131,53 @@ Item {
         if (Quickshell.hasThemeIcon(lower)) {
             return Quickshell.iconPath(lower)
         }
-        const pixmaps = {
-            "code": "file:///usr/share/pixmaps/vscode.png",
-            "vscode": "file:///usr/share/pixmaps/vscode.png",
-            "alacritty": "file:///usr/share/pixmaps/Alacritty.svg",
-            "kitty": "file:///usr/share/pixmaps/kitty.png",
-            "nvim": "file:///usr/share/pixmaps/nvim.png",
-            "neovim": "file:///usr/share/pixmaps/nvim.png"
-        }
-        if (pixmaps[lower]) {
-            return pixmaps[lower]
-        }
-        if (Quickshell.hasThemeIcon("application-x-executable")) {
-            return Quickshell.iconPath("application-x-executable")
-        }
         return "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg"
     }
 
+    // ============================================================
+    // BACKEND PATHS & INVOCATION
+    // ============================================================
 
-
-
-    // shellDir is:
-    // ~/.config/nexa/quickshell
-    //
-    // so nexad lives one level above it.
     readonly property string nexadPath:
-        Quickshell.shellDir
-        + "/../rust/target/release/nexad"
-
-
-    // ============================================================
-    // PUBLIC FOCUS ENTRY
-    // ============================================================
+        Quickshell.shellDir + "/../rust/target/release/nexad"
 
     function activate() {
         searchInput.forceActiveFocus()
         searchInput.selectAll()
     }
 
+    function setQuery(text) {
+        searchInput.text = text
+        searchInput.cursorPosition = text.length
+        searchInput.forceActiveFocus()
+        queueSearch()
+    }
+
     onVisibleChanged: {
         if (visible) {
-            Qt.callLater(function() {
-                searchInput.forceActiveFocus()
-            })
+            Qt.callLater(activate)
+            if (root.initialApps.length === 0) {
+                loadInitialApps()
+            }
         }
     }
 
+    Component.onCompleted: {
+        loadInitialApps()
+    }
+
+    function loadInitialApps() {
+        initialAppsProcess.command = [root.nexadPath, "search", "query", "a"]
+        initialAppsProcess.running = true
+    }
+
     // ============================================================
-    // SEARCH
+    // SEARCH EXECUTION & DEBOUNCE
     // ============================================================
 
     function queueSearch() {
-        root.pendingQuery =
-            searchInput.text.trim()
-
+        root.pendingQuery = searchInput.text.trim()
         root.selectedIndex = 0
-
 
         if (root.pendingQuery.length === 0) {
             debounce.stop()
@@ -175,10 +185,8 @@ Item {
             return
         }
 
-
         debounce.restart()
     }
-
 
     function runPendingSearch() {
         if (root.pendingQuery.length === 0) {
@@ -186,19 +194,14 @@ Item {
             return
         }
 
-
-        // Don't kill an in-flight query.
-        // Queue the newest text instead.
         if (queryProcess.running) {
             root.queryQueued = true
             return
         }
 
-
         root.queryQueued = false
         root.activeQuery = root.pendingQuery
         root.searching = true
-
 
         queryProcess.command = [
             root.nexadPath,
@@ -206,814 +209,411 @@ Item {
             "query",
             root.activeQuery
         ]
-
         queryProcess.running = true
     }
 
-
     function moveSelection(amount) {
-        if (root.results.length === 0)
-            return
+        const list = root.currentList
+        if (!list || list.length === 0) return
 
-
-        let next =
-            root.selectedIndex + amount
-
-
-        if (next < 0)
-            next = root.results.length - 1
-
-        if (next >= root.results.length)
-            next = 0
-
+        let next = root.selectedIndex + amount
+        if (next < 0) next = list.length - 1
+        if (next >= list.length) next = 0
 
         root.selectedIndex = next
-
-        resultList.positionViewAtIndex(
-            root.selectedIndex,
-            ListView.Contain
-        )
+        resultList.positionViewAtIndex(root.selectedIndex, ListView.Contain)
     }
 
-
     function openSelected() {
-        if (root.results.length === 0)
-            return
+        const list = root.currentList
+        if (!list || list.length === 0) return
 
+        const result = list[root.selectedIndex]
+        if (!result) return
 
-        const result =
-            root.results[root.selectedIndex]
+        launchResult(result)
+    }
 
-        if (!result)
-            return
+    function launchResult(result) {
+        if (!result) return
 
+        if (result.kind === "command") {
+            Quickshell.execDetached([root.nexadPath, "search", "run", result.exec || result.path])
+        } else {
+            const target = String(result.path && result.path.length > 0 ? result.path : result.id)
+            Quickshell.execDetached([root.nexadPath, "search", "open", target])
+        }
 
-        const target = String(result.path && result.path.length > 0 ? result.path : result.id)
-        Quickshell.execDetached([root.nexadPath, "search", "open", target])
-
-        // Opening app/file is fire-and-forget.
-        // Island returns to its previous normal context.
         root.accepted()
     }
 
-
-    // ============================================================
-    // DEBOUNCE
-    // ============================================================
+    function launchAppId(appId) {
+        Quickshell.execDetached([root.nexadPath, "search", "open", appId])
+        root.accepted()
+    }
 
     Timer {
         id: debounce
-
-        interval: 90
+        interval: 60
         repeat: false
-
-        onTriggered:
-            root.runPendingSearch()
+        onTriggered: root.runPendingSearch()
     }
-
-
-    // ============================================================
-    // QUERY PROCESS
-    // ============================================================
 
     Process {
         id: queryProcess
-
-
         stdout: StdioCollector {
             onStreamFinished: {
-                // Ignore stale results if newer text
-                // was typed while this query ran.
-                if (root.activeQuery !== root.pendingQuery)
-                    return
-
+                if (root.activeQuery !== root.pendingQuery) return
 
                 try {
-                    const parsed =
-                        JSON.parse(text)
-
-
-                    root.results =
-                        Array.isArray(parsed)
-                        ? parsed
-                        : []
-
-
-                    if (
-                        root.selectedIndex
-                        >= root.results.length
-                    ) {
+                    const parsed = JSON.parse(text)
+                    root.results = Array.isArray(parsed) ? parsed : []
+                    if (root.selectedIndex >= root.results.length) {
                         root.selectedIndex = 0
                     }
-                }
-                catch (error) {
-                    console.warn(
-                        "NEXA search JSON error:",
-                        error
-                    )
-
+                } catch (error) {
                     root.results = []
                 }
             }
         }
 
-
         onRunningChanged: {
-            if (running)
-                return
-
-
+            if (running) return
             root.searching = false
-
-
-            // User typed again while old query
-            // was still running.
-            if (
-                root.queryQueued
-                || root.pendingQuery
-                   !== root.activeQuery
-            ) {
+            if (root.queryQueued || root.pendingQuery !== root.activeQuery) {
                 root.runPendingSearch()
             }
         }
     }
 
-
-    // ============================================================
-    // OPEN RESULT
-    // ============================================================
-
     Process {
-        id: openProcess
+        id: initialAppsProcess
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const parsed = JSON.parse(text)
+                    if (Array.isArray(parsed)) {
+                        root.initialApps = parsed.filter(item => item.kind === "app" || item.kind === "appimage")
+                    }
+                } catch (e) {}
+            }
+        }
     }
 
-
     // ============================================================
-    // SEARCH BOX
+    // MAIN SPOTLIGHT UI
     // ============================================================
 
-    Rectangle {
-        id: searchBox
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 16
+        spacing: 12
 
-        anchors {
-            top: parent.top
-            left: parent.left
-            right: parent.right
-
-            topMargin:
-                NexaUI.NexaTokens.spacingLg
-
-            leftMargin:
-                NexaUI.NexaTokens.spacingLg
-
-            rightMargin:
-                NexaUI.NexaTokens.spacingLg
-        }
-
-        height: 52
-
-        radius:
-            NexaUI.NexaTokens.radiusMd
-
-        color:
-            NexaUI.NexaColors.surfaceContainer
-
-        border.width:
-            NexaUI.NexaTokens.borderMedium
-
-        border.color:
-            searchInput.activeFocus
-            ? NexaUI.NexaColors.primary
-            : NexaUI.NexaColors.border
-
-
-        Behavior on border.color {
-            ColorAnimation {
-                duration:
-                    NexaUI.NexaMotion.durationFast
-            }
-        }
-
+        // ========================================================
+        // 1. SEAMLESS TOP BAR & SCOPE TAGS (Image 2 style)
+        // ========================================================
 
         RowLayout {
-            anchors {
-                fill: parent
-
-                leftMargin:
-                    NexaUI.NexaTokens.spacingLg
-
-                rightMargin:
-                    NexaUI.NexaTokens.spacingLg
-            }
-
-            spacing:
-                NexaUI.NexaTokens.spacingMd
-
+            Layout.fillWidth: true
+            Layout.preferredHeight: 36
+            spacing: 10
 
             Text {
-                text: "󰍉"
-
-                color:
-                    NexaUI.NexaColors.primary
-
+                text: searchInput.text.startsWith(">") ? "󰆍" : "󰍉"
+                color: searchInput.text.startsWith(">") ? "#e5a93c" : NexaUI.NexaColors.mutedText
                 font {
-                    family:
-                        NexaUI.NexaTypography.familyIcon
-
-                    pixelSize:
-                        NexaUI.NexaTokens.iconMd
+                    family: NexaUI.NexaTypography.familyIcon
+                    pixelSize: 20
                 }
             }
-
 
             TextInput {
                 id: searchInput
-
                 focus: true
-
                 Layout.fillWidth: true
-
-                color:
-                    NexaUI.NexaColors.text
-
-                selectionColor:
-                    NexaUI.NexaColors.primary
-
-                selectedTextColor:
-                    NexaUI.NexaColors.onPrimary
-
+                color: NexaUI.NexaColors.text
+                selectionColor: NexaUI.NexaColors.primary
+                selectedTextColor: NexaUI.NexaColors.onPrimary
                 clip: true
 
-
                 font {
-                    family:
-                        NexaUI.NexaTypography.familyBody
-
-                    pixelSize:
-                        NexaUI.NexaTypography.sizeLg
-
-                    weight:
-                        NexaUI.NexaTypography.weightMedium
+                    family: NexaUI.NexaTypography.familyBody
+                    pixelSize: 15
+                    weight: Font.Medium
                 }
-
 
                 Text {
-                    anchors {
-                        fill: parent
-                    }
-
-                    visible:
-                        searchInput.text.length === 0
-
-                    text:
-                        "Search apps and files..."
-
-                    color:
-                        NexaUI.NexaColors.mutedText
-
-                    verticalAlignment:
-                        Text.AlignVCenter
-
-                    font:
-                        searchInput.font
+                    anchors.fill: parent
+                    visible: searchInput.text.length === 0
+                    text: "Search applications..."
+                    color: NexaUI.NexaColors.mutedText
+                    verticalAlignment: Text.AlignVCenter
+                    font: searchInput.font
                 }
 
-
-                onTextChanged:
-                    root.queueSearch()
-
+                onTextChanged: root.queueSearch()
 
                 Keys.onPressed: event => {
-
                     if (event.key === Qt.Key_Down) {
                         root.moveSelection(1)
                         event.accepted = true
                         return
                     }
-
-
                     if (event.key === Qt.Key_Up) {
                         root.moveSelection(-1)
                         event.accepted = true
                         return
                     }
-
-
-                    if (
-                        event.key === Qt.Key_Return
-                        || event.key === Qt.Key_Enter
-                    ) {
+                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                         root.openSelected()
                         event.accepted = true
                         return
                     }
-
-
                     if (event.key === Qt.Key_Escape) {
                         root.requestClose()
                         event.accepted = true
+                        return
                     }
                 }
             }
 
-
+            // Actions scope toggle
             Text {
-                visible:
-                    root.searching
+                text: "<font color='" + NexaUI.NexaColors.primary + "'>&gt;</font> <font color='#8c8f94'>Actions</font>"
+                textFormat: Text.RichText
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: 12
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
 
-                text:
-                    "Searching…"
-
-                color:
-                    NexaUI.NexaColors.mutedText
-
-                font {
-                    family:
-                        NexaUI.NexaTypography.familyBody
-
-                    pixelSize:
-                        NexaUI.NexaTypography.sizeXs
-                }
-            }
-
-
-            Rectangle {
-                width: 38
-                height: 24
-
-                radius:
-                    NexaUI.NexaTokens.radiusSm
-
-                color:
-                    NexaUI.NexaColors.surfaceContainerHigh
-
-                visible:
-                    searchInput.text.length > 0
-
-
-                Text {
-                    anchors.centerIn:
-                        parent
-
-                    text:
-                        "ESC"
-
-                    color:
-                        NexaUI.NexaColors.mutedText
-
-                    font {
-                        family:
-                            NexaUI.NexaTypography.familyMono
-
-                        pixelSize:
-                            NexaUI.NexaTypography.size2Xs
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (searchInput.text.startsWith(">")) {
+                            root.setQuery("")
+                        } else {
+                            root.setQuery("> ")
+                        }
                     }
                 }
             }
         }
-    }
 
+        // ========================================================
+        // SEPARATOR LINE BELOW SEARCH BAR
+        // ========================================================
 
-    // ============================================================
-    // RESULTS AREA
-    // ============================================================
-
-    Rectangle {
-        anchors {
-            top:
-                searchBox.bottom
-
-            left:
-                parent.left
-
-            right:
-                parent.right
-
-            bottom:
-                parent.bottom
-
-
-            topMargin:
-                NexaUI.NexaTokens.spacingMd
-
-            leftMargin:
-                NexaUI.NexaTokens.spacingLg
-
-            rightMargin:
-                NexaUI.NexaTokens.spacingLg
-
-            bottomMargin:
-                NexaUI.NexaTokens.spacingLg
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            color: NexaUI.NexaColors.borderSubtle
+            opacity: 0.6
         }
 
-        radius:
-            NexaUI.NexaTokens.radiusMd
-
-        color:
-            NexaUI.NexaColors.surfaceContainer
-
-        border.width:
-            NexaUI.NexaTokens.borderThin
-
-        border.color:
-            NexaUI.NexaColors.border
-
-        clip: true
-
-
         // ========================================================
-        // EMPTY STATE
+        // 2. QUICK-ACCESS PINNED APPS (Image 2 style - borderless circles)
         // ========================================================
 
-        Column {
-            anchors.centerIn:
-                parent
+        Row {
+            id: quickAccessRow
+            Layout.fillWidth: true
+            Layout.preferredHeight: 38
+            spacing: 16
+            visible: searchInput.text.trim().length === 0
 
-            visible:
-                searchInput.text.length === 0
+            Repeater {
+                model: root.pinnedApps
 
-            spacing:
-                NexaUI.NexaTokens.spacingSm
+                Item {
+                    required property var modelData
+                    width: 36
+                    height: 36
 
+                    Image {
+                        anchors.centerIn: parent
+                        width: 32
+                        height: 32
+                        source: root.appIconSource(modelData.icon)
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        sourceSize: Qt.size(64, 64)
+                    }
 
-            Text {
-                anchors.horizontalCenter:
-                    parent.horizontalCenter
-
-                text:
-                    "󰍉"
-
-                color:
-                    NexaUI.NexaColors.mutedText
-
-                font {
-                    family:
-                        NexaUI.NexaTypography.familyIcon
-
-                    pixelSize:
-                        32
-                }
-            }
-
-
-            Text {
-                anchors.horizontalCenter:
-                    parent.horizontalCenter
-
-                text:
-                    "Search applications and files"
-
-                color:
-                    NexaUI.NexaColors.mutedText
-
-                font {
-                    family:
-                        NexaUI.NexaTypography.familyBody
-
-                    pixelSize:
-                        NexaUI.NexaTypography.sizeSm
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.launchAppId(modelData.id)
+                    }
                 }
             }
         }
 
-
         // ========================================================
-        // NO RESULTS
+        // 3. NO RESULTS STATE
         // ========================================================
 
-        Text {
-            anchors.centerIn:
-                parent
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: searchInput.text.trim().length > 0 && root.results.length === 0 && !root.searching
 
-            visible:
-                searchInput.text.length > 0
-                && !root.searching
-                && root.results.length === 0
-
-            text:
-                "No results"
-
-            color:
-                NexaUI.NexaColors.mutedText
-
-            font {
-                family:
-                    NexaUI.NexaTypography.familyBody
-
-                pixelSize:
-                    NexaUI.NexaTypography.sizeSm
+            Text {
+                anchors.centerIn: parent
+                text: "No results"
+                color: NexaUI.NexaColors.mutedText
+                font {
+                    family: NexaUI.NexaTypography.familyBody
+                    pixelSize: NexaUI.NexaTypography.sizeSm
+                }
             }
         }
 
-
         // ========================================================
-        // RESULT LIST
+        // 4. RESULTS LIST (No scrollbar / sidebar, warm highlight, green star)
         // ========================================================
 
         ListView {
             id: resultList
-
-            anchors {
-                fill: parent
-                margins:
-                    NexaUI.NexaTokens.spacingSm
-            }
-
-            visible:
-                root.results.length > 0
-
-            model:
-                root.results
-
-            spacing:
-                NexaUI.NexaTokens.spacingXs
-
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             clip: true
-
-            boundsBehavior:
-                Flickable.StopAtBounds
-
-            flickDeceleration:
-                1500
-
-            maximumFlickVelocity:
-                2500
-
-            NexaUI.NexaSmoothScroll {}
-
-            pixelAligned: true
+            spacing: 3
+            model: root.currentList
+            visible: root.currentList.length > 0
 
             ScrollBar.vertical: ScrollBar {
-                id: searchScrollBar
-                policy: ScrollBar.AsNeeded
-
-                contentItem: Rectangle {
-                    implicitWidth: 3
-                    radius: width / 2
-                    color: Qt.rgba(
-                        NexaUI.NexaColors.text.r,
-                        NexaUI.NexaColors.text.g,
-                        NexaUI.NexaColors.text.b,
-                        searchScrollBar.hovered ? 0.5 : 0.18
-                    )
-
-                    Behavior on color {
-                        ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
-                    }
-                }
-
-                background: null
+                policy: ScrollBar.AlwaysOff
             }
-
 
             delegate: Rectangle {
                 id: resultRow
-
                 required property var modelData
                 required property int index
 
                 property bool hovered: false
+                readonly property bool selected: index === root.selectedIndex
 
-
-                readonly property bool selected:
-                    index === root.selectedIndex
-
-
-                width:
-                    resultList.width
-
+                width: resultList.width
                 height: 52
+                radius: 12
 
-                radius:
-                    NexaUI.NexaTokens.radiusSm
-
-
+                // Wallpaper Matugen primary accent pill (never black)
                 color: {
-                    if (selected)
-                        return NexaUI.NexaColors.hoverStrong
-
-                    if (hovered)
-                        return NexaUI.NexaColors.hover
-
+                    if (selected) return NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.24)
+                    if (hovered) return NexaUI.NexaColors.hover
                     return "transparent"
                 }
 
-
-                border.width:
-                    selected
-                    ? NexaUI.NexaTokens.borderThin
-                    : 0
-
-                border.color:
-                    NexaUI.NexaColors.primary
-
+                border.width: selected ? 1 : 0
+                border.color: selected ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.40) : "transparent"
 
                 Behavior on color {
-                    ColorAnimation {
-                        duration:
-                            NexaUI.NexaMotion.durationFast
-                    }
+                    ColorAnimation { duration: NexaUI.NexaMotion.durationFast }
                 }
-
 
                 RowLayout {
-                    anchors {
-                        fill: parent
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 14
+                    spacing: 12
 
-                        leftMargin:
-                            NexaUI.NexaTokens.spacingMd
-
-                        rightMargin:
-                            NexaUI.NexaTokens.spacingMd
-                    }
-
-                    spacing:
-                        NexaUI.NexaTokens.spacingMd
-
-
-                    Rectangle {
-                        Layout.preferredWidth: 36
-                        Layout.preferredHeight: 36
-
-                        radius:
-                            NexaUI.NexaTokens.radiusSm
-
-                        color:
-                            resultRow.selected
-                            ? NexaUI.NexaColors.primaryContainer
-                            : NexaUI.NexaColors.surfaceContainerHigh
-
-
-                        // ============================================================
-                        // REAL APPLICATION ICON
-                        // ============================================================
+                    // Direct clean icon (no background box / no border)
+                    Item {
+                        Layout.preferredWidth: 34
+                        Layout.preferredHeight: 34
 
                         Image {
-                            id: appIconImage
                             anchors.centerIn: parent
-
-                            width: 26
-                            height: 26
-
+                            width: 32
+                            height: 32
                             visible: resultRow.modelData.kind === "app" || resultRow.modelData.kind === "appimage"
-
                             source: root.appIconSource(resultRow.modelData.icon)
-
-                            sourceSize.width: width
-                            sourceSize.height: height
-
+                            sourceSize: Qt.size(64, 64)
                             fillMode: Image.PreserveAspectFit
                             smooth: true
-
-                            onStatusChanged: {
-                                if (status === Image.Error && source !== "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg") {
-                                    source = "file:///usr/share/icons/breeze/mimetypes/64/application-x-executable.svg"
-                                }
-                            }
                         }
-
-
-                        // ============================================================
-                        // FILE FALLBACK ICON
-                        // ============================================================
 
                         Image {
                             anchors.centerIn: parent
-
-                            width: 26
-                            height: 26
-
-                            visible:
-                                resultRow.modelData.kind === "file"
-
+                            width: 30
+                            height: 30
+                            visible: resultRow.modelData.kind === "file"
                             source: root.fileIconSource(resultRow.modelData.path)
-
-                            sourceSize.width: width
-                            sourceSize.height: height
-
+                            sourceSize: Qt.size(64, 64)
                             fillMode: Image.PreserveAspectFit
                             smooth: true
+                        }
 
-                            onStatusChanged: {
-                                if (status === Image.Error && source !== "file:///usr/share/icons/breeze/mimetypes/64/text-x-generic.svg") {
-                                    source = "file:///usr/share/icons/breeze/mimetypes/64/text-x-generic.svg"
-                                }
-                            }
+                        Text {
+                            anchors.centerIn: parent
+                            visible: resultRow.modelData.kind === "command"
+                            text: "󰆍"
+                            color: NexaUI.NexaColors.primary
+                            font.family: NexaUI.NexaTypography.familyIcon
+                            font.pixelSize: 20
                         }
                     }
 
-
+                    // Name and Description / Path
                     ColumnLayout {
                         Layout.fillWidth: true
-
-                        spacing: 1
-
+                        spacing: 2
 
                         Text {
                             Layout.fillWidth: true
-
-                            text:
-                                resultRow.modelData.name
-
-                            color:
-                                NexaUI.NexaColors.text
-
-                            elide:
-                                Text.ElideRight
-
+                            text: resultRow.modelData.name || ""
+                            color: NexaUI.NexaColors.text
+                            elide: Text.ElideRight
                             font {
-                                family:
-                                    NexaUI.NexaTypography.familyBody
-
-                                pixelSize:
-                                    NexaUI.NexaTypography.sizeSm
-
-                                weight:
-                                    resultRow.selected
-                                    ? NexaUI.NexaTypography.weightSemiBold
-                                    : NexaUI.NexaTypography.weightMedium
+                                family: NexaUI.NexaTypography.familyBody
+                                pixelSize: 14
+                                weight: resultRow.selected ? Font.Medium : Font.Normal
                             }
                         }
 
-
                         Text {
                             Layout.fillWidth: true
-
-                            text:
-                                (resultRow.modelData.description && resultRow.modelData.description.length > 0)
-                                ? resultRow.modelData.description
-                                : (resultRow.modelData.kind === "app" ? "Application" :
-                                   resultRow.modelData.kind === "appimage" ? "AppImage Executable" :
-                                   (resultRow.modelData.path || ""))
-
-                            color:
-                                NexaUI.NexaColors.mutedText
-
-                            elide:
-                                Text.ElideMiddle
-
+                            text: {
+                                if (resultRow.modelData.description && resultRow.modelData.description.length > 0)
+                                    return resultRow.modelData.description
+                                if (resultRow.modelData.kind === "app" || resultRow.modelData.kind === "appimage") return "Application"
+                                if (resultRow.modelData.kind === "command") return "Shell Command"
+                                return resultRow.modelData.path || ""
+                            }
+                            color: NexaUI.NexaColors.mutedText
+                            elide: Text.ElideRight
                             font {
-                                family:
-                                    NexaUI.NexaTypography.familyMono
-
-                                pixelSize:
-                                    NexaUI.NexaTypography.size2Xs
+                                family: NexaUI.NexaTypography.familyBody
+                                pixelSize: 12
                             }
                         }
                     }
 
-
+                    // Enter Key Action for selected item
                     Text {
-                        text:
-                            resultRow.modelData.kind === "app"
-                            ? "APP"
-                            : (resultRow.modelData.kind === "appimage" ? "APPIMAGE" : "FILE")
-
-                        color:
-                            resultRow.selected
-                            ? NexaUI.NexaColors.primary
-                            : NexaUI.NexaColors.mutedText
-
-                        font {
-                            family:
-                                NexaUI.NexaTypography.familyMono
-
-                            pixelSize:
-                                NexaUI.NexaTypography.size2Xs
-
-                            weight:
-                                NexaUI.NexaTypography.weightSemiBold
-                        }
+                        visible: resultRow.selected
+                        text: "↵"
+                        color: NexaUI.NexaColors.primary
+                        font.family: NexaUI.NexaTypography.familyMono
+                        font.pixelSize: 15
+                        font.weight: Font.Bold
+                        Layout.alignment: Qt.AlignVCenter
                     }
                 }
 
-
                 MouseArea {
-                    anchors.fill:
-                        parent
-
-                    hoverEnabled:
-                        true
-
-                    cursorShape:
-                        Qt.PointingHandCursor
-
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
 
                     onEntered: {
                         resultRow.hovered = true
-                        root.selectedIndex =
-                            resultRow.index
+                        root.selectedIndex = resultRow.index
                     }
-
-
-                    onExited:
-                        resultRow.hovered = false
-
-
+                    onExited: resultRow.hovered = false
                     onClicked: {
-                        root.selectedIndex =
-                            resultRow.index
-
+                        root.selectedIndex = resultRow.index
                         root.openSelected()
                     }
                 }

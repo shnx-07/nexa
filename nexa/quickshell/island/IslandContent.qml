@@ -6,7 +6,6 @@ import "../NewNexaUI" as NexaUI
 import "../modules/clock"
 import "../modules/media"
 import "../modules/search"
-import "../modules/command"
 import "../modules/recorder"
 import "../modules/notifications"
 import "../modules/power"
@@ -65,7 +64,7 @@ Item {
     }
 
     function showNotification(data) {
-        if (!data || root.full || root.specialModeActive) return
+        if (!NexaUI.NexaTokens.islandSourceNotifications || !data || root.full || root.specialModeActive) return
         root.notificationData = data
         root.notificationActive = true
         notificationTimer.interval = Math.max(1, Math.min(data.timeoutMs || 5000, 5000))
@@ -166,24 +165,32 @@ Item {
 
 
     readonly property bool stopwatchContextActive:
-        clockModule.stopwatchActive
+        NexaUI.NexaTokens.islandSourceTimers
+        && clockModule.stopwatchActive
         && !root.notificationActive
         && !recorderContextActive
 
 
     readonly property bool focusContextActive:
-        clockModule.focusActive
+        NexaUI.NexaTokens.islandSourceTimers
+        && clockModule.focusActive
         && !root.notificationActive
         && !recorderContextActive
         && !clockModule.stopwatchActive
 
 
     readonly property bool mediaContextActive:
-        mediaModule.contextActive
+        NexaUI.NexaTokens.islandSourceMedia
+        && mediaModule.contextActive
         && !root.notificationActive
         && !recorderContextActive
         && !clockModule.stopwatchActive
         && !clockModule.focusActive
+
+    readonly property color albumAccentColor: mediaModule.albumAccentColor
+    readonly property color albumSurfaceColor: mediaModule.albumSurfaceColor
+    readonly property color albumBorderColor: mediaModule.albumBorderColor
+    readonly property bool hasAlbumColors: mediaModule.hasAlbumColors
 
 
     readonly property bool persistentContext:
@@ -206,9 +213,6 @@ Item {
     onSpecialModeChanged: {
         if (root.specialMode === "search" && searchIslandLoader.item) {
             Qt.callLater(searchIslandLoader.item.activate)
-        }
-        if (root.specialMode === "command" && commandIslandLoader.item) {
-            Qt.callLater(commandIslandLoader.item.activate)
         }
         if (root.specialMode === "power" && powerIslandLoader.item) {
             Qt.callLater(powerIslandLoader.item.activate)
@@ -250,9 +254,6 @@ Item {
             clockModule.page = 2
             return "clock"
         }
-
-        if (root.mediaContextActive)
-            return "music"
 
         return "clock"
     }
@@ -579,34 +580,7 @@ Item {
     Media {
         id: mediaModule
 
-        anchors {
-            left: parent.left
-            right: parent.right
-            bottom: parent.bottom
-            top: parent.top
-
-            // Full Music takes full container (has own integrated studio header)
-            topMargin:
-                root.full
-                && root.section === "music"
-                ? 0
-                : (root.full ? root.fullContentTop : 0)
-
-            leftMargin:
-                root.full && root.section !== "music"
-                ? NexaUI.NexaTokens.spacingLg
-                : 0
-
-            rightMargin:
-                root.full && root.section !== "music"
-                ? NexaUI.NexaTokens.spacingLg
-                : 0
-
-            bottomMargin:
-                root.full && root.section !== "music"
-                ? NexaUI.NexaTokens.spacingLg
-                : 0
-        }
+        anchors.fill: parent
 
         onRequestBack: {
             root.section = root.previousSection || "clock"
@@ -622,35 +596,21 @@ Item {
         // ========================================================
         // VISIBILITY PRIORITY
         //
-        // Full:
-        //     only visible inside Music
-        //
-        // Collapsed/Hover:
-        //     Stopwatch wins over Media
-        //
-        //     Otherwise active/paused Media owns the Island.
+        // Music only has 2 phases: Compact Pill and Hover.
+        // Full mode belongs to Clock/Panels.
         // ========================================================
 
         visible: {
-              if (root.specialModeActive)
-                  return false
+            if (root.specialModeActive || root.full || root.notificationActive || root.osdActive)
+                return false
 
-              if (root.full)
-                  return root.section === "music"
+            if (root.recorderContextActive)
+                return false
 
-              if (root.notificationActive || root.osdActive)
-                  return false
+            return root.mediaContextActive
+        }
 
-              return root.mediaContextActive
-          }
-
-
-        presentation:
-            root.full
-            ? "full"
-            : root.hovered
-                ? "hover"
-                : "compact"
+        presentation: root.hovered ? "hover" : "compact"
     }
 
 
@@ -674,7 +634,6 @@ Item {
         visible:
           root.full
           && !root.specialModeActive
-          && root.section !== "music"
 
         // Keep above the Clock background if necessary,
         // while individual section content remains below nav.
@@ -892,6 +851,12 @@ Item {
 
     property int pendingControlCenterPage: 0
 
+    readonly property real searchPreferredHeight: {
+        if (searchIslandLoader.item && searchIslandLoader.item.preferredHeight !== undefined)
+            return searchIslandLoader.item.preferredHeight
+        return 420
+    }
+
     Loader {
         id: searchIslandLoader
         anchors.fill: parent
@@ -902,21 +867,6 @@ Item {
         onLoaded: {
             if (item) {
                 item.accepted.connect(root.requestCloseSpecialMode)
-                item.requestClose.connect(root.requestCloseSpecialMode)
-                Qt.callLater(item.activate)
-            }
-        }
-    }
-
-    Loader {
-        id: commandIslandLoader
-        anchors.fill: parent
-        active: root.specialMode === "command"
-        visible: active && root.full
-        z: 100
-        source: active ? "../modules/command/CommandIsland.qml" : ""
-        onLoaded: {
-            if (item) {
                 item.requestClose.connect(root.requestCloseSpecialMode)
                 Qt.callLater(item.activate)
             }

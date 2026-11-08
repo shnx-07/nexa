@@ -1,0 +1,121 @@
+import QtQuick
+import "../NewNexaUI" as NexaUI
+
+Row {
+    id: root
+
+    property string text: ""
+    property color color: NexaUI.NexaColors.text
+    property string family: NexaUI.NexaTypography.familyMono
+    property int pixelSize: 26
+    property int weight: NexaUI.NexaTypography.weightSemiBold
+    property int rollDuration: 240
+    property real overshoot: 1.5
+
+    TextMetrics {
+        id: metrics
+        font.family: root.family
+        font.pixelSize: root.pixelSize
+        font.weight: root.weight
+        font.features: NexaUI.NexaTypography.fontFeaturesTnum
+        text: "0"
+    }
+
+    Repeater {
+        model: root.text.length
+
+        Item {
+            id: cell
+            required property int index
+            readonly property string ch: root.text.charAt(index)
+            property int dir: 1
+
+            TextMetrics {
+                id: own
+                font.family: root.family
+                font.features: NexaUI.NexaTypography.fontFeaturesTnum
+                font.pixelSize: root.pixelSize
+                font.weight: root.weight
+                text: cell.ch
+            }
+            width: /[0-9]/.test(cell.ch) ? metrics.width : Math.max(1, own.advanceWidth)
+            height: metrics.height * 1.25
+            clip: true
+
+            Text {
+                id: outgoing
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                y: (cell.height - metrics.height) / 2
+                text: cell.ch
+                color: root.color
+                font.family: root.family
+                font.pixelSize: root.pixelSize
+                font.weight: root.weight
+                font.features: NexaUI.NexaTypography.fontFeaturesTnum
+            }
+
+            Text {
+                id: incoming
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                y: cell.height
+                text: ""
+                color: root.color
+                font.family: root.family
+                font.pixelSize: root.pixelSize
+                font.weight: root.weight
+                font.features: NexaUI.NexaTypography.fontFeaturesTnum
+            }
+
+            onChChanged: {
+                if (roll.running)
+                    roll.complete();
+                if (outgoing.text === cell.ch)
+                    return;
+                const a = parseInt(outgoing.text), b = parseInt(cell.ch);
+                cell.dir = isNaN(a) || isNaN(b) ? 1
+                         : ((b - a + 10) % 10 <= 5 ? 1 : -1);
+                incoming.text = cell.ch;
+                incoming.y = cell.dir > 0 ? cell.height : -metrics.height;
+                roll.restart();
+            }
+
+            ParallelAnimation {
+                id: roll
+
+                NumberAnimation {
+                    target: outgoing; property: "y"
+                    to: cell.dir > 0 ? -metrics.height : cell.height
+                    duration: root.rollDuration * 0.8
+                    easing.type: Easing.InCubic
+                }
+                NumberAnimation {
+                    target: incoming; property: "y"
+                    to: (cell.height - metrics.height) / 2
+                    duration: root.rollDuration * 1.4
+                    easing.type: root.overshoot > 0 ? Easing.OutBack : Easing.OutCubic
+                    easing.overshoot: root.overshoot
+                }
+                NumberAnimation {
+                    target: outgoing; property: "opacity"
+                    from: 1; to: 0
+                    duration: root.rollDuration
+                }
+                NumberAnimation {
+                    target: incoming; property: "opacity"
+                    from: 0; to: 1
+                    duration: root.rollDuration
+                }
+
+                onFinished: {
+                    outgoing.text = incoming.text;
+                    outgoing.y = (cell.height - metrics.height) / 2;
+                    outgoing.opacity = 1;
+                    incoming.y = cell.height;
+                    incoming.opacity = 0;
+                }
+            }
+        }
+    }
+}

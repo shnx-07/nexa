@@ -416,7 +416,8 @@ fn find_icon_file(icon_name: &str) -> Option<String> {
         return None;
     }
 
-    let direct = PathBuf::from(icon_name);
+    let clean_icon = icon_name.strip_prefix("file://").unwrap_or(icon_name);
+    let direct = PathBuf::from(clean_icon);
 
     if direct.is_absolute() && direct.exists() && is_image_file(&direct) {
         return Some(direct.to_string_lossy().to_string());
@@ -541,6 +542,11 @@ fn resolve_app_icon(app_name: &str, app_icon: &str) -> String {
         if let Some(path) = find_icon_file(&icon_name) {
             return path;
         }
+        return icon_name;
+    }
+
+    if !app_icon.is_empty() {
+        return app_icon.to_string();
     }
 
     String::new()
@@ -564,10 +570,22 @@ impl NotificationServer {
         summary: String,
         body: String,
         actions: Vec<String>,
-        _hints: HashMap<String, OwnedValue>,
+        hints: HashMap<String, OwnedValue>,
         expire_timeout: i32,
     ) -> u32 {
-        let resolved_icon = resolve_app_icon(&app_name, &app_icon);
+        let icon_candidate = if !app_icon.is_empty() {
+            app_icon
+        } else if let Some(val) = hints.get("image-path").or_else(|| hints.get("image_path")) {
+            if let zbus::zvariant::Value::Str(s) = &**val {
+                s.as_str().to_string()
+            } else {
+                String::new()
+            }
+        } else {
+            String::new()
+        };
+
+        let resolved_icon = resolve_app_icon(&app_name, &icon_candidate);
 
         let mut notifications = match self.notifications.lock() {
             Ok(value) => value,
@@ -638,7 +656,9 @@ impl NotificationServer {
 
         if !load_dnd() {
             write_transient_event(&notification);
-            crate::hardware::sound::play_sound("notification");
+            if notification.app_name != "Screenshot" && notification.app_name != "Snipping" {
+                crate::hardware::sound::play_sound("notification");
+            }
         }
 
         notifications.insert(0, notification);

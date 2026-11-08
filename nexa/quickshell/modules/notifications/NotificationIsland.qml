@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 
 import "../../NewNexaUI" as NexaUI
+import "../appLauncher" as AppLauncher
 
 
 Item {
@@ -16,6 +17,33 @@ Item {
     property var notification: null
 
     signal activated()
+
+    readonly property string rawAppName:
+        root.notification ? String(root.notification.appName || "") : ""
+
+    readonly property string rawIcon:
+        root.notification ? String(root.notification.appIcon || "") : ""
+
+    readonly property bool isScreenshot: {
+        const name = rawAppName.toLowerCase()
+        if (name === "screenshot" || name === "snipping") return true
+        if (rawIcon.toLowerCase().includes("screenshot") || rawIcon.toLowerCase().includes("snip")) return true
+        return false
+    }
+
+    readonly property string screenshotPath: {
+        if (!isScreenshot) return ""
+        let s = rawIcon
+        if (s.startsWith("file://")) s = s.slice(7)
+        return s
+    }
+
+    readonly property string resolvedIconSource: {
+        if (!rawIcon || rawIcon.length === 0) return ""
+        if (rawIcon.startsWith("file://")) return rawIcon
+        if (rawIcon.startsWith("/")) return "file://" + rawIcon
+        return AppLauncher.AppRegistry.resolveAppIcon(rawIcon) || rawIcon
+    }
 
 
     // ============================================================
@@ -35,64 +63,51 @@ Item {
 
 
         // ========================================================
-        // APP ICON SQUIRCLE
+        // APP ICON / SCREENSHOT THUMBNAIL SQUIRCLE
         // ========================================================
 
         Rectangle {
-            Layout.preferredWidth: 36
-            Layout.preferredHeight: 36
+            Layout.preferredWidth: root.isScreenshot ? 64 : 36
+            Layout.preferredHeight: root.isScreenshot ? 44 : 36
             Layout.alignment: Qt.AlignVCenter
 
             radius: NexaUI.NexaTokens.radiusSm
             color: NexaUI.NexaColors.surfaceContainerHigh
             border.width: NexaUI.NexaTokens.borderThin
             border.color: NexaUI.NexaColors.borderSubtle
+            clip: true
 
             Image {
                 id: notificationIcon
 
                 anchors {
                     fill: parent
-                    margins: NexaUI.NexaTokens.spacingXs
+                    margins: root.isScreenshot ? 0 : NexaUI.NexaTokens.spacingXs
                 }
 
-                source:
-                    root.notification
-                        ? (root.notification.appIcon || "")
-                        : ""
+                source: root.resolvedIconSource
 
-                visible:
-                    source.toString().length > 0
+                visible: status === Image.Ready
 
-                fillMode:
-                    Image.PreserveAspectFit
+                fillMode: root.isScreenshot ? Image.PreserveAspectCrop : Image.PreserveAspectFit
 
-                asynchronous:
-                    true
+                asynchronous: true
 
-                smooth:
-                    true
+                smooth: true
             }
 
             Text {
-                anchors.centerIn:
-                    parent
+                anchors.centerIn: parent
 
-                visible:
-                    !notificationIcon.visible
+                visible: !notificationIcon.visible
 
-                text:
-                    "󰂚"
+                text: root.isScreenshot ? "󰄄" : "󰂚"
 
-                color:
-                    NexaUI.NexaColors.primary
+                color: NexaUI.NexaColors.primary
 
                 font {
-                    family:
-                        NexaUI.NexaTypography.familyIcon
-
-                    pixelSize:
-                        NexaUI.NexaTypography.sizeLg
+                    family: NexaUI.NexaTypography.familyIcon
+                    pixelSize: NexaUI.NexaTypography.sizeLg
                 }
             }
         }
@@ -238,13 +253,21 @@ Item {
     // ============================================================
 
     MouseArea {
-        anchors.fill:
-            parent
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-        cursorShape:
-            Qt.PointingHandCursor
-
-        onClicked:
+        onClicked: (mouse) => {
+            if (root.isScreenshot && root.screenshotPath.length > 0) {
+                if (mouse.button === Qt.RightButton) {
+                    const slashIndex = root.screenshotPath.lastIndexOf("/")
+                    const dir = slashIndex > 0 ? root.screenshotPath.substring(0, slashIndex) : root.screenshotPath
+                    Quickshell.execDetached(["xdg-open", dir])
+                } else {
+                    Quickshell.execDetached(["xdg-open", root.screenshotPath])
+                }
+            }
             root.activated()
+        }
     }
 }

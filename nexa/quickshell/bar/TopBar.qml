@@ -145,7 +145,7 @@ PanelWindow {
             ConstellationRailModule.ConstellationRail {
                 id: constellationRail
                 anchors.fill: parent
-                leftMargin: Math.max(150, leftSection.width + NexaUI.NexaTokens.spacingLg)
+                leftMargin: leftSection.width + NexaUI.NexaTokens.spacingLg
                 rightMargin: Math.max(150, rightSection.width + NexaUI.NexaTokens.spacingLg)
             }
 

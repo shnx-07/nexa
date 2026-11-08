@@ -7,49 +7,49 @@ QtObject {
     id: root
 
     // Primary
-    property color primary: "#ffb4a2"
-    property color on_primary: "#611200"
-    property color primaryContainer: "#891d00"
-    property color on_primary_container: "#ffdad2"
+    property color primary: "#afc6ff"
+    property color on_primary: "#002d6d"
+    property color primaryContainer: "#004299"
+    property color on_primary_container: "#d9e2ff"
 
     // Secondary
-    property color secondary: "#f2bb9a"
-    property color on_secondary: "#4a2811"
-    property color secondaryContainer: "#643e25"
-    property color on_secondary_container: "#ffdbc8"
+    property color secondary: "#c2c3eb"
+    property color on_secondary: "#2c2e4d"
+    property color secondaryContainer: "#424465"
+    property color on_secondary_container: "#e0e0ff"
 
     // Tertiary
-    property color tertiary: "#f5bc7d"
-    property color on_tertiary: "#482900"
-    property color tertiaryContainer: "#653e09"
-    property color on_tertiary_container: "#ffddbb"
+    property color tertiary: "#cdbef7"
+    property color on_tertiary: "#342957"
+    property color tertiaryContainer: "#4b3f6f"
+    property color on_tertiary_container: "#e8ddff"
 
     // Background
-    property color background: "#1e100c"
-    property color on_background: "#f9dcd6"
+    property color background: "#10131c"
+    property color on_background: "#e0e2ef"
 
     // Surface hierarchy
-    property color surface: "#1e100c"
-    property color surfaceDim: "#1e100c"
-    property color surfaceBright: "#473531"
+    property color surface: "#10131c"
+    property color surfaceDim: "#10131c"
+    property color surfaceBright: "#363943"
 
-    property color surfaceContainerLowest: "#180b08"
-    property color surfaceContainerLow: "#271814"
-    property color surfaceContainer: "#2b1c18"
-    property color surfaceContainerHigh: "#372622"
-    property color surfaceContainerHighest: "#42312c"
+    property color surfaceContainerLowest: "#0a0e17"
+    property color surfaceContainerLow: "#181b25"
+    property color surfaceContainer: "#1c1f29"
+    property color surfaceContainerHigh: "#262a34"
+    property color surfaceContainerHighest: "#31353f"
 
     // Surface content
-    property color on_surface: "#f9dcd6"
-    property color on_surface_variant: "#dcc1ba"
+    property color on_surface: "#e0e2ef"
+    property color on_surface_variant: "#c3c6d3"
 
-    property color inverseSurface: "#f9dcd6"
-    property color inverse_on_surface: "#3d2c28"
-    property color inversePrimary: "#b42900"
+    property color inverseSurface: "#e0e2ef"
+    property color inverse_on_surface: "#2d303a"
+    property color inversePrimary: "#0059c8"
 
     // Outline
-    property color outline: "#a48b86"
-    property color outlineVariant: "#55423e"
+    property color outline: "#8d909c"
+    property color outlineVariant: "#434751"
     property color shadow: "#000000"
     property color scrim: "#000000"
 

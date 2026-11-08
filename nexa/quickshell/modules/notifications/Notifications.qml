@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../NewNexaUI" as NexaUI
+import "../appLauncher" as AppLauncher
 
 Item {
     id: root
@@ -80,9 +81,9 @@ Item {
 
     function iconSource(icon) {
         if (!icon || icon.length === 0) return ""
-        if (icon.startsWith("/") || icon.startsWith("file://"))
-            return icon
-        return ""
+        if (icon.startsWith("file://")) return icon
+        if (icon.startsWith("/")) return "file://" + icon
+        return AppLauncher.AppRegistry.resolveAppIcon(icon) || ""
     }
 
     // ============================================================

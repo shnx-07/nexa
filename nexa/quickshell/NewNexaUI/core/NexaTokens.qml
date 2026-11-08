@@ -21,6 +21,18 @@ QtObject {
     property bool windowGlow: true
     property real windowDim: 0.0
 
+    // Dynamic Island Event Source Triggers
+    property bool islandSourceMedia: true
+    property bool islandSourceOsd: true
+    property bool islandSourceNotifications: true
+    property bool islandSourceScreenshots: true
+    property bool islandSourceBluetooth: true
+    property bool islandSourcePower: true
+    property bool islandSourceTimers: true
+
+    // Dynamic Island Live Dimensions
+    property int islandTargetWidth: 170
+
     readonly property int radiusXs: root.nexaRounding === 0 ? 0 : 4
     readonly property int radiusSm: root.nexaRounding === 0 ? 0 : Math.max(4, Math.round(root.nexaRounding * 0.55))
     readonly property int radiusMd: root.nexaRounding === 0 ? 0 : Math.max(6, Math.round(root.nexaRounding * 0.85))
@@ -31,7 +43,33 @@ QtObject {
 
     function setIslandRounding(val) {
         root.islandRounding = val
-        const cfg = { "rounding": val }
+        root._persistIslandConfig()
+    }
+
+    function setIslandSource(key, val) {
+        if (key === "media") root.islandSourceMedia = val
+        else if (key === "osd") root.islandSourceOsd = val
+        else if (key === "notifications") root.islandSourceNotifications = val
+        else if (key === "screenshots") root.islandSourceScreenshots = val
+        else if (key === "bluetooth") root.islandSourceBluetooth = val
+        else if (key === "power") root.islandSourcePower = val
+        else if (key === "timers") root.islandSourceTimers = val
+        root._persistIslandConfig()
+    }
+
+    function _persistIslandConfig() {
+        const cfg = {
+            "rounding": root.islandRounding,
+            "sources": {
+                "media": root.islandSourceMedia,
+                "osd": root.islandSourceOsd,
+                "notifications": root.islandSourceNotifications,
+                "screenshots": root.islandSourceScreenshots,
+                "bluetooth": root.islandSourceBluetooth,
+                "power": root.islandSourcePower,
+                "timers": root.islandSourceTimers
+            }
+        }
         const json = JSON.stringify(cfg, null, 2)
         Quickshell.execDetached([
             "sh", "-c",
@@ -96,7 +134,18 @@ QtObject {
         onLoaded: {
             try {
                 const data = JSON.parse(text())
-                if (data && data.rounding !== undefined) root.islandRounding = data.rounding
+                if (data) {
+                    if (data.rounding !== undefined) root.islandRounding = data.rounding
+                    if (data.sources) {
+                        if (data.sources.media !== undefined) root.islandSourceMedia = !!data.sources.media
+                        if (data.sources.osd !== undefined) root.islandSourceOsd = !!data.sources.osd
+                        if (data.sources.notifications !== undefined) root.islandSourceNotifications = !!data.sources.notifications
+                        if (data.sources.screenshots !== undefined) root.islandSourceScreenshots = !!data.sources.screenshots
+                        if (data.sources.bluetooth !== undefined) root.islandSourceBluetooth = !!data.sources.bluetooth
+                        if (data.sources.power !== undefined) root.islandSourcePower = !!data.sources.power
+                        if (data.sources.timers !== undefined) root.islandSourceTimers = !!data.sources.timers
+                    }
+                }
             } catch (e) {}
         }
     }

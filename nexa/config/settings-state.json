@@ -1,9 +1,9 @@
 {
-  "volume": 100,
+  "volume": 50,
   "muted": false,
   "input_volume": 68,
   "input_muted": true,
-  "brightness": 81,
+  "brightness": 70,
   "bluetooth_enabled": false,
   "wifi_enabled": true,
   "airplane_enabled": false,
@@ -21,11 +21,11 @@
   "battery_time_to_empty": 0,
   "wifi_connected": true,
   "wifi_ssid": "Airtel_______",
-  "wifi_signal": 63,
+  "wifi_signal": 71,
   "wifi_has_internet": true,
   "bluetooth_connected": false,
   "bluetooth_device_name": "",
   "bluetooth_device_type": "",
   "bluetooth_device_battery": -1,
-  "timestamp": 1794045543
+  "timestamp": 1794122671
 }

@@ -2,6 +2,7 @@ import QtQuick
 import Qt5Compat.GraphicalEffects
 import Quickshell.Io
 import Quickshell
+import Quickshell.Widgets
 import Quickshell.Hyprland
 import Quickshell.Bluetooth
 import Quickshell.Networking
@@ -124,12 +125,15 @@ PanelWindow {
     // ============================================================
 
     readonly property int contextWidth: 420
+    readonly property int mediaCompactWidth: 175
 
     readonly property int contextHeight:
         root.compactHeight
 
     // Confirmed hover dimensions.
     readonly property int hoverWidth: {
+        if (islandContent.mediaContextActive)
+            return 540
         if (islandContent.stopwatchContextActive || islandContent.focusContextActive)
             return 500
         return 420
@@ -181,32 +185,32 @@ PanelWindow {
     // OSD DIMENSIONS (UNIQUE SIZES PER NOTIFICATION TYPE)
     // ============================================================
 
-    readonly property int osdVolumeWidth: 320
-    readonly property int osdVolumeHeight: 48
+    readonly property int osdVolumeWidth: 400
+    readonly property int osdVolumeHeight: 64
 
-    readonly property int osdMuteWidth: 240
-    readonly property int osdMuteHeight: 44
+    readonly property int osdMuteWidth: 280
+    readonly property int osdMuteHeight: 56
 
-    readonly property int osdMicWidth: 240
-    readonly property int osdMicHeight: 44
+    readonly property int osdMicWidth: 280
+    readonly property int osdMicHeight: 56
 
-    readonly property int osdBrightnessWidth: 320
-    readonly property int osdBrightnessHeight: 48
+    readonly property int osdBrightnessWidth: 400
+    readonly property int osdBrightnessHeight: 64
 
-    readonly property int osdAirplaneWidth: 260
-    readonly property int osdAirplaneHeight: 46
+    readonly property int osdAirplaneWidth: 280
+    readonly property int osdAirplaneHeight: 56
 
-    readonly property int osdBatteryWidth: 280
-    readonly property int osdBatteryHeight: 46
+    readonly property int osdBatteryWidth: 320
+    readonly property int osdBatteryHeight: 56
 
-    readonly property int osdBluetoothWidth: 320
-    readonly property int osdBluetoothHeight: 46
+    readonly property int osdBluetoothWidth: 340
+    readonly property int osdBluetoothHeight: 56
 
-    readonly property int osdWifiWidth: 320
-    readonly property int osdWifiHeight: 46
+    readonly property int osdWifiWidth: 340
+    readonly property int osdWifiHeight: 56
 
-    readonly property int osdKeyLockWidth: 240
-    readonly property int osdKeyLockHeight: 46
+    readonly property int osdKeyLockWidth: 280
+    readonly property int osdKeyLockHeight: 56
 
     property string osdType: "none"
     property real osdValue: 0.74
@@ -290,86 +294,86 @@ PanelWindow {
 
 
     function triggerVolumeUp() {
-        if (root.full || root.specialModeActive) return
-        root.osdType = "volume"
-        root.osdMuted = false
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "up", "5"])
         const prevValue = root.osdValue
         root.osdValue = Math.min(1.0, root.osdValue + 0.05)
-        root.osdActive = true
-        osdDismissTimer.restart()
-        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "up", "5"])
         if (prevValue < 0.999) {
             Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "volume"])
         }
+        if (!NexaUI.NexaTokens.islandSourceOsd || root.full || root.specialModeActive) return
+        root.osdType = "volume"
+        root.osdMuted = false
+        root.osdActive = true
+        osdDismissTimer.restart()
     }
 
     function triggerVolumeDown() {
-        if (root.full || root.specialModeActive) return
-        root.osdType = "volume"
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "down", "5"])
         const prevValue = root.osdValue
         root.osdValue = Math.max(0.0, root.osdValue - 0.05)
-        root.osdActive = true
-        osdDismissTimer.restart()
-        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "down", "5"])
         if (prevValue > 0.001) {
             Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "sound", "play", "volume"])
         }
+        if (!NexaUI.NexaTokens.islandSourceOsd || root.full || root.specialModeActive) return
+        root.osdType = "volume"
+        root.osdActive = true
+        osdDismissTimer.restart()
     }
 
     function triggerToggleMute() {
-        if (root.full || root.specialModeActive) return
-        root.osdType = "mute"
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "toggle-mute"])
         root.osdMuted = !root.osdMuted
+        if (!NexaUI.NexaTokens.islandSourceOsd || root.full || root.specialModeActive) return
+        root.osdType = "mute"
         root.osdActive = true
         osdDismissTimer.restart()
-        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "toggle-mute"])
     }
 
     function triggerBrightnessUp() {
-        if (root.full || root.specialModeActive) return
-        root.osdType = "brightness"
-        root.osdValue = Math.min(1.0, root.osdValue + 0.05)
-        root.osdActive = true
-        osdDismissTimer.restart()
         Quickshell.execDetached([
             Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
             "brightness",
             "up",
             "5"
         ])
+        root.osdValue = Math.min(1.0, root.osdValue + 0.05)
+        if (!NexaUI.NexaTokens.islandSourceOsd || root.full || root.specialModeActive) return
+        root.osdType = "brightness"
+        root.osdActive = true
+        osdDismissTimer.restart()
     }
 
     function triggerBrightnessDown() {
-        if (root.full || root.specialModeActive) return
-        root.osdType = "brightness"
-        root.osdValue = Math.max(0.01, root.osdValue - 0.05)
-        root.osdActive = true
-        osdDismissTimer.restart()
         Quickshell.execDetached([
             Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
             "brightness",
             "down",
             "5"
         ])
+        root.osdValue = Math.max(0.01, root.osdValue - 0.05)
+        if (!NexaUI.NexaTokens.islandSourceOsd || root.full || root.specialModeActive) return
+        root.osdType = "brightness"
+        root.osdActive = true
+        osdDismissTimer.restart()
     }
 
     function triggerToggleMicMute() {
-        if (root.full || root.specialModeActive) return
-        root.osdType = "mic"
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "input-toggle-mute"])
         root.osdMicMuted = !root.osdMicMuted
         root.osdMuted = root.osdMicMuted
+        if (!NexaUI.NexaTokens.islandSourceOsd || root.full || root.specialModeActive) return
+        root.osdType = "mic"
         root.osdActive = true
         osdDismissTimer.restart()
-        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "audio", "input-toggle-mute"])
     }
 
     function triggerToggleAirplane() {
-        if (root.full || root.specialModeActive) return
-        root.osdType = "airplane"
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "system", "airplane", "toggle"])
         root.osdAirplaneEnabled = !root.osdAirplaneEnabled
+        if (!NexaUI.NexaTokens.islandSourceOsd || root.full || root.specialModeActive) return
+        root.osdType = "airplane"
         root.osdActive = true
         osdDismissTimer.restart()
-        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad", "system", "airplane", "toggle"])
     }
 
     // ============================================================
@@ -377,7 +381,7 @@ PanelWindow {
     // ============================================================
 
     function triggerBatteryOsd(charging: bool, pct: int) {
-        if (root.full || root.specialModeActive) return
+        if (!NexaUI.NexaTokens.islandSourcePower || root.full || root.specialModeActive) return
         root.osdType = "battery"
         root.osdBatteryCharging = charging
         root.osdValue = Math.max(0.0, Math.min(1.0, pct / 100.0))
@@ -389,7 +393,7 @@ PanelWindow {
     }
 
     function triggerLowBatteryAlert(pct: int) {
-        if (root.full || root.specialModeActive) return
+        if (!NexaUI.NexaTokens.islandSourcePower || root.full || root.specialModeActive) return
         root.osdType = "battery_low"
         root.osdBatteryCharging = false
         root.osdValue = Math.max(0.0, Math.min(1.0, pct / 100.0))
@@ -450,7 +454,7 @@ PanelWindow {
     
 
     function triggerBluetoothOsd(device) {
-        if (!device || root.full || root.specialModeActive) return
+        if (!NexaUI.NexaTokens.islandSourceBluetooth || !device || root.full || root.specialModeActive) return
         root.osdType = "bluetooth"
         root.osdTitle = (device.name && device.name.length > 0) ? device.name : "Bluetooth Device"
 
@@ -526,7 +530,7 @@ PanelWindow {
     // ============================================================
 
     function triggerCapsLockOsd(enabled: bool) {
-        if (root.full || root.specialModeActive) return
+        if (!NexaUI.NexaTokens.islandSourceOsd || root.full || root.specialModeActive) return
         root.osdType = "capslock"
         root.osdTitle = "Caps Lock"
         root.osdLockEnabled = enabled
@@ -535,7 +539,7 @@ PanelWindow {
     }
 
     function triggerNumLockOsd(enabled: bool) {
-        if (root.full || root.specialModeActive) return
+        if (!NexaUI.NexaTokens.islandSourceOsd || root.full || root.specialModeActive) return
         root.osdType = "numlock"
         root.osdTitle = "Num Lock"
         root.osdLockEnabled = enabled
@@ -707,8 +711,16 @@ PanelWindow {
             root.enterSpecialMode("search")
         }
 
-        function openCommand() {
-            root.enterSpecialMode("command")
+        function toggleSearch() {
+            if (root.specialMode === "search") {
+                root.closeIsland()
+            } else {
+                root.enterSpecialMode("search")
+            }
+        }
+
+        function closeIsland() {
+            root.closeIsland()
         }
 
         function openPower() {
@@ -764,7 +776,7 @@ PanelWindow {
         }
 
         function openFullSection(name: string) {
-            islandContent.section = name || "music"
+            islandContent.section = name || "clock"
             root.full = true
             root.hovered = false
             islandFocus.forceActiveFocus()
@@ -958,11 +970,16 @@ PanelWindow {
         if (root.hovered)
             return root.hoverWidth
 
-        if (root.persistentContext)
+        if (root.persistentContext) {
+            if (islandContent.mediaContextActive)
+                return root.mediaCompactWidth
             return root.contextWidth
+        }
 
         return root.compactWidth
     }
+
+    onTargetWidthChanged: NexaUI.NexaTokens.islandTargetWidth = root.targetWidth
 
     readonly property int targetHeight: {
         if (root.specialMode === "appLauncher")
@@ -977,9 +994,13 @@ PanelWindow {
         if (root.specialMode === "shelf")
             return root.shelfHeight
 
-        if (root.full || root.specialModeActive) {
-            if (islandContent.section === "music")
-                return 310
+        if (root.specialMode === "search")
+            return islandContent.searchPreferredHeight
+
+        if (root.specialModeActive)
+            return root.fullHeight
+
+        if (root.full) {
             return root.fullHeight
         }
 
@@ -1010,8 +1031,11 @@ PanelWindow {
         if (root.notificationActive)
             return root.hoverHeight
 
-        if (root.hovered)
+        if (root.hovered) {
+            if (islandContent.mediaContextActive)
+                return 160
             return root.hoverHeight
+        }
 
         if (root.persistentContext)
             return root.contextHeight
@@ -1066,7 +1090,7 @@ PanelWindow {
     }
 
     function openFullSection(name: string) {
-        islandContent.section = name || "music"
+        islandContent.section = name || "clock"
         root.full = true
         root.hovered = false
         islandFocus.forceActiveFocus()
@@ -1084,9 +1108,6 @@ PanelWindow {
 
     mask: Region {
         item: island
-        Region {
-            item: islandClockBtn
-        }
     }
     
 
@@ -1157,13 +1178,20 @@ PanelWindow {
 
         radius: {
             if (NexaUI.NexaTokens.islandRounding === 0) return 0;
+            if (root.hovered && islandContent.mediaContextActive) {
+                return (NexaUI.NexaTokens.islandRounding >= 999) ? 26 : NexaUI.NexaTokens.islandRounding;
+            }
             if (root.full || root.specialModeActive || root.hovered || root.notificationActive) {
-                return (NexaUI.NexaTokens.islandRounding >= 999) ? 24 : Math.min(24, NexaUI.NexaTokens.islandRounding);
+                return (NexaUI.NexaTokens.islandRounding >= 999) ? 24 : NexaUI.NexaTokens.islandRounding;
             }
-            if (root.osdActive) {
-                return Math.round(targetHeight / 2);
+            if (root.osdActive || (islandContent.mediaContextActive && !root.full && !root.hovered)) {
+                return (NexaUI.NexaTokens.islandRounding >= 999)
+                    ? Math.round(targetHeight / 2)
+                    : Math.min(Math.round(targetHeight / 2), NexaUI.NexaTokens.islandRounding);
             }
-            return (NexaUI.NexaTokens.islandRounding >= 999) ? Math.round(targetHeight / 2) : NexaUI.NexaTokens.islandRounding;
+            return (NexaUI.NexaTokens.islandRounding >= 999)
+                ? Math.round(targetHeight / 2)
+                : Math.min(Math.round(targetHeight / 2), NexaUI.NexaTokens.islandRounding);
         }
 
 
@@ -1171,21 +1199,35 @@ PanelWindow {
         // SURFACE COLOR
         // --------------------------------------------------------
 
-        color:
-          root.full
-          || root.specialModeActive
-          || root.hovered
-          || root.notificationActive
-          || root.osdActive
-          ? NexaUI.NexaColors.islandBackgroundExpanded
-          : NexaUI.NexaColors.islandBackground
+        color: {
+            if (root.specialModeActive || root.notificationActive || root.osdActive)
+                return NexaUI.NexaColors.islandBackgroundExpanded;
+            if (root.full)
+                return NexaUI.NexaColors.islandBackgroundExpanded;
+            if (islandContent.mediaContextActive && islandContent.hasAlbumColors) {
+                if (root.hovered)
+                    return Qt.rgba(islandContent.albumSurfaceColor.r, islandContent.albumSurfaceColor.g, islandContent.albumSurfaceColor.b, 0.94);
+                return islandContent.albumSurfaceColor;
+            }
+            if (root.hovered)
+                return NexaUI.NexaColors.islandBackgroundExpanded;
+            return NexaUI.NexaColors.islandBackground;
+        }
 
 
         border.width: NexaUI.NexaTokens.borderThin
 
-        border.color: (root.full || root.hovered || root.specialModeActive || root.notificationActive || root.osdActive)
-            ? NexaUI.NexaColors.borderStrong
-            : NexaUI.NexaColors.border
+        border.color: {
+            if (root.specialModeActive || root.notificationActive || root.osdActive)
+                return NexaUI.NexaColors.borderStrong;
+            if (root.full)
+                return NexaUI.NexaColors.borderStrong;
+            if (islandContent.mediaContextActive && islandContent.hasAlbumColors)
+                return Qt.rgba(islandContent.albumAccentColor.r, islandContent.albumAccentColor.g, islandContent.albumAccentColor.b, 0.45);
+            if (root.hovered)
+                return NexaUI.NexaColors.borderStrong;
+            return NexaUI.NexaColors.border;
+        }
 
 
         // ========================================================
@@ -1430,17 +1472,21 @@ PanelWindow {
 
 
         // ========================================================
-        // CONTENT + KEYBOARD FOCUS
+        // CONTENT + KEYBOARD FOCUS (CLIPPED TO DYNAMIC ISLAND CORNERS)
         // ========================================================
 
-        FocusScope {
-            id: islandFocus
-
+        ClippingRectangle {
             anchors.fill: parent
-
+            radius: island.radius
+            color: "transparent"
             z: 1
 
-            focus: root.full || root.specialModeActive
+            FocusScope {
+                id: islandFocus
+
+                anchors.fill: parent
+
+                focus: root.full || root.specialModeActive
 
             // ----------------------------------------------------
             // ESCAPE
@@ -1554,6 +1600,7 @@ PanelWindow {
               }
           }
 
+            }
         }
     }
 
@@ -1573,19 +1620,10 @@ PanelWindow {
         z: 100
     }
 
-    IslandClockButton {
-        id: islandClockBtn
-        anchors.left: island.right
-        anchors.leftMargin: 8
-        anchors.verticalCenter: island.verticalCenter
-        visible: islandContent.mediaContextActive && !root.full && !root.hovered && !root.specialModeActive && !root.osdActive && !root.notificationActive
-        onClicked: {
-            root.openFullSection("clock")
-        }
-    }
     
 
     Component.onCompleted: {
+        NexaUI.NexaTokens.islandTargetWidth = root.targetWidth
         if (Services.SystemState.brightness > 0) {
             root.osdValue = Math.max(0.01, Math.min(1.0, Services.SystemState.brightness / 100.0))
         }

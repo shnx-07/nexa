@@ -120,6 +120,18 @@ pub fn capture() {
         .stderr(Stdio::null())
         .status();
 
+    let path_str = path.to_string_lossy().to_string();
+    let _ = Command::new("notify-send")
+        .arg("-a")
+        .arg("Screenshot")
+        .arg("-i")
+        .arg(&path_str)
+        .arg("-n")
+        .arg(&path_str)
+        .arg("Screenshot Saved")
+        .arg("Saved to Pictures/Screenshots and copied to clipboard")
+        .spawn();
+
     match clipboard_status {
         Ok(status) if status.success() => {
             print_json(&ScreenshotResponse {

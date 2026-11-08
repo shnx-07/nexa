@@ -5,7 +5,6 @@ use std::{
     os::unix::{fs::PermissionsExt, process::CommandExt},
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    time::SystemTime,
 };
 use walkdir::{DirEntry, WalkDir};
 
@@ -162,7 +161,31 @@ fn appimage_dirs() -> Vec<PathBuf> {
 /// Discovers user document and media directories.
 fn file_dirs() -> Vec<PathBuf> {
     let home = home_dir();
-    let candidates = [
+    let mut dirs = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(&home) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if !name.starts_with('.')
+                    && name != "Applications"
+                    && name != "Apps"
+                    && name != "Apps_img"
+                    && name != "target"
+                    && name != "node_modules"
+                    && name != "venv"
+                    && name != "dist"
+                    && name != "build"
+                {
+                    dirs.push(path);
+                }
+            }
+        }
+    }
+
+    // Ensure common XDG user directories are covered
+    for fallback in &[
         home.join("Desktop"),
         home.join("Documents"),
         home.join("Downloads"),
@@ -170,9 +193,13 @@ fn file_dirs() -> Vec<PathBuf> {
         home.join("Pictures"),
         home.join("Videos"),
         home.join("Projects"),
-    ];
+    ] {
+        if fallback.is_dir() && !dirs.contains(fallback) {
+            dirs.push(fallback.clone());
+        }
+    }
 
-    candidates.into_iter().filter(|p| p.is_dir()).collect()
+    dirs
 }
 
 // ============================================================
@@ -808,6 +835,45 @@ fn index_applications(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<S
 // ============================================================
 
 fn index_files(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>) {
+    let home = home_dir();
+
+    // Index non-hidden files directly in user home directory
+    if let Ok(read_home) = fs::read_dir(&home) {
+        for entry in read_home.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if !name.starts_with('.') {
+                    let path_string = path.to_string_lossy().to_string();
+                    if seen_paths.insert(path_string.clone()) {
+                        let ext = path
+                            .extension()
+                            .and_then(|e| e.to_str())
+                            .unwrap_or("")
+                            .to_uppercase();
+                        let description = if !ext.is_empty() {
+                            format!("{ext} Document")
+                        } else {
+                            "File".to_string()
+                        };
+                        entries.push(SearchEntry {
+                            id: 0,
+                            kind: "file".to_string(),
+                            name,
+                            path: path_string,
+                            exec: String::new(),
+                            icon: String::new(),
+                            terminal: false,
+                            generic_name: String::new(),
+                            keywords: String::new(),
+                            description,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
     for directory in file_dirs() {
         let walker = WalkDir::new(&directory)
             .follow_links(false)
@@ -922,54 +988,12 @@ fn save_index(entries: &[SearchEntry]) -> Result<(), String> {
     Ok(())
 }
 
-fn check_app_dirs_newer_than(cache_mtime: SystemTime) -> bool {
-    for dir in application_dirs() {
-        if let Ok(metadata) = fs::metadata(&dir) {
-            if let Ok(mtime) = metadata.modified() {
-                if mtime > cache_mtime {
-                    return true;
-                }
-            }
-        }
-    }
-    for dir in appimage_dirs() {
-        if let Ok(metadata) = fs::metadata(&dir) {
-            if let Ok(mtime) = metadata.modified() {
-                if mtime > cache_mtime {
-                    return true;
-                }
-            }
-        }
-    }
-    for dir in folder_app_dirs() {
-        if let Ok(metadata) = fs::metadata(&dir) {
-            if let Ok(mtime) = metadata.modified() {
-                if mtime > cache_mtime {
-                    return true;
-                }
-            }
-        }
-    }
-    false
-}
-
 fn load_index() -> Result<Vec<SearchEntry>, String> {
     let path = cache_path();
 
     if !path.is_file() {
         let entries = build_index();
-        save_index(&entries)?;
-        return Ok(entries);
-    }
-
-    let cache_mtime = fs::metadata(&path)
-        .and_then(|m| m.modified())
-        .unwrap_or(SystemTime::UNIX_EPOCH);
-
-    // If an application directory was modified since the cache was built, re-index immediately!
-    if check_app_dirs_newer_than(cache_mtime) {
-        let entries = build_index();
-        save_index(&entries)?;
+        let _ = save_index(&entries);
         return Ok(entries);
     }
 
@@ -977,10 +1001,18 @@ fn load_index() -> Result<Vec<SearchEntry>, String> {
         fs::read_to_string(&path).map_err(|e| format!("failed to read search index: {e}"))?;
 
     match serde_json::from_str::<Vec<SearchEntry>>(&content) {
-        Ok(entries) => Ok(entries),
+        Ok(entries) => {
+            if entries.is_empty() {
+                let entries = build_index();
+                let _ = save_index(&entries);
+                Ok(entries)
+            } else {
+                Ok(entries)
+            }
+        }
         Err(_) => {
             let entries = build_index();
-            save_index(&entries)?;
+            let _ = save_index(&entries);
             Ok(entries)
         }
     }
@@ -1042,9 +1074,19 @@ fn score_text(target: &str, query: &str) -> Option<i32> {
     let query_words = extract_words(query);
     let acronym = compute_acronym(&target_words);
 
-    // 2. Acronym exact match (e.g. "vsc" -> "Visual Studio Code")
-    if !acronym.is_empty() && acronym == norm_query {
-        return Some(1050);
+    // 2. Acronym match (e.g. "vsc" or "vs" -> "Visual Studio Code")
+    if !acronym.is_empty() {
+        if acronym == norm_query {
+            return Some(1100);
+        }
+        if acronym.starts_with(&norm_query) && norm_query.len() >= 2 {
+            return Some(1050);
+        }
+    }
+
+    // Direct alias mappings (e.g. "vs" -> Visual Studio Code)
+    if norm_query == "vs" && (norm_target.contains("visual studio") || norm_target.contains("vscode")) {
+        return Some(1150);
     }
 
     // 3. Multi-word prefix match (e.g. "vs code" -> "Visual Studio Code")
@@ -1201,6 +1243,22 @@ fn score_entry(entry: &SearchEntry, query: &str) -> Option<i32> {
         if !path_stem.is_empty() {
             update_best(score_text(path_stem, query).map(|s| s - 20));
         }
+    } else if entry.kind == "file" {
+        let p = Path::new(&entry.path);
+        let q_trimmed = query.trim();
+        if let Some(ext) = p.extension().and_then(|e| e.to_str()) {
+            let clean_q = q_trimmed.trim_start_matches('.');
+            if ext.eq_ignore_ascii_case(clean_q) {
+                update_best(Some(850));
+            }
+        }
+        if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
+            if stem.eq_ignore_ascii_case(q_trimmed) {
+                update_best(Some(1200));
+            } else if stem.to_lowercase().starts_with(&q_trimmed.to_lowercase()) {
+                update_best(Some(980));
+            }
+        }
     }
 
     let score = best_score?;
@@ -1211,6 +1269,127 @@ fn score_entry(entry: &SearchEntry, query: &str) -> Option<i32> {
     };
 
     Some(score + bonus)
+}
+
+// ============================================================
+// COMMAND / PATH BINARY RUNNER (Unified Command Mode)
+// ============================================================
+
+#[derive(Debug, Clone)]
+struct CommandItem {
+    name: String,
+    path: String,
+    score: i32,
+}
+
+fn path_dirs() -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    if let Ok(path_var) = env::var("PATH") {
+        for p in path_var.split(':') {
+            if !p.is_empty() {
+                dirs.push(PathBuf::from(p));
+            }
+        }
+    }
+    let home = home_dir();
+    let home_bin = home.join(".local").join("bin");
+    if !dirs.contains(&home_bin) {
+        dirs.push(home_bin);
+    }
+    let user_bin = home.join("bin");
+    if !dirs.contains(&user_bin) {
+        dirs.push(user_bin);
+    }
+    dirs
+}
+
+fn is_binary_executable(path: &Path) -> bool {
+    if let Ok(metadata) = fs::metadata(path) {
+        if metadata.is_file() {
+            let permissions = metadata.permissions();
+            return permissions.mode() & 0o111 != 0;
+        }
+    }
+    false
+}
+
+fn collect_binaries() -> Vec<CommandItem> {
+    let mut seen = HashSet::new();
+    let mut items = Vec::new();
+
+    for dir in path_dirs() {
+        if !dir.is_dir() {
+            continue;
+        }
+        if let Ok(entries) = fs::read_dir(&dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if let Some(file_name) = path.file_name().and_then(|f| f.to_str()) {
+                    if file_name.starts_with('.') {
+                        continue;
+                    }
+                    if seen.insert(file_name.to_string()) && is_binary_executable(&path) {
+                        items.push(CommandItem {
+                            name: file_name.to_string(),
+                            path: path.to_string_lossy().to_string(),
+                            score: 0,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    items.sort_by(|a, b| a.name.cmp(&b.name));
+    items
+}
+
+fn score_command(name: &str, query: &str) -> Option<i32> {
+    let norm_name = name.to_lowercase();
+    let norm_query = query.trim().to_lowercase();
+
+    if norm_query.is_empty() {
+        return None;
+    }
+
+    if norm_name == norm_query {
+        return Some(1000);
+    }
+
+    if norm_name.starts_with(&norm_query) {
+        let penalty = (norm_name.len().saturating_sub(norm_query.len()) as i32).min(100);
+        return Some(900 - penalty);
+    }
+
+    if norm_name.contains(&norm_query) {
+        let penalty = (norm_name.len().saturating_sub(norm_query.len()) as i32).min(150);
+        return Some(700 - penalty);
+    }
+
+    None
+}
+
+pub fn run(command: &str) {
+    let home = home_dir();
+    let shell = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+
+    let status = Command::new(&shell)
+        .arg("-c")
+        .arg(command)
+        .current_dir(&home)
+        .process_group(0)
+        .status();
+
+    match status {
+        Ok(s) => {
+            let code = s.code().unwrap_or(0);
+            println!("{{\"exit_code\": {code}}}");
+        }
+        Err(err) => {
+            eprintln!("Failed to execute command '{command}': {err}");
+            std::process::exit(2);
+        }
+    }
 }
 
 // ============================================================
@@ -1236,6 +1415,71 @@ pub fn query(query_str: &str) {
     let query_str = query_str.trim();
     if query_str.is_empty() {
         println!("[]");
+        return;
+    }
+
+    // Unified command mode triggered by `>` prefix
+    if query_str.starts_with('>') {
+        let cmd_query = query_str[1..].trim();
+        let binaries = collect_binaries();
+        let mut results: Vec<SearchResult> = Vec::new();
+
+        if !cmd_query.is_empty() {
+            results.push(SearchResult {
+                id: 999999,
+                kind: "command".to_string(),
+                name: cmd_query.to_string(),
+                path: cmd_query.to_string(),
+                exec: cmd_query.to_string(),
+                icon: "utilities-terminal".to_string(),
+                score: 2000,
+                terminal: true,
+                description: format!("Execute '{}' in shell", cmd_query),
+            });
+        }
+
+        for (idx, mut item) in binaries.into_iter().enumerate() {
+            if cmd_query.is_empty() {
+                results.push(SearchResult {
+                    id: 900000 + idx,
+                    kind: "command".to_string(),
+                    name: item.name.clone(),
+                    path: item.path,
+                    exec: item.name,
+                    icon: "utilities-terminal".to_string(),
+                    score: 500,
+                    terminal: true,
+                    description: "Binary in PATH".to_string(),
+                });
+                if results.len() >= 30 {
+                    break;
+                }
+            } else if let Some(score) = score_command(&item.name, cmd_query) {
+                item.score = score;
+                results.push(SearchResult {
+                    id: 900000 + idx,
+                    kind: "command".to_string(),
+                    name: item.name.clone(),
+                    path: item.path,
+                    exec: item.name,
+                    icon: "utilities-terminal".to_string(),
+                    score,
+                    terminal: true,
+                    description: "Binary in PATH".to_string(),
+                });
+            }
+        }
+
+        results.sort_by(|a, b| b.score.cmp(&a.score).then_with(|| a.name.cmp(&b.name)));
+        results.truncate(30);
+
+        match serde_json::to_string(&results) {
+            Ok(json) => println!("{json}"),
+            Err(error) => {
+                eprintln!("NEXA command serialization error: {error}");
+                std::process::exit(2);
+            }
+        }
         return;
     }
 
@@ -1266,24 +1510,12 @@ pub fn query(query_str: &str) {
         .collect();
 
     results.sort_by(|a, b| {
-        let rank_a = if a.kind == "app" || a.kind == "appimage" {
-            0
-        } else {
-            1
-        };
-        let rank_b = if b.kind == "app" || b.kind == "appimage" {
-            0
-        } else {
-            1
-        };
-
-        rank_a
-            .cmp(&rank_b)
-            .then_with(|| b.score.cmp(&a.score))
+        b.score
+            .cmp(&a.score)
             .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
     });
 
-    results.truncate(25);
+    results.truncate(30);
 
     match serde_json::to_string(&results) {
         Ok(json) => println!("{json}"),
@@ -1500,6 +1732,20 @@ pub fn open(target: &str) {
         std::process::exit(2);
     }
 
+    // Direct command execution (starts with '>')
+    if target.starts_with('>') {
+        let cmd = target[1..].trim();
+        let home = home_dir();
+        let shell = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+        let _ = Command::new(&shell)
+            .arg("-c")
+            .arg(cmd)
+            .current_dir(&home)
+            .process_group(0)
+            .spawn();
+        return;
+    }
+
     // If target is directly an existing path
     let target_path = PathBuf::from(target);
     if target_path.exists() {
@@ -1569,6 +1815,19 @@ pub fn open(target: &str) {
             eprintln!("NEXA search open error: {error}");
             std::process::exit(2);
         }
+        return;
+    }
+
+    // Fallback: command execution for standalone binary names
+    if command_exists(target) {
+        let home = home_dir();
+        let shell = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+        let _ = Command::new(&shell)
+            .arg("-c")
+            .arg(target)
+            .current_dir(&home)
+            .process_group(0)
+            .spawn();
         return;
     }
 

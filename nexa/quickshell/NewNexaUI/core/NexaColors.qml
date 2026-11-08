@@ -145,6 +145,46 @@ QtObject {
     readonly property color text: Core.MatugenColors.text
     readonly property color mutedText: Core.MatugenColors.mutedText
 
+    // ============================================================
+    // DYNAMIC MEDIA THEME TOKENS (Album Art Matugen)
+    // ============================================================
+    property bool hasMediaColors: false
+    property color mediaPrimary: root.primary
+    property color mediaOnPrimary: root.onPrimary
+    property color mediaSecondary: root.secondary
+    property color mediaTertiary: root.tertiary
+    property color mediaSurface: root.surface
+    property color mediaContainer: root.surfaceContainer
+    property color mediaBorder: root.border
+
+    function setMediaColors(data) {
+        if (!data || !data.primary) {
+            resetMediaColors();
+            return;
+        }
+        root.hasMediaColors = true;
+        root.mediaPrimary = data.primary;
+        if (data.on_primary) root.mediaOnPrimary = data.on_primary;
+        if (data.secondary) root.mediaSecondary = data.secondary;
+        if (data.tertiary) root.mediaTertiary = data.tertiary;
+        if (data.surface) root.mediaSurface = data.surface;
+        if (data.container) root.mediaContainer = data.container;
+        if (data.border) root.mediaBorder = data.border;
+        try { Core.MatugenColors.updateMediaColors(data); } catch (_) {}
+    }
+
+    function resetMediaColors() {
+        root.hasMediaColors = false;
+        root.mediaPrimary = root.primary;
+        root.mediaOnPrimary = root.onPrimary;
+        root.mediaSecondary = root.secondary;
+        root.mediaTertiary = root.tertiary;
+        root.mediaSurface = root.surface;
+        root.mediaContainer = root.surfaceContainer;
+        root.mediaBorder = root.border;
+        try { Core.MatugenColors.resetMediaColors(); } catch (_) {}
+    }
+
     // Card, Island & Glass Roles (Dynamic glass transparency)
     readonly property color cardBackground: surfaceContainer
     readonly property color cardBorder: Core.NexaOptics.glassMode

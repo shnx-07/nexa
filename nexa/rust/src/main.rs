@@ -16,7 +16,7 @@ pub use hardware::{audio, battery, brightness, network, screenFilter, screenTemp
 pub use media_tools::{media, recorder, screenshot, snipping};
 pub use wallpaper::slideshow;
 pub use services::{
-    appLauncher, clipboard, commandSearch, notifications, search, weather,
+    appLauncher, clipboard, notifications, search, weather,
 };
 
 use std::env;
@@ -46,6 +46,8 @@ fn print_usage() {
   nexad system airplane info|on|off|toggle | vpn info|connect|disconnect|toggle
   nexad screenFilter info | set <filter> | off | apply
   nexad weather info | refresh | set <location>
+  nexad media matugen <art_source> | fetch <title> <artist> | status | info | watch | toggle | next | prev
+  nexad palette media <art_source> | info <path>
   nexad state restore | save
   nexad display [info|daemon|auto|cycle|mode|enable|disable|toggle|scale|res|rotate|mirror|primary|save|profiles] ..."
     );
@@ -347,6 +349,13 @@ fn main() {
                     }
                     search::open(&args[3..].join(" "));
                 }
+                "run" | "exec" => {
+                    if args.len() < 4 {
+                        eprintln!("Missing command to run");
+                        return;
+                    }
+                    search::run(&args[3..].join(" "));
+                }
                 _ => print_usage(),
             }
         }
@@ -610,30 +619,6 @@ fn main() {
             }
         }
 
-        "command" | "commandSearch" => {
-            if args.len() < 3 {
-                print_usage();
-                return;
-            }
-            match args[2].as_str() {
-                "run" => {
-                    if args.len() < 4 {
-                        eprintln!("Missing command to run");
-                        return;
-                    }
-                    commandSearch::run(&args[3..].join(" "));
-                }
-                "query" | "search" => {
-                    if args.len() < 4 {
-                        eprintln!("Missing command search query");
-                        return;
-                    }
-                    commandSearch::query(&args[3..].join(" "));
-                }
-                _ => print_usage(),
-            }
-        }
-
         "screenshot" => {
             if args.len() < 3 {
                 print_usage();
@@ -678,12 +663,37 @@ fn main() {
             }
         }
 
+        "palette" => {
+            if args.len() < 3 {
+                print_usage();
+                return;
+            }
+            match args[2].as_str() {
+                "media" | "matugen" => {
+                    let source = if args.len() > 3 { args[3].as_str() } else { "" };
+                    crate::palette::matugen::run_media_matugen(source);
+                }
+                "info" => {
+                    if args.len() < 4 {
+                        eprintln!("Missing wallpaper path");
+                        return;
+                    }
+                    palette::print_info(&args[3]);
+                }
+                _ => print_usage(),
+            }
+        }
+
         "media" => {
             if args.len() < 3 {
                 print_usage();
                 return;
             }
             match args[2].as_str() {
+                "matugen" => {
+                    let source = if args.len() > 3 { args[3].as_str() } else { "" };
+                    media::run_matugen(source);
+                }
                 "fetch" => {
                     let title = if args.len() > 3 { args[3].as_str() } else { "" };
                     let artist = if args.len() > 4 { args[4].as_str() } else { "" };

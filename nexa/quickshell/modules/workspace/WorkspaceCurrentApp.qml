@@ -47,17 +47,21 @@ NexaUI.NexaCard {
     }
 
     // ------------------------------------------------------------
-    // SIZE & GEOMETRY (Fixed Length Pill)
+    // SIZE & GEOMETRY (Compact Icon -> Expands on Hover)
     // ------------------------------------------------------------
 
     readonly property int fixedPillWidth: 210
+    readonly property int iconOnlyWidth: NexaUI.NexaTokens.controlHeightSm
 
     implicitHeight: NexaUI.NexaTokens.controlHeightSm
     customHeight: NexaUI.NexaTokens.controlHeightSm
 
-    implicitWidth: hasApp
+    implicitWidth: (hasApp && root.hovered)
         ? fixedPillWidth
-        : NexaUI.NexaTokens.controlHeightSm
+        : iconOnlyWidth
+
+    Layout.preferredWidth: implicitWidth
+    Layout.preferredHeight: implicitHeight
 
     radius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(height / 2, NexaUI.NexaTokens.radiusLg)
     customRadius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(height / 2, NexaUI.NexaTokens.radiusLg)
@@ -68,6 +72,7 @@ NexaUI.NexaCard {
 
     interactive: true
     padding: 0
+    clip: true
 
     Behavior on implicitWidth {
         NumberAnimation {
@@ -88,12 +93,15 @@ NexaUI.NexaCard {
         id: contentRow
 
         anchors {
-            fill: parent
-            leftMargin: NexaUI.NexaTokens.spacingSm
+            top: parent.top
+            bottom: parent.bottom
+            left: parent.left
+            leftMargin: Math.round((root.iconOnlyWidth - NexaUI.NexaTokens.iconSm) / 2)
+            right: parent.right
             rightMargin: NexaUI.NexaTokens.spacingSm
         }
 
-        spacing: NexaUI.NexaTokens.spacingXs
+        spacing: NexaUI.NexaTokens.spacingSm
 
         // Application Icon
         Image {
@@ -119,7 +127,7 @@ NexaUI.NexaCard {
             }
         }
 
-        // Animated Marquee Ticker for App Title
+        // Animated Marquee Ticker for App Title (Revealed on hover)
         Item {
             id: tickerContainer
 
@@ -127,7 +135,15 @@ NexaUI.NexaCard {
             Layout.fillHeight: true
             clip: true
 
-            visible: root.hasApp
+            visible: root.hasApp && opacity > 0.01
+            opacity: root.hovered ? 1.0 : 0.0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: NexaUI.NexaMotion.durationFast
+                    easing.type: NexaUI.NexaMotion.standardEasing
+                }
+            }
 
             readonly property bool needsScroll:
                 tickerText.implicitWidth > tickerContainer.width

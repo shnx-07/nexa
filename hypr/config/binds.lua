@@ -100,9 +100,8 @@ hl.bind(MOD .. " + M", hl.dsp.exec_cmd(music))
 hl.bind("SUPER + W", hl.dsp.global("nexa:wallpaper"))
 hl.bind(MOD .. " + SHIFT + W", hl.dsp.exec_cmd(nexad .. " qs workspaceManager toggle"))
 
--- Dynamic Island Search & Command Palette
+-- Dynamic Island Search Palette
 hl.bind(MOD .. " + SPACE", hl.dsp.exec_cmd(nexad .. " island search"))
-hl.bind(MOD .. " + SHIFT + SPACE", hl.dsp.exec_cmd(nexad .. " island command"))
 
 -- Application Launcher (Modal)
 hl.bind(MOD .. " + A", hl.dsp.exec_cmd(nexad .. " qs appLauncher toggle"))

@@ -1,11 +1,14 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
+import Quickshell
+import Quickshell.Widgets
 import "../NewNexaUI" as NexaUI
 
 Item {
     id: root
 
-    property string osdType: "none" // "volume" | "mute" | "brightness" | "airplane" | "battery" | "bluetooth" | "wifi"
+    property string osdType: "none" // "volume" | "mute" | "brightness" | "airplane" | "battery" | "bluetooth" | "wifi" | "capslock" | "numlock"
     property real value: 0.0        // 0.0 to 1.0
     property bool muted: false
     property bool airplaneEnabled: false
@@ -15,6 +18,13 @@ Item {
     property bool batteryCharging: false
     property bool hasInternet: true
     property bool lockEnabled: false
+
+    readonly property real effectiveRadius: {
+        if (NexaUI.NexaTokens.islandRounding === 0) return 0;
+        return (NexaUI.NexaTokens.islandRounding >= 999)
+            ? Math.round(root.height / 2)
+            : Math.min(Math.round(root.height / 2), NexaUI.NexaTokens.islandRounding);
+    }
 
     readonly property string iconText: {
         switch (root.osdType) {
@@ -65,103 +75,217 @@ Item {
     }
 
     // ============================================================
-    // 1. GAUGE LAYOUT (VOLUME & BRIGHTNESS)
+    // 1. LIQUID PHYSICS WAVE OSD (VOLUME & BRIGHTNESS)
     // ============================================================
 
-    RowLayout {
-        id: gaugeLayout
+    Item {
+        id: liquidOsdContainer
         anchors.fill: parent
-        anchors.leftMargin: NexaUI.NexaTokens.spacingLg
-        anchors.rightMargin: NexaUI.NexaTokens.spacingLg
-        spacing: NexaUI.NexaTokens.spacingMd
         visible: root.osdType === "volume" || root.osdType === "brightness"
 
-        // Leading Icon
-        Text {
-            text: root.iconText
-            color: root.iconColor
-            font.family: NexaUI.NexaTypography.familyIcon
-            font.pixelSize: 18
-            Layout.alignment: Qt.AlignVCenter
+        // Smoothed front spring level
+        QtObject {
+            id: front
+            property real target: root.value * liquidOsdContainer.width
+            property real value: 0
+            property real prevVal: 0
+
+            onTargetChanged: value = target
+
+            Behavior on value {
+                SpringAnimation {
+                    spring: 3.8
+                    damping: 0.34
+                    epsilon: 0.2
+                }
+            }
         }
 
-        // Pill Progress Track
-        NexaUI.NexaProgressBar {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 8
-            Layout.alignment: Qt.AlignVCenter
-            from: 0.0
-            to: 1.0
-            value: root.value
-            barColor: root.iconColor
-            trackColor: NexaUI.NexaColors.surfaceContainerHigh
+        // Slosh dynamics
+        property real slosh: 0
+        property real phase: 0
+
+        NumberAnimation on phase {
+            running: liquidOsdContainer.visible
+            loops: Animation.Infinite
+            from: 0; to: Math.PI * 2
+            duration: 2800
         }
 
-        // Percentage Text
-        Text {
-            Layout.preferredWidth: 38
-            text: Math.round(root.value * 100) + "%"
-            color: NexaUI.NexaColors.text
-            font.family: NexaUI.NexaTypography.familyBody
-            font.pixelSize: NexaUI.NexaTypography.sizeSm
-            font.weight: NexaUI.NexaTypography.weightMedium
-            font.features: NexaUI.NexaTypography.fontFeaturesTnum
-            horizontalAlignment: Text.AlignRight
-            Layout.alignment: Qt.AlignVCenter
+        FrameAnimation {
+            running: liquidOsdContainer.visible
+            onTriggered: {
+                const delta = Math.abs(front.value - front.prevVal);
+                front.prevVal = front.value;
+                const targetSlosh = Math.min(5.5, delta * 0.45);
+                liquidOsdContainer.slosh += (targetSlosh - liquidOsdContainer.slosh) * (1.0 - Math.exp(-frameTime * 4.0));
+            }
+        }
+
+        // GPU Fragment Shader Liquid Wave masked to dynamic island curvature
+        ClippingRectangle {
+            id: waterClipper
+            anchors.fill: parent
+            radius: root.effectiveRadius
+            color: "transparent"
+            z: 0
+
+            Water {
+                id: waterWave
+                anchors.fill: parent
+                axis: 1
+                level: Math.max(0, front.value)
+                phase1: liquidOsdContainer.phase
+                amp1: 1.2 + liquidOsdContainer.slosh
+                waves1: 1.15
+                phase2: liquidOsdContainer.phase * 1.8
+                amp2: liquidOsdContainer.slosh * 0.6
+                waves2: 2.1
+                nearColor: root.iconColor
+                nearAlpha: 0.38
+                farColor: root.iconColor
+                farAlpha: 0.14
+                crestColor: Qt.lighter(root.iconColor, 1.45)
+                crestAlpha: 0.88
+                crestWidth: 2.0
+            }
+
+            // Traveling soft wave-front bloom
+            RectangularShadow {
+                x: Math.max(-20, front.value - 24)
+                y: 0
+                width: 48
+                height: parent.height
+                radius: 24
+                blur: 24
+                color: Qt.rgba(root.iconColor.r, root.iconColor.g, root.iconColor.b, 0.35)
+            }
+        }
+
+        // Foreground UI Elements (Above Liquid Surface)
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 12
+            anchors.rightMargin: 16
+            spacing: 12
+            z: 2
+
+            // Glassmorphic Icon Badge with Sonar Pulse
+            IslandTile {
+                id: liquidTile
+                size: 42
+                glyph: root.iconText
+                tint: root.iconColor
+                sonar: true
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            // Category & Source Labels
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                spacing: 1
+
+                Text {
+                    text: root.osdType === "brightness" ? "Brightness" : "Volume"
+                    color: Qt.rgba(255, 255, 255, 0.60)
+                    font.family: NexaUI.NexaTypography.familyBody
+                    font.pixelSize: 11
+                    font.weight: NexaUI.NexaTypography.weightSemiBold
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    text: root.osdType === "brightness" ? "Display Backlight" : (root.muted ? "Muted" : "Master Output")
+                    color: NexaUI.NexaColors.text
+                    font.family: NexaUI.NexaTypography.familyBody
+                    font.pixelSize: 13
+                    font.weight: NexaUI.NexaTypography.weightBold
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                }
+            }
+
+            // Odometer Flip Digits
+            RollText {
+                id: liquidRoll
+                text: Math.round(root.value * 100) + "%"
+                color: NexaUI.NexaColors.text
+                pixelSize: 22
+                weight: NexaUI.NexaTypography.weightBold
+                rollDuration: 220
+                Layout.alignment: Qt.AlignVCenter
+            }
         }
     }
 
     // ============================================================
-    // 2. MUTE LAYOUT
+    // 2. MUTE & MIC LAYOUT
     // ============================================================
 
     RowLayout {
         id: muteLayout
         anchors.fill: parent
-        anchors.leftMargin: NexaUI.NexaTokens.spacingLg
-        anchors.rightMargin: NexaUI.NexaTokens.spacingLg
-        spacing: NexaUI.NexaTokens.spacingSm + 2
+        anchors.leftMargin: 12
+        anchors.rightMargin: 16
+        spacing: 12
         visible: root.osdType === "mute" || root.osdType === "mic"
 
-        Rectangle {
-            width: 28
-            height: 28
-            radius: 14
-            color: root.muted
-                ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.error, 0.18)
-                : NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.18)
+        IslandTile {
+            size: 42
+            glyph: root.osdType === "mic"
+                ? (root.muted ? "󰍭" : "󰍬")
+                : (root.muted ? "󰝟" : "󰕾")
+            tint: root.muted ? NexaUI.NexaColors.error : NexaUI.NexaColors.primary
+            sonar: root.muted
             Layout.alignment: Qt.AlignVCenter
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
+            spacing: 1
 
             Text {
-                anchors.centerIn: parent
+                text: root.osdType === "mic" ? "Microphone" : "Audio Output"
+                color: Qt.rgba(255, 255, 255, 0.60)
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: 11
+                font.weight: NexaUI.NexaTypography.weightSemiBold
+            }
+
+            Text {
                 text: root.osdType === "mic"
-                    ? (root.muted ? "󰍭" : "󰍬")
-                    : (root.muted ? "󰝟" : "󰕾")
-                color: root.muted ? NexaUI.NexaColors.error : NexaUI.NexaColors.primary
-                font.family: NexaUI.NexaTypography.familyIcon
-                font.pixelSize: 16
+                    ? (root.muted ? "Microphone Muted" : "Microphone Active")
+                    : (root.muted ? "Sound Muted" : "Sound Unmuted")
+                color: NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: 13
+                font.weight: NexaUI.NexaTypography.weightBold
             }
         }
 
-        Text {
-            Layout.fillWidth: true
-            text: root.osdType === "mic"
-                ? (root.muted ? "Mic Muted" : "Mic Unmuted")
-                : (root.muted ? "Audio Muted" : "Audio Unmuted")
-            color: NexaUI.NexaColors.text
-            font.family: NexaUI.NexaTypography.familyBody
-            font.pixelSize: NexaUI.NexaTypography.sizeSm
-            font.weight: NexaUI.NexaTypography.weightMedium
+        Rectangle {
+            height: 24
+            implicitWidth: muteBadgeText.implicitWidth + 16
+            radius: 12
+            color: root.muted
+                ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.error, 0.20)
+                : NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.20)
+            border.width: NexaUI.NexaTokens.borderThin
+            border.color: root.muted ? NexaUI.NexaColors.error : NexaUI.NexaColors.primary
             Layout.alignment: Qt.AlignVCenter
-        }
 
-        Text {
-            text: Math.round(root.value * 100) + "%"
-            color: NexaUI.NexaColors.mutedText
-            font.family: NexaUI.NexaTypography.familyBody
-            font.pixelSize: NexaUI.NexaTypography.sizeXs
-            font.features: NexaUI.NexaTypography.fontFeaturesTnum
-            Layout.alignment: Qt.AlignVCenter
+            Text {
+                id: muteBadgeText
+                anchors.centerIn: parent
+                text: root.muted ? "MUTED" : (Math.round(root.value * 100) + "%")
+                color: root.muted ? NexaUI.NexaColors.error : NexaUI.NexaColors.primary
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: 10
+                font.weight: NexaUI.NexaTypography.weightBold
+            }
         }
     }
 
@@ -172,43 +296,45 @@ Item {
     RowLayout {
         id: airplaneLayout
         anchors.fill: parent
-        anchors.leftMargin: NexaUI.NexaTokens.spacingLg
-        anchors.rightMargin: 14
-        spacing: 10
+        anchors.leftMargin: 12
+        anchors.rightMargin: 16
+        spacing: 12
         visible: root.osdType === "airplane"
 
-        Rectangle {
-            width: 28
-            height: 28
-            radius: 14
-            color: root.airplaneEnabled
-                ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.info, 0.18)
-                : NexaUI.NexaColors.surfaceContainer
+        IslandTile {
+            size: 42
+            glyph: root.airplaneEnabled ? "󰀝" : "󰀞"
+            tint: root.airplaneEnabled ? NexaUI.NexaColors.info : NexaUI.NexaColors.mutedText
+            sonar: root.airplaneEnabled
             Layout.alignment: Qt.AlignVCenter
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
+            spacing: 1
 
             Text {
-                anchors.centerIn: parent
-                text: root.airplaneEnabled ? "󰀝" : "󰀞"
-                color: root.airplaneEnabled ? NexaUI.NexaColors.info : NexaUI.NexaColors.mutedText
-                font.family: NexaUI.NexaTypography.familyIcon
-                font.pixelSize: 16
+                text: "Wireless Radios"
+                color: Qt.rgba(255, 255, 255, 0.60)
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: 11
+                font.weight: NexaUI.NexaTypography.weightSemiBold
+            }
+
+            Text {
+                text: "Airplane Mode"
+                color: NexaUI.NexaColors.text
+                font.family: NexaUI.NexaTypography.familyBody
+                font.pixelSize: 13
+                font.weight: NexaUI.NexaTypography.weightBold
             }
         }
 
-        Text {
-            Layout.fillWidth: true
-            text: "Airplane Mode"
-            color: NexaUI.NexaColors.text
-            font.family: NexaUI.NexaTypography.familyBody
-            font.pixelSize: NexaUI.NexaTypography.sizeSm
-            font.weight: NexaUI.NexaTypography.weightMedium
-            Layout.alignment: Qt.AlignVCenter
-        }
-
         Rectangle {
-            height: 22
-            width: 36
-            radius: 11
+            height: 24
+            width: 44
+            radius: 12
             color: root.airplaneEnabled ? NexaUI.NexaColors.info : NexaUI.NexaColors.surfaceContainer
             Layout.alignment: Qt.AlignVCenter
 
@@ -230,35 +356,19 @@ Item {
     RowLayout {
         id: batteryChargerLayout
         anchors.fill: parent
-        anchors.leftMargin: NexaUI.NexaTokens.spacingLg
-        anchors.rightMargin: NexaUI.NexaTokens.spacingLg
+        anchors.leftMargin: 12
+        anchors.rightMargin: 16
         spacing: 12
         visible: root.osdType === "battery"
 
-        // Animated Charging/Battery Icon Badge
-        Rectangle {
-            width: 28
-            height: 28
-            radius: 9
-            color: root.batteryCharging
-                ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.success, 0.20)
-                : NexaUI.NexaColors.surfaceContainer
-            border.width: NexaUI.NexaTokens.borderThin
-            border.color: root.batteryCharging
-                ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.success, 0.40)
-                : NexaUI.NexaColors.border
+        IslandTile {
+            size: 42
+            glyph: root.batteryCharging ? "󰂄" : "󰁹"
+            tint: root.batteryCharging ? NexaUI.NexaColors.success : NexaUI.NexaColors.primary
+            sonar: root.batteryCharging
             Layout.alignment: Qt.AlignVCenter
-
-            Text {
-                anchors.centerIn: parent
-                text: root.batteryCharging ? "󰂄" : "󰁹"
-                color: root.batteryCharging ? NexaUI.NexaColors.success : NexaUI.NexaColors.text
-                font.family: NexaUI.NexaTypography.familyIcon
-                font.pixelSize: 16
-            }
         }
 
-        // Title + Mini Progress Bar
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
@@ -283,7 +393,6 @@ Item {
             }
         }
 
-        // Percentage Badge Pill
         Rectangle {
             height: 24
             implicitWidth: pctText.implicitWidth + 14
@@ -317,38 +426,19 @@ Item {
     RowLayout {
         id: batteryLowLayout
         anchors.fill: parent
-        anchors.leftMargin: NexaUI.NexaTokens.spacingLg
-        anchors.rightMargin: NexaUI.NexaTokens.spacingLg
+        anchors.leftMargin: 12
+        anchors.rightMargin: 16
         spacing: 12
         visible: root.osdType === "battery_low"
 
-        // Pulsing Glowing Warning Badge
-        Rectangle {
-            width: 28
-            height: 28
-            radius: 9
-            color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.error, 0.22)
-            border.width: NexaUI.NexaTokens.borderThin
-            border.color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.error, 0.60)
+        IslandTile {
+            size: 42
+            glyph: "󰂃"
+            tint: NexaUI.NexaColors.error
+            sonar: true
             Layout.alignment: Qt.AlignVCenter
-
-            SequentialAnimation on opacity {
-                loops: Animation.Infinite
-                running: root.visible && root.osdType === "battery_low"
-                NumberAnimation { to: 0.45; duration: 700; easing.type: Easing.InOutQuad }
-                NumberAnimation { to: 1.0; duration: 700; easing.type: Easing.InOutQuad }
-            }
-
-            Text {
-                anchors.centerIn: parent
-                text: "󰂃"
-                color: NexaUI.NexaColors.error
-                font.family: NexaUI.NexaTypography.familyIcon
-                font.pixelSize: 16
-            }
         }
 
-        // Warning Title + Subtitle
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
@@ -374,7 +464,6 @@ Item {
             }
         }
 
-        // Unique Urgent Flag Pill with Flashing Beacon
         Rectangle {
             height: 24
             implicitWidth: lowFlagRow.implicitWidth + 16
@@ -424,31 +513,19 @@ Item {
     RowLayout {
         id: bluetoothLayout
         anchors.fill: parent
-        anchors.leftMargin: NexaUI.NexaTokens.spacingLg
-        anchors.rightMargin: NexaUI.NexaTokens.spacingLg
+        anchors.leftMargin: 12
+        anchors.rightMargin: 16
         spacing: 12
         visible: root.osdType === "bluetooth"
 
-        // Device Icon Badge
-        Rectangle {
-            width: 28
-            height: 28
-            radius: 9
-            color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.info, 0.18)
-            border.width: NexaUI.NexaTokens.borderThin
-            border.color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.info, 0.40)
+        IslandTile {
+            size: 42
+            glyph: root.icon.length > 0 ? root.icon : "󰂯"
+            tint: NexaUI.NexaColors.info
+            sonar: true
             Layout.alignment: Qt.AlignVCenter
-
-            Text {
-                anchors.centerIn: parent
-                text: root.icon.length > 0 ? root.icon : "󰂯"
-                color: NexaUI.NexaColors.info
-                font.family: NexaUI.NexaTypography.familyIcon
-                font.pixelSize: 16
-            }
         }
 
-        // Device Info
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
@@ -473,7 +550,6 @@ Item {
             }
         }
 
-        // Status / Battery Pill
         Rectangle {
             height: 24
             implicitWidth: btSubText.implicitWidth + 14
@@ -508,34 +584,18 @@ Item {
         RowLayout {
             id: wifiLayout
             anchors.fill: parent
-            anchors.leftMargin: NexaUI.NexaTokens.spacingLg
-            anchors.rightMargin: NexaUI.NexaTokens.spacingLg
+            anchors.leftMargin: 12
+            anchors.rightMargin: 16
             spacing: 12
 
-            // Wi-Fi Icon Badge
-            Rectangle {
-                width: 28
-                height: 28
-                radius: 9
-                color: root.hasInternet
-                    ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.info, 0.20)
-                    : NexaUI.NexaColors.alpha(NexaUI.NexaColors.warning, 0.22)
-                border.width: NexaUI.NexaTokens.borderThin
-                border.color: root.hasInternet
-                    ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.info, 0.40)
-                    : NexaUI.NexaColors.alpha(NexaUI.NexaColors.warning, 0.50)
+            IslandTile {
+                size: 42
+                glyph: root.hasInternet ? "󰤨" : "󰤭"
+                tint: root.hasInternet ? NexaUI.NexaColors.info : NexaUI.NexaColors.warning
+                sonar: true
                 Layout.alignment: Qt.AlignVCenter
-
-                Text {
-                    anchors.centerIn: parent
-                    text: root.hasInternet ? "󰤨" : "󰤭"
-                    color: root.hasInternet ? NexaUI.NexaColors.info : NexaUI.NexaColors.warning
-                    font.family: NexaUI.NexaTypography.familyIcon
-                    font.pixelSize: 16
-                }
             }
 
-            // Network Info
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
@@ -562,7 +622,6 @@ Item {
                 }
             }
 
-            // Status / Signal Pill
             Rectangle {
                 height: 24
                 implicitWidth: wifiSignalText.implicitWidth + 14
@@ -617,35 +676,18 @@ Item {
         id: keyLockLayout
         anchors.fill: parent
         anchors.leftMargin: 12
-        anchors.rightMargin: 14
-        spacing: 10
+        anchors.rightMargin: 16
+        spacing: 12
         visible: root.osdType === "capslock" || root.osdType === "numlock"
 
-        // Leading Key Icon Badge
-        Rectangle {
-            id: keyBadge
-            width: 32
-            height: 32
-            radius: 9
-            color: root.lockEnabled
-                ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.success, 0.18)
-                : NexaUI.NexaColors.surfaceContainer
-            border.width: NexaUI.NexaTokens.borderThin
-            border.color: root.lockEnabled
-                ? NexaUI.NexaColors.alpha(NexaUI.NexaColors.success, 0.38)
-                : NexaUI.NexaColors.border
+        IslandTile {
+            size: 42
+            glyph: root.osdType === "capslock" ? "󰬈" : "󰎤"
+            tint: root.lockEnabled ? NexaUI.NexaColors.success : NexaUI.NexaColors.mutedText
+            sonar: root.lockEnabled
             Layout.alignment: Qt.AlignVCenter
-
-            Text {
-                anchors.centerIn: parent
-                text: root.osdType === "capslock" ? "󰬈" : "󰎤"
-                color: root.lockEnabled ? NexaUI.NexaColors.success : NexaUI.NexaColors.mutedText
-                font.family: NexaUI.NexaTypography.familyIcon
-                font.pixelSize: 18
-            }
         }
 
-        // Info Text Column
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
@@ -684,7 +726,6 @@ Item {
             }
         }
 
-        // Trailing Status Pill Badge
         Rectangle {
             width: 44
             height: 24
