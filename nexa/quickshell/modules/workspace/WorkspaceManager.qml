@@ -307,10 +307,8 @@ PanelWindow {
 
 
                 if (
-                    manager.normalizeAddress(
-                        win.address
-                    )
-                    === wanted
+                    (win.normAddress && win.normAddress === wanted)
+                    || manager.normalizeAddress(win.address) === wanted
                 ) {
 
                     return {
@@ -359,10 +357,8 @@ PanelWindow {
 
 
                 if (
-                    manager.normalizeAddress(
-                        win.address
-                    )
-                    === wanted
+                    (win.normAddress && win.normAddress === wanted)
+                    || manager.normalizeAddress(win.address) === wanted
                 ) {
 
                     return {
@@ -699,6 +695,33 @@ PanelWindow {
 
 
     Process {
+        id: streamProcess
+
+        running: manager.visible && !manager.dragActive
+
+        command: [
+            manager.nexad,
+            "workspace",
+            "stream"
+        ]
+
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: data => {
+                const value = data.trim()
+                if (value === "")
+                    return
+                try {
+                    manager.workspaceState = JSON.parse(value)
+                } catch (error) {
+                    // Ignore partial reads
+                }
+            }
+        }
+    }
+
+
+    Process {
         id: infoProcess
 
         command: [
@@ -935,7 +958,7 @@ PanelWindow {
 
         const clean = cleanSpecialName(name)
 
-        if (clean === "terminal" || clean === "files") {
+        if (clean === "terminal" || clean === "files" || clean === "music") {
             runAction([
                 "hypr",
                 "scratchpad",
@@ -1075,7 +1098,7 @@ PanelWindow {
 
     Timer {
         interval:
-            800
+            4000
 
         repeat:
             true
@@ -1672,6 +1695,7 @@ PanelWindow {
                             readonly property string scratchIcon: {
                                 if (specialName === "terminal") return "󰆍"
                                 if (specialName === "files") return "󰉋"
+                                if (specialName === "music") return "󰝚"
                                 if (specialName === "magic") return "󰏤"
                                 return "󰍹"
                             }

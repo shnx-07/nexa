@@ -41,6 +41,17 @@ Item {
             if (root.value > 0.66) return "󰃠"
             if (root.value > 0.33) return "󰃟"
             return "󰃞"
+        case "battery":
+            if (root.batteryCharging) return "󰂄"
+            if (root.value > 0.85) return "󰁹"
+            if (root.value > 0.70) return "󰂂"
+            if (root.value > 0.55) return "󰂁"
+            if (root.value > 0.40) return "󰁿"
+            if (root.value > 0.25) return "󰁾"
+            if (root.value > 0.15) return "󰁽"
+            return "󰁺"
+        case "battery_low":
+            return "󰂃"
         case "airplane":
             return root.airplaneEnabled ? "󰀝" : "󰀞"
         case "capslock":
@@ -60,6 +71,13 @@ Item {
             return root.muted ? NexaUI.NexaColors.error : NexaUI.NexaColors.primary
         case "brightness":
             return NexaUI.NexaColors.warning
+        case "battery":
+            if (root.batteryCharging) return NexaUI.NexaColors.success
+            if (root.value <= 0.20) return NexaUI.NexaColors.error
+            if (root.value <= 0.35) return NexaUI.NexaColors.warning
+            return NexaUI.NexaColors.primary
+        case "battery_low":
+            return NexaUI.NexaColors.error
         case "airplane":
             return root.airplaneEnabled ? NexaUI.NexaColors.info : NexaUI.NexaColors.mutedText
         case "bluetooth":
@@ -75,28 +93,46 @@ Item {
     }
 
     // ============================================================
-    // 1. LIQUID PHYSICS WAVE OSD (VOLUME & BRIGHTNESS)
+    // 1. LIQUID PHYSICS WAVE OSD (VOLUME, BRIGHTNESS, BATTERY)
     // ============================================================
 
     Item {
         id: liquidOsdContainer
         anchors.fill: parent
-        visible: root.osdType === "volume" || root.osdType === "brightness"
+        visible: root.osdType === "volume" || root.osdType === "brightness" || root.osdType === "battery" || root.osdType === "battery_low"
 
-        // Smoothed front spring level
+        // Smoothed front spring level (accurately mapped to exact percentage)
         QtObject {
             id: front
-            property real target: root.value * liquidOsdContainer.width
-            property real value: 0
-            property real prevVal: 0
+            property real target: {
+                if (root.value <= 0.001) return -30
+                if (root.value >= 0.999) return liquidOsdContainer.width + 30
+                return root.value * liquidOsdContainer.width
+            }
+            property real value: target
+            property real prevVal: target
 
             onTargetChanged: value = target
 
             Behavior on value {
                 SpringAnimation {
-                    spring: 3.8
-                    damping: 0.34
+                    spring: 4.5
+                    damping: 0.65
                     epsilon: 0.2
+                }
+            }
+        }
+
+        Connections {
+            target: root
+            function onOsdTypeChanged() {
+                front.value = front.target
+                front.prevVal = front.target
+            }
+            function onValueChanged() {
+                if (!liquidOsdContainer.visible) {
+                    front.value = front.target
+                    front.prevVal = front.target
                 }
             }
         }
@@ -117,7 +153,7 @@ Item {
             onTriggered: {
                 const delta = Math.abs(front.value - front.prevVal);
                 front.prevVal = front.value;
-                const targetSlosh = Math.min(5.5, delta * 0.45);
+                const targetSlosh = Math.min(4.0, delta * 0.35);
                 liquidOsdContainer.slosh += (targetSlosh - liquidOsdContainer.slosh) * (1.0 - Math.exp(-frameTime * 4.0));
             }
         }
@@ -134,12 +170,12 @@ Item {
                 id: waterWave
                 anchors.fill: parent
                 axis: 1
-                level: Math.max(0, front.value)
+                level: front.value
                 phase1: liquidOsdContainer.phase
                 amp1: 1.2 + liquidOsdContainer.slosh
                 waves1: 1.15
                 phase2: liquidOsdContainer.phase * 1.8
-                amp2: liquidOsdContainer.slosh * 0.6
+                amp2: liquidOsdContainer.slosh * 0.5
                 waves2: 2.1
                 nearColor: root.iconColor
                 nearAlpha: 0.38
@@ -159,6 +195,7 @@ Item {
                 radius: 24
                 blur: 24
                 color: Qt.rgba(root.iconColor.r, root.iconColor.g, root.iconColor.b, 0.35)
+                visible: root.value > 0.001 && root.value < 0.999
             }
         }
 
@@ -187,7 +224,12 @@ Item {
                 spacing: 1
 
                 Text {
-                    text: root.osdType === "brightness" ? "Brightness" : "Volume"
+                    text: {
+                        if (root.osdType === "brightness") return "Brightness";
+                        if (root.osdType === "battery") return root.batteryCharging ? "Battery Charging" : "Battery";
+                        if (root.osdType === "battery_low") return "Battery Alert";
+                        return "Volume";
+                    }
                     color: Qt.rgba(255, 255, 255, 0.60)
                     font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 11
@@ -197,7 +239,12 @@ Item {
                 }
 
                 Text {
-                    text: root.osdType === "brightness" ? "Display Backlight" : (root.muted ? "Muted" : "Master Output")
+                    text: {
+                        if (root.osdType === "brightness") return "Display Backlight";
+                        if (root.osdType === "battery") return root.batteryCharging ? (root.title.length > 0 ? root.title : "AC Power Connected") : (root.title.length > 0 ? root.title : "On Battery Power");
+                        if (root.osdType === "battery_low") return "Connect Charger Immediately";
+                        return root.muted ? "Muted" : "Master Output";
+                    }
                     color: NexaUI.NexaColors.text
                     font.family: NexaUI.NexaTypography.familyBody
                     font.pixelSize: 13
@@ -359,7 +406,7 @@ Item {
         anchors.leftMargin: 12
         anchors.rightMargin: 16
         spacing: 12
-        visible: root.osdType === "battery"
+        visible: false
 
         IslandTile {
             size: 42
@@ -429,7 +476,7 @@ Item {
         anchors.leftMargin: 12
         anchors.rightMargin: 16
         spacing: 12
-        visible: root.osdType === "battery_low"
+        visible: false
 
         IslandTile {
             size: 42

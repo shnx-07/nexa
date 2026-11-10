@@ -182,35 +182,38 @@ PanelWindow {
     readonly property int shelfHeight: 155
 
     // ============================================================
-    // OSD DIMENSIONS (UNIQUE SIZES PER NOTIFICATION TYPE)
+    // OSD DIMENSIONS (UNIFIED CONSISTENT DIMENSIONS FOR ALL OSD TYPES)
     // ============================================================
 
-    readonly property int osdVolumeWidth: 400
-    readonly property int osdVolumeHeight: 64
+    readonly property int osdWidth: 400
+    readonly property int osdHeight: 64
 
-    readonly property int osdMuteWidth: 280
-    readonly property int osdMuteHeight: 56
+    readonly property int osdVolumeWidth: osdWidth
+    readonly property int osdVolumeHeight: osdHeight
 
-    readonly property int osdMicWidth: 280
-    readonly property int osdMicHeight: 56
+    readonly property int osdMuteWidth: osdWidth
+    readonly property int osdMuteHeight: osdHeight
 
-    readonly property int osdBrightnessWidth: 400
-    readonly property int osdBrightnessHeight: 64
+    readonly property int osdMicWidth: osdWidth
+    readonly property int osdMicHeight: osdHeight
 
-    readonly property int osdAirplaneWidth: 280
-    readonly property int osdAirplaneHeight: 56
+    readonly property int osdBrightnessWidth: osdWidth
+    readonly property int osdBrightnessHeight: osdHeight
 
-    readonly property int osdBatteryWidth: 320
-    readonly property int osdBatteryHeight: 56
+    readonly property int osdAirplaneWidth: osdWidth
+    readonly property int osdAirplaneHeight: osdHeight
 
-    readonly property int osdBluetoothWidth: 340
-    readonly property int osdBluetoothHeight: 56
+    readonly property int osdBatteryWidth: osdWidth
+    readonly property int osdBatteryHeight: osdHeight
 
-    readonly property int osdWifiWidth: 340
-    readonly property int osdWifiHeight: 56
+    readonly property int osdBluetoothWidth: osdWidth
+    readonly property int osdBluetoothHeight: osdHeight
 
-    readonly property int osdKeyLockWidth: 280
-    readonly property int osdKeyLockHeight: 56
+    readonly property int osdWifiWidth: osdWidth
+    readonly property int osdWifiHeight: osdHeight
+
+    readonly property int osdKeyLockWidth: osdWidth
+    readonly property int osdKeyLockHeight: osdHeight
 
     property string osdType: "none"
     property real osdValue: 0.74
@@ -941,27 +944,7 @@ PanelWindow {
         }
 
         if (root.osdActive) {
-            if (root.osdType === "volume")
-                return root.osdVolumeWidth
-            if (root.osdType === "mute")
-                return root.osdMuteWidth
-            if (root.osdType === "mic")
-                return root.osdMicWidth
-            if (root.osdType === "brightness")
-                return root.osdBrightnessWidth
-            if (root.osdType === "airplane")
-                return root.osdAirplaneWidth
-            if (root.osdType === "battery")
-                return root.osdBatteryWidth
-            if (root.osdType === "battery_low")
-                return root.osdBluetoothWidth
-            if (root.osdType === "bluetooth")
-                return root.osdBluetoothWidth
-            if (root.osdType === "wifi")
-                return root.osdWifiWidth
-            if (root.osdType === "capslock" || root.osdType === "numlock")
-                return root.osdKeyLockWidth
-            return 320
+            return root.osdWidth
         }
 
         if (root.notificationActive)
@@ -1005,27 +988,7 @@ PanelWindow {
         }
 
         if (root.osdActive) {
-            if (root.osdType === "volume")
-                return root.osdVolumeHeight
-            if (root.osdType === "mute")
-                return root.osdMuteHeight
-            if (root.osdType === "mic")
-                return root.osdMicHeight
-            if (root.osdType === "brightness")
-                return root.osdBrightnessHeight
-            if (root.osdType === "airplane")
-                return root.osdAirplaneHeight
-            if (root.osdType === "battery")
-                return root.osdBatteryHeight
-            if (root.osdType === "battery_low")
-                return root.osdBluetoothHeight
-            if (root.osdType === "bluetooth")
-                return root.osdBluetoothHeight
-            if (root.osdType === "wifi")
-                return root.osdWifiHeight
-            if (root.osdType === "capslock" || root.osdType === "numlock")
-                return root.osdKeyLockHeight
-            return 48
+            return root.osdHeight
         }
 
         if (root.notificationActive)
