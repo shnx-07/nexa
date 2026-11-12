@@ -173,6 +173,9 @@ Item {
         const list = getPlayerList()
         if (list.length === 0) {
             root.activePlayerObj = null
+            pauseExpiryTimer.stop()
+            root.pauseTimeoutExpired = true
+            NexaUI.NexaColors.resetMediaColors()
             return
         }
 
@@ -186,6 +189,9 @@ Item {
             }
             if (!found) {
                 root.activePlayerObj = null
+                pauseExpiryTimer.stop()
+                root.pauseTimeoutExpired = true
+                NexaUI.NexaColors.resetMediaColors()
             }
         }
 
@@ -215,6 +221,23 @@ Item {
             playingList.sort((a, b) => (root.playerLastActive[b.identity] || 0) - (root.playerLastActive[a.identity] || 0))
             root.activePlayerObj = playingList[0]
             return
+        }
+
+        // 2.5 If current activePlayerObj is still valid and within the pause timeout, retain it
+        if (root.activePlayerObj && !root.pauseTimeoutExpired) {
+            let stillPresent = false
+            for (let i = 0; i < list.length; ++i) {
+                if (list[i] && list[i] === root.activePlayerObj) {
+                    stillPresent = true
+                    break
+                }
+            }
+            if (stillPresent) {
+                const hasMeta = (root.activePlayerObj.trackTitle || "").trim() !== "" || (root.activePlayerObj.trackArtist || "").trim() !== ""
+                if (hasMeta) {
+                    return
+                }
+            }
         }
 
         // 3. Score all paused / idle players intelligently
@@ -271,6 +294,8 @@ Item {
         if (p.playbackState === MprisPlaybackState.Playing) {
             root.manualPlayerIdentity = ""
             root.playerLastActive[p.identity] = Date.now()
+        } else if (p.playbackState === MprisPlaybackState.Paused) {
+            root.playerLastActive[p.identity] = Date.now()
         }
         root.evaluateBestPlayer()
     }
@@ -308,7 +333,14 @@ Item {
     Connections {
         target: Mpris.players
         function onValuesChanged() {
+            root._stateTrigger++
             root.evaluateBestPlayer()
+            if (!Mpris.players.values || Mpris.players.values.length === 0) {
+                root.activePlayerObj = null
+                pauseExpiryTimer.stop()
+                root.pauseTimeoutExpired = true
+                NexaUI.NexaColors.resetMediaColors()
+            }
         }
     }
 
@@ -359,7 +391,7 @@ Item {
     // to the normal clock notch.
     // ------------------------------------------------------------
 
-    property bool pauseTimeoutExpired: false
+    property bool pauseTimeoutExpired: true
 
     Timer {
         id: pauseExpiryTimer
@@ -371,59 +403,54 @@ Item {
         }
     }
 
-    function checkPauseTimeoutState() {
-        if (!root.available || !root.hasTrack) {
-            pauseExpiryTimer.stop()
-            root.pauseTimeoutExpired = false
-            return
-        }
-
-        if (root.playing) {
-            pauseExpiryTimer.stop()
-            root.pauseTimeoutExpired = false
-        } else if (root.paused) {
-            if (!root.pauseTimeoutExpired && !pauseExpiryTimer.running) {
-                pauseExpiryTimer.restart()
-            }
-        } else {
-            // Player stopped
-            pauseExpiryTimer.stop()
-            root.pauseTimeoutExpired = true
-        }
-    }
-
     onPlayingChanged: {
         if (root.playing) {
+            pauseExpiryTimer.stop()
+            root.pauseTimeoutExpired = false
             triggerMatugenExtract()
+        } else {
+            // Player transitioned from playing to paused/stopped
+            if (root.available && root.hasTrack) {
+                root.pauseTimeoutExpired = false
+                pauseExpiryTimer.restart()
+            } else {
+                pauseExpiryTimer.stop()
+                root.pauseTimeoutExpired = true
+            }
         }
-        checkPauseTimeoutState()
-    }
-
-    onPausedChanged: {
-        checkPauseTimeoutState()
     }
 
     onAvailableChanged: {
         if (!root.available) {
             root.activePlayerObj = null
+            pauseExpiryTimer.stop()
+            root.pauseTimeoutExpired = true
         }
-        checkPauseTimeoutState()
     }
 
     onHasTrackChanged: {
         if (!root.hasTrack) {
             NexaUI.NexaColors.resetMediaColors()
             root.lastExtractedKey = ""
+            pauseExpiryTimer.stop()
+            root.pauseTimeoutExpired = true
         } else {
             triggerMatugenExtract()
+            if (root.playing) {
+                pauseExpiryTimer.stop()
+                root.pauseTimeoutExpired = false
+            } else if (!pauseExpiryTimer.running && !root.pauseTimeoutExpired) {
+                pauseExpiryTimer.restart()
+            }
         }
-        checkPauseTimeoutState()
     }
 
     readonly property bool contextActive:
         available
         && hasTrack
-        && (playing || (paused && !pauseTimeoutExpired))
+        && player
+        && player.playbackState !== MprisPlaybackState.Stopped
+        && (playing || !pauseTimeoutExpired)
 
     readonly property bool hasTrack:
         available
@@ -523,7 +550,16 @@ Item {
     }
 
     onPlayerChanged: {
-        checkPauseTimeoutState()
+        if (root.playing) {
+            root.pauseTimeoutExpired = false
+            pauseExpiryTimer.stop()
+        } else if (root.available && root.hasTrack) {
+            root.pauseTimeoutExpired = false
+            pauseExpiryTimer.restart()
+        } else {
+            root.pauseTimeoutExpired = true
+            pauseExpiryTimer.stop()
+        }
         root.fetchedCoverUrl = ""
         root.lastExtractedKey = ""
         triggerCoverFetch()
@@ -532,7 +568,9 @@ Item {
 
     Component.onCompleted: {
         root.evaluateBestPlayer()
-        root.checkPauseTimeoutState()
+        if (root.playing) {
+            root.pauseTimeoutExpired = false
+        }
         if (initialPlayerctlProbe) initialPlayerctlProbe.running = true
         triggerCoverFetch()
         triggerMatugenExtract()
@@ -892,7 +930,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: root.playerIcon(root.identity)
-                    color: root.albumAccentColor
+                    color: NexaUI.NexaColors.primary
                     font.family: NexaUI.NexaTypography.familyIcon
                     font.pixelSize: 10
                 }
@@ -952,8 +990,8 @@ Item {
                     height: Math.max(3, Math.round(3 + v * 13))
 
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.lighter(root.albumAccentColor, 1.25) }
-                        GradientStop { position: 1.0; color: Qt.darker(root.albumAccentColor, 1.15) }
+                        GradientStop { position: 0.0; color: Qt.lighter(NexaUI.NexaColors.primary, 1.25) }
+                        GradientStop { position: 1.0; color: NexaUI.NexaColors.primary }
                     }
 
                     Behavior on height {

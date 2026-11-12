@@ -2,7 +2,6 @@ use super::list::{classify, ensure_proxy, ensure_thumbnail, wallpaper_dir};
 use std::{
     env, fs,
     path::{Path, PathBuf},
-    process::Command,
 };
 
 // ============================================================
@@ -266,7 +265,7 @@ pub fn apply_desktop(
         config_escape(&preview_path.to_string_lossy()),
         config_escape(monitor_target)
     );
-    let _ = fs::write(&config, contents);
+    let _ = crate::core::fs_utils::atomic_write(&config, contents);
 
     println!("desktop_wallpaper={}|{}", kind, resolved_path.display());
 
@@ -275,18 +274,10 @@ pub fn apply_desktop(
     }
 
     let _ = crate::palette::theme::apply();
-
-    let home = env::var("HOME").unwrap_or_else(|_| String::from("."));
-    let nexad_bin = PathBuf::from(&home).join(".config/nexa/rust/target/release/nexad");
-    if nexad_bin.exists() {
-        let _ = Command::new(&nexad_bin)
-            .args([
-                "screenTemp",
-                "wallpaper",
-                &theme_source_path.to_string_lossy(),
-            ])
-            .spawn();
-    }
+    let _ = crate::hardware::screenTemp::handle(&[
+        "wallpaper".to_string(),
+        theme_source_path.to_string_lossy().to_string(),
+    ]);
 
     Ok(())
 }
@@ -336,8 +327,7 @@ pub fn set_lock(path: &str) -> Result<(), String> {
         kind
     );
 
-    fs::write(&config, contents)
-        .map_err(|error| format!("Failed to save lock wallpaper: {}", error))?;
+    crate::core::fs_utils::atomic_write(&config, contents)?;
 
     if let Ok(home) = env::var("HOME") {
         let cache_wp = PathBuf::from(home).join(".cache/current_wallpaper");

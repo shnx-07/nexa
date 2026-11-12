@@ -3,13 +3,13 @@ import QtQuick.Layouts
 
 import Quickshell
 
-import "../NewNexaUI" as NexaUI
-import "../services" as Services
-import "../modules/workspace" as WorkspaceModule
-import "../modules/battery" as BatteryModule
-import "../modules/network" as NetworkModule
-import "../modules/power" as PowerModule
-import "../decorations/ConstellationRail" as ConstellationRailModule
+import "../../NewNexaUI" as NexaUI
+import "../../services" as Services
+import "../workspace" as WorkspaceModule
+import "../battery" as BatteryModule
+import "../network" as NetworkModule
+import "../power" as PowerModule
+import "../../decorations/ConstellationRail" as ConstellationRailModule
 
 PanelWindow {
     id: root

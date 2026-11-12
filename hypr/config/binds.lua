@@ -91,7 +91,7 @@ end)
 
 -- Standard application shortcuts
 hl.bind(MOD .. " + B", hl.dsp.exec_cmd(browser))
-hl.bind(MOD .. " + M", hl.dsp.exec_cmd(music))
+hl.bind(MOD .. " + M", hl.dsp.exec_cmd(nexad .. " hypr scratchpad music"))
 
 -- ==============================================================================
 -- 3. NEXA DESKTOP UI & UTILITIES

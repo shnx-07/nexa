@@ -43,10 +43,53 @@ Singleton {
 
     property bool shouldRun: true
 
+    Timer {
+        id: restartTimer
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (root.isMediaPlaying && !streamProcess.running) {
+                streamProcess.running = true;
+            }
+        }
+    }
+
+    function reset() {
+        root.energy = 0.0;
+        root.bass = 0.0;
+        root.mid = 0.0;
+        root.treble = 0.0;
+        root.isBeat = false;
+        root.waveAmplitude = 0.0;
+        root.speedMultiplier = 1.0;
+        root.bars = [
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0
+        ];
+        root.waveProfile = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        root.frameTick();
+    }
+
+    onIsMediaPlayingChanged: {
+        if (root.isMediaPlaying) {
+            if (!streamProcess.running) streamProcess.running = true;
+        } else {
+            if (streamProcess.running) streamProcess.running = false;
+            root.reset();
+        }
+    }
+
     Process {
         id: streamProcess
         command: [root.nexadBin, "visualizer", "stream"]
-        running: true
+        running: root.isMediaPlaying
+
+        onRunningChanged: {
+            if (!running && root.isMediaPlaying) {
+                restartTimer.restart();
+            }
+        }
 
         stdout: SplitParser {
             splitMarker: "\n"

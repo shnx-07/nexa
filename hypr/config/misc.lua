@@ -17,6 +17,11 @@ hl.config({
         disable_hyprland_logo = true,
         disable_splash_rendering = true,
         close_special_on_empty = true,
+        animate_manual_resizes = false,
+        animate_mouse_windowdragging = false,
+    },
+    render = {
+        direct_scanout = true,
     },
     xwayland = {
         force_zero_scaling = true

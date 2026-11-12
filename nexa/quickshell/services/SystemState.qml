@@ -56,12 +56,7 @@ Item {
         }
     }
 
-    Timer {
-        interval: 3000
-        repeat: true
-        running: true
-        onTriggered: stateFile.reload()
-    }
+    // Atomic inotify updates via FileView watchChanges (zero polling overhead)
 
     function parseState(raw) {
         if (!raw || raw.trim().length === 0) return

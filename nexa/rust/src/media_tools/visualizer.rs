@@ -79,29 +79,33 @@ pub fn run_stream() {
     let mut wave_amp: f32 = 0.0;
     let mut silent_frames: u32 = 0;
 
-    // Single persistent child instance
-    let mut child = match spawn_cava(&conf) {
-        Some(c) => c,
-        None => {
-            let default_frame = VisualizerFrame::default();
-            if let Ok(json) = serde_json::to_string(&default_frame) {
-                let _ = writeln!(out, "{json}");
-                let _ = out.flush();
+    loop {
+        let mut child = match spawn_cava(&conf) {
+            Some(c) => c,
+            None => {
+                let default_frame = VisualizerFrame::default();
+                if let Ok(json) = serde_json::to_string(&default_frame) {
+                    if writeln!(out, "{json}").is_err() || out.flush().is_err() {
+                        return;
+                    }
+                }
+                thread::sleep(Duration::from_millis(500));
+                continue;
             }
-            return;
-        }
-    };
+        };
 
-    let stdout_handle = match child.stdout.take() {
-        Some(h) => h,
-        None => {
-            let _ = child.kill();
-            let _ = child.wait();
-            return;
-        }
-    };
+        let stdout_handle = match child.stdout.take() {
+            Some(h) => h,
+            None => {
+                let _ = child.kill();
+                let _ = child.wait();
+                thread::sleep(Duration::from_millis(500));
+                continue;
+            }
+        };
 
-    let reader = BufReader::new(stdout_handle);
+        let reader = BufReader::new(stdout_handle);
+        let mut pipe_closed = false;
 
     for line_res in reader.lines() {
         let line = match line_res {
@@ -240,12 +244,20 @@ pub fn run_stream() {
 
         if let Ok(json) = serde_json::to_string(&frame) {
             if writeln!(out, "{json}").is_err() || out.flush().is_err() {
+                pipe_closed = true;
                 break;
             }
         }
     }
 
-    // Clean exit: kill and reap child to prevent zombies
+    // Clean exit of child
     let _ = child.kill();
     let _ = child.wait();
+
+    if pipe_closed {
+        return;
+    }
+
+    thread::sleep(Duration::from_millis(300));
+}
 }

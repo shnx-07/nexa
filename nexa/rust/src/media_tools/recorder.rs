@@ -120,13 +120,9 @@ fn load_state() -> Option<RecorderState> {
 }
 
 fn save_state(state: &RecorderState) -> Result<(), String> {
-    fs::create_dir_all(runtime_dir())
-        .map_err(|error| format!("Failed to create recorder runtime directory: {error}"))?;
-
     let json = serde_json::to_string(state)
         .map_err(|error| format!("Failed to serialize recorder state: {error}"))?;
-
-    fs::write(state_path(), json).map_err(|error| format!("Failed to save recorder state: {error}"))
+    crate::core::fs_utils::atomic_write(state_path(), json)
 }
 
 fn clear_state() {
@@ -138,29 +134,22 @@ fn clear_state() {
 // ============================================================
 
 fn process_alive(pid: u32) -> bool {
-    Command::new("kill")
-        .arg("-0")
-        .arg(pid.to_string())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map(|status| status.success())
-        .unwrap_or(false)
+    unsafe { libc::kill(pid as libc::pid_t, 0) == 0 }
 }
 
 fn send_signal(signal: &str, pid: u32) -> Result<(), String> {
-    let status = Command::new("kill")
-        .arg(signal)
-        .arg(pid.to_string())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map_err(|error| format!("Failed to send {signal}: {error}"))?;
-
-    if status.success() {
+    let sig = match signal {
+        "-STOP" | "STOP" | "SIGSTOP" => libc::SIGSTOP,
+        "-CONT" | "CONT" | "SIGCONT" => libc::SIGCONT,
+        "-INT" | "INT" | "SIGINT" => libc::SIGINT,
+        "-TERM" | "TERM" | "SIGTERM" => libc::SIGTERM,
+        _ => libc::SIGINT,
+    };
+    let res = unsafe { libc::kill(pid as libc::pid_t, sig) };
+    if res == 0 {
         Ok(())
     } else {
-        Err(format!("Signal {signal} failed with status: {status}"))
+        Err(format!("Signal {signal} to pid {pid} failed: {}", std::io::Error::last_os_error()))
     }
 }
 

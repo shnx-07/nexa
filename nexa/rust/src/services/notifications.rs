@@ -135,11 +135,7 @@ fn write_state(notifications: &[Notification]) {
     };
 
     if let Ok(json) = serde_json::to_string_pretty(&state) {
-        let temporary = path.with_extension("tmp");
-
-        if fs::write(&temporary, json).is_ok() {
-            let _ = fs::rename(temporary, path);
-        }
+        let _ = crate::core::fs_utils::atomic_write(&path, json);
     }
 }
 

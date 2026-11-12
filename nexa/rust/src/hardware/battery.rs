@@ -268,7 +268,7 @@ pub fn run_watch() -> Result<(), String> {
             last_percentage = Some(st.percentage);
         }
 
-        thread::sleep(Duration::from_millis(800));
+        thread::sleep(Duration::from_millis(2500));
     }
 }
 

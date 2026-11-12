@@ -5,7 +5,7 @@
   "physicsDamping": 0.86,
   "animationSpeed": 1.4,
   "preset": "fluid",
-  "hyprAnimationProfile": "cinematic",
+  "hyprAnimationProfile": "slidefade",
   "stiffness": 3.82,
   "damping": 0.28,
   "mass": 1,

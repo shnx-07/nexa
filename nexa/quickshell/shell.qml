@@ -3,11 +3,11 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
-import "bar"
+import "modules/bar"
 import "island"
 import "modules/lockscreen" as LockScreenModule
 import "modules/nightlight" as NightLightModule
-import "wallpaper" as WallpaperModule
+import "modules/wallpaper" as WallpaperModule
 import "services" as Services
 import "NewNexaUI" as NexaUI
 
@@ -43,29 +43,8 @@ ShellRoot {
         running: true
     }
 
-    Process {
-        id: powerWatcherStartup
-
-        command: [
-            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
-            "power",
-            "watch"
-        ]
-
-        running: true
-    }
-
-    Process {
-        id: networkWatcherStartup
-
-        command: [
-            Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad",
-            "network",
-            "watch"
-        ]
-
-        running: true
-    }
+    // Power & Network background watchers are managed by the unified nexad autostart subsystem
+    // to avoid duplicate D-Bus threads and redundant wakeups.
 
     Process {
         id: slideshowDaemonStartup
@@ -156,7 +135,7 @@ ShellRoot {
     Loader {
         id: wallpaperLoader
         active: false
-        source: "wallpaper/WallpaperView.qml"
+        source: "modules/wallpaper/WallpaperView.qml"
         onLoaded: {
             if (item) {
                 item.visible = true
@@ -286,10 +265,11 @@ ShellRoot {
         }
     }
 
+    // Settings is loaded on-demand when requested via IPC or shortcut
     Timer {
         id: settingsPreloadTimer
         interval: 1500
-        running: true
+        running: false
         repeat: false
         onTriggered: {
             if (!settingsLoader.active) {

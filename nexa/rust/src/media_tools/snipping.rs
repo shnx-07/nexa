@@ -117,7 +117,13 @@ pub fn capture() {
         .status();
 
     match grim_status {
-        Ok(status) if status.success() => {}
+        Ok(status) if status.success() => {
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let _ = fs::set_permissions(&path, fs::Permissions::from_mode(0o600));
+            }
+        }
 
         Ok(status) => {
             print_json(&SnippingResponse {

@@ -155,7 +155,7 @@ pub fn sync_decorations() -> Result<(), String> {
                 shadow = {{
                     enabled = {shadow_enabled},
                     range = {shadow_range},
-                    render_power = 4,
+                    render_power = 2,
                     color = "rgba(000000aa)",
                     color_inactive = "rgba(00000065)",
                     offset = "0 8",
@@ -172,9 +172,10 @@ pub fn sync_decorations() -> Result<(), String> {
             master = {{ new_status = "master" }},
             misc = {{
                 force_default_wallpaper = -1,
-                disable_hyprland_logo = false,
-                animate_manual_resizes = true,
-                animate_mouse_windowdragging = true
+                disable_hyprland_logo = true,
+                disable_splash_rendering = true,
+                animate_manual_resizes = false,
+                animate_mouse_windowdragging = false
             }}
         }})
         "#

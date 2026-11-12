@@ -1008,7 +1008,7 @@ pub fn run_watch() -> Result<(), String> {
     }
 
     loop {
-        thread::sleep(Duration::from_millis(1500));
+        thread::sleep(Duration::from_millis(3500));
         let wifi = service.wifi_info().ok();
         let bt = service.bluetooth_info().ok();
 

@@ -5,7 +5,7 @@ import QtMultimedia
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
-import "../NewNexaUI" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 Item {
     id: root
@@ -63,8 +63,15 @@ Item {
                 if (!this.text || this.text.trim() === "") return;
                 try {
                     const data = JSON.parse(this.text.trim());
-                    root.allSlideshowItems = data.wallpapers || [];
-                    root.filterAndPopulateModel();
+                    const incoming = data.wallpapers || [];
+                    let changed = incoming.length !== root.allSlideshowItems.length;
+                    if (!changed && incoming.length > 0 && root.allSlideshowItems.length > 0) {
+                        changed = incoming[0].path !== root.allSlideshowItems[0].path;
+                    }
+                    if (changed || folderModel.count === 0) {
+                        root.allSlideshowItems = incoming;
+                        root.filterAndPopulateModel();
+                    }
                 } catch (e) {
                     console.warn("[SlideshowWallpaperView] Error parsing slideshow JSON:", e);
                 }
@@ -81,15 +88,19 @@ Item {
         const q = root.searchQuery.trim().toLowerCase();
         const t = root.slideshowType.toLowerCase();
         folderModel.clear();
+        const batch = [];
         for (let i = 0; i < root.allSlideshowItems.length; ++i) {
             const it = root.allSlideshowItems[i];
             const kind = (it.kind || "").toLowerCase();
             if (t !== "all" && kind !== t) continue;
             if (q.length > 0 && !it.name.toLowerCase().includes(q)) continue;
-            folderModel.append({
+            batch.push({
                 fileName: it.name, filePath: it.path, fileURL: "file://" + it.path,
                 wallType: it.kind, wallThumb: it.thumb, wallProxy: it.proxy, formattedSize: it.formatted_size
             });
+        }
+        if (batch.length > 0) {
+            folderModel.append(batch);
         }
         root.syncCurrentSelection();
     }
@@ -99,7 +110,13 @@ Item {
     onLastWallpaperChanged: syncCurrentSelection()
 
     Component.onCompleted: { root.reload(); grid.forceActiveFocus(); }
-    onVisibleChanged: if (visible) { root.reload(); grid.forceActiveFocus(); root.syncCurrentSelection(); }
+    onVisibleChanged: if (visible) {
+        if (folderModel.count === 0) {
+            root.reload();
+        }
+        grid.forceActiveFocus();
+        root.syncCurrentSelection();
+    }
 
     function applySelected() {
         if (folderModel.count <= 0 || grid.currentIndex < 0 || grid.currentIndex >= folderModel.count) return;
@@ -298,7 +315,7 @@ Item {
     GridView {
         id: grid
         anchors { top: headerRow.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 6 }
-        clip: true; cacheBuffer: 1200; currentIndex: 0; focus: true; boundsBehavior: Flickable.StopAtBounds
+        clip: true; cacheBuffer: 400; currentIndex: 0; focus: true; boundsBehavior: Flickable.StopAtBounds
         readonly property int cols: root.gridMetrics.columns || 5
         cellWidth: width / cols
         cellHeight: Math.round(cellWidth * (root.gridMetrics.cell_height_ratio || 0.5625)) + 12
@@ -320,25 +337,28 @@ Item {
                 const idx = itemFileName.lastIndexOf(".");
                 return idx > 0 ? itemFileName.substring(0, idx) : itemFileName;
             }
-            readonly property string cachedThumb: root.thumbDir + fileBaseName + ".jpg"
+            readonly property string resolvedThumb: root.fileUrl(model.wallThumb || model.filePath)
             readonly property bool isCurrent: root.lastWallpaper.length > 0 && (root.lastWallpaper === itemFilePath || root.lastWallpaper.endsWith("/" + itemFileName))
             readonly property bool isVideoFile: (model.wallType || "").toLowerCase() === "video"
             readonly property bool isGifFile: (model.wallType || "").toLowerCase() === "gif"
 
-            // Ambient Halo Aura
+            // Ambient Halo Aura (Only rendered and blurred when highlighted/current)
             Item {
                 anchors.fill: cardFrame; anchors.margins: -12; z: -1
+                visible: opacity > 0.01
                 opacity: delegateRoot.isHighlighted ? 0.65 : (delegateRoot.isCurrent ? 0.40 : 0.0)
                 Behavior on opacity { NumberAnimation { duration: 200 } }
-                layer.enabled: true
+                layer.enabled: visible
                 layer.effect: OpacityMask {
                     maskSource: Rectangle { width: cardFrame.width + 24; height: cardFrame.height + 24; radius: (root.gridMetrics.corner_radius || NexaUI.NexaTokens.radiusLg) + 6 }
                 }
                 Image {
-                    id: auraImg; anchors.fill: parent; source: delegateRoot.cachedThumb; fillMode: Image.PreserveAspectCrop; asynchronous: true; visible: false
-                    onStatusChanged: if (status === Image.Error) source = model.fileURL || ""
+                    id: auraImg; anchors.fill: parent
+                    source: (delegateRoot.isHighlighted || delegateRoot.isCurrent) ? delegateRoot.resolvedThumb : ""
+                    sourceSize.width: 160; sourceSize.height: 90
+                    fillMode: Image.PreserveAspectCrop; asynchronous: true; visible: false
                 }
-                MultiEffect { anchors.fill: parent; source: auraImg; blurEnabled: true; blur: 1.0; blurMax: 32; saturation: 0.75 }
+                MultiEffect { anchors.fill: parent; source: auraImg; blurEnabled: true; blur: 1.0; blurMax: 24; saturation: 0.75 }
             }
 
             // Card Frame with Nexa Motion Spring Physics
@@ -364,11 +384,12 @@ Item {
                     }
                     Rectangle { anchors.fill: parent; color: NexaUI.NexaColors.surfaceContainerLow }
 
-                    // Static Thumbnail (Always loaded first by Rust)
+                    // Static Thumbnail (Instant resolved thumb from Rust)
                     Image {
-                        id: thumb; anchors.fill: parent; source: delegateRoot.cachedThumb; asynchronous: true; cache: true
+                        id: thumb; anchors.fill: parent
+                        source: delegateRoot.resolvedThumb
+                        asynchronous: true; cache: true
                         sourceSize.width: 480; sourceSize.height: 270; fillMode: Image.PreserveAspectCrop
-                        onStatusChanged: if (status === Image.Error) source = model.fileURL || ""
                     }
 
                     // GIF playback on hover/selection

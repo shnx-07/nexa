@@ -7,7 +7,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
-import "../NewNexaUI" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 PanelWindow {
     id: root
@@ -357,15 +357,19 @@ PanelWindow {
         const f = root.currentFilter.toLowerCase();
         filteredModel.clear();
         let targetIdx = 0;
+        const batch = [];
         for (let i = 0; i < root.rawWallpapers.length; ++i) {
             const it = root.rawWallpapers[i];
             const kind = (it.kind || "").toLowerCase();
             if (f !== "all" && kind !== f) continue;
-            if (it.path === root.currentWallpaperPath) targetIdx = filteredModel.count;
-            filteredModel.append({
+            if (it.path === root.currentWallpaperPath) targetIdx = batch.length;
+            batch.push({
                 wallType: it.kind, wallPath: it.path, wallThumb: it.thumb,
                 wallProxy: it.proxy, wallName: it.name, formattedSize: it.formatted_size
             });
+        }
+        if (batch.length > 0) {
+            filteredModel.append(batch);
         }
         carouselList.currentIndex = Math.min(targetIdx, Math.max(0, filteredModel.count - 1));
         infoDebounce.restart();
@@ -401,10 +405,12 @@ PanelWindow {
         property var options: []
         property int menuWidth: 168
         property bool alignLeft: false
+        property int customHeight: 34
         signal selected(string value)
 
         implicitWidth: selRow.implicitWidth + 24
-        height: 40
+        width: implicitWidth
+        height: customHeight
 
         // True Qt Quick Controls Popup (Pops upward on Overlay.overlay without clipping!)
         Popup {
@@ -486,7 +492,8 @@ PanelWindow {
         Loader {
             id: slideshowLoader
             anchors { fill: parent; margins: 36; bottomMargin: 90 }
-            active: root.slideshowEnabled; visible: root.slideshowEnabled
+            active: root.slideshowEnabled || (slideshowLoader.status === Loader.Ready)
+            visible: root.slideshowEnabled
             sourceComponent: Component {
                 SlideshowWallpaperView {
                     slideshowFolder: root.slideshowFolder
@@ -816,7 +823,7 @@ PanelWindow {
                 color: NexaUI.NexaColors.surfaceContainer
                 border.width: NexaUI.NexaTokens.borderThin
                 border.color: NexaUI.NexaColors.border
-                implicitWidth: filterRow.implicitWidth + 24
+                implicitWidth: filterRow.implicitWidth + 28
 
                 // Apple Tactile 4-stop Depth Micro-Gradient
                 Rectangle {
@@ -871,7 +878,8 @@ PanelWindow {
 
                 Row {
                     id: filterRow
-                    anchors.centerIn: parent; spacing: 8
+                    anchors.centerIn: parent
+                    spacing: 8
 
                     Repeater {
                         model: ["All", "Image", "GIF", "Video"]
@@ -882,6 +890,7 @@ PanelWindow {
                             checkable: true
                             checked: active
                             customHeight: 34
+                            anchors.verticalCenter: parent.verticalCenter
                             text: modelData
                             onClicked: {
                                 root.currentFilter = modelData
@@ -905,6 +914,8 @@ PanelWindow {
                         options: ["Background", "Lock Screen", "Both"]
                         menuWidth: 168
                         alignLeft: true
+                        customHeight: 34
+                        anchors.verticalCenter: parent.verticalCenter
                         onSelected: v => {
                             root.applyTarget = v
                             root.slideshowTarget = v
@@ -1028,6 +1039,8 @@ PanelWindow {
                         currentValue: root.slideshowInterval
                         options: ["1m", "5m", "10m", "15m", "30m", "1h"]
                         menuWidth: 108
+                        customHeight: 34
+                        anchors.verticalCenter: parent.verticalCenter
                         onSelected: v => {
                             root.slideshowInterval = v
                             root.dispatchSlideshowCmd(["set", "--interval", v])
@@ -1038,7 +1051,8 @@ PanelWindow {
                     NexaUI.NexaButton {
                         visible: root.slideshowEnabled
                         implicitWidth: 104
-                        implicitHeight: 40
+                        customHeight: 34
+                        anchors.verticalCenter: parent.verticalCenter
                         variant: root.slideshowPaused ? "filled" : "ghost"
                         icon: root.slideshowPaused ? "▶" : "⏸"
                         text: root.slideshowPaused ? "Resume" : "Pause"
@@ -1052,7 +1066,8 @@ PanelWindow {
                     NexaUI.NexaButton {
                         visible: root.slideshowEnabled
                         implicitWidth: 88
-                        implicitHeight: 40
+                        customHeight: 34
+                        anchors.verticalCenter: parent.verticalCenter
                         variant: "ghost"
                         icon: "⏭"
                         text: "Next"
@@ -1068,6 +1083,8 @@ PanelWindow {
                         currentValue: root.slideshowType
                         options: ["All", "Image", "GIF", "Video"]
                         menuWidth: 120
+                        customHeight: 34
+                        anchors.verticalCenter: parent.verticalCenter
                         onSelected: v => {
                             root.slideshowType = v
                             root.dispatchSlideshowCmd(["set", "--type", v.toLowerCase()])
@@ -1077,7 +1094,7 @@ PanelWindow {
                     // Divider in Slideshow
                     Rectangle {
                         visible: root.slideshowEnabled
-                        width: 1; height: 24; color: NexaUI.NexaColors.border
+                        width: 1; height: 20; color: NexaUI.NexaColors.border
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
@@ -1089,6 +1106,8 @@ PanelWindow {
                         options: ["Background", "Lock Screen", "Both"]
                         menuWidth: 168
                         alignLeft: true
+                        customHeight: 34
+                        anchors.verticalCenter: parent.verticalCenter
                         onSelected: v => {
                             root.applyTarget = v
                             root.slideshowTarget = v
@@ -1099,15 +1118,16 @@ PanelWindow {
                     // Divider in Slideshow
                     Rectangle {
                         visible: root.slideshowEnabled
-                        width: 1; height: 24; color: NexaUI.NexaColors.border
+                        width: 1; height: 20; color: NexaUI.NexaColors.border
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
                     // Slideshow: ON Pill with live status dot
                     Rectangle {
                         visible: root.slideshowEnabled
-                        height: 40
-                        radius: NexaUI.NexaTokens.radiusSm
+                        height: 34
+                        radius: NexaUI.NexaTokens.radiusPill
+                        anchors.verticalCenter: parent.verticalCenter
                         implicitWidth: slideOnRow.implicitWidth + 24
                         color: NexaUI.NexaColors.alpha(NexaUI.NexaColors.primary, 0.15)
                         border.width: NexaUI.NexaTokens.borderThin

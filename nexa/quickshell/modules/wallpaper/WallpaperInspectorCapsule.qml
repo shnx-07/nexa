@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import "../NewNexaUI" as NexaUI
+import "../../NewNexaUI" as NexaUI
 
 Rectangle {
     id: root

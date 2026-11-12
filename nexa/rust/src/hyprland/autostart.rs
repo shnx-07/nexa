@@ -86,12 +86,18 @@ pub fn run_autostart() -> Result<(), String> {
         let _ = spawn_detached("playerctld", &["daemon"], &[]);
     }
 
-    // Clipboard history daemon (text & image watchers)
-    if !is_running_pattern("cliphist store") {
-        let _ = Command::new("sh")
-            .arg("-c")
-            .arg("wl-paste --type text --watch cliphist store & wl-paste --type image --watch cliphist store &")
-            .spawn();
+    // Clipboard history daemon with sensitive secret & credential guard
+    if !is_running_pattern("clipboard.*store-text") {
+        let _ = spawn_detached(
+            "wl-paste",
+            &["--type", "text", "--watch", &nexad_bin, "clipboard", "store-text"],
+            &[],
+        );
+        let _ = spawn_detached(
+            "wl-paste",
+            &["--type", "image", "--watch", &nexad_bin, "clipboard", "store-image"],
+            &[],
+        );
     }
 
     // hypridle (screen idle management)
@@ -134,7 +140,7 @@ pub fn print_status() {
         .map(|o| o.status.success() && String::from_utf8_lossy(&o.stdout).trim() == "active")
         .unwrap_or(false);
     let playerctld_running = is_running_exact("playerctld");
-    let cliphist_running = is_running_pattern("cliphist store");
+    let cliphist_running = is_running_pattern("store-text") || is_running_pattern("cliphist store");
     let hypridle_running = is_running_exact("hypridle");
     let wallpaper_running = is_running_exact("skwd-paper");
 

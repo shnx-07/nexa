@@ -109,7 +109,16 @@ hl.window_rule({ match = { initial_title = "^(.*[Yy]azi.*)$" }, float = true, ce
 hl.window_rule({ match = { class = terminals, title = "^(.*[Yy]azi.*)$" }, float = true, center = true, size = { "monitor_w*0.55", "monitor_h*0.55" } })
 hl.window_rule({ match = { class = terminals, initial_title = "^(.*[Yy]azi.*)$" }, float = true, center = true, size = { "monitor_w*0.55", "monitor_h*0.55" } })
 
--- 10. Specific Application Floating & Sizing Rules
+-- 10. Music Scratchpad Geometry (Exact 9x6 inches: 1270x848)
+hl.window_rule({
+    name = "music-scratchpad-geometry",
+    match = { workspace = "special:music" },
+    float = true,
+    center = true,
+    size = { "monitor_w*0.662", "monitor_h*0.785" },
+})
+
+-- 11. Specific Application Floating & Sizing Rules
 hl.window_rule({ match = { class = "^(.*\\.exe)$" }, float = true, center = true, fullscreen_state = 0 })
 hl.window_rule({ match = { class = "^(.*[Ll]auncher.*)$" }, float = true })
 hl.window_rule({ match = { class = "^(vesktop|discord)$" } })

@@ -762,6 +762,8 @@ fn main() {
                     clipboard::get(&args[3]);
                 }
                 "clear" => clipboard::clear(),
+                "store-text" => clipboard::store_text(),
+                "store-image" => clipboard::store_image(),
                 _ => print_usage(),
             }
         }

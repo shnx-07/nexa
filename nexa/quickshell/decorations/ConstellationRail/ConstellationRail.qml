@@ -33,11 +33,8 @@ Item {
     // Native Nexa Media Service connection
     readonly property bool isMusicPlaying: Services.Media.isPlaying
 
-    // Dynamic Rail Color: Live music album art when playing, falling back to NewNexaUI
-    readonly property bool hasMediaActive: root.isMusicPlaying && NexaUI.NexaColors.hasMediaColors
-    readonly property color railColor: root.hasMediaActive
-        ? NexaUI.NexaColors.mediaPrimary
-        : NexaUI.NexaColors.primary
+    // Rail Color: Strictly tied to NexaUI theme (never modified by music album art)
+    readonly property color railColor: NexaUI.NexaColors.primary
 
     // ---------------------------------------------------------
     // Live Hyprland Workspaces (Zero-Latency In-Memory Tracking)
@@ -114,14 +111,19 @@ Item {
     // ---------------------------------------------------------
     // Wave Amplitude (Dynamic real audio reactivity from unified Rust visualizer)
     // ---------------------------------------------------------
-    readonly property bool isAudioActive: (Services.AudioVisualizer.energy > 0.015) || root.isMusicPlaying
-    readonly property real liveWaveAmp: (3.0 + Services.AudioVisualizer.energy * 2.0)
+    readonly property bool isAudioActive: root.isMusicPlaying
+    readonly property real liveWaveAmp: root.isMusicPlaying ? (3.0 + Services.AudioVisualizer.energy * 2.0) : 0.0
     property real targetAmplitude: root.isAudioActive ? liveWaveAmp : 0.0
     property real waveAmplitude: 0.0
     Behavior on waveAmplitude {
         NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
     }
     onTargetAmplitudeChanged: waveAmplitude = targetAmplitude
+    onIsMusicPlayingChanged: {
+        if (!root.isMusicPlaying) {
+            waveAmplitude = 0.0;
+        }
+    }
 
     // ---------------------------------------------------------
     // 60fps Phase Animators: Dual Speed (Fast + 50% Slower)
@@ -241,9 +243,12 @@ Item {
                 }
             }
 
-            // Single repaint when transitioning between straight rail line and active wave
-            onCurrentAmpChanged: {
-                if (currentAmp <= 0.05 || Math.abs(currentAmp - 0.05) < 0.1) {
+            // Repaint when transitioning between active wave and straight rail line
+            onCurrentAmpChanged: waveCanvas.requestPaint()
+
+            Connections {
+                target: root
+                function onIsMusicPlayingChanged() {
                     waveCanvas.requestPaint();
                 }
             }

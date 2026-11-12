@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "style": "constellation",
+  "style": "simple_line",
   "mode": "workspaces",
   "direction": "right-to-left",
   "speed": 1.0,

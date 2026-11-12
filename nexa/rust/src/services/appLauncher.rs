@@ -1115,7 +1115,23 @@ fn launch_with_exec(app: &DiscoveredApp) -> Result<(), String> {
         } else {
             app.app.name.to_lowercase().replace(' ', "-")
         };
-        command.arg("--class").arg(&app_class);
+        let term_name = Path::new(&terminal[0])
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(&terminal[0]);
+
+        match term_name {
+            "kitty" | "alacritty" | "wezterm" => {
+                command.arg("--class").arg(&app_class);
+            }
+            "foot" => {
+                command.arg("-a").arg(&app_class);
+            }
+            "xterm" => {
+                command.arg("-class").arg(&app_class);
+            }
+            _ => {}
+        }
 
         if let Some(flag) = terminal_exec_flag(&terminal[0]) {
             command.arg(flag);

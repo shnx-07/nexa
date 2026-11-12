@@ -31,15 +31,15 @@ impl PreviewEngine {
 
         // Prefer ffmpeg for standard thumbnail scaling, skwd-wall-still for instant frame capture
         if kind == "video" || kind == "gif" {
-            let _ = Command::new("ffmpeg")
-                .args(["-loglevel", "error", "-ss", "1", "-i"])
+            let _ = Command::new("nice")
+                .args(["-n", "19", "ffmpeg", "-loglevel", "error", "-threads", "1", "-ss", "1", "-i"])
                 .arg(path)
                 .args(["-frames:v", "1", "-vf", "scale=640:-2", "-q:v", "3", "-y"])
                 .arg(&target)
                 .status();
         } else {
-            let _ = Command::new("ffmpeg")
-                .args(["-loglevel", "error", "-i"])
+            let _ = Command::new("nice")
+                .args(["-n", "19", "ffmpeg", "-loglevel", "error", "-threads", "1", "-i"])
                 .arg(path)
                 .args(["-vf", "scale=640:-2", "-q:v", "3", "-y"])
                 .arg(&target)

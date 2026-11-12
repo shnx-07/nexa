@@ -69,14 +69,17 @@ pub struct MonitorRef {
 struct ScratchpadState {
     last_active_terminal: Option<String>,
     last_active_files: Option<String>,
+    last_active_music: Option<String>,
     last_cursor_terminal: Option<(i32, i32)>,
     last_cursor_files: Option<(i32, i32)>,
+    last_cursor_music: Option<(i32, i32)>,
     /// Which scratchpad we opened and have not yet restored focus for.
     active_kind: Option<String>,
-    /// Address of the window that *owns* each scratchpad (kitty / the file manager).
+    /// Address of the window that *owns* each scratchpad (kitty / the file manager / music player).
     /// Anything else that shows up in the special workspace is not part of the scratchpad.
     window_terminal: Option<String>,
     window_files: Option<String>,
+    window_music: Option<String>,
 }
 
 fn runtime_file(name: &str) -> PathBuf {
@@ -157,6 +160,7 @@ fn slots<'a>(
     match kind {
         "terminal" => Some((&mut s.last_active_terminal, &mut s.last_cursor_terminal)),
         "files" => Some((&mut s.last_active_files, &mut s.last_cursor_files)),
+        "music" => Some((&mut s.last_active_music, &mut s.last_cursor_music)),
         _ => None,
     }
 }
@@ -166,6 +170,7 @@ fn window_slot<'a>(s: &'a mut ScratchpadState, kind: &str) -> Option<&'a mut Opt
     match kind {
         "terminal" => Some(&mut s.window_terminal),
         "files" => Some(&mut s.window_files),
+        "music" => Some(&mut s.window_music),
         _ => None,
     }
 }
@@ -225,6 +230,29 @@ fn focused_monitor() -> Option<MonitorRef> {
     })
 }
 
+fn get_music_app() -> String {
+    if let Ok(m) = env::var("MUSIC") {
+        if !m.trim().is_empty() {
+            return m.trim().to_string();
+        }
+    }
+    let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
+    let var_file = PathBuf::from(home).join(".config/hypr/config/variables.lua");
+    if let Ok(content) = fs::read_to_string(var_file) {
+        for line in content.lines() {
+            let line = line.trim();
+            if let Some(rest) = line.strip_prefix("MUSIC") {
+                let rest = rest.trim_start_matches(|c: char| c.is_whitespace() || c == '=');
+                let app = rest.trim().trim_matches('"').trim_matches('\'');
+                if !app.is_empty() {
+                    return app.to_string();
+                }
+            }
+        }
+    }
+    "spotify".to_string()
+}
+
 fn get_target_dimensions(kind: &str) -> (i32, i32) {
     let (mon_w, mon_h) = focused_monitor()
         .map(|m| (m.width, m.height))
@@ -235,6 +263,10 @@ fn get_target_dimensions(kind: &str) -> (i32, i32) {
         "terminal" => (
             (mon_w as f64 * 0.55).round() as i32,
             (mon_h as f64 * 0.52).round() as i32,
+        ),
+        "music" => (
+            (mon_w as f64 * 0.662).round() as i32,
+            (mon_h as f64 * 0.785).round() as i32,
         ),
         _ => (
             (mon_w as f64 * 0.55).round() as i32,
@@ -277,10 +309,11 @@ fn any_special_open() -> bool {
     }
 }
 
-/// True if either the terminal scratchpad (SUPER + SHIFT + RETURN)
-/// or the files scratchpad (SUPER + E) is currently active on screen.
+/// True if either the terminal, files, or music scratchpad is currently active on screen.
 pub fn is_scratchpad_active() -> bool {
-    is_special_workspace_open("terminal") || is_special_workspace_open("files")
+    is_special_workspace_open("terminal")
+        || is_special_workspace_open("files")
+        || is_special_workspace_open("music")
 }
 
 /// Handles standard terminal launch (SUPER + Return). Instant execution with zero lag.
@@ -627,12 +660,15 @@ fn toggle_scratchpad_inner(kind: &str) -> Result<(), String> {
 
     // OPEN
     let mut state = load_state();
-    let other_kind = if kind == "terminal" { "files" } else { "terminal" };
-    let other_open = is_special_workspace_open(other_kind);
+    let all_scratchpads = ["terminal", "files", "music"];
+    let other_open = all_scratchpads
+        .iter()
+        .find(|&&k| k != kind && is_special_workspace_open(k))
+        .copied();
 
     // Work out which window/cursor to return to later.
-    // If the other scratchpad is open, the active window is inside it, so inherit its saved target.
-    let (prev_addr, prev_cursor) = if other_open {
+    // If another scratchpad is open, the active window is inside it, so inherit its saved target.
+    let (prev_addr, prev_cursor) = if let Some(other_kind) = other_open {
         match slots(&mut state, other_kind) {
             Some((a, c)) => (a.take(), c.take()),
             None => (None, None),
@@ -662,7 +698,7 @@ fn toggle_scratchpad_inner(kind: &str) -> Result<(), String> {
     state.active_kind = None;
     save_state(&state);
 
-    if other_open {
+    if let Some(other_kind) = other_open {
         let _ = dispatch(&format!(r#"hl.dsp.workspace.toggle_special("{other_kind}")"#));
         wait_for_special(other_kind, false, 800);
     }
@@ -703,6 +739,10 @@ fn toggle_scratchpad_inner(kind: &str) -> Result<(), String> {
             "files" => {
                 let fm = env::var("FILE_MANAGER").unwrap_or_else(|_| "dolphin".to_string());
                 format!("[workspace special:files silent; float; size {w} {h}; center] {fm}")
+            }
+            "music" => {
+                let music = get_music_app();
+                format!("[workspace special:music silent; float; size {w} {h}; center] {music}")
             }
             other => format!("[workspace special:{other} silent; float; size {w} {h}; center] {other}"),
         };

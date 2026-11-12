@@ -34,18 +34,15 @@ Item {
     readonly property real preferredHeight: {
         const queryText = searchInput.text.trim()
         if (queryText.length === 0) {
-            // Initial full state: Search Bar (52) + Quick-Launch Row (48) + Apps List
-            return 420
+            return 380
         }
 
         // Active search state
         if (root.results.length === 0) {
-            // Compact pill: Search Bar + "No results" message
             return 116
         }
 
         if (root.results.length === 1) {
-            // Snug single-card result (like Postman / Quick action)
             return 140
         }
 
@@ -57,8 +54,7 @@ Item {
             return 252
         }
 
-        // 4 or more results: expand up to max 420px
-        return Math.min(420, 80 + root.results.length * 56)
+        return Math.min(380, 80 + root.results.length * 56)
     }
 
     readonly property var currentList: {
@@ -67,17 +63,6 @@ Item {
         }
         return root.initialApps
     }
-
-    // ============================================================
-    // RECENT / PINNED APPS FOR QUICK-LAUNCH ROW
-    // ============================================================
-
-    readonly property var pinnedApps: [
-        { id: "google-chrome", name: "Google Chrome", icon: "google-chrome" },
-        { id: "code", name: "VS Code", icon: "/usr/share/pixmaps/vscode.png" },
-        { id: "spotify", name: "Spotify", icon: "spotify-client" },
-        { id: "discord", name: "Discord", icon: "discord" }
-    ]
 
     // ============================================================
     // ICON RESOLUTION HELPERS
@@ -319,8 +304,8 @@ Item {
             spacing: 10
 
             Text {
-                text: searchInput.text.startsWith(">") ? "󰆍" : "󰍉"
-                color: searchInput.text.startsWith(">") ? "#e5a93c" : NexaUI.NexaColors.mutedText
+                text: "󰍉"
+                color: NexaUI.NexaColors.mutedText
                 font {
                     family: NexaUI.NexaTypography.familyIcon
                     pixelSize: 20
@@ -376,27 +361,6 @@ Item {
                     }
                 }
             }
-
-            // Actions scope toggle
-            Text {
-                text: "<font color='" + NexaUI.NexaColors.primary + "'>&gt;</font> <font color='#8c8f94'>Actions</font>"
-                textFormat: Text.RichText
-                font.family: NexaUI.NexaTypography.familyBody
-                font.pixelSize: 12
-                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (searchInput.text.startsWith(">")) {
-                            root.setQuery("")
-                        } else {
-                            root.setQuery("> ")
-                        }
-                    }
-                }
-            }
         }
 
         // ========================================================
@@ -408,45 +372,6 @@ Item {
             Layout.preferredHeight: 1
             color: NexaUI.NexaColors.borderSubtle
             opacity: 0.6
-        }
-
-        // ========================================================
-        // 2. QUICK-ACCESS PINNED APPS (Image 2 style - borderless circles)
-        // ========================================================
-
-        Row {
-            id: quickAccessRow
-            Layout.fillWidth: true
-            Layout.preferredHeight: 38
-            spacing: 16
-            visible: searchInput.text.trim().length === 0
-
-            Repeater {
-                model: root.pinnedApps
-
-                Item {
-                    required property var modelData
-                    width: 36
-                    height: 36
-
-                    Image {
-                        anchors.centerIn: parent
-                        width: 32
-                        height: 32
-                        source: root.appIconSource(modelData.icon)
-                        fillMode: Image.PreserveAspectFit
-                        smooth: true
-                        sourceSize: Qt.size(64, 64)
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.launchAppId(modelData.id)
-                    }
-                }
-            }
         }
 
         // ========================================================
@@ -538,7 +463,7 @@ Item {
                             anchors.centerIn: parent
                             width: 30
                             height: 30
-                            visible: resultRow.modelData.kind === "file"
+                            visible: resultRow.modelData.kind === "file" || resultRow.modelData.kind === "folder"
                             source: root.fileIconSource(resultRow.modelData.path)
                             sourceSize: Qt.size(64, 64)
                             fillMode: Image.PreserveAspectFit
@@ -575,11 +500,20 @@ Item {
                         Text {
                             Layout.fillWidth: true
                             text: {
+                                if (resultRow.modelData.kind === "file" || resultRow.modelData.kind === "folder") {
+                                    const loc = resultRow.modelData.location || ""
+                                    const desc = resultRow.modelData.description || ""
+                                    if (loc !== "" && desc !== "") {
+                                        return loc + " • " + desc
+                                    }
+                                    if (loc !== "") return loc
+                                    return desc
+                                }
                                 if (resultRow.modelData.description && resultRow.modelData.description.length > 0)
                                     return resultRow.modelData.description
                                 if (resultRow.modelData.kind === "app" || resultRow.modelData.kind === "appimage") return "Application"
                                 if (resultRow.modelData.kind === "command") return "Shell Command"
-                                return resultRow.modelData.path || ""
+                                return resultRow.modelData.location || resultRow.modelData.path || ""
                             }
                             color: NexaUI.NexaColors.mutedText
                             elide: Text.ElideRight

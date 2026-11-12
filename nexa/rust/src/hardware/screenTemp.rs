@@ -567,6 +567,8 @@ fn wallpaper_temperature(path: &str) -> Result<u32, String> {
             "-hide_banner",
             "-loglevel",
             "error",
+            "-threads",
+            "1",
             "-i",
             path,
             "-vf",

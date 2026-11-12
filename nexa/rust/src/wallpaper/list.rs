@@ -1,9 +1,16 @@
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::{HashMap, HashSet},
     env, fs,
     io::{Read, Seek, SeekFrom},
     path::{Path, PathBuf},
     process::Command,
+    sync::{
+        mpsc::{channel, Receiver, Sender},
+        Arc, Mutex, OnceLock,
+    },
+    thread,
+    time::SystemTime,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -166,7 +173,142 @@ pub fn probe_image_dimensions(path: &Path) -> (u32, u32) {
 }
 
 // ============================================================
-// THUMBNAILS & PROXIES
+// SINGLE-WORKER QUEUE (Concurrency = 1, Never Fork Bomb)
+// ============================================================
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum WallpaperTask {
+    Thumbnail { path: PathBuf, target: PathBuf, is_video: bool },
+    Proxy { path: PathBuf, target: PathBuf },
+}
+
+struct WorkerQueue {
+    sender: Sender<WallpaperTask>,
+    enqueued: Arc<Mutex<HashSet<PathBuf>>>,
+}
+
+static WORKER: OnceLock<WorkerQueue> = OnceLock::new();
+
+fn get_worker() -> &'static WorkerQueue {
+    WORKER.get_or_init(|| {
+        let (sender, receiver) = channel::<WallpaperTask>();
+        let enqueued = Arc::new(Mutex::new(HashSet::new()));
+        let enqueued_clone = Arc::clone(&enqueued);
+
+        let _ = thread::Builder::new()
+            .name("nexa-wall-worker".into())
+            .spawn(move || {
+                worker_loop(receiver, enqueued_clone);
+            });
+
+        WorkerQueue { sender, enqueued }
+    })
+}
+
+fn worker_loop(receiver: Receiver<WallpaperTask>, enqueued: Arc<Mutex<HashSet<PathBuf>>>) {
+    while let Ok(task) = receiver.recv() {
+        match task {
+            WallpaperTask::Proxy { path, target } => {
+                if !target.exists() {
+                    encode_proxy_single(&path, &target);
+                }
+                if let Ok(mut set) = enqueued.lock() {
+                    set.remove(&target);
+                }
+            }
+            WallpaperTask::Thumbnail { path, target, is_video } => {
+                if !target.exists() {
+                    encode_thumbnail_single(&path, &target, is_video);
+                }
+                if let Ok(mut set) = enqueued.lock() {
+                    set.remove(&target);
+                }
+            }
+        }
+    }
+}
+
+fn encode_proxy_single(input_path: &Path, target: &Path) {
+    let vaapi_available = Path::new("/dev/dri/renderD128").exists();
+    let mut success = false;
+
+    if vaapi_available {
+        let status = Command::new("nice")
+            .args([
+                "-n", "19",
+                "ffmpeg",
+                "-init_hw_device", "vaapi=gpu:/dev/dri/renderD128",
+                "-hwaccel", "vaapi",
+                "-hwaccel_device", "gpu",
+                "-loglevel", "error",
+                "-ss", "0.0",
+                "-i",
+            ])
+            .arg(input_path)
+            .args([
+                "-vf", "format=nv12,hwupload,scale_vaapi=w=-2:h=480",
+                "-c:v", "h264_vaapi",
+                "-qp", "24",
+                "-an",
+                "-t", "15",
+                "-y",
+            ])
+            .arg(target)
+            .status();
+
+        if let Ok(s) = status {
+            if s.success() {
+                success = true;
+            }
+        }
+    }
+
+    if !success {
+        let _ = Command::new("nice")
+            .args([
+                "-n", "19",
+                "ffmpeg",
+                "-loglevel", "error",
+                "-threads", "1",
+                "-ss", "0.0",
+                "-i",
+            ])
+            .arg(input_path)
+            .args([
+                "-vf", "scale=-2:480,fps=30",
+                "-c:v", "libx264",
+                "-preset", "veryfast",
+                "-crf", "24",
+                "-pix_fmt", "yuv420p",
+                "-an",
+                "-t", "15",
+                "-y",
+            ])
+            .arg(target)
+            .status();
+    }
+}
+
+fn encode_thumbnail_single(input_path: &Path, target: &Path, is_video: bool) {
+    if is_video {
+        let _ = Command::new("nice")
+            .args(["-n", "19", "ffmpeg", "-loglevel", "error", "-threads", "1", "-ss", "00:00:01", "-i"])
+            .arg(input_path)
+            .args(["-frames:v", "1", "-vf", "scale=640:-2", "-q:v", "3", "-y"])
+            .arg(target)
+            .status();
+    } else {
+        let _ = Command::new("nice")
+            .args(["-n", "19", "ffmpeg", "-loglevel", "error", "-threads", "1", "-i"])
+            .arg(input_path)
+            .args(["-vf", "scale=640:-2", "-q:v", "3", "-y"])
+            .arg(target)
+            .status();
+    }
+}
+
+// ============================================================
+// THUMBNAILS & PROXIES (Safe, Non-Blocking, Never Spawns in Loops)
 // ============================================================
 
 pub fn ensure_thumbnail(path: &Path, kind: &str) -> PathBuf {
@@ -182,7 +324,6 @@ pub fn ensure_thumbnail(path: &Path, kind: &str) -> PathBuf {
         return thumbnail;
     }
 
-    // Check alternate name (e.g. dot vs underscore: a-galaxy-within.3840x2160 vs a-galaxy-within_3840x2160)
     let alt_name = if name_str.contains('_') {
         name_str.replace('_', ".")
     } else {
@@ -193,28 +334,31 @@ pub fn ensure_thumbnail(path: &Path, kind: &str) -> PathBuf {
         return alt_thumbnail;
     }
 
-    let _ = fs::create_dir_all(&cache_dir);
-
-    // Non-blocking asynchronous thumbnail extraction so scanning is instantaneous
-    let p = path.to_path_buf();
-    let t = thumbnail.clone();
-    if kind == "video" || kind == "gif" {
-        let _ = Command::new("ffmpeg")
-            .args(["-loglevel", "error", "-ss", "1", "-i"])
-            .arg(&p)
-            .args(["-frames:v", "1", "-vf", "scale=640:-2", "-q:v", "3", "-y"])
-            .arg(&t)
-            .spawn();
-    } else {
-        let _ = Command::new("ffmpeg")
-            .args(["-loglevel", "error", "-i"])
-            .arg(&p)
-            .args(["-vf", "scale=640:-2", "-q:v", "3", "-y"])
-            .arg(&t)
-            .spawn();
+    // For normal wallpapers, static images load directly without needing ffmpeg thumbnails
+    let is_slideshow = path.to_string_lossy().contains("/Slideshow");
+    if kind == "image" && !is_slideshow {
+        return path.to_path_buf();
     }
 
-    thumbnail
+    let _ = fs::create_dir_all(&cache_dir);
+
+    // Enqueue single background worker task without blocking or fork bombing
+    let worker = get_worker();
+    if let Ok(mut set) = worker.enqueued.lock() {
+        if set.insert(thumbnail.clone()) {
+            let _ = worker.sender.send(WallpaperTask::Thumbnail {
+                path: path.to_path_buf(),
+                target: thumbnail.clone(),
+                is_video: kind == "video" || kind == "gif",
+            });
+        }
+    }
+
+    if thumbnail.exists() {
+        thumbnail
+    } else {
+        path.to_path_buf()
+    }
 }
 
 pub fn ensure_proxy(path: &Path, kind: &str) -> Option<PathBuf> {
@@ -224,10 +368,9 @@ pub fn ensure_proxy(path: &Path, kind: &str) -> Option<PathBuf> {
 
     let name = path.file_name()?;
     let cache_dir = proxy_cache_dir();
-    let _ = fs::create_dir_all(&cache_dir);
-
     let name_str = name.to_string_lossy();
     let proxy = cache_dir.join(format!("{}.mp4", name_str));
+
     if proxy.exists() {
         return Some(proxy);
     }
@@ -242,40 +385,49 @@ pub fn ensure_proxy(path: &Path, kind: &str) -> Option<PathBuf> {
         return Some(alt_proxy);
     }
 
-    let p = proxy.clone();
-    let _ = Command::new("ffmpeg")
-        .args(["-loglevel", "error", "-ss", "0.0", "-i"])
-        .arg(path)
-        .args([
-            "-vf",
-            "scale=-2:480,fps=30",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "veryfast",
-            "-crf",
-            "24",
-            "-pix_fmt",
-            "yuv420p",
-            "-an",
-            "-t",
-            "15",
-            "-y",
-        ])
-        .arg(&p)
-        .spawn();
+    let _ = fs::create_dir_all(&cache_dir);
 
+    // Enqueue single background worker task without blocking or fork bombing
+    let worker = get_worker();
+    if let Ok(mut set) = worker.enqueued.lock() {
+        if set.insert(proxy.clone()) {
+            let _ = worker.sender.send(WallpaperTask::Proxy {
+                path: path.to_path_buf(),
+                target: proxy,
+            });
+        }
+    }
+
+    // Return original video path so the UI can preview immediately without waiting
     Some(path.to_path_buf())
 }
 
 // ============================================================
-// SCANNING
+// SCANNING (Cached by Directory mtime)
 // ============================================================
+
+static SCAN_CACHE: OnceLock<Mutex<HashMap<PathBuf, (SystemTime, Vec<WallpaperEntry>)>>> = OnceLock::new();
+
+fn get_scan_cache() -> &'static Mutex<HashMap<PathBuf, (SystemTime, Vec<WallpaperEntry>)>> {
+    SCAN_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
 
 pub fn scan_entries(custom_dir: Option<&Path>) -> Vec<WallpaperEntry> {
     let default_dir = wallpaper_dir();
     let directory = custom_dir.unwrap_or(&default_dir);
     let mut wallpapers = Vec::new();
+
+    // Fast-path: Check directory modification timestamp
+    let dir_mtime = fs::metadata(directory).and_then(|m| m.modified()).ok();
+    if let Some(mtime) = dir_mtime {
+        if let Ok(cache) = get_scan_cache().lock() {
+            if let Some((cached_mtime, cached_entries)) = cache.get(directory) {
+                if *cached_mtime == mtime {
+                    return cached_entries.clone();
+                }
+            }
+        }
+    }
 
     let entries = match fs::read_dir(directory) {
         Ok(entries) => entries,
@@ -362,6 +514,12 @@ pub fn scan_entries(custom_dir: Option<&Path>) -> Vec<WallpaperEntry> {
             formatted_size,
             extension: ext,
         });
+    }
+
+    if let Some(mtime) = dir_mtime {
+        if let Ok(mut cache) = get_scan_cache().lock() {
+            cache.insert(directory.to_path_buf(), (mtime, wallpapers.clone()));
+        }
     }
 
     wallpapers
@@ -471,6 +629,9 @@ pub fn print_search_json(query: &str) {
 }
 
 pub fn refresh() {
+    if let Ok(mut cache) = get_scan_cache().lock() {
+        cache.clear();
+    }
     let wallpapers = scan_entries(None);
     println!("indexed={}", wallpapers.len());
 }
@@ -485,6 +646,7 @@ pub fn generate_slideshow_thumbs() -> Result<(), String> {
     }
     let _ = fs::create_dir_all(&thumb_dir);
 
+    let worker = get_worker();
     for entry in fs::read_dir(&wall_dir).into_iter().flatten().flatten() {
         let path = entry.path();
         if !path.is_file() {
@@ -500,29 +662,17 @@ pub fn generate_slideshow_thumbs() -> Result<(), String> {
         }
 
         if let Some(kind) = classify(&path) {
-            match kind {
-                "image" => {
-                    let _ = Command::new("ffmpeg")
-                        .args(["-loglevel", "error", "-y", "-i"])
-                        .arg(&path)
-                        .args([
-                            "-vf",
-                            "scale=320:180:force_original_aspect_ratio=increase,crop=320:180",
-                            "-q:v",
-                            "3",
-                        ])
-                        .arg(&target)
-                        .status();
+            // Only videos and gifs need thumbnail frame extraction; images are natively handled by Qt
+            if kind == "video" || kind == "gif" {
+                if let Ok(mut set) = worker.enqueued.lock() {
+                    if set.insert(target.clone()) {
+                        let _ = worker.sender.send(WallpaperTask::Thumbnail {
+                            path,
+                            target,
+                            is_video: true,
+                        });
+                    }
                 }
-                "video" | "gif" => {
-                    let _ = Command::new("ffmpeg")
-                        .args(["-loglevel", "error", "-ss", "00:00:01", "-y", "-i"])
-                        .arg(&path)
-                        .args(["-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "3"])
-                        .arg(&target)
-                        .status();
-                }
-                _ => {}
             }
         }
     }

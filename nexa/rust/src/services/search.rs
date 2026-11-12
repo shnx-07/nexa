@@ -15,9 +15,11 @@ use walkdir::{DirEntry, WalkDir};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchEntry {
     pub id: usize,
-    pub kind: String, // "app", "appimage", "file"
+    pub kind: String, // "app", "appimage", "file", "folder"
     pub name: String,
     pub path: String, // Canonical absolute path
+    #[serde(default)]
+    pub location: String,
     pub exec: String,
     pub icon: String,
     #[serde(default)]
@@ -30,12 +32,14 @@ pub struct SearchEntry {
     pub description: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResult {
     pub id: usize,
     pub kind: String,
     pub name: String,
     pub path: String,
+    #[serde(default)]
+    pub location: String,
     pub exec: String,
     pub icon: String,
     pub score: i32,
@@ -61,6 +65,32 @@ fn cache_dir() -> PathBuf {
 
 fn cache_path() -> PathBuf {
     cache_dir().join("search-index.json")
+}
+
+fn apps_cache_path() -> PathBuf {
+    cache_dir().join("search-apps.json")
+}
+
+fn files_cache_path() -> PathBuf {
+    cache_dir().join("search-files.json")
+}
+
+pub fn format_location(path: &Path) -> String {
+    let home = home_dir();
+    let parent = if path.is_dir() {
+        path.parent().unwrap_or(path)
+    } else {
+        path.parent().unwrap_or(path)
+    };
+    let s = parent.to_string_lossy();
+    let home_s = home.to_string_lossy();
+    if s == home_s.as_ref() {
+        "~".to_string()
+    } else if s.starts_with(home_s.as_ref()) {
+        format!("~{}", &s[home_s.len()..])
+    } else {
+        s.to_string()
+    }
 }
 
 /// Discovers all Freedesktop application directories including
@@ -331,6 +361,20 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
             continue;
         }
 
+        if let Some(val) = line.strip_prefix("TryExec=") {
+            let try_bin = val.trim();
+            if !try_bin.is_empty() {
+                if try_bin.starts_with('/') {
+                    if !Path::new(try_bin).exists() {
+                        return None;
+                    }
+                } else if !command_exists(try_bin) {
+                    return None;
+                }
+            }
+            continue;
+        }
+
         if let Some(val) = line.strip_prefix("Exec=") {
             if exec.is_empty() {
                 exec = val.trim().to_string();
@@ -365,17 +409,31 @@ fn parse_desktop_file(path: &Path) -> Option<SearchEntry> {
         return None;
     }
 
+    if let Some(first_word) = exec.split_whitespace().next() {
+        let bin_clean = first_word.trim_matches('"').trim_matches('\'');
+        if bin_clean.starts_with('/') {
+            if !Path::new(bin_clean).exists() {
+                return None;
+            }
+        } else if !command_exists(bin_clean) {
+            return None;
+        }
+    }
+
     let description = if !generic_name.is_empty() {
         generic_name.clone()
     } else {
         "Application".to_string()
     };
 
+    let location = format_location(path);
+
     Some(SearchEntry {
         id: 0,
         kind: "app".to_string(),
         name,
         path: path.to_string_lossy().to_string(),
+        location,
         exec,
         icon,
         terminal,
@@ -585,9 +643,12 @@ fn find_folder_app_icon(app_dir: &Path) -> String {
     "application-x-executable".to_string()
 }
 
-fn index_folder_apps(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>) {
-    let mut seen_names = HashSet::new();
-
+fn index_folder_apps(
+    entries: &mut Vec<SearchEntry>,
+    seen_paths: &mut HashSet<String>,
+    seen_desktop_ids: &mut HashSet<String>,
+    seen_app_names: &mut HashSet<String>,
+) {
     for directory in folder_app_dirs() {
         let read_entries = match fs::read_dir(&directory) {
             Ok(iter) => iter,
@@ -620,16 +681,32 @@ fn index_folder_apps(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<St
                     if d_path.extension().and_then(|ext| ext.to_str()) == Some("desktop") {
                         if let Some(mut d_entry) = parse_desktop_file(d_path) {
                             let p_str = d_path.to_string_lossy().to_string();
-                            if seen_paths.insert(p_str) {
-                                if !d_entry.exec.starts_with('/') {
-                                    if let Some((bin_path, _)) = find_folder_app_executable(&path) {
-                                        d_entry.exec = bin_path.to_string_lossy().to_string();
-                                    }
-                                }
-                                entries.push(d_entry);
+                            let d_id = d_path
+                                .file_name()
+                                .and_then(|f| f.to_str())
+                                .unwrap_or("")
+                                .to_lowercase();
+                            let name_key = d_entry.name.trim().to_lowercase();
+
+                            if seen_desktop_ids.contains(&d_id)
+                                || seen_app_names.contains(&name_key)
+                                || !seen_paths.insert(p_str)
+                            {
                                 found_desktop = true;
                                 break;
                             }
+
+                            seen_desktop_ids.insert(d_id);
+                            seen_app_names.insert(name_key);
+
+                            if !d_entry.exec.starts_with('/') {
+                                if let Some((bin_path, _)) = find_folder_app_executable(&path) {
+                                    d_entry.exec = bin_path.to_string_lossy().to_string();
+                                }
+                            }
+                            entries.push(d_entry);
+                            found_desktop = true;
+                            break;
                         }
                     }
                 }
@@ -643,21 +720,24 @@ fn index_folder_apps(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<St
                     let app_name = clean_folder_app_name(file_name);
                     let name_key = app_name.to_lowercase();
 
-                    if !seen_names.insert(name_key.clone()) {
+                    if seen_app_names.contains(&name_key) {
                         continue;
                     }
+                    seen_app_names.insert(name_key.clone());
 
                     let path_str = path.to_string_lossy().to_string();
                     seen_paths.insert(path_str.clone());
 
                     let icon = find_folder_app_icon(&path);
                     let exec_str = exec_path.to_string_lossy().to_string();
+                    let location = format_location(&path);
 
                     entries.push(SearchEntry {
                         id: 0,
                         kind: "app".to_string(),
                         name: app_name,
                         path: path_str,
+                        location,
                         exec: exec_str,
                         icon,
                         terminal: false,
@@ -680,9 +760,10 @@ fn index_folder_apps(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<St
                 let app_name = clean_folder_app_name(file_name);
                 let name_key = app_name.to_lowercase();
 
-                if !seen_names.insert(name_key.clone()) {
+                if seen_app_names.contains(&name_key) {
                     continue;
                 }
+                seen_app_names.insert(name_key.clone());
 
                 let path_str = path.to_string_lossy().to_string();
                 if !seen_paths.insert(path_str.clone()) {
@@ -690,12 +771,14 @@ fn index_folder_apps(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<St
                 }
 
                 let icon = find_folder_app_icon(path.parent().unwrap_or(&path));
+                let location = format_location(&path);
 
                 entries.push(SearchEntry {
                     id: 0,
                     kind: "app".to_string(),
                     name: app_name,
                     path: path_str.clone(),
+                    location,
                     exec: path_str,
                     icon,
                     terminal: false,
@@ -725,7 +808,11 @@ fn clean_appimage_name(file_name: &str) -> String {
     cleaned.trim().to_string()
 }
 
-fn index_appimages(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>) {
+fn index_appimages(
+    entries: &mut Vec<SearchEntry>,
+    seen_paths: &mut HashSet<String>,
+    seen_app_names: &mut HashSet<String>,
+) {
     for directory in appimage_dirs() {
         let walker = WalkDir::new(&directory)
             .max_depth(3)
@@ -748,12 +835,27 @@ fn index_appimages(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<Stri
                 continue;
             }
 
+            // Ensure executable permissions
+            if let Ok(metadata) = fs::metadata(path) {
+                let mut perms = metadata.permissions();
+                let mode = perms.mode();
+                if mode & 0o111 == 0 {
+                    perms.set_mode(mode | 0o755);
+                    let _ = fs::set_permissions(path, perms);
+                }
+            }
+
             let path_string = path.to_string_lossy().to_string();
             if !seen_paths.insert(path_string.clone()) {
                 continue;
             }
 
             let name = clean_appimage_name(file_name);
+            let name_key = name.trim().to_lowercase();
+            if seen_app_names.contains(&name_key) {
+                continue;
+            }
+            seen_app_names.insert(name_key);
 
             // Look for adjacent icon if present
             let parent = path.parent();
@@ -769,11 +871,14 @@ fn index_appimages(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<Stri
                 }
             }
 
+            let location = format_location(path);
+
             entries.push(SearchEntry {
                 id: 0,
                 kind: "appimage".to_string(),
                 name,
                 path: path_string,
+                location,
                 exec: path.to_string_lossy().to_string(),
                 icon,
                 terminal: false,
@@ -789,9 +894,12 @@ fn index_appimages(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<Stri
 // APPLICATION INDEXING
 // ============================================================
 
-fn index_applications(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>) {
-    let mut seen_desktop_keys = HashSet::new();
-
+fn index_applications(
+    entries: &mut Vec<SearchEntry>,
+    seen_paths: &mut HashSet<String>,
+    seen_desktop_ids: &mut HashSet<String>,
+    seen_app_names: &mut HashSet<String>,
+) {
     for directory in application_dirs() {
         let walker = WalkDir::new(&directory)
             .max_depth(4)
@@ -813,15 +921,23 @@ fn index_applications(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<S
                 continue;
             };
 
-            let key = path
+            let d_id = path
                 .file_name()
                 .and_then(|v| v.to_str())
                 .unwrap_or("")
                 .to_lowercase();
 
-            if key.is_empty() || !seen_desktop_keys.insert(key) {
+            let name_key = entry.name.trim().to_lowercase();
+
+            if d_id.is_empty()
+                || seen_desktop_ids.contains(&d_id)
+                || seen_app_names.contains(&name_key)
+            {
                 continue;
             }
+
+            seen_desktop_ids.insert(d_id);
+            seen_app_names.insert(name_key);
 
             let path_str = path.to_string_lossy().to_string();
             seen_paths.insert(path_str);
@@ -856,11 +972,13 @@ fn index_files(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>)
                         } else {
                             "File".to_string()
                         };
+                        let location = format_location(&path);
                         entries.push(SearchEntry {
                             id: 0,
                             kind: "file".to_string(),
                             name,
                             path: path_string,
+                            location,
                             exec: String::new(),
                             icon: String::new(),
                             terminal: false,
@@ -915,7 +1033,8 @@ fn index_files(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>)
                 .unwrap_or("")
                 .to_uppercase();
 
-            let description = if path.is_dir() {
+            let is_dir = path.is_dir();
+            let description = if is_dir {
                 "Folder".to_string()
             } else if !ext.is_empty() {
                 format!("{ext} Document")
@@ -923,11 +1042,19 @@ fn index_files(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>)
                 "File".to_string()
             };
 
+            let location = format_location(path);
+            let kind = if is_dir {
+                "folder".to_string()
+            } else {
+                "file".to_string()
+            };
+
             entries.push(SearchEntry {
                 id: 0,
-                kind: "file".to_string(),
+                kind,
                 name: name.to_string(),
                 path: path_string,
+                location,
                 exec: String::new(),
                 icon: String::new(),
                 terminal: false,
@@ -940,20 +1067,72 @@ fn index_files(entries: &mut Vec<SearchEntry>, seen_paths: &mut HashSet<String>)
 }
 
 // ============================================================
-// BUILD & CACHE ENGINE
+// BUILD & CACHE ENGINE (Dual Tier: Microsecond Mtime Invalidation)
 // ============================================================
 
-fn build_index() -> Vec<SearchEntry> {
+fn get_app_dirs_max_mtime() -> std::time::SystemTime {
+    let mut max_time = std::time::SystemTime::UNIX_EPOCH;
+    for dir in application_dirs() {
+        if let Ok(meta) = fs::metadata(&dir) {
+            if let Ok(m) = meta.modified() {
+                if m > max_time {
+                    max_time = m;
+                }
+            }
+        }
+    }
+    for dir in folder_app_dirs() {
+        if let Ok(meta) = fs::metadata(&dir) {
+            if let Ok(m) = meta.modified() {
+                if m > max_time {
+                    max_time = m;
+                }
+            }
+        }
+    }
+    for dir in appimage_dirs() {
+        if let Ok(meta) = fs::metadata(&dir) {
+            if let Ok(m) = meta.modified() {
+                if m > max_time {
+                    max_time = m;
+                }
+            }
+        }
+    }
+    max_time
+}
+
+fn build_app_index() -> Vec<SearchEntry> {
     let mut entries = Vec::new();
     let mut seen_paths = HashSet::new();
+    let mut seen_desktop_ids = HashSet::new();
+    let mut seen_app_names = HashSet::new();
 
-    index_applications(&mut entries, &mut seen_paths);
-    index_folder_apps(&mut entries, &mut seen_paths);
-    index_appimages(&mut entries, &mut seen_paths);
-    index_files(&mut entries, &mut seen_paths);
+    index_applications(
+        &mut entries,
+        &mut seen_paths,
+        &mut seen_desktop_ids,
+        &mut seen_app_names,
+    );
+    index_folder_apps(
+        &mut entries,
+        &mut seen_paths,
+        &mut seen_desktop_ids,
+        &mut seen_app_names,
+    );
+    index_appimages(&mut entries, &mut seen_paths, &mut seen_app_names);
 
-    // Deterministic sorting: Apps -> AppImages -> Files
-    entries.sort_by(|a, b| {
+    // Final safety deduplication pass
+    let mut deduped = Vec::with_capacity(entries.len());
+    let mut final_seen = HashSet::new();
+    for entry in entries {
+        let key = entry.name.trim().to_lowercase();
+        if final_seen.insert(key) {
+            deduped.push(entry);
+        }
+    }
+
+    deduped.sort_by(|a, b| {
         let rank_a = match a.kind.as_str() {
             "app" => 0,
             "appimage" => 1,
@@ -970,10 +1149,64 @@ fn build_index() -> Vec<SearchEntry> {
             .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
     });
 
-    for (idx, entry) in entries.iter_mut().enumerate() {
-        entry.id = idx;
+    deduped
+}
+
+fn load_app_index() -> Vec<SearchEntry> {
+    let path = apps_cache_path();
+    let max_mtime = get_app_dirs_max_mtime();
+
+    if path.is_file() {
+        if let Ok(meta) = fs::metadata(&path) {
+            if let Ok(cache_mtime) = meta.modified() {
+                // If cache is at least as new as all app directories, it's valid
+                if cache_mtime >= max_mtime {
+                    if let Ok(content) = fs::read_to_string(&path) {
+                        if let Ok(entries) = serde_json::from_str::<Vec<SearchEntry>>(&content) {
+                            if !entries.is_empty() {
+                                return entries;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
+    // Cache missing or an app directory was modified (new app installed / removed)
+    let entries = build_app_index();
+    let _ = fs::create_dir_all(cache_dir());
+    if let Ok(json) = serde_json::to_string(&entries) {
+        let _ = fs::write(&path, json);
+    }
+    entries
+}
+
+fn build_file_index() -> Vec<SearchEntry> {
+    let mut entries = Vec::new();
+    let mut seen_paths = HashSet::new();
+    index_files(&mut entries, &mut seen_paths);
+    entries.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    entries
+}
+
+fn load_file_index() -> Vec<SearchEntry> {
+    let path = files_cache_path();
+    if path.is_file() {
+        if let Ok(content) = fs::read_to_string(&path) {
+            if let Ok(entries) = serde_json::from_str::<Vec<SearchEntry>>(&content) {
+                if !entries.is_empty() {
+                    return entries;
+                }
+            }
+        }
+    }
+
+    let entries = build_file_index();
+    let _ = fs::create_dir_all(cache_dir());
+    if let Ok(json) = serde_json::to_string(&entries) {
+        let _ = fs::write(&path, json);
+    }
     entries
 }
 
@@ -989,33 +1222,104 @@ fn save_index(entries: &[SearchEntry]) -> Result<(), String> {
 }
 
 fn load_index() -> Result<Vec<SearchEntry>, String> {
-    let path = cache_path();
+    let mut apps = load_app_index();
+    let mut files = load_file_index();
+    let mut all = Vec::with_capacity(apps.len() + files.len());
+    all.append(&mut apps);
+    all.append(&mut files);
 
-    if !path.is_file() {
-        let entries = build_index();
-        let _ = save_index(&entries);
-        return Ok(entries);
+    for (idx, entry) in all.iter_mut().enumerate() {
+        entry.id = idx;
     }
 
-    let content =
-        fs::read_to_string(&path).map_err(|e| format!("failed to read search index: {e}"))?;
+    Ok(all)
+}
 
-    match serde_json::from_str::<Vec<SearchEntry>>(&content) {
-        Ok(entries) => {
-            if entries.is_empty() {
-                let entries = build_index();
-                let _ = save_index(&entries);
-                Ok(entries)
-            } else {
-                Ok(entries)
+/// On-demand deep search for exact files and folders using ultra-fast fd
+/// Strictly ignores hidden files and dot-folders by default
+fn find_exact_files_fd(query: &str) -> Vec<SearchEntry> {
+    let clean_query = query.trim();
+    if clean_query.len() < 3 || clean_query.starts_with('/') {
+        return Vec::new();
+    }
+
+    let home = home_dir();
+    let output = Command::new("fd")
+        .arg("-i")
+        .arg("--exclude")
+        .arg("node_modules")
+        .arg("--exclude")
+        .arg("target")
+        .arg("--exclude")
+        .arg(".git")
+        .arg("--exclude")
+        .arg(".cache")
+        .arg("--max-results")
+        .arg("15")
+        .arg("-g")
+        .arg(format!("*{clean_query}*"))
+        .arg(&home)
+        .output();
+
+    let mut entries = Vec::new();
+    if let Ok(out) = output {
+        if out.status.success() {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            for line in stdout.lines() {
+                let path_str = line.trim();
+                if path_str.is_empty() {
+                    continue;
+                }
+                let path = PathBuf::from(path_str);
+                if !is_clean_user_path(&path) {
+                    continue;
+                }
+                let is_dir = path.is_dir();
+                let name = path
+                    .file_name()
+                    .and_then(|f| f.to_str())
+                    .unwrap_or(path_str)
+                    .to_string();
+
+                let location = format_location(&path);
+                let ext = path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("")
+                    .to_uppercase();
+
+                let description = if is_dir {
+                    "Folder".to_string()
+                } else if !ext.is_empty() {
+                    format!("{ext} Document")
+                } else {
+                    "File".to_string()
+                };
+
+                let kind = if is_dir {
+                    "folder".to_string()
+                } else {
+                    "file".to_string()
+                };
+
+                entries.push(SearchEntry {
+                    id: 0,
+                    kind,
+                    name,
+                    path: path_str.to_string(),
+                    location,
+                    exec: String::new(),
+                    icon: String::new(),
+                    terminal: false,
+                    generic_name: String::new(),
+                    keywords: String::new(),
+                    description,
+                });
             }
         }
-        Err(_) => {
-            let entries = build_index();
-            let _ = save_index(&entries);
-            Ok(entries)
-        }
     }
+
+    entries
 }
 
 // ============================================================
@@ -1243,20 +1547,28 @@ fn score_entry(entry: &SearchEntry, query: &str) -> Option<i32> {
         if !path_stem.is_empty() {
             update_best(score_text(path_stem, query).map(|s| s - 20));
         }
-    } else if entry.kind == "file" {
+    } else if entry.kind == "file" || entry.kind == "folder" {
         let p = Path::new(&entry.path);
         let q_trimmed = query.trim();
+        let fname = p.file_name().and_then(|s| s.to_str()).unwrap_or("");
+
+        // 1. Exact full filename or folder name match
+        if fname.eq_ignore_ascii_case(q_trimmed) {
+            update_best(Some(2200));
+        }
+
+        if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
+            if stem.eq_ignore_ascii_case(q_trimmed) {
+                update_best(Some(1800));
+            } else if stem.to_lowercase().starts_with(&q_trimmed.to_lowercase()) {
+                update_best(Some(980));
+            }
+        }
+
         if let Some(ext) = p.extension().and_then(|e| e.to_str()) {
             let clean_q = q_trimmed.trim_start_matches('.');
             if ext.eq_ignore_ascii_case(clean_q) {
                 update_best(Some(850));
-            }
-        }
-        if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
-            if stem.eq_ignore_ascii_case(q_trimmed) {
-                update_best(Some(1200));
-            } else if stem.to_lowercase().starts_with(&q_trimmed.to_lowercase()) {
-                update_best(Some(980));
             }
         }
     }
@@ -1275,99 +1587,7 @@ fn score_entry(entry: &SearchEntry, query: &str) -> Option<i32> {
 // COMMAND / PATH BINARY RUNNER (Unified Command Mode)
 // ============================================================
 
-#[derive(Debug, Clone)]
-struct CommandItem {
-    name: String,
-    path: String,
-    score: i32,
-}
 
-fn path_dirs() -> Vec<PathBuf> {
-    let mut dirs = Vec::new();
-    if let Ok(path_var) = env::var("PATH") {
-        for p in path_var.split(':') {
-            if !p.is_empty() {
-                dirs.push(PathBuf::from(p));
-            }
-        }
-    }
-    let home = home_dir();
-    let home_bin = home.join(".local").join("bin");
-    if !dirs.contains(&home_bin) {
-        dirs.push(home_bin);
-    }
-    let user_bin = home.join("bin");
-    if !dirs.contains(&user_bin) {
-        dirs.push(user_bin);
-    }
-    dirs
-}
-
-fn is_binary_executable(path: &Path) -> bool {
-    if let Ok(metadata) = fs::metadata(path) {
-        if metadata.is_file() {
-            let permissions = metadata.permissions();
-            return permissions.mode() & 0o111 != 0;
-        }
-    }
-    false
-}
-
-fn collect_binaries() -> Vec<CommandItem> {
-    let mut seen = HashSet::new();
-    let mut items = Vec::new();
-
-    for dir in path_dirs() {
-        if !dir.is_dir() {
-            continue;
-        }
-        if let Ok(entries) = fs::read_dir(&dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if let Some(file_name) = path.file_name().and_then(|f| f.to_str()) {
-                    if file_name.starts_with('.') {
-                        continue;
-                    }
-                    if seen.insert(file_name.to_string()) && is_binary_executable(&path) {
-                        items.push(CommandItem {
-                            name: file_name.to_string(),
-                            path: path.to_string_lossy().to_string(),
-                            score: 0,
-                        });
-                    }
-                }
-            }
-        }
-    }
-
-    items.sort_by(|a, b| a.name.cmp(&b.name));
-    items
-}
-
-fn score_command(name: &str, query: &str) -> Option<i32> {
-    let norm_name = name.to_lowercase();
-    let norm_query = query.trim().to_lowercase();
-
-    if norm_query.is_empty() {
-        return None;
-    }
-
-    if norm_name == norm_query {
-        return Some(1000);
-    }
-
-    if norm_name.starts_with(&norm_query) {
-        let penalty = (norm_name.len().saturating_sub(norm_query.len()) as i32).min(100);
-        return Some(900 - penalty);
-    }
-
-    if norm_name.contains(&norm_query) {
-        let penalty = (norm_name.len().saturating_sub(norm_query.len()) as i32).min(150);
-        return Some(700 - penalty);
-    }
-
-    None
-}
 
 pub fn run(command: &str) {
     let home = home_dir();
@@ -1397,14 +1617,26 @@ pub fn run(command: &str) {
 // ============================================================
 
 pub fn refresh() {
-    let entries = build_index();
-    if let Err(error) = save_index(&entries) {
-        eprintln!("NEXA search refresh error: {error}");
-        std::process::exit(2);
+    let apps = build_app_index();
+    let files = build_file_index();
+    let _ = fs::create_dir_all(cache_dir());
+
+    if let Ok(json) = serde_json::to_string(&apps) {
+        let _ = fs::write(apps_cache_path(), json);
+    }
+    if let Ok(json) = serde_json::to_string(&files) {
+        let _ = fs::write(files_cache_path(), json);
     }
 
+    let mut all = apps;
+    all.extend(files);
+    for (idx, entry) in all.iter_mut().enumerate() {
+        entry.id = idx;
+    }
+    let _ = save_index(&all);
+
     let output = serde_json::json!({
-        "indexed": entries.len(),
+        "indexed": all.len(),
         "cache": cache_path().to_string_lossy().to_string()
     });
 
@@ -1418,69 +1650,62 @@ pub fn query(query_str: &str) {
         return;
     }
 
-    // Unified command mode triggered by `>` prefix
-    if query_str.starts_with('>') {
-        let cmd_query = query_str[1..].trim();
-        let binaries = collect_binaries();
-        let mut results: Vec<SearchResult> = Vec::new();
 
-        if !cmd_query.is_empty() {
+
+    let mut results: Vec<SearchResult> = Vec::new();
+    let mut seen_paths: HashSet<String> = HashSet::new();
+
+    // Direct path detection: typing /... or ~/... directly resolves existing files/folders
+    if query_str.starts_with('/') || query_str.starts_with('~') || query_str.starts_with("./") {
+        let expanded = if let Some(stripped) = query_str.strip_prefix('~') {
+            home_dir().join(stripped.trim_start_matches('/'))
+        } else {
+            PathBuf::from(query_str)
+        };
+
+        if expanded.exists() {
+            let name = expanded
+                .file_name()
+                .and_then(|f| f.to_str())
+                .unwrap_or(query_str)
+                .to_string();
+            let is_dir = expanded.is_dir();
+            let location = format_location(&expanded);
+            let description = if is_dir {
+                "Folder".to_string()
+            } else {
+                let ext = expanded
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("")
+                    .to_uppercase();
+                if !ext.is_empty() {
+                    format!("{ext} Document")
+                } else {
+                    "File".to_string()
+                }
+            };
+            let kind = if is_dir {
+                "folder".to_string()
+            } else {
+                "file".to_string()
+            };
+            let path_str = expanded.to_string_lossy().to_string();
+            seen_paths.insert(path_str.clone());
+
             results.push(SearchResult {
-                id: 999999,
-                kind: "command".to_string(),
-                name: cmd_query.to_string(),
-                path: cmd_query.to_string(),
-                exec: cmd_query.to_string(),
-                icon: "utilities-terminal".to_string(),
-                score: 2000,
-                terminal: true,
-                description: format!("Execute '{}' in shell", cmd_query),
+                id: 0,
+                kind,
+                name,
+                path: path_str,
+                location,
+                exec: String::new(),
+                icon: String::new(),
+                score: 5000,
+                terminal: false,
+                description,
             });
         }
-
-        for (idx, mut item) in binaries.into_iter().enumerate() {
-            if cmd_query.is_empty() {
-                results.push(SearchResult {
-                    id: 900000 + idx,
-                    kind: "command".to_string(),
-                    name: item.name.clone(),
-                    path: item.path,
-                    exec: item.name,
-                    icon: "utilities-terminal".to_string(),
-                    score: 500,
-                    terminal: true,
-                    description: "Binary in PATH".to_string(),
-                });
-                if results.len() >= 30 {
-                    break;
-                }
-            } else if let Some(score) = score_command(&item.name, cmd_query) {
-                item.score = score;
-                results.push(SearchResult {
-                    id: 900000 + idx,
-                    kind: "command".to_string(),
-                    name: item.name.clone(),
-                    path: item.path,
-                    exec: item.name,
-                    icon: "utilities-terminal".to_string(),
-                    score,
-                    terminal: true,
-                    description: "Binary in PATH".to_string(),
-                });
-            }
-        }
-
-        results.sort_by(|a, b| b.score.cmp(&a.score).then_with(|| a.name.cmp(&b.name)));
-        results.truncate(30);
-
-        match serde_json::to_string(&results) {
-            Ok(json) => println!("{json}"),
-            Err(error) => {
-                eprintln!("NEXA command serialization error: {error}");
-                std::process::exit(2);
-            }
-        }
-        return;
     }
 
     let entries = match load_index() {
@@ -1491,23 +1716,46 @@ pub fn query(query_str: &str) {
         }
     };
 
-    let mut results: Vec<SearchResult> = entries
-        .iter()
-        .filter_map(|entry| {
-            let score = score_entry(entry, query_str)?;
-            Some(SearchResult {
+    for entry in &entries {
+        if let Some(score) = score_entry(entry, query_str) {
+            seen_paths.insert(entry.path.clone());
+            results.push(SearchResult {
                 id: entry.id,
                 kind: entry.kind.clone(),
                 name: entry.name.clone(),
                 path: entry.path.clone(),
+                location: entry.location.clone(),
                 exec: entry.exec.clone(),
                 icon: entry.icon.clone(),
                 score,
                 terminal: entry.terminal,
                 description: entry.description.clone(),
-            })
-        })
-        .collect();
+            });
+        }
+    }
+
+    // Deep on-demand exact file search via fd if query is 3+ characters
+    if query_str.len() >= 3 {
+        let fd_entries = find_exact_files_fd(query_str);
+        for entry in fd_entries {
+            if seen_paths.insert(entry.path.clone()) {
+                if let Some(score) = score_entry(&entry, query_str) {
+                    results.push(SearchResult {
+                        id: 800000 + results.len(),
+                        kind: entry.kind,
+                        name: entry.name,
+                        path: entry.path,
+                        location: entry.location,
+                        exec: entry.exec,
+                        icon: entry.icon,
+                        score,
+                        terminal: entry.terminal,
+                        description: entry.description,
+                    });
+                }
+            }
+        }
+    }
 
     results.sort_by(|a, b| {
         b.score
@@ -1558,25 +1806,6 @@ fn launch_desktop_file(path_str: &str) -> Result<(), String> {
         return Err(format!("desktop file not found: {path_str}"));
     }
 
-    // 1. Primary launcher: gio launch
-    if command_exists("gio") {
-        let status = Command::new("gio")
-            .arg("launch")
-            .arg(desktop_path)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .process_group(0)
-            .status();
-
-        if let Ok(st) = status {
-            if st.success() {
-                return Ok(());
-            }
-        }
-    }
-
-    // 2. Fallback: Parse Exec line and run directly
     let content =
         fs::read_to_string(desktop_path).map_err(|e| format!("cannot read desktop file: {e}"))?;
 
@@ -1600,8 +1829,27 @@ fn launch_desktop_file(path_str: &str) -> Result<(), String> {
         }
     }
 
+    // 1. Primary launcher: gio launch (Only for GUI apps; gio launch cannot spawn terminal apps on Wayland)
+    if !terminal && command_exists("gio") {
+        let status = Command::new("gio")
+            .arg("launch")
+            .arg(desktop_path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .process_group(0)
+            .status();
+
+        if let Ok(st) = status {
+            if st.success() {
+                return Ok(());
+            }
+        }
+    }
+
+    // 2. Direct execution (or Terminal execution)
     let cleaned_exec = clean_desktop_exec(&exec);
-    let tokens: Vec<String> = cleaned_exec
+    let mut tokens: Vec<String> = cleaned_exec
         .split_whitespace()
         .map(|s| s.to_string())
         .collect();
@@ -1609,19 +1857,56 @@ fn launch_desktop_file(path_str: &str) -> Result<(), String> {
         return Err(format!("no Exec line found in {path_str}"));
     }
 
+    // Special handling for btop: needs --force-utf so it renders properly in terminal
+    if tokens[0].ends_with("btop") && !tokens.iter().any(|arg| arg == "--force-utf") {
+        tokens.push("--force-utf".to_string());
+    }
+
+    let lang = env::var("LANG").unwrap_or_else(|_| "en_US.UTF-8".to_string());
+    let lc_all = env::var("LC_ALL").unwrap_or_else(|_| "en_US.UTF-8".to_string());
+
     let mut cmd = if terminal {
         let term = env::var("TERMINAL").unwrap_or_else(|_| "kitty".to_string());
-        let app_name = desktop_path
+        let app_name = if desktop_path
             .file_stem()
             .and_then(|s| s.to_str())
-            .unwrap_or("app")
-            .to_lowercase();
+            .unwrap_or("")
+            .to_lowercase()
+            .starts_with("btop")
+            || tokens[0].ends_with("btop")
+        {
+            "btop".to_string()
+        } else if tokens[0].ends_with("yazi") {
+            "yazi".to_string()
+        } else {
+            desktop_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("app")
+                .to_lowercase()
+        };
 
         let mut c = Command::new(&term);
-        c.arg("--class").arg(&app_name);
-        if term.contains("alacritty") {
-            c.arg("-e");
+        let term_name = Path::new(&term)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(&term);
+
+        match term_name {
+            "kitty" | "alacritty" | "wezterm" => {
+                c.arg("--class").arg(&app_name);
+            }
+            "foot" => {
+                c.arg("-a").arg(&app_name);
+            }
+            "xterm" => {
+                c.arg("-class").arg(&app_name);
+            }
+            _ => {}
         }
+
+        // Terminal execute flag (-e for kitty, foot, alacritty, wezterm, xterm)
+        c.arg("-e");
         c.args(&tokens);
         c
     } else {
@@ -1633,6 +1918,8 @@ fn launch_desktop_file(path_str: &str) -> Result<(), String> {
     };
 
     cmd.current_dir(workdir)
+        .env("LANG", lang)
+        .env("LC_ALL", lc_all)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -1732,38 +2019,32 @@ pub fn open(target: &str) {
         std::process::exit(2);
     }
 
-    // Direct command execution (starts with '>')
-    if target.starts_with('>') {
-        let cmd = target[1..].trim();
-        let home = home_dir();
-        let shell = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
-        let _ = Command::new(&shell)
-            .arg("-c")
-            .arg(cmd)
-            .current_dir(&home)
-            .process_group(0)
-            .spawn();
-        return;
-    }
 
-    // If target is directly an existing path
-    let target_path = PathBuf::from(target);
+
+    // If target is directly an existing path (with optional ~ expansion)
+    let target_path = if let Some(stripped) = target.strip_prefix('~') {
+        home_dir().join(stripped.trim_start_matches('/'))
+    } else {
+        PathBuf::from(target)
+    };
+
     if target_path.exists() {
-        let result = if target.ends_with(".desktop") {
-            launch_desktop_file(target)
-        } else if target.to_lowercase().ends_with(".appimage") {
-            launch_appimage(target)
+        let path_str = target_path.to_string_lossy().to_string();
+        let result = if path_str.ends_with(".desktop") {
+            launch_desktop_file(&path_str)
+        } else if path_str.to_lowercase().ends_with(".appimage") {
+            launch_appimage(&path_str)
         } else if target_path.is_dir() {
             if let Some((exec, workdir)) = find_folder_app_executable(&target_path) {
                 launch_folder_app(&exec, &workdir)
             } else {
-                launch_file(target)
+                launch_file(&path_str)
             }
         } else if is_executable_file(&target_path) {
             let workdir = target_path.parent().unwrap_or_else(|| Path::new("/"));
             launch_folder_app(&target_path, workdir)
         } else {
-            launch_file(target)
+            launch_file(&path_str)
         };
 
         if let Err(error) = result {
@@ -1807,7 +2088,7 @@ pub fn open(target: &str) {
                 }
             }
             "appimage" => launch_appimage(&entry.path),
-            "file" => launch_file(&entry.path),
+            "file" | "folder" => launch_file(&entry.path),
             other => Err(format!("unsupported search result type: {other}")),
         };
 
@@ -1829,6 +2110,52 @@ pub fn open(target: &str) {
             .process_group(0)
             .spawn();
         return;
+    }
+
+    // Fallback: match by desktop app ID, desktop file name, or app name
+    if let Ok(entries) = load_index() {
+        let clean_target = target.trim_end_matches(".desktop");
+        let matched = entries.iter().find(|e| {
+            if e.kind != "app" {
+                return false;
+            }
+            let file_stem = Path::new(&e.path)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("");
+            file_stem == clean_target
+                || file_stem == target
+                || e.name.eq_ignore_ascii_case(clean_target)
+                || e.exec
+                    .split_whitespace()
+                    .next()
+                    .map(|b| b.trim_matches('"').trim_matches('\'').ends_with(clean_target))
+                    .unwrap_or(false)
+        });
+
+        if let Some(entry) = matched {
+            let result = if entry.path.ends_with(".desktop") {
+                launch_desktop_file(&entry.path)
+            } else {
+                let exec_path = PathBuf::from(&entry.exec);
+                let entry_path = PathBuf::from(&entry.path);
+                let workdir = if entry_path.is_dir() {
+                    entry_path
+                } else {
+                    exec_path
+                        .parent()
+                        .unwrap_or_else(|| Path::new("/"))
+                        .to_path_buf()
+                };
+                launch_folder_app(&exec_path, &workdir)
+            };
+
+            if let Err(error) = result {
+                eprintln!("NEXA search open error: {error}");
+                std::process::exit(2);
+            }
+            return;
+        }
     }
 
     eprintln!("NEXA search open error: invalid path or ID '{target}'");

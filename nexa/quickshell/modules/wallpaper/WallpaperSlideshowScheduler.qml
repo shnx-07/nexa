@@ -86,15 +86,6 @@ Item {
         running: false
     }
 
-    // Sync screen lock state to /tmp/nexa-locked for Rust slideshow daemon
-    onIsLockedChanged: {
-        if (isLocked) {
-            Quickshell.execDetached(["touch", "/tmp/nexa-locked"])
-        } else {
-            Quickshell.execDetached(["rm", "-f", "/tmp/nexa-locked"])
-        }
-    }
-
     Component.onCompleted: {
         configFile.reload()
         Qt.callLater(function() {

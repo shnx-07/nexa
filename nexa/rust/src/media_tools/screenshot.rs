@@ -65,6 +65,11 @@ pub fn capture() {
 
     match status {
         Ok(status) if status.success() => {
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let _ = fs::set_permissions(&path, fs::Permissions::from_mode(0o600));
+            }
             crate::hardware::sound::play_sound("screenshot_sound");
         }
 

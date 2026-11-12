@@ -40,7 +40,7 @@ WORKSPACE_ORIENTATION = "horizontal"
 
 HYPRGLASS_ENABLED = true -- Master toggle: true / false
 HYPRGLASS_NEXA_PRESET = "crystal_clear" -- Preset for Nexa Shell (Top Bar, Island, Dock, Settings)
-HYPRGLASS_GLOBAL_PRESET = "clear" -- Preset for all Desktop Windows (Terminal, Apps, etc.)
+HYPRGLASS_GLOBAL_PRESET = "frost_velvet" -- Preset for all Desktop Windows (Terminal, Apps, etc.)
 
 -- =============================================================================
 -- 2. DYNAMIC CURSORS (Physics & Shake-to-Find)

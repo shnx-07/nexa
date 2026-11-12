@@ -371,17 +371,10 @@ pub fn parse_interval_secs(interval: &str) -> u64 {
 }
 
 pub fn is_screen_locked() -> bool {
-    let flag1 = PathBuf::from("/tmp/nexa-locked");
-    let flag2 = PathBuf::from("/tmp/hyprlock-active");
-    if flag1.exists() || flag2.exists() {
+    if crate::desktop::lock::lock_flag_path().exists() {
         return true;
     }
-    if let Ok(output) = Command::new("pgrep").arg("-x").arg("hyprlock").output() {
-        if output.status.success() {
-            return true;
-        }
-    }
-    false
+    Path::new("/tmp/nexa-locked").exists() || Path::new("/tmp/hyprlock-active").exists()
 }
 
 pub fn run_daemon() -> ! {

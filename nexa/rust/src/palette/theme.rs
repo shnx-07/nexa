@@ -363,7 +363,7 @@ pub fn render_canonical(canonical_path: &Path, mode: &str) -> Result<(), String>
            gsettings set org.gnome.desktop.interface gtk-theme \"$dummy\" 2>/dev/null; \
            sleep 0.05; \
            gsettings set org.gnome.desktop.interface gtk-theme \"$curr_theme\" 2>/dev/null; \
-         fi &"
+         fi"
     ).spawn();
 
     // Live reload Kitty

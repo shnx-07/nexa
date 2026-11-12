@@ -1167,13 +1167,11 @@ PanelWindow {
                 return NexaUI.NexaColors.islandBackgroundExpanded;
             if (root.full)
                 return NexaUI.NexaColors.islandBackgroundExpanded;
-            if (islandContent.mediaContextActive && islandContent.hasAlbumColors) {
-                if (root.hovered)
+            if (root.hovered) {
+                if (islandContent.mediaContextActive && islandContent.hasAlbumColors)
                     return Qt.rgba(islandContent.albumSurfaceColor.r, islandContent.albumSurfaceColor.g, islandContent.albumSurfaceColor.b, 0.94);
-                return islandContent.albumSurfaceColor;
-            }
-            if (root.hovered)
                 return NexaUI.NexaColors.islandBackgroundExpanded;
+            }
             return NexaUI.NexaColors.islandBackground;
         }
 
@@ -1185,10 +1183,11 @@ PanelWindow {
                 return NexaUI.NexaColors.borderStrong;
             if (root.full)
                 return NexaUI.NexaColors.borderStrong;
-            if (islandContent.mediaContextActive && islandContent.hasAlbumColors)
-                return Qt.rgba(islandContent.albumAccentColor.r, islandContent.albumAccentColor.g, islandContent.albumAccentColor.b, 0.45);
-            if (root.hovered)
+            if (root.hovered) {
+                if (islandContent.mediaContextActive && islandContent.hasAlbumColors)
+                    return Qt.rgba(islandContent.albumAccentColor.r, islandContent.albumAccentColor.g, islandContent.albumAccentColor.b, 0.45);
                 return NexaUI.NexaColors.borderStrong;
+            }
             return NexaUI.NexaColors.border;
         }
 

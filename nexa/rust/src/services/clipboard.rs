@@ -50,12 +50,6 @@ fn decode_bytes(id: &str) -> Result<Vec<u8>, String> {
     Ok(output.stdout)
 }
 
-fn decode_text(id: &str) -> Result<String, String> {
-    let bytes = decode_bytes(id)?;
-
-    Ok(String::from_utf8_lossy(&bytes).to_string())
-}
-
 // ============================================================
 // ENTRY TYPE
 // ============================================================
@@ -101,15 +95,9 @@ fn load_pins() -> HashSet<String> {
 
 fn save_pins(pins: &HashSet<String>) -> Result<(), String> {
     let path = pins_path();
-
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("Failed to create pin directory: {e}"))?;
-    }
-
     let data =
         serde_json::to_string_pretty(pins).map_err(|e| format!("Failed to serialize pins: {e}"))?;
-
-    fs::write(path, data).map_err(|e| format!("Failed to save pins: {e}"))
+    crate::core::fs_utils::atomic_write(path, data)
 }
 
 // ============================================================
@@ -180,21 +168,18 @@ fn load_entries() -> Result<Vec<ClipboardEntry>, String> {
             continue;
         }
 
-        let preview = parts.next().unwrap_or("").to_string();
-
+        let mut preview = parts.next().unwrap_or("").to_string();
+        if is_sensitive_content(&preview) {
+            preview = "[Protected Credential]".to_string();
+        }
         let kind = entry_type(&preview);
-
-        let size_bytes = decode_bytes(id).map(|bytes| bytes.len()).unwrap_or(0);
+        let size_bytes = preview.len();
 
         entries.push(ClipboardEntry {
             id: id.to_string(),
-
             preview,
-
             size_bytes,
-
             pinned: pins.contains(id),
-
             entry_type: kind.to_string(),
         });
     }
@@ -257,15 +242,12 @@ pub fn search(query: &str) {
                     }
 
                     if entry.entry_type == "image" {
-                        return query.contains("image")
+                        query.contains("image")
                             || query.contains("png")
-                            || query.contains("screenshot");
+                            || query.contains("screenshot")
+                    } else {
+                        false
                     }
-
-                    decode_text(&entry.id)
-                        .unwrap_or_default()
-                        .to_lowercase()
-                        .contains(&query)
                 })
                 .collect();
 
@@ -589,5 +571,154 @@ pub fn clear() {
         Err(error) => {
             eprintln!("Failed to run cliphist wipe: {error}");
         }
+    }
+}
+
+// ============================================================
+// SECURITY & SENSITIVE CREDENTIAL GUARD
+// ============================================================
+
+pub fn is_sensitive_content(text: &str) -> bool {
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return false;
+    }
+
+    let lower = trimmed.to_lowercase();
+
+    // 1. Private keys (SSH, PGP, TLS, EC)
+    if (trimmed.contains("BEGIN ") && trimmed.contains("PRIVATE KEY"))
+        || trimmed.contains("BEGIN OPENSSH PRIVATE KEY")
+        || trimmed.contains("BEGIN RSA PRIVATE KEY")
+        || trimmed.contains("BEGIN EC PRIVATE KEY")
+        || trimmed.contains("BEGIN PGP PRIVATE KEY")
+    {
+        return true;
+    }
+
+    // 2. Authentication tokens & secrets
+    if trimmed.contains("ghp_")
+        || trimmed.contains("gho_")
+        || trimmed.contains("github_pat_")
+        || trimmed.contains("glpat-")
+        || trimmed.contains("xoxb-")
+        || trimmed.contains("xoxp-")
+        || lower.contains("bearer ")
+    {
+        return true;
+    }
+
+    // 3. AI Provider API Keys
+    if (trimmed.contains("sk-") && trimmed.len() >= 35) || trimmed.contains("sk-ant-") {
+        return true;
+    }
+
+    // 4. AWS Access Keys
+    if trimmed.contains("AKIA") && trimmed.len() >= 20 {
+        if let Some(pos) = trimmed.find("AKIA") {
+            let slice = &trimmed[pos..];
+            if slice.len() >= 20 && slice[4..20].chars().all(|c| c.is_ascii_alphanumeric()) {
+                return true;
+            }
+        }
+    }
+
+    // 5. JSON Web Tokens (JWT)
+    if trimmed.contains("eyJ") && trimmed.contains(".eyJ") {
+        return true;
+    }
+
+    // 6. Explicit password key-value lines
+    if (lower.contains("password=") || lower.contains("passwd=") || lower.contains("secret=") || lower.contains("api_key="))
+        && trimmed.lines().count() <= 3
+    {
+        return true;
+    }
+
+    false
+}
+
+fn ensure_secure_permissions() {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+        let db_path = PathBuf::from(&home).join(".cache").join("cliphist").join("db");
+        if db_path.exists() {
+            let _ = fs::set_permissions(&db_path, fs::Permissions::from_mode(0o600));
+        }
+        let pins = pins_path();
+        if pins.exists() {
+            let _ = fs::set_permissions(&pins, fs::Permissions::from_mode(0o600));
+        }
+    }
+}
+
+pub fn store_text() {
+    use std::io::{Read, Write};
+
+    // 1. Check Wayland offer MIME types for password manager hints
+    if let Ok(output) = Command::new("wl-paste").arg("-l").output() {
+        let types = String::from_utf8_lossy(&output.stdout).to_lowercase();
+        if types.contains("password") || types.contains("secret") || types.contains("x-kde-passwordmanagerhint") {
+            return;
+        }
+    }
+
+    // 2. Read stdin
+    let mut buffer = Vec::new();
+    if std::io::stdin().read_to_end(&mut buffer).is_err() || buffer.is_empty() {
+        return;
+    }
+
+    let text = String::from_utf8_lossy(&buffer);
+
+    // 3. Drop sensitive credentials
+    if is_sensitive_content(&text) {
+        eprintln!("[NEXA Clipboard Guard] Redacted sensitive token/credential from clipboard history.");
+        return;
+    }
+
+    // 4. Secure DB file permissions
+    ensure_secure_permissions();
+
+    // 5. Store with 300 items limit
+    if let Ok(mut child) = Command::new("cliphist")
+        .args(["-max-items", "300", "store"])
+        .stdin(Stdio::piped())
+        .spawn()
+    {
+        if let Some(mut stdin) = child.stdin.take() {
+            let _ = stdin.write_all(&buffer);
+        }
+        let _ = child.wait();
+    }
+}
+
+pub fn store_image() {
+    use std::io::{Read, Write};
+
+    let mut buffer = Vec::new();
+    if std::io::stdin().read_to_end(&mut buffer).is_err() || buffer.is_empty() {
+        return;
+    }
+
+    // Prevent massive images (> 10MB) from bloating the cliphist database
+    if buffer.len() > 10 * 1024 * 1024 {
+        eprintln!("[NEXA Clipboard Guard] Image exceeds 10MB threshold; skipping history store.");
+        return;
+    }
+
+    ensure_secure_permissions();
+
+    if let Ok(mut child) = Command::new("cliphist")
+        .args(["-max-items", "300", "store"])
+        .stdin(Stdio::piped())
+        .spawn()
+    {
+        if let Some(mut stdin) = child.stdin.take() {
+            let _ = stdin.write_all(&buffer);
+        }
+        let _ = child.wait();
     }
 }
