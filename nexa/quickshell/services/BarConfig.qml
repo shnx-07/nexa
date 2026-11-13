@@ -10,6 +10,7 @@ Singleton {
     property bool autohide: false
     property bool floating: true
     property int height: 44
+    property string workspaceStyle: "dots" // "dots", "numbers", "devanagari", "roman", "kanji"
     property bool showWorkspaces: true
     property bool showTitle: true
     property bool showIsland: true
@@ -45,6 +46,7 @@ Singleton {
                 if (d.autohide !== undefined) root.autohide = d.autohide;
                 if (d.floating !== undefined) root.floating = d.floating;
                 if (d.height !== undefined) root.height = d.height;
+                if (d.workspace_style !== undefined) root.workspaceStyle = d.workspace_style;
                 if (d.show_workspaces !== undefined) root.showWorkspaces = d.show_workspaces;
                 if (d.show_title !== undefined) root.showTitle = d.show_title;
                 if (d.show_island !== undefined) root.showIsland = d.show_island;
@@ -64,6 +66,7 @@ Singleton {
             autohide: root.autohide,
             floating: root.floating,
             height: root.height,
+            workspace_style: root.workspaceStyle,
             show_workspaces: root.showWorkspaces,
             show_title: root.showTitle,
             show_island: root.showIsland,
@@ -81,6 +84,12 @@ Singleton {
     function setPosition(pos) {
         if (!pos || root.position === pos) return;
         root.position = pos;
+        saveTimer.restart();
+    }
+
+    function setWorkspaceStyle(s) {
+        if (!s || root.workspaceStyle === s) return;
+        root.workspaceStyle = s;
         saveTimer.restart();
     }
 

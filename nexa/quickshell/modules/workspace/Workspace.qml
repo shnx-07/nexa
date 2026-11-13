@@ -5,11 +5,33 @@ import Quickshell.Io
 import Quickshell.Hyprland
 
 import "../../NewNexaUI" as NexaUI
+import "../../services" as Services
 
 RowLayout {
     id: root
 
     spacing: NexaUI.NexaTokens.spacingSm
+
+    readonly property string workspaceStyle: Services.BarConfig.workspaceStyle || "dots"
+
+    function getWorkspaceLabel(wsId) {
+        switch (root.workspaceStyle) {
+            case "numbers":
+                return String(wsId);
+            case "devanagari":
+                const dev = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"];
+                return String(wsId).split("").map(c => dev[parseInt(c)] || c).join("");
+            case "roman":
+                const rom = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+                return rom[wsId] || String(wsId);
+            case "kanji":
+                const cjk = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+                return cjk[wsId] || String(wsId);
+            case "dots":
+            default:
+                return "";
+        }
+    }
 
     readonly property string nexad:
         Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
@@ -264,7 +286,7 @@ RowLayout {
             id: workspaceRow
 
             anchors.centerIn: parent
-            spacing: 6
+            spacing: root.workspaceStyle === "dots" ? 6 : 4
 
             Repeater {
                 id: workspaceRepeater
@@ -279,15 +301,23 @@ RowLayout {
                     readonly property int wsId: modelData
                     readonly property bool active: root.focusedWorkspaceId === wsId
                     readonly property bool occupied: root.hasWindows(wsId)
+                    readonly property bool isDots: root.workspaceStyle === "dots"
 
-                    width: (active ? 28 : 10) + 4
+                    width: {
+                        if (isDots) {
+                            return (active ? 28 : 10) + 4
+                        } else {
+                            return (active ? Math.max(34, wsText.implicitWidth + 20) : Math.max(22, wsText.implicitWidth + 10)) + 2
+                        }
+                    }
                     height: NexaUI.NexaTokens.controlHeightSm
 
                     Behavior on width {
-                        enabled: NexaUI.NexaMotion.enabled
+                        enabled: NexaUI.NexaMotion.enabled && NexaUI.NexaMotion.useSpring("workspace")
                         SpringAnimation {
                             spring: NexaUI.NexaMotion.springStiffness
                             damping: NexaUI.NexaMotion.springDamping
+                            mass: NexaUI.NexaMotion.springMass
                             epsilon: 0.002
                         }
                     }
@@ -296,33 +326,107 @@ RowLayout {
                         id: dotIndicator
 
                         anchors.centerIn: parent
-                        width: parent.width - 4
-                        height: 10
+                        width: isDots ? (parent.width - 4) : (parent.width - 2)
+                        height: isDots ? 10 : 20
                         radius: NexaUI.NexaTokens.radiusLg === 0 ? 0 : Math.min(height / 2, NexaUI.NexaTokens.radiusLg)
 
-                        color: {
-                            if (workspaceButton.active) {
-                                return NexaUI.NexaColors.primary
-                            } else if (workspaceButton.occupied) {
-                                return Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.70)
-                            } else {
-                                return Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.30)
+                        Behavior on height {
+                            enabled: NexaUI.NexaMotion.enabled
+                            SpringAnimation {
+                                spring: NexaUI.NexaMotion.springStiffness
+                                damping: NexaUI.NexaMotion.springDamping
+                                mass: NexaUI.NexaMotion.springMass
+                                epsilon: 0.002
                             }
                         }
 
-                        scale: mouse.pressed ? 0.88 : (mouse.containsMouse && !workspaceButton.active ? 1.2 : 1.0)
+                        color: {
+                            if (isDots) {
+                                if (workspaceButton.active) {
+                                    return NexaUI.NexaColors.primary
+                                } else if (workspaceButton.occupied) {
+                                    return Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.70)
+                                } else {
+                                    return Qt.rgba(NexaUI.NexaColors.primary.r, NexaUI.NexaColors.primary.g, NexaUI.NexaColors.primary.b, 0.30)
+                                }
+                            } else {
+                                if (workspaceButton.active) {
+                                    return NexaUI.NexaColors.primary
+                                } else if (workspaceButton.occupied) {
+                                    return NexaUI.NexaColors.surfaceContainerHigh
+                                } else if (mouse.containsMouse) {
+                                    return NexaUI.NexaColors.surfaceContainer
+                                } else {
+                                    return "transparent"
+                                }
+                            }
+                        }
+
+                        border.width: !isDots && workspaceButton.occupied && !workspaceButton.active ? 1 : 0
+                        border.color: NexaUI.NexaColors.border
+
+                        scale: mouse.pressed ? 0.88 : (mouse.containsMouse && !workspaceButton.active ? 1.12 : 1.0)
 
                         Behavior on color {
                             ColorAnimation {
                                 duration: NexaUI.NexaMotion.durationNormal
-                                easing.type: Easing.InOutCubic
+                                easing.type: NexaUI.NexaMotion.decelerateEasing
                             }
                         }
 
                         Behavior on scale {
-                            NumberAnimation {
-                                duration: NexaUI.NexaMotion.durationFast
-                                easing.type: Easing.OutCubic
+                            enabled: NexaUI.NexaMotion.enabled && NexaUI.NexaMotion.useSpring("workspace")
+                            SpringAnimation {
+                                spring: NexaUI.NexaMotion.springStiffness * 1.3
+                                damping: NexaUI.NexaMotion.springDamping
+                                mass: NexaUI.NexaMotion.springMass
+                                epsilon: 0.002
+                            }
+                        }
+
+                        Text {
+                            id: wsText
+                            anchors.centerIn: parent
+                            visible: !isDots
+                            text: root.getWorkspaceLabel(workspaceButton.wsId)
+                            font.family: NexaUI.NexaTypography.familyBody
+                            font.pixelSize: 11
+                            font.weight: workspaceButton.active ? Font.Bold : Font.Medium
+                            opacity: isDots ? 0.0 : (workspaceButton.active ? 1.0 : (workspaceButton.occupied ? 0.9 : 0.45))
+                            scale: workspaceButton.active ? 1.05 : 0.95
+
+                            color: {
+                                if (workspaceButton.active) {
+                                    return NexaUI.NexaColors.onPrimary
+                                } else if (workspaceButton.occupied) {
+                                    return NexaUI.NexaColors.text
+                                } else {
+                                    return NexaUI.NexaColors.mutedText
+                                }
+                            }
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: NexaUI.NexaMotion.durationNormal
+                                    easing.type: NexaUI.NexaMotion.decelerateEasing
+                                }
+                            }
+
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: NexaUI.NexaMotion.durationFast
+                                    easing.type: NexaUI.NexaMotion.decelerateEasing
+                                }
+                            }
+
+                            Behavior on scale {
+                                enabled: NexaUI.NexaMotion.enabled && NexaUI.NexaMotion.useSpring("workspace")
+                                SpringAnimation {
+                                    spring: NexaUI.NexaMotion.springStiffness
+                                    damping: NexaUI.NexaMotion.springDamping
+                                    mass: NexaUI.NexaMotion.springMass
+                                    epsilon: 0.002
+                                }
                             }
                         }
                     }

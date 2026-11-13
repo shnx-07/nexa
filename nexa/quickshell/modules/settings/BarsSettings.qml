@@ -576,6 +576,46 @@ Item {
                         }
                     }
 
+                    // Workspace Indicator Style
+                    RowLayout {
+                        Layout.fillWidth: true
+                        visible: Services.BarConfig.showWorkspaces
+
+                        ColumnLayout {
+                            spacing: 2
+                            Text {
+                                text: "Workspace Number Style"
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 13
+                                color: NexaUI.NexaColors.text
+                            }
+                            Text {
+                                text: "Style of workspace indicators in the top bar"
+                                font.family: NexaUI.NexaTypography.familyBody
+                                font.pixelSize: 11
+                                color: NexaUI.NexaColors.mutedText
+                            }
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        NexaUI.NexaSegmentedControl {
+                            customHeight: 30
+                            model: [
+                                { id: "dots", label: "Dots" },
+                                { id: "numbers", label: "1 2 3" },
+                                { id: "devanagari", label: "१ २ ३" },
+                                { id: "roman", label: "I II III" },
+                                { id: "kanji", label: "一 二 三" }
+                            ]
+                            currentId: Services.BarConfig.workspaceStyle
+                            onSelected: (id) => {
+                                Services.BarConfig.setWorkspaceStyle(id);
+                                root.showToast("Workspace style set to " + id);
+                            }
+                        }
+                    }
+
                     Rectangle { Layout.fillWidth: true; height: 1; color: NexaUI.NexaColors.border }
 
                     // Window Title

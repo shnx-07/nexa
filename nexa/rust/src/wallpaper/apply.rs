@@ -2,6 +2,7 @@ use super::list::{classify, ensure_proxy, ensure_thumbnail, wallpaper_dir};
 use std::{
     env, fs,
     path::{Path, PathBuf},
+    process::Command,
 };
 
 // ============================================================
@@ -184,6 +185,77 @@ pub fn resolve_shuffle(dir: Option<&Path>) -> Option<PathBuf> {
 }
 
 // ============================================================
+// GIF TO HARDWARE-ACCELERATED MP4 CONVERSION
+// ============================================================
+
+pub fn gif_mp4_cache_dir() -> PathBuf {
+    let home = env::var("HOME").unwrap_or_else(|_| String::from("."));
+    PathBuf::from(home)
+        .join(".cache")
+        .join("nexa")
+        .join("wallpapers")
+        .join("gif_mp4")
+}
+
+pub fn ensure_gif_mp4(gif_path: &Path) -> Result<PathBuf, String> {
+    let name = gif_path
+        .file_name()
+        .ok_or_else(|| "Invalid file name".to_string())?
+        .to_string_lossy();
+    let cache_dir = gif_mp4_cache_dir();
+    fs::create_dir_all(&cache_dir)
+        .map_err(|e| format!("Failed to create gif_mp4 cache dir: {e}"))?;
+
+    let target = cache_dir.join(format!("{}.mp4", name));
+
+    if target.exists() {
+        if let (Ok(target_meta), Ok(gif_meta)) = (target.metadata(), gif_path.metadata()) {
+            if target_meta.len() > 0 {
+                if let (Ok(target_mtime), Ok(gif_mtime)) = (target_meta.modified(), gif_meta.modified()) {
+                    if target_mtime >= gif_mtime {
+                        return Ok(target);
+                    }
+                } else {
+                    return Ok(target);
+                }
+            }
+        }
+    }
+
+    let temp_target = cache_dir.join(format!(".{}.{}.tmp.mp4", name, std::process::id()));
+
+    let status = Command::new("nice")
+        .args([
+            "-n", "19",
+            "ffmpeg",
+            "-loglevel", "error",
+            "-threads", "2",
+            "-i",
+        ])
+        .arg(gif_path)
+        .args([
+            "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-f", "mp4",
+            "-movflags", "+faststart",
+            "-y",
+        ])
+        .arg(&temp_target)
+        .status()
+        .map_err(|e| format!("Failed to run ffmpeg: {e}"))?;
+
+    if status.success() && temp_target.exists() {
+        fs::rename(&temp_target, &target)
+            .map_err(|e| format!("Failed to commit converted mp4: {e}"))?;
+        Ok(target)
+    } else {
+        let _ = fs::remove_file(&temp_target);
+        Err("ffmpeg conversion failed".to_string())
+    }
+}
+
+// ============================================================
 // APPLY DESKTOP WALLPAPER
 // ============================================================
 
@@ -236,9 +308,23 @@ pub fn apply_desktop(
         target_thumb = Some(thumb_path);
     }
 
+    let engine_path = if kind == "gif" {
+        ensure_gif_mp4(&resolved_path).unwrap_or_else(|e| {
+            eprintln!("Warning: failed to convert GIF to hardware-accelerated MP4: {e}");
+            resolved_path.clone()
+        })
+    } else {
+        resolved_path.clone()
+    };
+    let engine_kind = if kind == "gif" && engine_path.extension().map_or(false, |e| e == "mp4") {
+        "video"
+    } else {
+        kind
+    };
+
     super::transition::apply_with_handshake(
-        &resolved_path,
-        kind,
+        &engine_path,
+        engine_kind,
         monitor_target,
         &prev_kind,
         prev_thumb.as_deref(),

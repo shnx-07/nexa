@@ -488,6 +488,90 @@ PanelWindow {
 
         MouseArea { anchors.fill: parent; onClicked: root.closeWallpaper() }
 
+        // ============================================================
+        // LIVE AMBIENT BACKGROUND CROSSFADE (Option 1)
+        // Softly reflects the active wallpaper's scenery and colors
+        // ============================================================
+        Item {
+            id: ambientBgContainer
+            anchors.fill: parent
+            visible: !root.slideshowEnabled && root.visible
+
+            property string activeThumb: {
+                if (filteredModel.count <= 0) return "";
+                const cur = filteredModel.get(carouselList.currentIndex);
+                if (!cur) return "";
+                return root.fileUrl(cur.wallThumb && cur.wallThumb.length > 0 ? cur.wallThumb : cur.wallPath);
+            }
+
+            property bool toggleA: true
+
+            onActiveThumbChanged: {
+                if (!activeThumb || activeThumb === "") return;
+                if (toggleA) {
+                    bgImageB.source = activeThumb;
+                    bgFadeB.restart();
+                } else {
+                    bgImageA.source = activeThumb;
+                    bgFadeA.restart();
+                }
+                toggleA = !toggleA;
+            }
+
+            // Layer A
+            Image {
+                id: bgImageA
+                anchors.fill: parent
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: true
+                sourceSize.width: 960
+                sourceSize.height: 540
+                opacity: 1.0
+            }
+
+            // Layer B
+            Image {
+                id: bgImageB
+                anchors.fill: parent
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: true
+                sourceSize.width: 960
+                sourceSize.height: 540
+                opacity: 0.0
+            }
+
+            // Smooth crossfade animations
+            ParallelAnimation {
+                id: bgFadeB
+                NumberAnimation { target: bgImageB; property: "opacity"; to: 1.0; duration: 420; easing.type: Easing.OutCubic }
+                NumberAnimation { target: bgImageA; property: "opacity"; to: 0.0; duration: 420; easing.type: Easing.OutCubic }
+            }
+
+            ParallelAnimation {
+                id: bgFadeA
+                NumberAnimation { target: bgImageA; property: "opacity"; to: 1.0; duration: 420; easing.type: Easing.OutCubic }
+                NumberAnimation { target: bgImageB; property: "opacity"; to: 0.0; duration: 420; easing.type: Easing.OutCubic }
+            }
+
+            // Ambient Darkening & Contrast Overlay (Keeps cards ultra-sharp and punchy)
+            Rectangle {
+                anchors.fill: parent
+                color: Qt.rgba(0, 0, 0, 0.58)
+            }
+
+            // Edge Vignette
+            Rectangle {
+                anchors.fill: parent
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.45) }
+                    GradientStop { position: 0.5; color: Qt.rgba(0, 0, 0, 0.15) }
+                    GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.55) }
+                }
+            }
+        }
+
         // VIEW 1: Slideshow Gallery Grid (Screenshot 2)
         Loader {
             id: slideshowLoader
@@ -542,7 +626,7 @@ PanelWindow {
                 width: (selected ? root.selectedWidth : root.sideWidth) + root.itemSpacing
                 height: carouselList.height
                 z: selected ? 50 : (20 - Math.min(15, Math.abs(carouselList.currentIndex - index)))
-                opacity: selected ? 1.0 : (cardMouse.containsMouse ? 0.90 : 0.72)
+                opacity: selected ? 1.0 : (cardMouse.containsMouse ? 0.92 : Math.max(0.48, 0.78 - (distFromSelected * 0.07)))
 
                 // Motion & Physics Integration with NexaMotion
                 Behavior on width {
@@ -561,8 +645,15 @@ PanelWindow {
                     width: Math.max(0, parent.width - root.itemSpacing)
                     height: cardRoot.selected ? root.selectedHeight : root.cardHeight
 
-                    scale: cardMouse.pressed ? 0.96 : (cardMouse.containsMouse ? 1.02 : 1.0)
-                    Behavior on scale { NumberAnimation { duration: NexaUI.NexaMotion.durationFast; easing.type: NexaUI.NexaMotion.emphasizedEasing; easing.overshoot: 1.25 } }
+                    scale: cardMouse.pressed ? 0.95 : (cardRoot.selected ? 1.0 : (cardMouse.containsMouse ? 0.98 : Math.max(0.86, 0.94 - (cardRoot.distFromSelected * 0.025))))
+                    Behavior on scale {
+                        SpringAnimation {
+                            spring: NexaUI.NexaMotion.effectiveSpring
+                            damping: NexaUI.NexaMotion.effectiveDamping
+                            mass: NexaUI.NexaMotion.effectiveMass
+                            epsilon: 0.005
+                        }
+                    }
                     Behavior on height {
                         SpringAnimation {
                             spring: NexaUI.NexaMotion.effectiveSpring
@@ -581,15 +672,22 @@ PanelWindow {
                     Item {
                         id: auraLayer
                         anchors.centerIn: parent
-                        width: parent.width + 100
-                        height: parent.height + 100
+                        width: parent.width + 120
+                        height: parent.height + 120
                         z: -1
-                        opacity: cardRoot.selected ? 0.70 : (cardMouse.containsMouse ? 0.28 : 0.0)
+                        opacity: cardRoot.selected ? 0.75 : (cardMouse.containsMouse ? 0.30 : 0.0)
                         visible: opacity > 0.01
-                        scale: cardRoot.selected ? 1.03 : 0.98
+                        scale: cardRoot.selected ? 1.06 : 0.94
 
-                        Behavior on opacity { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
-                        Behavior on scale { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
+                        Behavior on scale {
+                            SpringAnimation {
+                                spring: NexaUI.NexaMotion.effectiveSpring
+                                damping: NexaUI.NexaMotion.effectiveDamping
+                                mass: NexaUI.NexaMotion.effectiveMass
+                                epsilon: 0.01
+                            }
+                        }
 
                         Item {
                             id: auraSourceContainer
@@ -633,8 +731,8 @@ PanelWindow {
                         // 1. Static Image / Thumbnail (Always present behind video so NO white screen!)
                         Image {
                             anchors.centerIn: parent
-                            anchors.horizontalCenterOffset: skewContainer.height * root.skewFactor * (root.layoutMetrics.media_center_offset || 0.32)
-                            width: skewContainer.width + (skewContainer.height * Math.abs(root.skewFactor)) + 100
+                            anchors.horizontalCenterOffset: (skewContainer.height * root.skewFactor * (root.layoutMetrics.media_center_offset || 0.32)) + ((index - carouselList.currentIndex) * 6)
+                            width: skewContainer.width + (skewContainer.height * Math.abs(root.skewFactor)) + 120
                             height: skewContainer.height + 20
                             fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true
                             sourceSize.width: 1280
@@ -657,7 +755,9 @@ PanelWindow {
                             asynchronous: true; cache: true
                             source: (cardRoot.isGif && cardRoot.selected) ? root.fileUrl(model.wallPath) : ""
                             playing: cardRoot.selected && cardRoot.isGif
-                            visible: cardRoot.isGif && cardRoot.selected
+                            opacity: (cardRoot.isGif && cardRoot.selected) ? 1.0 : 0.0
+                            visible: opacity > 0.01
+                            Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
                             transform: Matrix4x4 {
                                 property real skew: -root.skewFactor
                                 matrix: Qt.matrix4x4(1, skew, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1)
@@ -672,7 +772,9 @@ PanelWindow {
                             width: skewContainer.width + (skewContainer.height * Math.abs(root.skewFactor)) + 100
                             height: skewContainer.height + 20
                             active: cardRoot.isVideo && cardRoot.selected && root.visible
-                            visible: active
+                            opacity: (cardRoot.isVideo && cardRoot.selected) ? 1.0 : 0.0
+                            visible: opacity > 0.01
+                            Behavior on opacity { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
                             transform: Matrix4x4 {
                                 property real skew: -root.skewFactor
                                 matrix: Qt.matrix4x4(1, skew, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1)

@@ -2,21 +2,21 @@
 -- Architecture: NexaUI Frame (Permanent System Match) + Switchable Code Syntax Palettes (Dark & Light tokens)
 
 local matugen = {
-  bg = "#10131c",
-  fg = "#e0e2ef",
-  surface = "#10131c",
-  surface_container = "#1c1f29",
-  surface_highest = "#31353f",
-  primary = "#afc6ff",
-  on_primary = "#002d6d",
-  primary_container = "#004299",
-  on_primary_container = "#d9e2ff",
-  secondary = "#c2c3eb",
-  tertiary = "#cdbef7",
-  error = "#f0757f",
-  outline = "#8d909c",
-  outline_variant = "#434751",
-  muted = "#c3c6d3",
+  bg = "#1b1d1e",
+  fg = "#a7a8a3",
+  surface = "#1b1d1e",
+  surface_container = "#292d2e",
+  surface_highest = "#3d4144",
+  primary = "#fcef0c",
+  on_primary = "#000000",
+  primary_container = "#545001",
+  on_primary_container = "#fef9a3",
+  secondary = "#fcef0c",
+  tertiary = "#737271",
+  error = "#e6db43",
+  outline = "#616260",
+  outline_variant = "#3e403f",
+  muted = "#767774",
 }
 
 -- Calculate luminance of matugen background to automatically select optimal code contrast
@@ -361,6 +361,27 @@ local function apply_syntax(preset_name, variant_override)
   hl("@punctuation.delimiter", { fg = matugen.outline })
   hl("@punctuation.special", { fg = syn.special })
 
+  -- LSP Semantic Tokens (Ensure active LSP servers respect syntax colors)
+  hl("@lsp.type.comment", { link = "@comment" })
+  hl("@lsp.type.string", { link = "@string" })
+  hl("@lsp.type.keyword", { link = "@keyword" })
+  hl("@lsp.type.number", { link = "@number" })
+  hl("@lsp.type.function", { link = "@function" })
+  hl("@lsp.type.method", { link = "@function.method" })
+  hl("@lsp.type.macro", { link = "@function.macro" })
+  hl("@lsp.type.type", { link = "@type" })
+  hl("@lsp.type.class", { link = "@type" })
+  hl("@lsp.type.struct", { link = "@type" })
+  hl("@lsp.type.interface", { link = "@type" })
+  hl("@lsp.type.enum", { link = "@type" })
+  hl("@lsp.type.enumMember", { link = "@constant" })
+  hl("@lsp.type.property", { link = "@property" })
+  hl("@lsp.type.variable", { link = "@variable" })
+  hl("@lsp.type.parameter", { link = "@variable.parameter" })
+  hl("@lsp.type.operator", { link = "@operator" })
+  hl("@lsp.type.decorator", { link = "@function" })
+  hl("@lsp.type.builtinType", { link = "@type.builtin" })
+
   -- LSP Diagnostics
   hl("DiagnosticError", { fg = matugen.error })
   hl("DiagnosticWarn", { fg = syn.number })
@@ -375,6 +396,7 @@ end
 -- 3. STATE MANAGEMENT & USER COMMAND
 -- ============================================================
 local state_file = vim.fn.stdpath("state") .. "/nexa_code_syntax.txt"
+local fallback_file = vim.fn.stdpath("config") .. "/.nexa_code_syntax.txt"
 
 local function parse_args(input_str)
   local clean = (input_str or ""):lower():gsub("[-_]", " ")
@@ -416,53 +438,91 @@ local function load_saved()
     return preset, variant
   end
 
-  local f = io.open(state_file, "r")
-  if f then
-    local content = f:read("*l")
-    f:close()
-    if content and #content > 0 then
-      preset, variant = parse_args(content)
-      return preset, variant
+  for _, path in ipairs({ state_file, fallback_file }) do
+    local f = io.open(path, "r")
+    if f then
+      local content = f:read("*l")
+      f:close()
+      if content and #content > 0 then
+        preset, variant = parse_args(content)
+        return preset, variant
+      end
     end
   end
   return preset, nil
 end
 
 local function save_state(preset, variant)
+  local val = preset .. (variant and (" " .. variant) or "")
+  local dir = vim.fn.stdpath("state")
+  pcall(vim.fn.mkdir, dir, "p")
   local f = io.open(state_file, "w")
+  if not f then
+    f = io.open(fallback_file, "w")
+  end
   if f then
-    local val = preset .. (variant and (" " .. variant) or "")
     f:write(val)
     f:close()
   end
+end
+
+local function apply_and_notify(preset, variant)
+  local eff_variant = variant or (is_bg_light() and "light" or "dark")
+  vim.g.nexa_syntax = preset .. (variant and (" " .. variant) or "")
+  save_state(preset, variant)
+  apply_syntax(preset, eff_variant)
+  pcall(vim.cmd, "redraw!")
+  vim.notify("Code syntax: " .. preset .. " (" .. eff_variant .. ")", vim.log.levels.INFO, { title = "NexaSyntax" })
 end
 
 local active_preset, active_variant = load_saved()
 vim.g.nexa_syntax = active_preset .. (active_variant and (" " .. active_variant) or "")
 apply_syntax(active_preset, active_variant)
 
--- User Command: :NexaSyntax <preset> [light|dark]
+-- User Command: :NexaSyntax [preset] [light|dark]
+-- Run with no args to open interactive picker!
 vim.api.nvim_create_user_command("NexaSyntax", function(opts)
-  local preset, variant = parse_args(opts.args)
+  local raw_args = (opts.args or ""):gsub("^%s+", ""):gsub("%s+$", "")
   
+  if raw_args == "" then
+    local choices = {
+      "tokyonight (dark)",
+      "tokyonight (light)",
+      "catppuccin (dark)",
+      "catppuccin (light)",
+      "gruvbox (dark)",
+      "gruvbox (light)",
+      "rosepine (dark)",
+      "rosepine (light)",
+      "nord (dark)",
+      "nord (light)",
+    }
+    vim.ui.select(choices, {
+      prompt = "Select Nexa Code Syntax Palette:",
+    }, function(choice)
+      if choice then
+        local preset, variant = parse_args(choice)
+        apply_and_notify(preset, variant)
+      end
+    end)
+    return
+  end
+
+  local preset, variant = parse_args(raw_args)
   if syntax_presets[preset] then
-    local eff_variant = variant or (is_bg_light() and "light" or "dark")
-    vim.g.nexa_syntax = preset .. (variant and (" " .. variant) or "")
-    save_state(preset, variant)
-    apply_syntax(preset, eff_variant)
-    vim.notify("Code syntax: " .. preset .. " [" .. eff_variant .. " tokens] (UI frame unchanged)", vim.log.levels.INFO)
+    apply_and_notify(preset, variant)
   else
-    vim.notify("Available syntax presets: tokyonight, catppuccin, gruvbox, rosepine, nord", vim.log.levels.WARN)
+    vim.notify("Available syntax presets: tokyonight, catppuccin, gruvbox, rosepine, nord", vim.log.levels.WARN, { title = "NexaSyntax" })
   end
 end, {
-  nargs = 1,
+  nargs = "*",
   complete = function(arg_lead, cmd_line, cursor_pos)
     local items = {
-      "tokyonight", "tokyonight light", "tokyonight dark",
-      "catppuccin", "catppuccin light", "catppuccin dark",
-      "gruvbox", "gruvbox light", "gruvbox dark",
-      "rosepine", "rosepine light", "rosepine dark",
-      "nord", "nord light", "nord dark"
+      "tokyonight", "tokyonight dark", "tokyonight light",
+      "catppuccin", "catppuccin dark", "catppuccin light",
+      "gruvbox", "gruvbox dark", "gruvbox light",
+      "rosepine", "rosepine dark", "rosepine light",
+      "nord", "nord dark", "nord light"
     }
     local matches = {}
     local lead = arg_lead:lower()
@@ -473,7 +533,7 @@ end, {
     end
     return matches
   end,
-  desc = "Switch code token colors (Normal background & UI remain 100% matched to NexaUI)",
+  desc = "Switch code token colors or open interactive palette picker",
 })
 
 return matugen

@@ -246,22 +246,22 @@ end)
 -- ==============================================================================
 -- Volume & Mute Keys (repeating = true allows holding keys smoothly without lag)
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd(nexad .. " island volume-up"), { locked = true, repeating = true })
-hl.bind("F3", hl.dsp.exec_cmd(nexad .. " island volume-up"), { locked = true, repeating = true })
+hl.bind(MOD .. " + F3", hl.dsp.exec_cmd(nexad .. " island volume-up"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd(nexad .. " island volume-down"), { locked = true, repeating = true })
-hl.bind("F2", hl.dsp.exec_cmd(nexad .. " island volume-down"), { locked = true, repeating = true })
+hl.bind(MOD .. " + F2", hl.dsp.exec_cmd(nexad .. " island volume-down"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd(nexad .. " island toggle-mute"), { locked = true, repeating = true })
-hl.bind("F1", hl.dsp.exec_cmd(nexad .. " island toggle-mute"), { locked = true, repeating = true })
+hl.bind(MOD .. " + F1", hl.dsp.exec_cmd(nexad .. " island toggle-mute"), { locked = true, repeating = true })
 hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd(nexad .. " island toggle-mic-mute"), { locked = true, repeating = true })
-hl.bind("F4", hl.dsp.exec_cmd(nexad .. " island toggle-mic-mute"), { locked = true, repeating = true })
+hl.bind(MOD .. " + F4", hl.dsp.exec_cmd(nexad .. " island toggle-mic-mute"), { locked = true, repeating = true })
 
 -- Display Backlight Brightness
 hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(nexad .. " island brightness-up"), { locked = true, repeating = true })
-hl.bind("F6", hl.dsp.exec_cmd(nexad .. " island brightness-up"), { locked = true, repeating = true })
+hl.bind(MOD .. " + F6", hl.dsp.exec_cmd(nexad .. " island brightness-up"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(nexad .. " island brightness-down"), { locked = true, repeating = true })
-hl.bind("F5", hl.dsp.exec_cmd(nexad .. " island brightness-down"), { locked = true, repeating = true })
+hl.bind(MOD .. " + F5", hl.dsp.exec_cmd(nexad .. " island brightness-down"), { locked = true, repeating = true })
 
 -- Network / Airplane Mode
-hl.bind("F8", hl.dsp.exec_cmd(nexad .. " island airplane"), { locked = true })
+hl.bind(MOD .. " + F8", hl.dsp.exec_cmd(nexad .. " island airplane"), { locked = true })
 hl.bind("XF86WLAN", hl.dsp.exec_cmd(nexad .. " island airplane"), { locked = true })
 
 -- Media Player Controls (via playerctl)

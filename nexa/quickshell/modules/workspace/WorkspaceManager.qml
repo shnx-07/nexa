@@ -7,6 +7,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 
 import "../../NewNexaUI" as NexaUI
+import "../../services" as Services
 
 
 PanelWindow {
@@ -36,6 +37,25 @@ PanelWindow {
 
     readonly property string nexad:
         Quickshell.env("HOME") + "/.config/nexa/rust/target/release/nexad"
+
+    function getWorkspaceLabel(wsId) {
+        const style = Services.BarConfig.workspaceStyle || "dots";
+        switch (style) {
+            case "devanagari":
+                const dev = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"];
+                return String(wsId).split("").map(c => dev[parseInt(c)] || c).join("");
+            case "roman":
+                const rom = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+                return rom[wsId] || String(wsId);
+            case "kanji":
+                const cjk = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+                return cjk[wsId] || String(wsId);
+            case "numbers":
+            case "dots":
+            default:
+                return String(wsId);
+        }
+    }
 
     
 
@@ -1445,7 +1465,7 @@ PanelWindow {
                           }
 
                           text:
-                              workspaceTile.workspaceId
+                              manager.getWorkspaceLabel(workspaceTile.workspaceId)
 
                           color:
                               modelData.active
@@ -1474,7 +1494,7 @@ PanelWindow {
                               || modelData.windows.length === 0
 
                           text:
-                              workspaceTile.workspaceId
+                              manager.getWorkspaceLabel(workspaceTile.workspaceId)
 
                           color:
                               NexaUI.NexaColors.text

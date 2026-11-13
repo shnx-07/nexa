@@ -110,3 +110,8 @@ end
 keymap.set("n", "<F6>", run_current_file, { desc = "Run current file in terminal" })
 keymap.set("n", "<C-F5>", run_current_file, { desc = "Run current file in terminal" })
 keymap.set("n", "<M-F5>", run_current_file, { desc = "Run current file in terminal" })
+
+-- ============================================================
+-- NEXA CODE SYNTAX PALETTE CHANGER
+-- ============================================================
+keymap.set("n", "<leader>uS", "<cmd>NexaSyntax<cr>", { desc = "Nexa Code Syntax Palette" })
